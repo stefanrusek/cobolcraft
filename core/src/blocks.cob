@@ -451,6 +451,7 @@
  01 WS-KNOT                BINARY-LONG.
  01 WS-NOTE                BINARY-LONG.
  01 WS-ROCKET              BINARY-LONG.
+ 01 WS-BELL                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -495,10 +496,14 @@
      IF NOT (PL-SNEAKING(WS-ROW) = 1 AND WS-ITEM > 0)
          CALL "M44-NOTE-USE" USING WS-ROW WS-STATE PSB-BX PSB-BY PSB-BZ PSB-FACE WS-NOTE
      END-IF
+*>   A bell rings when it is hit as 31-4 section 4.5 says (core/src/bell-use.cob).
+     CALL "BELL-USE" USING WS-ROW WS-STATE PSB-BX PSB-BY PSB-BZ PSB-FACE PSB-CURSOR-Y WS-BELL
      EVALUATE TRUE
          WHEN WS-KNOT = 1
              CONTINUE
          WHEN WS-NOTE = 1
+             CONTINUE
+         WHEN WS-BELL = 1
              CONTINUE
          WHEN WS-TOOL = 1
              CONTINUE

@@ -388,6 +388,12 @@
  01 WS-HBLOCK              BINARY-LONG.
  01 WS-HTOOL               PIC X.
  01 WS-HFOOD               BINARY-LONG.
+ 01 WS-SKIND               BINARY-LONG.
+ 01 WS-SID1                PIC X(80).
+ 01 WS-SL1                 BINARY-LONG.
+ 01 WS-SID2                PIC X(80).
+ 01 WS-SL2                 BINARY-LONG.
+ 01 WS-SDYE                BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-SPRITE              BINARY-LONG.
  01 WS-FACE-SPR            BINARY-LONG.
@@ -491,7 +497,9 @@
      END-IF
 *>   The display transform of the model, else the default of block/block or item/generated (12 section 8.2).
      CALL "ITEM-HAND-DISPLAY" USING CLIENT-STATE WS-ITEM WS-HAVE WS-VAL
-     IF WS-HAVE = 2
+*>   A code-drawn model (a chest, a shulker box, a banner: item-special.cob) has its own display transform and quads.
+     CALL "SPECIAL-ITEM-KIND" USING CLIENT-STATE WS-ITEM WS-SKIND WS-SID1 WS-SL1 WS-SID2 WS-SL2 WS-SDYE
+     IF WS-HAVE = 2 AND WS-SKIND = 0
          GOBACK
      END-IF
 *>   Nothing swings and nothing changed since the last frame (the item, its sprite, the equip height, the light): the mesh built then
@@ -554,6 +562,13 @@
          MOVE 2 TO WS-AXIS
          MOVE -45 TO WS-DEG
          CALL "HAND-M-ROTATE" USING WS-M WS-AXIS WS-DEG
+     END-IF
+     IF WS-SKIND > 0
+         CALL "HAND-SPECIAL-MESH" USING CLIENT-STATE WS-SKIND WS-ITEM WS-M WS-LIGHT WS-VQ
+         IF WS-STILL = 1
+             MOVE RL-HAND-COUNT TO CL-HAND-KEY-COUNT
+         END-IF
+         GOBACK
      END-IF
 *>   ItemTransform.apply: translate, rotationXYZ, scale, translate(-0.5).
      COMPUTE WS-AX = WS-DV(4) / 16

@@ -287,6 +287,15 @@
  01 WS-THIRTEEN            BINARY-LONG VALUE 13.
  01 WS-SPRITE              BINARY-LONG.
  01 WS-FOIL                BINARY-LONG.
+ 01 WS-SKIND               BINARY-LONG.
+ 01 WS-SID1                PIC X(80).
+ 01 WS-SL1                 BINARY-LONG.
+ 01 WS-SID2                PIC X(80).
+ 01 WS-SL2                 BINARY-LONG.
+ 01 WS-SDYE                BINARY-LONG.
+ 01 WS-SDRAWN              BINARY-LONG.
+ 01 WS-GX                  BINARY-LONG.
+ 01 WS-GY                  BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-WIDTH               BINARY-LONG.
@@ -340,7 +349,19 @@
          CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-ZERO WS-ZERO2 WS-U0 WS-V0
          CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-SIXTEEN WS-SIXTEEN2 WS-U1 WS-V1
          MOVE 2 TO RL-UI-LAYER
-         CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+         CALL "SPECIAL-ITEM-KIND" USING CLIENT-STATE WS-ITEM WS-SKIND WS-SID1 WS-SL1 WS-SID2 WS-SL2 WS-SDYE
+         IF WS-SKIND = 0
+             CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+         ELSE
+*>           A code-drawn model (a chest, a shulker box, a banner: item-special.cob) is drawn as its model, not as the icon of its particle texture.
+             COMPUTE WS-GX = SM-W-X(L-W) + WS-INSET
+             COMPUTE WS-GY = SM-W-Y(L-W) + WS-INSET
+             CALL "SPECIAL-GUI-ICON" USING CLIENT-STATE WS-SKIND WS-ITEM WS-GX WS-GY WS-SDRAWN
+*>           The icon layer is full: the flat icon of the particle texture takes the slot.
+             IF WS-SDRAWN = 0
+                 CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+             END-IF
+         END-IF
 *>       The glint of a stack with the foil (54 section 19.3): quads over the icon's opaque texels, drawn over the icons with the glint pipeline.
          CALL "MENU-STACK-FOIL" USING CLIENT-STATE WS-ARG WS-FOIL
          IF WS-FOIL = 1 AND GT-ITEM-W > 0

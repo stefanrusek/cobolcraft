@@ -300,7 +300,7 @@
  78 CL-MESH-NEAR            VALUE 36.   *> squared distance in chunks (6 chunks) within which a never meshed section boosts the credit and the frame budget (x 2)
  78 CL-MESH-CANDIDATES      VALUE 16.   *> dirty sections MESH-DIRTY keeps in order each frame (the nearest, never meshed ones first)
  78 CL-TINT-RADIUS          VALUE 2.    *> biome blend radius (43 section 4: the biomeBlendRadius default)
- 78 CL-MAX-ICON-VERTICES    VALUE 1536.
+ 78 CL-MAX-ICON-VERTICES    VALUE 6144.
  78 CL-MAX-TOP-VERTICES     VALUE 6144.
  78 CL-MAX-HL-VERTICES      VALUE 144.
  78 CL-ITEM-COUNT           VALUE 18.  *> item ids 0 to 17 (standin-content §2)

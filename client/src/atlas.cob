@@ -1,5 +1,5 @@
 *> The block atlas (texture 0; 08 §7.2, §7.3, §10.2; research R4): ATLAS-BUILD runs the sources of
-*> the block, item, chest and celestials (sun and moon phases of the sky, sky-render.cob) atlas definitions of every pack (definitions merge across packs, bottom pack
+*> the block, item, chest, celestials, shulker box and banner pattern (sun and moon phases of the sky, sky-render.cob) atlas definitions of every pack (definitions merge across packs, bottom pack
 *> first; "directory" lists textures/<source>/... in every namespace of every pack, "single" adds
 *> one texture; a later add with the same sprite id replaces the earlier), reads each sprite from
 *> the top-most pack that has it and stitches the sprites in rows into an atlas 128 pixels wide.
@@ -19,12 +19,23 @@
  01 WS-A                   BINARY-LONG.
  01 B-PIXELS               PIC X(1073741824) BASED.
  01 WS-DEFS.
-    05 FILLER PIC X(40) VALUE "assets/minecraft/atlases/blocks.json".
-    05 FILLER PIC X(40) VALUE "assets/minecraft/atlases/items.json".
-    05 FILLER PIC X(40) VALUE "assets/minecraft/atlases/chests.json".
-    05 FILLER PIC X(40) VALUE "assets/minecraft/atlases/celestials.json".
+    05 FILLER PIC X(48) VALUE "assets/minecraft/atlases/blocks.json".
+    05 FILLER PIC X(48) VALUE "assets/minecraft/atlases/items.json".
+    05 FILLER PIC X(48) VALUE "assets/minecraft/atlases/chests.json".
+    05 FILLER PIC X(48) VALUE "assets/minecraft/atlases/celestials.json".
+    05 FILLER PIC X(48) VALUE "assets/minecraft/atlases/shulker_boxes.json".
+    05 FILLER PIC X(48) VALUE "assets/minecraft/atlases/banner_patterns.json".
  01 WS-DEF-TABLE REDEFINES WS-DEFS.
-    05 WS-DEF              PIC X(40) OCCURS 4 TIMES.
+    05 WS-DEF              PIC X(48) OCCURS 6 TIMES.
+ 01 WS-HEADS-DATA.
+    05 FILLER PIC X(40) VALUE "entity/skeleton/skeleton".
+    05 FILLER PIC X(40) VALUE "entity/skeleton/wither_skeleton".
+    05 FILLER PIC X(40) VALUE "entity/creeper/creeper".
+    05 FILLER PIC X(40) VALUE "entity/zombie/zombie".
+    05 FILLER PIC X(40) VALUE "entity/player/slim/steve".
+ 01 WS-HEADS REDEFINES WS-HEADS-DATA.
+    05 WS-HEAD-TEXTURE     PIC X(40) OCCURS 5 TIMES.
+ 01 WS-HAS                 BINARY-LONG.
  01 WS-D                   BINARY-LONG.
  01 WS-P                   BINARY-LONG.
  01 WS-Q                   BINARY-LONG.
@@ -86,7 +97,7 @@
      MOVE "missing" TO AT-NAME(1)
      MOVE 7 TO AT-NAME-LENGTH(1)
      MOVE 16 TO AT-SW(1) AT-SH(1)
-     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 4
+     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 6
          MOVE WS-DEF(WS-D) TO WS-FILE
          MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-FILE)) TO WS-FILE-LENGTH
          PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > PK-COUNT
@@ -157,6 +168,31 @@
                                  END-IF
                              END-PERFORM
                          END-PERFORM
+                     WHEN "single"
+                     WHEN "minecraft:single"
+*>                       One texture, the `resource` id (the bell's body, the enchanting table's book): the sprite <resource> from textures/<path>.png of its namespace.
+                         MOVE "resource" TO WS-NAME
+                         MOVE 8 TO WS-NAME-LENGTH
+                         CALL "JSON-MEMBER" USING JSON-DOC WS-SOURCE WS-NAME WS-NAME-LENGTH
+                             WS-FIELD
+                         MOVE SPACES TO WS-DIR
+                         CALL "JSON-STRING" USING JSON-DOC WS-FIELD WS-DIR WS-VALUE-CAP
+                             WS-DIR-LENGTH
+                         IF WS-DIR-LENGTH > 0
+                             CALL "ATLAS-RESOURCE-ID" USING WS-DIR WS-DIR-LENGTH WS-ID WS-ID-LENGTH WS-PATH WS-PATH-LENGTH
+                             CALL "ATLAS-FIND" USING CLIENT-STATE WS-ID WS-ID-LENGTH WS-S
+                             IF WS-S = 0 AND AT-SPRITE-COUNT < CL-MAX-SPRITES
+                                 ADD 1 TO AT-SPRITE-COUNT
+                                 MOVE AT-SPRITE-COUNT TO WS-S
+                             END-IF
+                             IF WS-S > 0
+                                 INITIALIZE AT-SPRITE(WS-S)
+                                 MOVE WS-ID TO AT-NAME(WS-S)
+                                 MOVE WS-ID-LENGTH TO AT-NAME-LENGTH(WS-S)
+                                 MOVE WS-PATH TO WS-SPRITE-PATH(WS-S)
+                                 MOVE WS-PATH-LENGTH TO WS-SPRITE-PATH-LENGTH(WS-S)
+                             END-IF
+                         END-IF
                  END-EVALUATE
                  MOVE JN-NEXT(WS-SOURCE) TO WS-SOURCE
              END-PERFORM
@@ -165,6 +201,34 @@
 *>   Sizes, then rows of sprites in order, as wide as the pack's sprites need: 128 pixels, doubled
 *>   while the area of all the sprites would not fill a square of that width (at most 4096 pixels), and
 *>   at least as wide as the widest sprite.
+*>   The entity textures the head items are drawn with (item-special.cob, 34-2 1.6.1: the skeleton, wither skeleton, creeper, zombie, and the default skin of the player head) are sprites
+*>   of their own: no atlas definition lists them, and the entity atlas is another texture than the item pipelines bind.
+     PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > 5
+         MOVE SPACES TO WS-DIR
+         MOVE WS-HEAD-TEXTURE(WS-Q) TO WS-DIR
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-DIR)) TO WS-DIR-LENGTH
+         CALL "ATLAS-RESOURCE-ID" USING WS-DIR WS-DIR-LENGTH WS-ID WS-ID-LENGTH WS-PATH WS-PATH-LENGTH
+*>       Only when a pack of the stack holds the file (the built-in pack has none of them).
+         MOVE 0 TO WS-HAS
+         PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > PK-COUNT
+             CALL "PACK-SOURCE-HAS" USING CLIENT-STATE WS-P WS-PATH WS-PATH-LENGTH WS-FOUND
+             IF WS-FOUND = 1
+                 MOVE 1 TO WS-HAS
+             END-IF
+         END-PERFORM
+         CALL "ATLAS-FIND" USING CLIENT-STATE WS-ID WS-ID-LENGTH WS-S
+         IF WS-HAS = 1 AND WS-S = 0 AND AT-SPRITE-COUNT < CL-MAX-SPRITES
+             ADD 1 TO AT-SPRITE-COUNT
+             MOVE AT-SPRITE-COUNT TO WS-S
+         END-IF
+         IF WS-HAS = 1 AND WS-S > 0
+             INITIALIZE AT-SPRITE(WS-S)
+             MOVE WS-ID TO AT-NAME(WS-S)
+             MOVE WS-ID-LENGTH TO AT-NAME-LENGTH(WS-S)
+             MOVE WS-PATH TO WS-SPRITE-PATH(WS-S)
+             MOVE WS-PATH-LENGTH TO WS-SPRITE-PATH-LENGTH(WS-S)
+         END-IF
+     END-PERFORM
      PERFORM VARYING WS-S FROM 2 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
          CALL "ATLAS-LOAD-IMAGE" USING CLIENT-STATE WS-SPRITE-PATH(WS-S) WS-SPRITE-PATH-LENGTH(WS-S)
              WS-IMAGE WS-IMAGE-CAP AT-SW(WS-S) AT-SH(WS-S) WS-FOUND AT-PACK(WS-S) WS-ANIMATED
@@ -414,6 +478,38 @@
      END-IF
      GOBACK.
  END PROGRAM ATLAS-DIRECTORY-MATCH.
+
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ATLAS-RESOURCE-ID.
+*> USING resource (PIC X(128), the `resource` of a "single" source: `ns:path` or `path` for minecraft), its length, sprite id out (PIC X(80): `ns:path`) and its length, texture file
+*> out (PIC X(256): assets/<ns>/textures/<path>.png) and its length.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-COLON               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-RESOURCE             PIC X(128).
+ 01 L-RESOURCE-LENGTH      BINARY-LONG.
+ 01 L-ID                   PIC X(80).
+ 01 L-ID-LENGTH            BINARY-LONG.
+ 01 L-PATH                 PIC X(256).
+ 01 L-PATH-LENGTH          BINARY-LONG.
+ PROCEDURE DIVISION USING L-RESOURCE L-RESOURCE-LENGTH L-ID L-ID-LENGTH L-PATH L-PATH-LENGTH.
+     MOVE 0 TO WS-COLON
+     INSPECT L-RESOURCE(1:L-RESOURCE-LENGTH) TALLYING WS-COLON FOR CHARACTERS BEFORE INITIAL ":"
+     MOVE SPACES TO L-ID L-PATH
+     IF WS-COLON >= L-RESOURCE-LENGTH
+         STRING "minecraft:" L-RESOURCE(1:L-RESOURCE-LENGTH) DELIMITED BY SIZE INTO L-ID
+         STRING "assets/minecraft/textures/" L-RESOURCE(1:L-RESOURCE-LENGTH) ".png" DELIMITED BY SIZE INTO L-PATH
+     ELSE
+         MOVE L-RESOURCE(1:L-RESOURCE-LENGTH) TO L-ID
+         STRING "assets/" L-RESOURCE(1:WS-COLON) "/textures/" L-RESOURCE(WS-COLON + 2:L-RESOURCE-LENGTH - WS-COLON - 1) ".png"
+             DELIMITED BY SIZE INTO L-PATH
+     END-IF
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-ID)) TO L-ID-LENGTH
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-PATH)) TO L-PATH-LENGTH
+     GOBACK.
+ END PROGRAM ATLAS-RESOURCE-ID.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ATLAS-FIND.
