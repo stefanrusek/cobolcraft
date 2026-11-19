@@ -67,6 +67,140 @@
  END PROGRAM RL-NOTE-SOUND.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. RL-NOTE-INST.
+*> USING state of a note block, the instrument number (30-5 8.1 order) of its instrument property out.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-INSTRUMENT          PIC X(16) VALUE "instrument".
+ 01 WS-KEEP                PIC X(16) VALUE "keep".
+ 01 WS-NEW                 BINARY-LONG.
+ 01 WS-OLD                 PIC X(16).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-NAME                PIC X(32).
+ 01 WS-SOUND               PIC X(48).
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-INST                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-INST.
+     CALL "SW-SET-PROP" USING L-STATE WS-INSTRUMENT WS-KEEP WS-NEW WS-OLD
+     MOVE 0 TO L-INST
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 26
+         CALL "RS2-NOTE-NAME" USING WS-I WS-NAME WS-SOUND
+         IF FUNCTION TRIM(WS-NAME) = FUNCTION TRIM(WS-OLD)
+             MOVE WS-I TO L-INST
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RL-NOTE-INST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RL-NOTE-SET-INSTRUMENT.
+*> USING dimension row, x, y, z, state in and out: setInstrument (30-5 8.2): the instrument of the block above if it works above a note block, else that of the block below (harp for a head below).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-INSTRUMENT          PIC X(16) VALUE "instrument".
+ 01 WS-QY                  BINARY-LONG.
+ 01 WS-ABOVE               BINARY-LONG.
+ 01 WS-BELOW               BINARY-LONG.
+ 01 WS-A-INST              BINARY-LONG.
+ 01 WS-B-INST              BINARY-LONG.
+ 01 WS-INST                BINARY-LONG.
+ 01 WS-NAME                PIC X(32).
+ 01 WS-SOUND               PIC X(48).
+ 01 WS-VALUE               PIC X(16).
+ 01 WS-NEW                 BINARY-LONG.
+ 01 WS-OLD                 PIC X(16).
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE.
+     COMPUTE WS-QY = L-Y + 1
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-QY L-Z WS-ABOVE
+     COMPUTE WS-QY = L-Y - 1
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-QY L-Z WS-BELOW
+     MOVE CB-INSTRUMENT(CB-S-BLOCK(WS-ABOVE + 1) + 1) TO WS-A-INST
+     MOVE CB-INSTRUMENT(CB-S-BLOCK(WS-BELOW + 1) + 1) TO WS-B-INST
+     CALL "RS2-NOTE-CHOOSE" USING WS-A-INST WS-B-INST WS-INST
+     CALL "RS2-NOTE-NAME" USING WS-INST WS-NAME WS-SOUND
+     MOVE WS-NAME TO WS-VALUE
+     CALL "SW-SET-PROP" USING L-STATE WS-INSTRUMENT WS-VALUE WS-NEW WS-OLD
+     MOVE WS-NEW TO L-STATE
+     GOBACK.
+ END PROGRAM RL-NOTE-SET-INSTRUMENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RL-NOTE-PLAY.
+*> USING dimension row, x, y, z, state of the note block: playNote (30-5 8.4): when the instrument works above a note block or the block above is air, the block event (id 0, parameter 0) is queued and the
+*> game event NOTE_BLOCK_PLAY goes out (the allays that hear it).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-INST                BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-TUNABLE             BINARY-LONG.
+ 01 WS-CUSTOM              BINARY-LONG.
+ 01 WS-WORKS               BINARY-LONG.
+ 01 WS-QY                  BINARY-LONG.
+ 01 WS-ASTATE              BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG.
+ 01 WS-GAME                BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-A                   BINARY-LONG VALUE 0.
+ 01 WS-B                   BINARY-LONG VALUE 0.
+ 01 WS-HEARD               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE.
+     MOVE CB-S-BLOCK(L-STATE + 1) TO WS-BLOCK
+     CALL "RL-NOTE-INST" USING L-STATE WS-INST
+     CALL "RS2-NOTE-TYPE" USING WS-INST WS-TYPE WS-TUNABLE WS-CUSTOM WS-WORKS
+     COMPUTE WS-QY = L-Y + 1
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-QY L-Z WS-ASTATE
+     MOVE 0 TO WS-AIR
+     IF WS-ASTATE = 0
+         MOVE 1 TO WS-AIR
+     END-IF
+     CALL "RS2-NOTE-PLAY" USING WS-WORKS WS-AIR WS-EVENT WS-GAME
+     IF WS-EVENT = 1
+         CALL "BE-ADD" USING L-DIM L-X L-Y L-Z WS-BLOCK WS-A WS-B
+     END-IF
+     IF WS-GAME = 1
+         CALL "ALLAY-NOTE-EVENT" USING L-DIM L-X L-Y L-Z WS-HEARD
+     END-IF
+     GOBACK.
+ END PROGRAM RL-NOTE-PLAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RL-NOTE-ATTACK.
+*> USING dimension row, x, y, z, state at the position: the left click on a note block (30-5 8.4 attack): playNote, no state change; any other block does nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ COPY RSLIVE.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE.
+     CALL "REDSTONE-IDS-ENSURE"
+     IF RL-CLASS(CB-S-BLOCK(L-STATE + 1) + 1) = 16
+         CALL "RL-NOTE-PLAY" USING L-DIM L-X L-Y L-Z L-STATE
+     END-IF
+     GOBACK.
+ END PROGRAM RL-NOTE-ATTACK.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. RL-NOTE-HOOK RECURSIVE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -141,20 +275,17 @@
              CALL "RL-GET-BOOL" USING L-STATE WS-POWERED LS-POWERED
              CALL "RS2-NOTE-NEIGHBOR" USING LS-SIGNAL LS-POWERED LS-PLAY LS-WRITE LS-NEW-POWERED
              IF LS-PLAY = 1
-                 COMPUTE LS-QY = L-Y + 1
-                 CALL "WORLD-GET-BLOCK" USING L-DIM L-X LS-QY L-Z LS-ASTATE
-                 MOVE 0 TO LS-AIR
-                 IF LS-ASTATE = 0
-                     MOVE 1 TO LS-AIR
-                 END-IF
-                 CALL "RS2-NOTE-PLAY" USING LS-WORKS LS-AIR LS-EVENT LS-GAME
-                 IF LS-EVENT = 1
-                     CALL "BE-ADD" USING L-DIM L-X L-Y L-Z LS-BLOCK LS-A LS-B
-                 END-IF
+                 CALL "RL-NOTE-PLAY" USING L-DIM L-X L-Y L-Z L-STATE
              END-IF
              IF LS-WRITE = 1
                  CALL "RL-SET-BOOL" USING L-STATE WS-POWERED LS-NEW-POWERED LS-NEW
                  CALL "LEVEL-SET-BLOCK" USING L-DIM L-X L-Y L-Z LS-NEW LS-FLAGS LS-BUDGET LS-RESULT
+             END-IF
+         WHEN 4
+*>           a vertical neighbour changed (8.2 updateShape): the instrument follows the blocks above and below
+             IF L-A = 0 OR L-A = 1
+                 MOVE L-STATE TO L-OUT
+                 CALL "RL-NOTE-SET-INSTRUMENT" USING L-DIM L-X L-Y L-Z L-OUT
              END-IF
          WHEN 10
 *>           the block event (8.5): the sound of the instrument at the note's pitch

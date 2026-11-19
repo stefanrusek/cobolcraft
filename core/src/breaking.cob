@@ -368,6 +368,10 @@
      CALL "WORLD-GET-BLOCK" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE
      COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
      MOVE CB-BREAK-MS(WS-BLOCK) TO WS-HARDNESS
+*>   Starting to dig is the attack of the block (30-5 section 8.4: a note block plays).
+     IF PSB-ACTION = 0
+         CALL "RL-NOTE-ATTACK" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE
+     END-IF
      EVALUATE TRUE
          WHEN PSB-ACTION = 2
              CALL "BLOCK-BREAK-END" USING WS-ROW

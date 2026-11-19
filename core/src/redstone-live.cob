@@ -1871,7 +1871,7 @@
                  CALL "RL-DISP-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE
              END-IF
          WHEN 16
-             IF L-KIND = 3 OR L-KIND = 10
+             IF L-KIND = 3 OR L-KIND = 4 OR L-KIND = 10
                  CALL "RL-NOTE-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
              END-IF
          WHEN 24
