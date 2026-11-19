@@ -270,6 +270,9 @@
  01 WS-ACTION              BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-UUID                PIC X(16).
+ 01 WS-ITEM-KEY            PIC X(48).
+ 01 WS-CHAIN-SUFFIX        PIC X(24) VALUE "hanging_sign".
+ 01 WS-CHAIN               BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -296,6 +299,15 @@
 *>   A sneaking player holding an item uses the item on the block instead (31-1 section 10.2).
      IF PL-SNEAKING(WS-ROW) = 1 AND WS-ITEM > 0
          GOBACK
+     END-IF
+*>   A hanging sign item used on the underside of a hanging sign chains another one instead of opening the editor (24 part 3, shouldTryToChainAnotherHangingSign: the clicked
+*>   face is DOWN and the item is a hanging sign item; the click commands of the side are not modelled).
+     IF WS-TYPE = 8 AND PSB-FACE = 0 AND WS-ITEM > 0
+         MOVE IT-KEY(WS-ITEM + 1) TO WS-ITEM-KEY
+         CALL "PS-ENDS" USING WS-ITEM-KEY WS-CHAIN-SUFFIX WS-CHAIN
+         IF WS-CHAIN = 1
+             GOBACK
+         END-IF
      END-IF
      MOVE 1 TO L-HANDLED
      MOVE PL-UUID(WS-ROW) TO WS-UUID
