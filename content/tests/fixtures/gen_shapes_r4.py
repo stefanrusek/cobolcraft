@@ -132,6 +132,77 @@ for d, name in enumerate(('down', 'up', 'north', 'south', 'west', 'east')):
              'south': (0,0,0,16,16,16 + q), 'east': (0,0,0,16 + q,16,16), 'west': (-q,0,0,16,16,16)}[name]
         row('shulker_box', str(d), str(t), 'S', [b])
 
+# light data (51 section 3.8.11, 1.8.1): "L" rows, expected "flags/dampening/occlusion boxes" with flags = 1 canOcclude + 2 useShapeForLightOcclusion + 4 propagatesSkylightDown.
+# The occlusion shape is the outline (the empty shape when the block cannot occlude); the lectern's is its collision shape. propagatesSkylightDown by the table.
+outline = {(b, p1, p2): bx for (b, p1, p2, w, bx) in rows if w == 'O'}
+coll = {(b, p1, p2): bx for (b, p1, p2, w, bx) in rows if w == 'C'}
+def light(block, p1, p2, can, use, prop, damp, occ):
+    flags = (1 if can else 0) + (2 if use else 0) + (4 if prop else 0)
+    row(block, p1, p2, 'L', [])
+    rows[-1] = (block, p1, p2, 'L', "%d/%d/%s" % (flags, damp, occ))
+for blk, p1 in (('cauldron', ''), ('lava_cauldron', ''), ('water_cauldron', 'level=2'), ('powder_snow_cauldron', 'level=3')):
+    light(blk, p1, '', False, False, True, 0, '-')
+for f in ('north', 'east', 'south', 'west', 'down'):
+    light('hopper', 'facing=' + f, '', False, False, True, 0, '-')
+for a in ('floor', 'ceiling', 'single_wall', 'double_wall'):
+    light('bell', 'attachment=' + a, 'facing=east', True, False, True, 0, outline[('bell', 'attachment=' + a, 'facing=east')])
+for bt in ('false', 'true'):
+    # the empty context: Unstable when bottom else Stable; waterlogged states do not propagate skylight and dampen by 1
+    key = ('scaffolding', 'bottom=' + bt, '')
+# Scaffolding: 51 section 3.8.5 and the table 3.8.11 say canOcclude true (occlusion shape Unstable or Stable), but its builder chain has noCollision(), which clears canOcclude
+# (51 section 1.2, 24-1 section 5.2): the two statements disagree and the general rule is kept here (canOcclude false, occlusion shape empty), see the report on 51.
+for wl in ('false', 'true'):
+    for bt in ('false', 'true'):
+        light('scaffolding', 'bottom=' + bt, 'waterlogged=' + wl, False, False, wl == 'false', 0 if wl == 'false' else 1, '-')
+for lv in (0, 3, 8):
+    light('composter', 'level=%d' % lv, '', True, False, True, 0, outline[('composter', 'level=%d' % lv, '')])
+for face in ('wall', 'floor', 'ceiling'):
+    light('grindstone', 'face=' + face, 'facing=north', True, False, True, 0, outline[('grindstone', 'face=' + face, 'facing=north')])
+light('lectern', 'facing=north', '', True, True, True, 0, coll[('lectern', 'facing=north', '')])
+light('piston', 'extended=false', 'facing=north', True, False, False, 15, '0,0,0,16000,16000,16000')
+light('piston', 'extended=true', 'facing=north', True, True, True, 0, outline[('piston', 'extended=true', 'facing=north')])
+light('sticky_piston', 'extended=true', 'facing=up', True, True, True, 0, outline[('sticky_piston', 'extended=true', 'facing=up')])
+for sh in ('false', 'true'):
+    light('piston_head', 'facing=north', 'short=%s,type=normal' % sh, True, True, True, 0, outline[('piston_head', 'facing=north', 'short=%s,type=normal' % sh)])
+light('moving_piston', '', '', False, False, True, 0, '-')
+light('shulker_box', 'facing=up', '', False, False, False, 1, '-')
+light('stone', '', '', True, False, False, 15, '0,0,0,16000,16000,16000')
+light('oak_slab', 'type=bottom', 'waterlogged=false', True, True, True, 0, '0,0,0,16000,8000,16000')
+light('oak_slab', 'type=double', 'waterlogged=false', True, False, False, 15, '0,0,0,16000,16000,16000')
+light('glass', '', '', False, False, True, 0, '-')
+light('oak_leaves', 'distance=1', 'persistent=true,waterlogged=false', False, False, False, 1, '-')
+
+# face shapes (51 section 1.8.1): "F" rows of the occlusion shape of the state: p2 = the direction (0 down, 1 up, 2 north, 3 south, 4 west, 5 east); the cross-section of the
+# shape 1e-7 inside the cell on that side, projected on the face and drawn flat on the face plane (the coordinate of the axis is the plane, both ends).
+def face(boxes, d):
+    axis = {0: 1, 1: 1, 2: 2, 3: 2, 4: 0, 5: 0}[d]
+    high = d in (1, 3, 5)
+    out = []
+    for b in boxes:
+        lo, hi = F(b[axis]), F(b[axis + 3])
+        if high:
+            ok = hi >= 16 and lo < 16
+            plane = 16
+        else:
+            ok = lo <= 0 and hi > 0
+            plane = 0
+        if ok:
+            c = list(b)
+            c[axis] = plane
+            c[axis + 3] = plane
+            out.append(tuple(c))
+    return out
+def facerows(block, p1, boxes):
+    for d in range(6):
+        row(block, p1, str(d), 'F', face(boxes, d))
+facerows('lectern', 'facing=north', coll_boxes if False else [(0,0,0,16,2,16),(4,2,4,12,14,12)])
+facerows('piston', 'extended=true,facing=north', [(0,0,4,16,16,16)])
+facerows('piston', 'extended=true,facing=up', [(0,0,0,16,12,16)])
+facerows('piston_head', 'facing=north,short=false,type=normal', [(0,0,0,16,16,4),(6,6,4,10,10,20)])
+facerows('piston_head', 'facing=north,short=true,type=normal', [(0,0,0,16,16,4),(6,6,4,10,10,16)])
+facerows('stone', '', [(0,0,0,16,16,16)])
+facerows('oak_slab', 'type=bottom,waterlogged=false', [(0,0,0,16,8,16)])
+
 if __name__ == '__main__':
     for r in rows:
         print("|".join(r))

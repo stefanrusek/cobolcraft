@@ -1,5 +1,5 @@
 *> Test of the R4 block shapes of docs/protocol/51-block-shapes.md section 3.8 and rules R-E5, R-E25, R-E26 against the real content set: the rows of
-*> content/tests/fixtures/shapes_r4.txt ("block|constraint|constraint|C, O, I or S|boxes", boxes in thousandths of a pixel) come from the independent model
+*> content/tests/fixtures/shapes_r4.txt ("block|constraint|constraint|C, O, I, S, L or F|boxes", boxes in thousandths of a pixel) come from the independent model
 *> content/tests/fixtures/gen_shapes_r4.py, written from the document's authored boxes and the turn formulas of its section 2. The observed
 *> shape of the first state that holds the constraints is compared as a sorted list of boxes (a decomposition that differs is a different row).
  IDENTIFICATION DIVISION.
@@ -30,6 +30,11 @@
  01 WS-SEEN                 BINARY-LONG VALUE 0.
  01 WS-STABLE               PIC X(200).
  01 WS-DIRECTION            BINARY-LONG.
+ 01 WS-DIR-TEXT             PIC X(80).
+ 01 WS-FID                  BINARY-LONG.
+ 01 WS-FLAGS                PIC Z9.
+ 01 WS-DAMP                 PIC Z9.
+ 01 WS-SHAPE-TEXT           PIC X(1024).
  01 WS-TENTHS               BINARY-LONG.
  01 WS-NAME                 PIC X(240).
  01 WS-FEET                 FLOAT-LONG.
@@ -43,6 +48,13 @@
      MOVE "R4 shapes: the standard set is ready" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE BSH-READY TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "R4 shapes: the shape table of the standard set is under 1500 of its 2000 shapes (842 now)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF BSH-COUNT < 1500
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
      PERFORM ASSERT-N
      OPEN INPUT ROWS-FILE
      MOVE "R4 shapes: the fixture opens" TO TL-CASE
@@ -58,8 +70,8 @@
          END-READ
      END-PERFORM
      CLOSE ROWS-FILE
-     MOVE "R4 shapes: the fixture has its 298 rows" TO TL-CASE
-     MOVE 298 TO TL-EXPECTED-N
+     MOVE "R4 shapes: the fixture has its 376 rows" TO TL-CASE
+     MOVE 376 TO TL-EXPECTED-N
      MOVE WS-SEEN TO TL-OBSERVED-N
      PERFORM ASSERT-N
 
@@ -171,6 +183,10 @@
      ADD 1 TO WS-SEEN
      MOVE SPACES TO WS-KEY WS-P1 WS-P2 WS-P3 WS-EXPECT
      UNSTRING ROWS-RECORD DELIMITED BY "|" INTO WS-KEY WS-P1 WS-P2 WS-WHICH WS-EXPECT
+     IF WS-WHICH = "F"
+         MOVE WS-P2 TO WS-DIR-TEXT
+         MOVE SPACES TO WS-P2
+     END-IF
      IF WS-WHICH = "S"
          COMPUTE WS-DIRECTION = FUNCTION NUMVAL(WS-P1)
          COMPUTE WS-TENTHS = FUNCTION NUMVAL(WS-P2)
@@ -183,6 +199,13 @@
              CALL "BSH-COLL-ID" USING WS-STATE WS-ID
          WHEN "S"
              CONTINUE
+         WHEN "L"
+             MOVE BSH-OCC(WS-STATE + 1) TO WS-ID
+         WHEN "F"
+             MOVE BSH-OCC(WS-STATE + 1) TO WS-ID
+             COMPUTE WS-DIRECTION = FUNCTION NUMVAL(WS-DIR-TEXT)
+             MOVE WS-ID TO WS-FID
+             CALL "BSH-FACE" USING WS-FID WS-DIRECTION WS-ID
          WHEN "I"
              MOVE BSH-INT(WS-STATE + 1) TO WS-ID
          WHEN OTHER
@@ -190,9 +213,18 @@
      END-EVALUATE
      CALL "BSH-TEST-TEXT" USING WS-ID TL-OBSERVED
      CALL "BSH-TEST-SORT" USING TL-OBSERVED
+     IF WS-WHICH = "L"
+         MOVE TL-OBSERVED TO WS-SHAPE-TEXT
+         MOVE SPACES TO TL-OBSERVED
+         COMPUTE WS-FLAGS = BSH-LFLG(WS-STATE + 1)
+         COMPUTE WS-DAMP = BSH-DAMP(WS-STATE + 1)
+         STRING FUNCTION TRIM(WS-FLAGS) "/" FUNCTION TRIM(WS-DAMP) "/" FUNCTION TRIM(WS-SHAPE-TEXT) DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF
      MOVE SPACES TO TL-CASE
      STRING "R4 " FUNCTION TRIM(WS-KEY) " " FUNCTION TRIM(WS-P1) " " FUNCTION TRIM(WS-P2) " " WS-WHICH DELIMITED BY SIZE INTO TL-CASE
-     CALL "BSH-TEST-SORT" USING WS-EXPECT
+     IF WS-WHICH NOT = "L"
+         CALL "BSH-TEST-SORT" USING WS-EXPECT
+     END-IF
      MOVE WS-EXPECT TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
