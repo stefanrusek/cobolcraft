@@ -349,6 +349,7 @@
              CALL "STDMOB-DROPS" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED WS-WOOL
              CALL "RAIDER-LOOT-CLEAR"
              CALL "FOX-DROP-HELD" USING L-ROW
+             CALL "PIGLIN-DROP-INVENTORY" USING L-ROW
              CALL "WOLF-ARMOR-DROP" USING L-ROW
              CALL "STDMOB-XP-GEAR" USING L-ROW WS-GEAR
              CALL "STDMOB-XP-VARIANT" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED EN-VARIANT(L-ROW) WS-GEAR
@@ -456,10 +457,13 @@
  01 WS-BEST-D2             FLOAT-LONG.
  01 WS-LIMIT               FLOAT-LONG.
  01 WS-FULL                FLOAT-LONG.
+ 01 WS-VIS                 FLOAT-LONG.
+ 01 WS-FOLLOW              FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M.
+     MOVE SM-FOLLOW(L-M) TO WS-FOLLOW
      COMPUTE WS-FULL = SM-FOLLOW(L-M) * SM-FOLLOW(L-M)
      MOVE EN-TARGET(L-ROW) TO WS-P
      IF WS-P > 0
@@ -484,10 +488,9 @@
                  AND PL-DIM(WS-P) = EN-DIM(L-ROW)
              COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2
                  + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
-             MOVE WS-FULL TO WS-LIMIT
-             IF PL-POSE(WS-P) = 5
-                 COMPUTE WS-LIMIT = WS-FULL * 0.64
-             END-IF
+*>           TargetingConditions: the distance limit is max(follow range x visibility, 2) squared (44-3 section 4.7; mob-21-pgsee.cob).
+             CALL "MOB-PLAYER-VIS" USING L-ROW WS-P WS-VIS
+             CALL "MOB-SEE-RANGE2" USING WS-FOLLOW WS-VIS WS-LIMIT
              IF WS-D2 <= WS-LIMIT AND (WS-BEST = 0 OR WS-D2 < WS-BEST-D2
                      OR (WS-D2 = WS-BEST-D2 AND PL-ENTERED(WS-P) < PL-ENTERED(WS-BEST)))
                  MOVE WS-P TO WS-BEST
@@ -1075,8 +1078,12 @@
  01 WS-LIFE-HZ             FLOAT-LONG.
  01 WS-DAMAGE              BINARY-LONG.
  01 WS-PET-WALK            BINARY-LONG.
+ 01 WS-PGW-HX              FLOAT-LONG.
+ 01 WS-PGW-HZ              FLOAT-LONG.
+ 01 WS-PGW-ACTS            BINARY-LONG.
  01 WS-EVK-CAST            BINARY-LONG.
  01 WS-VS-WALK             BINARY-LONG.
+ 01 WS-ATTACK-GAP           BINARY-LONG.
  01 WS-RV-STILL            BINARY-LONG.
  01 WS-VS-HX               FLOAT-LONG.
  01 WS-VS-HZ               FLOAT-LONG.
@@ -1321,7 +1328,7 @@
      IF SM-KIND(WS-M) = 0
          CALL "MOB-LIFE-TICK" USING WS-ROW WS-LIFE-HX WS-LIFE-HZ WS-LIFE-WALK
      END-IF
-     MOVE 0 TO WS-PET-WALK WS-TEMPT-WALK
+     MOVE 0 TO WS-PET-WALK WS-TEMPT-WALK WS-PGW-ACTS
 *>   The tempt goal of an animal (MOB-TEMPT-TICK, 18 section 4.7): it follows a player who holds its food.
      IF SM-KIND(WS-M) = 0
          MOVE WS-YAW TO WS-TEMPT-YAW
@@ -1407,6 +1414,13 @@
          CALL "PIGLIN-TICK" USING WS-ROW
          CALL "PIGLIN-HUNT-STEP" USING WS-ROW
          CALL "PGB-STEP" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
+         CALL "PGW-STEP" USING WS-ROW WS-PGW-HX WS-PGW-HZ WS-PGW-ACTS
+         IF WS-PGW-ACTS = 1
+*>           A piglin with a spear or a crossbow fights by its own behaviours (PGW-STEP): it stands or strafes facing the target.
+             MOVE 1 TO WS-STOP
+             MOVE WS-PGW-HX TO EN-STRAFE-X(WS-ROW)
+             MOVE WS-PGW-HZ TO EN-STRAFE-Z(WS-ROW)
+         END-IF
      END-IF
      IF SM-KEY(WS-M) = "villager"
          CALL "VL-STEP" USING WS-ROW WS-V-ASLEEP
@@ -1474,7 +1488,7 @@
          END-IF
      END-IF
      IF SM-KEY(WS-M) = "panda"
-         CALL "PANDA-TICK" USING WS-ROW
+         CALL "PANDA-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
          IF EN-TARGET(WS-ROW) > 0
              MOVE 1 TO WS-CHASE
          END-IF
@@ -1532,7 +1546,7 @@
                  CALL "MOB-YAW-TOWARD" USING WS-DX WS-DZ WS-YAW
              END-IF
 *>           A bow mob in range strafes (STDMOB-SHOOT leaves the walk in EN-STRAFE-X and EN-STRAFE-Z).
-             IF SM-RANGED(WS-M) = 1
+             IF SM-RANGED(WS-M) = 1 OR SM-RANGED(WS-M) = 2 OR WS-PGW-ACTS = 1
                  MOVE EN-STRAFE-X(WS-ROW) TO WS-HX
                  MOVE EN-STRAFE-Z(WS-ROW) TO WS-HZ
              END-IF
@@ -1569,7 +1583,8 @@
              IF SM-FUSE(WS-M) = 0 AND SM-RANGED(WS-M) = 0 AND SM-KEY(WS-M) NOT = "vex" AND EN-COOLDOWN(WS-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH
                      AND FUNCTION ABS(WS-DZ) <= WS-REACH
                      AND WS-DY > - SM-REACH-BELOW-MILLI / 1000 AND WS-DY < SM-REACH-ABOVE-MILLI / 1000
-                 CALL "STDMOB-ATTACK-GAP" USING WS-M EN-COOLDOWN(WS-ROW)
+                 CALL "STDMOB-ATTACK-GAP" USING WS-ROW WS-M WS-ATTACK-GAP
+                 MOVE WS-ATTACK-GAP TO EN-COOLDOWN(WS-ROW)
                  CALL "STDMOB-ATTACK-DAMAGE" USING WS-ROW WS-M WS-DAMAGE
                  IF WS-DAMAGE > 0
                      CALL "HEALTH-MOB-HIT" USING WS-P WS-DAMAGE WS-ROW

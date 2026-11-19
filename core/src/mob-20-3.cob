@@ -228,13 +228,22 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-HAND-KEY.
-*> USING hand (EN-HAND: 1 iron sword, 2 iron spear, 3 iron shovel, 4 bow, 10 iron axe, 11 crossbow, 12 stone sword), key out (PIC X(40)): the item key of the main-hand item; spaces for 0 or an unknown value.
+*> USING hand (EN-HAND: 1 iron sword, 2 iron spear, 3 iron shovel, 4 bow, 10 iron axe, 11 crossbow, 12 stone sword), key out (PIC X(40)): the item key of the main-hand item; spaces for 0 or an unknown value.; 14 golden sword, 15 golden spear (lane p49s; its codes 11 to 13 are 14, 15 and 11 here)
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CITEMS.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-BARE                PIC X(32).
  LINKAGE SECTION.
  01 L-HAND                 BINARY-LONG.
  01 L-KEY                  PIC X(40).
  PROCEDURE DIVISION USING L-HAND L-KEY.
      MOVE SPACES TO L-KEY
+     IF L-HAND >= 1000 AND L-HAND - 1000 < IT-COUNT
+         COMPUTE WS-ITEM = L-HAND - 1000
+         CALL "PGW-ITEM-KEY" USING WS-ITEM WS-BARE
+         STRING "minecraft:" DELIMITED BY SIZE WS-BARE DELIMITED BY SPACE INTO L-KEY
+     END-IF
      EVALUATE L-HAND
          WHEN 1 MOVE "minecraft:iron_sword" TO L-KEY
          WHEN 2 MOVE "minecraft:iron_spear" TO L-KEY
@@ -244,6 +253,8 @@
          WHEN 10 MOVE "minecraft:iron_axe" TO L-KEY
          WHEN 11 MOVE "minecraft:crossbow" TO L-KEY
          WHEN 12 MOVE "minecraft:stone_sword" TO L-KEY
+         WHEN 14 MOVE "minecraft:golden_sword" TO L-KEY
+         WHEN 15 MOVE "minecraft:golden_spear" TO L-KEY
      END-EVALUATE
      GOBACK.
  END PROGRAM STDMOB-HAND-KEY.
@@ -817,8 +828,17 @@
                  CALL "MOB-JOCKEY-SPIDER" USING L-STATE L-ROW
              END-IF
              CALL "STDMOB-SPIDER-FX" USING L-STATE L-ROW WS-SPECIAL
+         WHEN "hoglin"
+         WHEN "zoglin"
+*>           finalizeSpawn of a hoglin or zoglin: a baby with probability 0.2 (nextFloat() < 0.2, 44 part 6 sections 6.2 and 6.3); a negative age is the baby flag here.
+             CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
+             IF WS-D < 0.2
+                 MOVE -24000 TO EN-MOBAGE(L-ROW)
+             END-IF
          WHEN "strider"
              CALL "STRIDER-JOCKEY" USING L-STATE L-ROW
+         WHEN "piglin"
+             CALL "PGW-FINALIZE" USING L-STATE L-ROW
          WHEN "phantom"
 *>           anchorPoint = the block + (0, 5, 0), size 0, the move control speed 0.1 (20 section 12).
              COMPUTE EN-PH-AX(L-ROW) = FUNCTION INTEGER(EN-X(L-ROW))

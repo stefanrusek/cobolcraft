@@ -8,3 +8,8 @@
        10 ME-AMP             BINARY-LONG.
        10 ME-DUR             BINARY-LONG.
        10 ME-FLAGS           BINARY-LONG.
+       10 ME-HCOUNT          BINARY-LONG.        *> hidden instances beneath the active one (44-x1 sections 8.2, 11.2): at most 4
+       10 ME-HID             OCCURS 4 TIMES.
+          15 ME-H-AMP        BINARY-LONG.
+          15 ME-H-DUR        BINARY-LONG.
+          15 ME-H-FLAGS      BINARY-LONG.

@@ -89,6 +89,8 @@
  01 WS-AZ                   FLOAT-LONG.
  01 WS-BY                   FLOAT-LONG.
  01 WS-SEES                 BINARY-LONG.
+ 01 WS-K                    BINARY-LONG.
+ 01 WS-BLOCKED              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -142,9 +144,39 @@
              END-IF
          END-IF
      END-PERFORM
+*>   44-6 section 2.8: none of the visible adult piglins may have hunted recently.
+     IF WS-F > 0
+         MOVE EN-X(L-ROW) TO WS-AX
+         COMPUTE WS-AY = EN-Y(L-ROW) + 1.5
+         MOVE EN-Z(L-ROW) TO WS-AZ
+         MOVE 0 TO WS-BLOCKED
+         PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+             IF WS-N NOT = L-ROW AND EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-HEALTH(WS-N) > 0 AND EN-DIM(WS-N) = EN-DIM(L-ROW)
+                     AND EN-MOBAGE(WS-N) >= 0 AND FUNCTION ABS(EN-X(WS-N) - EN-X(L-ROW)) <= 16
+                     AND FUNCTION ABS(EN-Y(WS-N) - EN-Y(L-ROW)) <= 16 AND FUNCTION ABS(EN-Z(WS-N) - EN-Z(L-ROW)) <= 16
+                 CALL "PGAI-KIND" USING WS-N WS-K
+                 IF WS-K = 1
+                     COMPUTE WS-BY = EN-Y(WS-N) + 1
+                     CALL "MOB-SEES" USING EN-DIM(L-ROW) WS-AX WS-AY WS-AZ EN-X(WS-N) WS-BY EN-Z(WS-N) WS-SEES
+                     CALL "PH-FIND" USING EN-ID(WS-N) WS-I
+                     IF WS-SEES = 1 AND WS-I > 0
+                         IF PH-TIMER(WS-I) > 0
+                             MOVE 1 TO WS-BLOCKED
+                         END-IF
+                     END-IF
+                 END-IF
+             END-IF
+         END-PERFORM
+         IF WS-BLOCKED = 1
+             MOVE 0 TO WS-F
+         END-IF
+     END-IF
      IF WS-F > 0
          MOVE WS-F TO EN-FOE(L-ROW)
          MOVE EN-ID(WS-F) TO EN-FOE-ID(L-ROW)
+*>       The hunter and every piglin near it start their pause together; the others join the hunt (broadcastAngerTarget).
+         CALL "PGAI-GAP" USING L-ROW
+         CALL "PGAI-BROADCAST" USING L-ROW WS-F
      END-IF
      GOBACK.
  END PROGRAM PIGLIN-HUNT-STEP.

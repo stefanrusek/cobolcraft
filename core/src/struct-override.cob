@@ -229,3 +229,30 @@
      END-PERFORM
      GOBACK.
  END PROGRAM STRUCT-OVR-NOTE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-OVR-NOTE-ADAPT.
+*> USING structure key (PIC X(80)), chunk x, chunk z, overall box (six BINARY-LONG: the union of the pieces), adapt (BINARY-LONG: 0 when the structure's terrain_adaptation is none, else 1): the
+*> overall box of a start is the union of its pieces inflated by 12 on every face when the terrain adaptation is not none (44-2 section 8.2, StructureStart.getBoundingBox through
+*> Structure.adjustBoundingBox), and that adjusted box is the one that decides which chunks carry the start's reference (8.5 createReferences) and the one a `full` test uses (pillager
+*> outpost beard_thin and ancient city beard_box: 12 blocks of margin in every direction; the monument none). The piece boxes of a `piece` structure are never inflated. Then STRUCT-OVR-NOTE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-BOX.
+    05 WS-B                BINARY-LONG OCCURS 6 TIMES.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(80).
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-BOX.
+    05 L-B                 BINARY-LONG OCCURS 6 TIMES.
+ 01 L-ADAPT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-CX L-CZ L-BOX L-ADAPT.
+     MOVE L-BOX TO WS-BOX
+     IF L-ADAPT NOT = 0
+         SUBTRACT 12 FROM WS-B(1) WS-B(2) WS-B(3)
+         ADD 12 TO WS-B(4) WS-B(5) WS-B(6)
+     END-IF
+     CALL "STRUCT-OVR-NOTE" USING L-KEY L-CX L-CZ WS-BOX
+     GOBACK.
+ END PROGRAM STRUCT-OVR-NOTE-ADAPT.

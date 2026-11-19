@@ -937,6 +937,7 @@
  COPY BRWORLD.
  COPY DIMENSIONS.
  COPY STDMOBS.
+ COPY CBLOCKS.
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-BELOW               BINARY-LONG.
@@ -951,6 +952,9 @@
  01 WS-LOCAL               BINARY-LONG.
  01 WS-32                  BINARY-LONG VALUE 32.
  01 WS-8                   BINARY-LONG VALUE 8.
+ 01 WS-20                  BINARY-LONG VALUE 20.
+ 01 WS-BSTATE              BINARY-LONG.
+ 01 WS-BKEY                PIC X(48).
  01 WS-DRAW                BINARY-LONG.
  01 WS-LEVEL               BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
@@ -960,7 +964,6 @@
  01 WS-ALWAYS              BINARY-LONG.
  01 WS-DENIED              BINARY-LONG.
  01 WS-SPREAD              BINARY-LONG VALUE 7.
- 01 WS-20                  BINARY-LONG VALUE 20.
  01 WS-GHAST-DRAW          BINARY-LONG.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
@@ -1043,6 +1046,17 @@
 *>       The any-light monster rule (21 section 3.2): no light test, the base and the not-Peaceful tests of predicate 4.
          MOVE 4 TO WS-PRED
      END-IF
+     IF SM-SPAWN(L-ROW) = 12
+*>       checkGhastSpawnRules (44-6 section 9.1), in this order: the difficulty is not Peaceful, then nextInt(20) = 0, then the generic monster rule (predicate 4 holds the
+*>       base and the not-Peaceful tests).
+         MOVE 4 TO WS-PRED
+         IF WS-PEACEFUL = 0
+             CALL "XORO-NEXT-INT" USING L-STATE WS-20 WS-DRAW
+             IF WS-DRAW NOT = 0
+                 MOVE 1 TO WS-PEACEFUL
+             END-IF
+         END-IF
+     END-IF
      IF SM-SPAWN(L-ROW) = 11
 *>       Piglin and hoglin (21 section 3.2): only the floor test of predicate 1, on Peaceful too.
          MOVE 1 TO WS-PRED
@@ -1059,6 +1073,16 @@
          CALL "XORO-NEXT-INT" USING L-STATE WS-20 WS-GHAST-DRAW
          IF WS-GHAST-DRAW NOT = 0
              MOVE 0 TO L-OK
+         END-IF
+     END-IF
+*>   checkHoglinSpawnRules (44-6 section 6.2): the block below must not be a nether wart block.
+     IF SM-KEY(L-ROW) = "hoglin" AND L-OK = 1
+         CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-BELOW L-Z WS-BSTATE
+         IF WS-BSTATE NOT = 0
+             MOVE CB-KEY(CB-S-BLOCK(WS-BSTATE + 1) + 1) TO WS-BKEY
+             IF WS-BKEY = "minecraft:nether_wart_block" OR "nether_wart_block"
+                 MOVE 0 TO L-OK
+             END-IF
          END-IF
      END-IF
      GOBACK.
@@ -1151,6 +1175,7 @@
  01 WS-PICKED              BINARY-LONG.
  01 WS-LIST                BINARY-LONG.
  01 WS-OENTRY              BINARY-LONG.
+ 01 WS-REDUCED             BINARY-LONG.
  01 WS-POINTS.
     05 WS-PT               OCCURS 64 TIMES.
        10 WS-PT-X          FLOAT-LONG.
@@ -1215,22 +1240,33 @@
              IF WS-OK = 1 AND WS-PICKED = 0
                  MOVE 1 TO WS-PICKED
 *>               a structure that overrides the lists at the position replaces the biome's list (44-2 8.1 step 2b); an empty list draws nothing
-                 CALL "SO-LOOKUP" USING L-DIM WS-X L-PY WS-Z L-CAT WS-LIST
-                 IF WS-LIST > 0
-                     CALL "SO-PICK" USING L-STATE WS-LIST WS-OENTRY
-                     IF WS-OENTRY > 0
-                         MOVE SO-E-KEY(WS-OENTRY) TO WS-KEY24
-                         MOVE WS-KEY24 TO WS-KEY48
-                         CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW
-                         CALL "SO-PACK-SIZE" USING L-STATE WS-OENTRY WS-MAXPACK
+*>               NaturalSpawner.getRandomSpawnMobAt first (44-2 section 8.1 step 3): for the category water_ambient in a biome of the tag reduce_water_ambient_spawns
+*>               (#minecraft:is_river: river and frozen_river) a roll nextFloat < 0.98 returns nothing; only then is the list drawn
+                 MOVE 0 TO WS-REDUCED
+                 IF L-CAT = 7 AND (SPB-NAME(L-BIOME) = "river" OR SPB-NAME(L-BIOME) = "frozen_river")
+                     CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-DBL
+                     IF WS-DBL < 0.98
+                         MOVE 1 TO WS-REDUCED
                      END-IF
-                 ELSE
-                     CALL "MS6-ENTRY-PICK" USING L-STATE L-BIOME L-CAT WS-ENTRY
-                     IF WS-ENTRY > 0
-                         MOVE SPE-KEY(WS-ENTRY) TO WS-KEY24
-                         MOVE WS-KEY24 TO WS-KEY48
-                         CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW
-                         CALL "MS6-PACK-SIZE" USING L-STATE WS-ENTRY WS-MAXPACK
+                 END-IF
+                 IF WS-REDUCED = 0
+                     CALL "SO-LOOKUP" USING L-DIM WS-X L-PY WS-Z L-CAT WS-LIST
+                     IF WS-LIST > 0
+                         CALL "SO-PICK" USING L-STATE WS-LIST WS-OENTRY
+                         IF WS-OENTRY > 0
+                             MOVE SO-E-KEY(WS-OENTRY) TO WS-KEY24
+                             MOVE WS-KEY24 TO WS-KEY48
+                             CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW
+                             CALL "SO-PACK-SIZE" USING L-STATE WS-OENTRY WS-MAXPACK
+                         END-IF
+                     ELSE
+                         CALL "MS6-ENTRY-PICK" USING L-STATE L-BIOME L-CAT WS-ENTRY
+                         IF WS-ENTRY > 0
+                             MOVE SPE-KEY(WS-ENTRY) TO WS-KEY24
+                             MOVE WS-KEY24 TO WS-KEY48
+                             CALL "MS6-SPECIES" USING WS-KEY48 WS-ROW
+                             CALL "MS6-PACK-SIZE" USING L-STATE WS-ENTRY WS-MAXPACK
+                         END-IF
                      END-IF
                  END-IF
                  IF WS-ROW = 0

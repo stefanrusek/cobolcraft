@@ -49,6 +49,11 @@
  01 WS-JOHNNY               BINARY-LONG.
  01 WS-CAND                 BINARY-LONG.
  01 WS-BPRIO                BINARY-LONG.
+ 01 WS-ZOGLIN               BINARY-LONG.
+ 01 WS-NEMESIS              BINARY-LONG.
+ 01 WS-WITHER               BINARY-LONG.
+ 01 WS-AVOIDING             BINARY-LONG.
+ 01 WS-GAP                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  01 L-M                     BINARY-LONG.
@@ -57,7 +62,7 @@
  01 L-WALK                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-M L-HX L-HZ L-WALK.
      MOVE 0 TO L-HX L-HZ L-WALK
-     MOVE 0 TO WS-ZOMBIE WS-ILLAGER WS-SEE
+     MOVE 0 TO WS-ZOMBIE WS-ILLAGER WS-SEE WS-ZOGLIN WS-NEMESIS WS-WITHER
      EVALUATE SM-KEY(L-M)
          WHEN "zombie" WHEN "husk" WHEN "drowned" WHEN "zombie_villager"
              MOVE 1 TO WS-ZOMBIE
@@ -67,7 +72,25 @@
          WHEN "ravager"
              MOVE 1 TO WS-ILLAGER
              MOVE 1 TO WS-SEE
-         WHEN "piglin" WHEN "hoglin" WHEN "zoglin" WHEN "warden"
+         WHEN "piglin"
+*>           A piglin avoiding a zombified creature or retreating has no target (44-6 section 2.2 step 1); an adult takes a visible wither skeleton (nemesis, step 4).
+             CALL "PGB-AVOIDING" USING L-ROW WS-AVOIDING
+             IF WS-AVOIDING = 1
+                 MOVE 0 TO EN-FOE(L-ROW) EN-FOE-ID(L-ROW)
+                 GOBACK
+             END-IF
+             IF EN-FOE(L-ROW) = 0 AND EN-MOBAGE(L-ROW) < 0
+                 GOBACK
+             END-IF
+             MOVE 1 TO WS-NEMESIS WS-SEE
+         WHEN "piglin_brute"
+             MOVE 1 TO WS-NEMESIS WS-SEE
+         WHEN "wither_skeleton"
+*>           The extra target goal of the wither skeleton: any piglin or brute it can see (44-6 section 9.4).
+             MOVE 1 TO WS-WITHER WS-SEE
+         WHEN "zoglin"
+             MOVE 1 TO WS-ZOGLIN WS-SEE
+         WHEN "hoglin" WHEN "warden"
              IF EN-FOE(L-ROW) = 0
                  GOBACK
              END-IF
@@ -92,7 +115,7 @@
              MOVE 0 TO EN-FOE(L-ROW) EN-FOE-ID(L-ROW)
          END-IF
      END-IF
-     IF WS-F = 0 AND WS-ZOMBIE + WS-ILLAGER = 0
+     IF WS-F = 0 AND WS-ZOMBIE + WS-ILLAGER + WS-ZOGLIN + WS-NEMESIS + WS-WITHER = 0
          GOBACK
      END-IF
      IF WS-F = 0
@@ -107,6 +130,16 @@
                  IF WS-CAND = 0 AND WS-JOHNNY = 1 AND WS-N NOT = L-ROW
                          AND NOT (SM-KEY(WS-S) = "evoker" OR "illusioner" OR "pillager" OR "vindicator")
                      MOVE 2 TO WS-CAND
+                 END-IF
+*>               A zoglin attacks anything attackable that is no zoglin and no creeper (44-6 section 6.3).
+                 IF WS-ZOGLIN = 1 AND SM-KEY(WS-S) NOT = "zoglin" AND SM-KEY(WS-S) NOT = "creeper"
+                     MOVE 1 TO WS-CAND
+                 END-IF
+                 IF WS-NEMESIS = 1 AND SM-KEY(WS-S) = "wither_skeleton"
+                     MOVE 1 TO WS-CAND
+                 END-IF
+                 IF WS-WITHER = 1 AND (SM-KEY(WS-S) = "piglin" OR "piglin_brute")
+                     MOVE 1 TO WS-CAND
                  END-IF
                  IF WS-CAND > 0
                      COMPUTE WS-D2 = (EN-X(WS-N) - EN-X(L-ROW)) ** 2 + (EN-Y(WS-N) - EN-Y(L-ROW)) ** 2 + (EN-Z(WS-N) - EN-Z(L-ROW)) ** 2
@@ -135,6 +168,11 @@
      IF WS-F = 0
          GOBACK
      END-IF
+*>   The foe of a zoglin, a piglin, a brute or a wither skeleton is kept (ATTACK_TARGET) until it is dead or gone.
+     IF WS-ZOGLIN + WS-NEMESIS + WS-WITHER > 0 AND EN-FOE(L-ROW) = 0
+         MOVE WS-F TO EN-FOE(L-ROW)
+         MOVE EN-ID(WS-F) TO EN-FOE-ID(L-ROW)
+     END-IF
      MOVE 1 TO L-WALK
      COMPUTE WS-DX = EN-X(WS-F) - EN-X(L-ROW)
      COMPUTE WS-DY = EN-Y(WS-F) - EN-Y(L-ROW)
@@ -148,7 +186,8 @@
      END-IF
      IF EN-PET-CD(L-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH AND FUNCTION ABS(WS-DZ) <= WS-REACH
              AND WS-DY > - SM-REACH-BELOW-MILLI / 1000 AND WS-DY < SM-REACH-ABOVE-MILLI / 1000
-         MOVE SM-ATTACK-TICKS TO EN-PET-CD(L-ROW)
+         CALL "STDMOB-ATTACK-GAP" USING L-ROW L-M WS-GAP
+         MOVE WS-GAP TO EN-PET-CD(L-ROW)
          CALL "STDMOB-ATTACK-DAMAGE" USING L-ROW L-M WS-DAMAGE
          MOVE 0 TO WS-CONVERTED
          CALL "STDMOB-INDEX" USING EN-TYPE(WS-F) WS-S
@@ -166,11 +205,16 @@
              CALL "HEALTH-MOB-DAMAGE" USING WS-F WS-DAMAGE CAUSE-MOB WS-NONE
              CALL "MOB-HURT-BY-MOB" USING WS-F L-ROW
          END-IF
-*>       A hoglin or zoglin that is hit by a mob turns on it; a piglin's kill restarts its hunting gap.
-         IF WS-FOE-KEY = "hoglin" OR "zoglin"
-             IF EN-FOE(WS-F) = 0
-                 MOVE L-ROW TO EN-FOE(WS-F)
-                 MOVE EN-ID(L-ROW) TO EN-FOE-ID(WS-F)
+*>       A hoglin or zoglin that is hit by a mob turns on it and a piglin or brute retaliates or retreats (44-6 sections 2.3, 2.4, 6.2, 6.3); the hit hoglin's attacker reacts to it (onHitTarget).
+         IF EN-HEALTH(WS-F) > 0
+             IF WS-FOE-KEY = "hoglin" OR "zoglin"
+                 CALL "PGAI-HOGLIN-HURT" USING WS-F L-ROW
+             END-IF
+             IF WS-FOE-KEY = "piglin" OR "piglin_brute"
+                 CALL "PGAI-HURT-BY-MOB" USING WS-F L-ROW
+             END-IF
+             IF SM-KEY(L-M) = "hoglin"
+                 CALL "PGAI-HOGLIN-HIT" USING L-ROW WS-F
              END-IF
          END-IF
          IF SM-KEY(L-M) = "piglin" AND EN-HEALTH(WS-F) = 0

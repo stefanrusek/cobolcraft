@@ -725,7 +725,7 @@
                          IF WS-CHUNK = 1
                              CALL "STRUCT-PLACE-START"
 *>                           the boxes of a structure that overrides the spawn lists, once the pieces have their final heights (struct-override.cob)
-                             CALL "STRUCT-OVR-NOTE" USING SDT-KEY(WS-R) J-CX J-CZ WS-OBOX
+                             CALL "STRUCT-OVR-NOTE-ADAPT" USING SDT-KEY(WS-R) J-CX J-CZ WS-OBOX SDT-ADAPT(WS-R)
                          END-IF
                      END-IF
                  END-IF

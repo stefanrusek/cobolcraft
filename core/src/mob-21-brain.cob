@@ -424,6 +424,9 @@
      IF PG-NOWALK(WS-SLOT) > 0
          SUBTRACT 1 FROM PG-NOWALK(WS-SLOT)
      END-IF
+     IF PG-PACIFIED(WS-SLOT) > 0
+         SUBTRACT 1 FROM PG-PACIFIED(WS-SLOT)
+     END-IF
 *>   The sensors run once every 20 ticks (4.1).
      IF FUNCTION MOD(CW-TIME + EN-ID(L-ROW), 20) = 0
          IF SM-KEY(WS-M) = "piglin"
@@ -434,19 +437,31 @@
                  MOVE 1 TO PG-AVOID-KIND(WS-SLOT)
                  MOVE EN-X(WS-Z) TO PG-AX(WS-SLOT)
                  MOVE EN-Z(WS-Z) TO PG-AZ(WS-SLOT)
-                 MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW)
+                 MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW) EN-FOE(L-ROW) EN-FOE-ID(L-ROW)
              END-IF
              MOVE 1 TO WS-KIND
          ELSE
              MOVE 2 TO WS-KIND
          END-IF
          CALL "PGB-REPEL" USING L-ROW WS-KIND WS-FOUND WS-RX WS-RY WS-RZ
+         IF WS-KIND = 2 AND WS-FOUND = 1
+*>           BecomePassiveIfMemoryPresent(NEAREST_REPELLENT, 200): PACIFIED for 200 ticks and no attack target (44-6 section 6.2).
+             MOVE 200 TO PG-PACIFIED(WS-SLOT)
+             MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW) EN-FOE(L-ROW) EN-FOE-ID(L-ROW)
+         END-IF
+         IF WS-KIND = 2
+             CALL "PGAI-HOGLIN-SENSE" USING L-ROW WS-SLOT WS-FOUND
+         END-IF
          IF WS-FOUND = 1 AND (PG-AVOID(WS-SLOT) = 0 OR PG-AVOID-KIND(WS-SLOT) NOT = 1)
              MOVE 20 TO PG-AVOID(WS-SLOT)
              MOVE 2 TO PG-AVOID-KIND(WS-SLOT)
              COMPUTE PG-AX(WS-SLOT) = WS-RX + 0.5
              COMPUTE PG-AZ(WS-SLOT) = WS-RZ + 0.5
          END-IF
+     END-IF
+*>   A pacified hoglin has no target: its target finder is empty (44-6 section 6.2).
+     IF PG-PACIFIED(WS-SLOT) > 0
+         MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW)
      END-IF
 *>   The celebration counts down; at its end a dancing piglin stops.
      IF PG-CELEB(WS-SLOT) > 0
@@ -458,20 +473,41 @@
 *>   AVOID: walk away from the point (a repellent only while there is no target: it is an IDLE and CELEBRATE behaviour).
      IF PG-AVOID(WS-SLOT) > 0
          SUBTRACT 1 FROM PG-AVOID(WS-SLOT)
-         IF PG-AVOID-KIND(WS-SLOT) = 1 OR PG-AVOID-KIND(WS-SLOT) = 3 OR EN-TARGET(L-ROW) = 0
+         IF PG-AVOID-KIND(WS-SLOT) = 1 OR PG-AVOID-KIND(WS-SLOT) = 3 OR (EN-TARGET(L-ROW) = 0 AND EN-FOE(L-ROW) = 0)
+*>           A hoglin retreats at 1.3 and keeps away from a piglin at 0.4 (44-6 section 6.1).
+             IF SM-KEY(WS-M) = "hoglin" AND PG-AVOID-KIND(WS-SLOT) = 1
+                 COMPUTE WS-SPEED = WS-SPEED * 1.3
+             END-IF
+             IF PG-AVOID-KIND(WS-SLOT) = 4
+                 COMPUTE WS-SPEED = WS-SPEED * 0.4
+             END-IF
              COMPUTE WS-DX = EN-X(L-ROW) - PG-AX(WS-SLOT)
              COMPUTE WS-DZ = EN-Z(L-ROW) - PG-AZ(WS-SLOT)
              COMPUTE WS-H = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
-             IF WS-H < 0.01
-                 MOVE 1 TO WS-DX
-                 MOVE 0 TO WS-DZ
-                 MOVE 1 TO WS-H
+*>           SetWalkTargetAwayFrom acts only within its distance (44-6 section 5.3 step 2): 12 for a piglin's AVOID, 15 for a hoglin's, 8 for a repellent and for a piglin kept away from.
+             MOVE 12 TO WS-RADIUS
+             IF SM-KEY(WS-M) = "hoglin" AND PG-AVOID-KIND(WS-SLOT) = 1
+                 MOVE 15 TO WS-RADIUS
              END-IF
-             COMPUTE L-HX = WS-DX / WS-H * WS-SPEED
-             COMPUTE L-HZ = WS-DZ / WS-H * WS-SPEED
-             MOVE 1 TO L-WALK
-             GOBACK
+             IF PG-AVOID-KIND(WS-SLOT) = 2 OR PG-AVOID-KIND(WS-SLOT) = 4
+                 MOVE 8 TO WS-RADIUS
+             END-IF
+             IF WS-H < WS-RADIUS
+                 IF WS-H < 0.01
+                     MOVE 1 TO WS-DX
+                     MOVE 0 TO WS-DZ
+                     MOVE 1 TO WS-H
+                 END-IF
+                 COMPUTE L-HX = WS-DX / WS-H * WS-SPEED
+                 COMPUTE L-HZ = WS-DZ / WS-H * WS-SPEED
+                 MOVE 1 TO L-WALK
+                 GOBACK
+             END-IF
          END-IF
+     END-IF
+*>   A baby hoglin follows a visible adult hoglin (BabyFollowAdult, 44-6 section 5.7) while it has no target.
+     IF SM-KEY(WS-M) = "hoglin" AND WS-ADULT = 0 AND EN-TARGET(L-ROW) = 0 AND EN-FOE(L-ROW) = 0
+         CALL "PGAI-BABY-FOLLOW" USING L-ROW L-HX L-HZ L-WALK
      END-IF
      IF EN-TARGET(L-ROW) > 0 OR SM-KEY(WS-M) NOT = "piglin"
          GOBACK

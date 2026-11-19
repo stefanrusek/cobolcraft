@@ -1,0 +1,179 @@
+*> Ghast, blaze and wither skeleton details (docs/protocol/44-residual-mob-questions-6-nether.md sections 9.1, 9.2 and V12; lane 002-lane-p49l): the ghast's and blaze's
+*> attribute rows, checkGhastSpawnRules (not Peaceful, nextInt(20) = 0, then the generic rule) and the reflected fireball that takes a ghast for 1000.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-Q44-44-6-9G.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BRWORLD.
+ COPY STDMOBS.
+ COPY XORO.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X0                  FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z0                  FLOAT-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-K24                 PIC X(24).
+ 01 WS-NO                  BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-SEED                BINARY-DOUBLE UNSIGNED.
+ 01 WS-REASON              BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-PASSES              BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG VALUE 1.
+ 01 WS-POWER               BINARY-LONG VALUE 1.
+ 01 WS-OWNER               BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG VALUE 1.
+ 01 WS-DY                  FLOAT-LONG VALUE 0.
+ 01 WS-DZ                  FLOAT-LONG VALUE 0.
+ 01 WS-FB                  BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "N" TO TL-MODE
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE PL-X(WS-PLAYER) TO WS-X0
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z0
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X0) - 20
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-Y) - 1
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z0) - 20
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-BX WS-BZ 40 WS-BY 1
+     MOVE 1000 TO CW-TICKS
+     CALL "T-CLEAR"
+*>   Section 9.1: the rows (max health 10, follow range 100) and 9.2 (attack 6, follow 48).
+     MOVE "ghast" TO WS-K24
+     CALL "T-SPAWN" USING WS-DIM WS-K24 WS-X0 WS-Y WS-Z0 WS-A
+     CALL "STDMOB-INDEX" USING EN-TYPE(WS-A) WS-M
+     MOVE "acceptance 44-6§9.1 a ghast has 10 health" TO TL-CASE
+     MOVE 10 TO TL-EXPECTED-N
+     MOVE SM-HEALTH(WS-M) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance 44-6§9.1 and a follow range of 100" TO TL-CASE
+     MOVE 100 TO TL-EXPECTED-N
+     MOVE SM-FOLLOW(WS-M) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance 44-6§9.1 ghast spawn rule 12 (checkGhastSpawnRules)" TO TL-CASE
+     MOVE 12 TO TL-EXPECTED-N
+     MOVE SM-SPAWN(WS-M) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-X = WS-X0 + 3
+     MOVE "blaze" TO WS-K24
+     CALL "T-SPAWN" USING WS-DIM WS-K24 WS-X WS-Y WS-Z0 WS-B
+     CALL "STDMOB-INDEX" USING EN-TYPE(WS-B) WS-M
+     MOVE "acceptance 44-6§9.2 a blaze hits for 6" TO TL-CASE
+     MOVE 6 TO TL-EXPECTED-N
+     MOVE SM-ATTACK(WS-M) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance 44-6§9.2 and has a follow range of 48" TO TL-CASE
+     MOVE 48 TO TL-EXPECTED-N
+     MOVE SM-FOLLOW(WS-M) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Section 9.1: checkGhastSpawnRules fails on Peaceful and passes about one attempt in 20 otherwise.
+     CALL "STDMOB-INDEX" USING EN-TYPE(WS-A) WS-M
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X0) + 6
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-Y)
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z0)
+     MOVE 6000 TO CW-TIME
+     MOVE 0 TO BW-DIFFICULTY
+     MOVE 1 TO WS-SEED
+     CALL "XORO-SEED" USING WS-SEED XR-STATE
+     MOVE 0 TO WS-PASSES
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 200
+         MOVE 0 TO WS-REASON
+         CALL "MS6-RULE-AT" USING XR-STATE WS-DIM WS-M WS-BX WS-BY WS-BZ WS-REASON WS-OK
+         ADD WS-OK TO WS-PASSES
+     END-PERFORM
+     MOVE "acceptance 44-6§9.1 Peaceful: the ghast rule never passes" TO TL-CASE
+     MOVE WS-NO TO TL-EXPECTED-N
+     MOVE WS-PASSES TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO BW-DIFFICULTY
+     MOVE 1 TO WS-SEED
+     CALL "XORO-SEED" USING WS-SEED XR-STATE
+     MOVE 0 TO WS-PASSES
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 400
+         MOVE 0 TO WS-REASON
+         CALL "MS6-RULE-AT" USING XR-STATE WS-DIM WS-M WS-BX WS-BY WS-BZ WS-REASON WS-OK
+         ADD WS-OK TO WS-PASSES
+     END-PERFORM
+     MOVE 0 TO WS-FLAG
+     IF WS-PASSES >= 5 AND WS-PASSES <= 45
+         MOVE 1 TO WS-FLAG
+     END-IF
+     MOVE "acceptance 44-6§9.1 Normal: the nextInt(20) gate passes about 1 in 20 of 400 attempts" TO TL-CASE
+     MOVE WS-ONE TO TL-EXPECTED-N
+     MOVE WS-FLAG TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   V12: a fireball owned by a player (a reflected one) takes a ghast for 1000; a ghast's own fireball (owner a mob) only for 6.
+     MOVE PL-ENTITY-ID(WS-PLAYER) TO WS-OWNER
+     CALL "PROJ-SPAWN" USING WS-KIND WS-DIM WS-X0 WS-Y WS-Z0 WS-DX WS-DY WS-DZ WS-POWER WS-OWNER WS-FB
+     CALL "PROJ-HIT" USING WS-FB WS-A WS-ZERO WS-X0 WS-Y WS-Z0
+     MOVE "acceptance 44-6§V12 a reflected fireball takes the ghast for 1000: it dies" TO TL-CASE
+     MOVE WS-NO TO TL-EXPECTED-N
+     MOVE EN-HEALTH(WS-A) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "ghast" TO WS-K24
+     CALL "T-SPAWN" USING WS-DIM WS-K24 WS-X0 WS-Y WS-Z0 WS-A
+     MOVE EN-ID(WS-B) TO WS-OWNER
+     CALL "PROJ-SPAWN" USING WS-KIND WS-DIM WS-X0 WS-Y WS-Z0 WS-DX WS-DY WS-DZ WS-POWER WS-OWNER WS-FB
+     COMPUTE WS-X = WS-X0 + 30
+     CALL "PROJ-HIT" USING WS-FB WS-A WS-ZERO WS-X WS-Y WS-Z0
+     MOVE "acceptance 44-6§9.1 a fireball of a mob takes the ghast for 6 only (its explosion is far away)" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE EN-HEALTH(WS-A) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-Q44-44-6-9G.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. T-CLEAR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-I                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-PLAYER(WS-I) = 0
+             CALL "ENTITY-REMOVE" USING WS-I
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM T-CLEAR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. T-SPAWN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-KEY                  PIC X(24).
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-KEY L-X L-Y L-Z L-ROW.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE L-KEY DELIMITED BY SPACE INTO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     CALL "MOB-SPAWN" USING L-DIM WS-TYPE L-X L-Y L-Z WS-YAW L-ROW
+     GOBACK.
+ END PROGRAM T-SPAWN.
+
+ COPY CORETEST.
+ COPY MOBSPTEST.
