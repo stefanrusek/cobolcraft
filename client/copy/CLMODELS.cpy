@@ -411,7 +411,7 @@
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC X VALUE "W".
-    05 FILLER PIC X(64) VALUE "textures/entity/rabbit/brown.png".
+    05 FILLER PIC X(64) VALUE "textures/entity/rabbit/rabbit_brown.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 44.
     05 FILLER PIC X(20) VALUE "rabbit~b".
@@ -420,7 +420,7 @@
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC 999 VALUE 32.
     05 FILLER PIC X VALUE "W".
-    05 FILLER PIC X(64) VALUE "textures/entity/rabbit/brown_baby.png".
+    05 FILLER PIC X(64) VALUE "textures/entity/rabbit/rabbit_brown_baby.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(20) VALUE "goat".
