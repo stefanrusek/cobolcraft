@@ -220,6 +220,11 @@
        10 PL-DEATH-X         BINARY-LONG.
        10 PL-DEATH-Y         BINARY-LONG.
        10 PL-DEATH-Z         BINARY-LONG.
+*>     --- 002-lane-bugbrush: a brush in use (core/src/brush-use.cob; 17 section 3.5, 25 part 8 section 7): 1 while the player uses the brush of the held slot
+*>     PL-BRUSH-SLOT, and the ticks it has been used (the first onUseTick sees 1); not saved ---
+       10 PL-BRUSH-ACTIVE    PIC 9.
+       10 PL-BRUSH-SLOT      BINARY-LONG.
+       10 PL-BRUSH-USED      BINARY-LONG.
 *>     --- end 002-lane-mobs2 ---
 
 *> Chunk cache (data-model §2, §3): one row per loaded chunk of any dimension. CK-ADDR points to
