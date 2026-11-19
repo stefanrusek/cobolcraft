@@ -477,6 +477,11 @@
          COMPUTE WS-HOOK-X = WS-HOOK-X * (1 + 0.003 * (EN-OVN(WS-ROW) - 8))
          COMPUTE WS-HOOK-Y = WS-HOOK-Y * (1 + 0.003 * (EN-OVN(WS-ROW) - 8))
      END-IF
+*>   The scale attribute (34-1 6.3 state.scale, Update Attributes): the whole model about the entity origin. A slime or magma cube takes its size from entry 18 instead.
+     IF EN-ATTR-SCALE(WS-ROW) NOT = 1 AND NOT (EN-KEY(WS-ROW) = "slime" OR "magma_cube")
+         COMPUTE WS-HOOK-X = WS-HOOK-X * EN-ATTR-SCALE(WS-ROW)
+         COMPUTE WS-HOOK-Y = WS-HOOK-Y * EN-ATTR-SCALE(WS-ROW)
+     END-IF
 *>   The key of the bake: everything the mesh depends on besides the position.
      MOVE EN-MODEL(WS-ROW) TO WS-KN(1)
      MOVE WS-SLOT TO WS-KN(2)
