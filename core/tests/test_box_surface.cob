@@ -179,6 +179,38 @@
      MOVE "test box surface: the top of an unloaded cell is the top of the cell, 55" TO TL-CASE
      MOVE 55 TO WS-DIFF
      PERFORM TOP-OF
+*>   Scaffolding (51 section 3.8.5, R-C20): the shape an entity meets depends on where it is. Above the top (feet within 1e-5 of it or higher) it meets the stable shape
+*>   (top slab, top 55); inside the cell it meets nothing, except the plate (top 54.125) of an unstable one whose feet are not below the cell's own y.
+     MOVE 6 TO WS-BX
+     MOVE 6.5 TO WS-X
+     MOVE 8.5 TO WS-Z
+     MOVE "scaffolding" TO WS-KEY
+     MOVE "distance=0,bottom=false,waterlogged=false" TO WS-PAIRS
+     PERFORM PLACE
+     MOVE 54.5 TO WS-Y
+     MOVE "test box surface: a box inside a scaffolding cell does not hit (the stable shape is for entities above it)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM HIT-OF
+     MOVE 54.999995 TO WS-Y
+     MOVE "test box surface: a box with its feet 5e-6 under the top of scaffolding is above it and hits the stable shape" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM HIT-OF
+     MOVE "test box surface: the top of scaffolding's stable shape is 55" TO TL-CASE
+     MOVE 55 TO WS-DIFF
+     PERFORM TOP-OF
+     MOVE "distance=3,bottom=true,waterlogged=false" TO WS-PAIRS
+     PERFORM PLACE
+     MOVE 54.05 TO WS-Y
+     MOVE "test box surface: a box low in an unstable scaffolding cell hits its plate" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM HIT-OF
+     MOVE "test box surface: the plate's top is 54.125" TO TL-CASE
+     MOVE 54.125 TO WS-DIFF
+     PERFORM TOP-OF
+     MOVE 53.5 TO WS-Y
+     MOVE "test box surface: a box below an unstable scaffolding cell meets nothing" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM HIT-OF
      STOP RUN.
 
  PLACE.

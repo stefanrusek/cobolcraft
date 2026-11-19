@@ -106,6 +106,20 @@
      MOVE "test move shapes: a body walks into a ladder cell" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      PERFORM HIT-OF
+*>   Scaffolding (51 section 3.8.5): a body inside its cell collides with nothing (a player climbs through it), but with the plate of an unstable one (feet not under the cell's y).
+     MOVE "scaffolding" TO WS-KEY
+     MOVE "distance=0,bottom=false,waterlogged=false" TO WS-PAIRS
+     PERFORM PLACE
+     MOVE 54.0 TO WS-Y
+     MOVE 8.5 TO WS-Z
+     MOVE "test move shapes: a body inside a scaffolding cell is clear" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM HIT-OF
+     MOVE "distance=3,bottom=true,waterlogged=false" TO WS-PAIRS
+     PERFORM PLACE
+     MOVE "test move shapes: a body at the foot of an unstable scaffolding cell meets its plate" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM HIT-OF
 *>   Bamboo at (6, 54, 8) is moved by its model offset (+0.25, 0, -0.1167; 51 section 1.4): the body at x 6.2 (box 5.85 to 6.55) is clear of the moved stalk (6.656 to
 *>   6.844) though it would overlap the unmoved one, and the body at x 7.0 (6.65 to 7.35) collides with it.
      MOVE "bamboo" TO WS-KEY
