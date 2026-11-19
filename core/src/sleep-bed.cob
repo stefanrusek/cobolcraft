@@ -141,6 +141,9 @@
  COPY CORESTATE.
  COPY WSIM2.
  01 WS-YES                 BINARY-LONG VALUE 1.
+ 01 WS-BED-X               FLOAT-LONG.
+ 01 WS-BED-Y               FLOAT-LONG.
+ 01 WS-BED-Z               FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -155,6 +158,11 @@
      CALL "SLEEP-OCCUPIED" USING PL-DIM(L-ROW) L-X L-Y L-Z WS-YES
      CALL "POSE-UPDATE" USING L-ROW
      CALL "SLEEP-ENTITY-DATA" USING L-ROW WS-YES L-X L-Y L-Z
+*>   startSleeping moves the player onto the bed: the middle of the head half at the mattress height (51 R-E3: 9 sixteenths), Player Position to the client, the others see it move.
+     COMPUTE WS-BED-X = L-X + 0.5
+     COMPUTE WS-BED-Y = L-Y + 0.5625
+     COMPUTE WS-BED-Z = L-Z + 0.5
+     CALL "CMD-MOVE-PLAYER" USING L-ROW PL-DIM(L-ROW) WS-BED-X WS-BED-Y WS-BED-Z
      GOBACK.
  END PROGRAM SLEEP-BEGIN.
 
@@ -175,6 +183,9 @@
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
+ 01 WS-STAND-X             FLOAT-LONG.
+ 01 WS-STAND-Y             FLOAT-LONG.
+ 01 WS-STAND-Z             FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -192,6 +203,9 @@
      CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-WAKE-UP
      CALL "SLEEP-SEND" USING L-ROW PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
+*>   The player stands up beside the bed (Player Position to the client) before the pose is chosen: on the mattress the standing box would not fit.
+     CALL "SLEEP-STAND-UP" USING PL-DIM(L-ROW) WS-X WS-Y WS-Z WS-STAND-X WS-STAND-Y WS-STAND-Z
+     CALL "CMD-MOVE-PLAYER" USING L-ROW PL-DIM(L-ROW) WS-STAND-X WS-STAND-Y WS-STAND-Z
      CALL "POSE-UPDATE" USING L-ROW
      CALL "SLEEP-ENTITY-DATA" USING L-ROW WS-NO WS-ZERO-X WS-ZERO-Y WS-ZERO-Z
      GOBACK.

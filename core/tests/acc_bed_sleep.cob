@@ -72,6 +72,15 @@
  01 WS-E2                  PIC -(9)9.
  01 WS-E3                  PIC -(9)9.
  01 WS-EXPECT-POS          PIC X(24).
+ 01 WS-KEY2                PIC X(112).
+ 01 WS-BID2                BINARY-LONG.
+ 01 WS-BROW2               PIC X(819).
+ 01 WS-STONE               BINARY-LONG.
+ 01 WS-FLOOR-Y             BINARY-LONG.
+ 01 WS-RX                  BINARY-LONG.
+ 01 WS-RZ                  BINARY-LONG.
+ 01 WS-NX                  BINARY-LONG.
+ 01 WS-NZ                  BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE SPACES TO WS-ENV
      ACCEPT WS-ENV FROM ENVIRONMENT "CC_GENERATED_DIR"
@@ -363,6 +372,22 @@
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-AY WS-BZ WS-VOID
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-AY WS-HZ WS-VOID
+*>   Room to stand beside the bed (the spawn is on a hillside): air at the feet and the head of the cells round it, stone under them (she stands up there, lane bugsleep).
+     MOVE "stone" TO WS-KEY2
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY2 WS-BID2 WS-BROW2 WS-STATUS
+     MOVE CB-DEFAULT-STATE(WS-BID2 + 1) TO WS-STONE
+     COMPUTE WS-FLOOR-Y = WS-BY - 1
+     PERFORM VARYING WS-RX FROM -1 BY 1 UNTIL WS-RX > 1
+         PERFORM VARYING WS-RZ FROM -1 BY 1 UNTIL WS-RZ > 2
+             COMPUTE WS-NX = WS-BX + WS-RX
+             COMPUTE WS-NZ = WS-BZ + WS-RZ
+             IF WS-RX NOT = 0 OR WS-RZ < 0 OR WS-RZ > 1
+                 CALL "WORLD-SET-BLOCK" USING WS-DIM WS-NX WS-BY WS-NZ WS-VOID
+                 CALL "WORLD-SET-BLOCK" USING WS-DIM WS-NX WS-AY WS-NZ WS-VOID
+             END-IF
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-NX WS-FLOOR-Y WS-NZ WS-STONE
+         END-PERFORM
+     END-PERFORM
      MOVE 0 TO W2-SLEEPING(WS-ROW)
      MOVE 0 TO W2-SLEEP-COUNTER(WS-ROW).
 

@@ -3,8 +3,7 @@
 *> ticks, AcquirePoi (home bed of any villager, meeting bell and job site of adults, nearest free point within 48 blocks of the index), ValidateNearbyPoi (a claim on a vanished block is
 *> released), AssignProfessionFromJobSite (within 2 blocks of the claimed workstation), ResetProfession (no job site, no xp, level 1 or less) and the walk to the point of the activity by the
 *> stroll fields (EN-DEST-X, EN-DEST-Z, EN-COOLDOWN; straight line, no path finding): work to the job site (beyond 3 blocks), meet to the bell (beyond 6), rest to the bed (beyond 2); within 2
-*> blocks of its bed at rest time it sleeps (VL-SLEEP, VL-LAST-SLEPT) unless it woke within 100 ticks, and wakes when the activity is not rest (VL-LAST-WOKEN). Gaps: no sleeping pose or bed
-*> position metadata, a sleeping villager still strolls, no door handling, no panic, no hiding, no YieldJobSite or PoiCompetitorScan (a claimed site is simply not offered again), the
+*> blocks of its bed at rest time it sleeps (VL-SLEEP, VL-LAST-SLEPT) unless it woke within 100 ticks, and wakes when the activity is not rest (VL-LAST-WOKEN). A sleeping villager lies in the head half of its bed with the pose SLEEPING and the bed position sent, and the bed is occupied (sleep-vil.cob, lane bugsleep). Gaps: no door handling, no panic, no hiding, no YieldJobSite or PoiCompetitorScan (a claimed site is simply not offered again), the
 *> workstation of a villager keeps its profession for a villager with xp, secondary job sites, bed occupancy by players.
 *>
 *>   VIL-DAY-ACT USING day tick, baby (0/1), activity out    0 idle, 1 work, 2 meet, 3 rest, 4 play
@@ -125,12 +124,10 @@
  01 WS-PY                   BINARY-LONG.
  01 WS-PZ                   BINARY-LONG.
  01 WS-PD                   BINARY-LONG.
- 01 WS-SX                   FLOAT-LONG.
- 01 WS-SY                   FLOAT-LONG.
- 01 WS-SZ                   FLOAT-LONG.
- 01 WS-SYAW                 FLOAT-SHORT.
- 01 WS-SPITCH               FLOAT-SHORT.
- 01 WS-SGROUND              BINARY-LONG.
+ 01 WS-BHX                  BINARY-LONG.
+ 01 WS-BHY                  BINARY-LONG.
+ 01 WS-BHZ                  BINARY-LONG.
+ 01 WS-BOK                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -146,8 +143,7 @@
      CALL "VIL-DAY-ACT" USING WS-DAY WS-BABY WS-ACT
 *>   WakeUp (core): sleeping while REST is not the activity.
      IF VL-SLEEP(WS-SLOT) = 1 AND WS-ACT NOT = 3
-         MOVE 0 TO VL-SLEEP(WS-SLOT)
-         MOVE CW-TICKS TO VL-LAST-WOKEN(WS-SLOT)
+         CALL "VSLEEP-WAKE" USING L-ROW WS-SLOT
      END-IF
 *>   A sleeping villager lies where it started sleeping, on its bed (19 section 22.8): the stroll of the mob step neither starts nor goes on (the cooldown is held at 1 and
 *>   the destination is its own cell), so it does not wander off while it is flagged asleep and refuses a trade (22.4).
@@ -276,16 +272,13 @@
          END-IF
          IF WS-ACT = 3 AND WS-D2 <= 4 AND VL-SLEEP(WS-SLOT) = 0
              IF VL-LAST-WOKEN(WS-SLOT) = 0 OR CW-TICKS - VL-LAST-WOKEN(WS-SLOT) >= 100
-                 MOVE 1 TO VL-SLEEP(WS-SLOT)
-                 MOVE CW-TICKS TO VL-LAST-SLEPT(WS-SLOT)
-*>               startSleeping puts the villager at the bed position (22.8): the middle of the bed block, on the mattress (51 R-E3: 9 sixteenths).
-                 COMPUTE WS-SX = WS-QX + 0.5
-                 COMPUTE WS-SY = WS-QY + 0.5625
-                 COMPUTE WS-SZ = WS-QZ + 0.5
-                 MOVE EN-YAW(L-ROW) TO WS-SYAW
-                 MOVE EN-PITCH(L-ROW) TO WS-SPITCH
-                 MOVE EN-ON-GROUND(L-ROW) TO WS-SGROUND
-                 CALL "ENTITY-MOVE" USING L-ROW WS-SX WS-SY WS-SZ WS-SYAW WS-SPITCH WS-SGROUND
+*>               The bed is the head half of the claimed one (a bed with somebody in it is not slept in, 22.8); startSleeping lays the villager down in it, occupies it and sends the pose.
+                 CALL "VSLEEP-HEAD" USING EN-DIM(L-ROW) WS-QX WS-QY WS-QZ WS-BHX WS-BHY WS-BHZ WS-BOK
+                 IF WS-BOK = 1
+                     MOVE 1 TO VL-SLEEP(WS-SLOT)
+                     MOVE CW-TICKS TO VL-LAST-SLEPT(WS-SLOT)
+                     CALL "VSLEEP-START" USING L-ROW WS-BHX WS-BHY WS-BHZ
+                 END-IF
              END-IF
          END-IF
      END-IF

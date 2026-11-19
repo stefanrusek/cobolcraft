@@ -26,6 +26,9 @@
        10 VL-LAST-SLEPT      BINARY-LONG.        *> game tick of the last sleep start (0 never)
        10 VL-LAST-WOKEN      BINARY-LONG.        *> game tick of the last waking (0 never)
        10 VL-POT             BINARY-LONG.        *> 1 while a job site is claimed but the profession is not taken yet
+       10 VL-BED-X           BINARY-LONG.        *> the head half of the bed it sleeps in while VL-SLEEP is 1 (lane bugsleep)
+       10 VL-BED-Y           BINARY-LONG.
+       10 VL-BED-Z           BINARY-LONG.
        10 VL-INV             BINARY-LONG.        *> food points in the inventory (22.6; items are not modelled, only their nutrition), T8800
        10 VL-LOVE            BINARY-LONG.        *> VillagerMakeLove: the partner's entity id (0 none)
        10 VL-LOVE-AT         BINARY-LONG.        *> the tick of the birth
