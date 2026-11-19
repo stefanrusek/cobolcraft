@@ -120,10 +120,10 @@
  01 WS-DTY                 FLOAT-LONG.
  01 WS-DTZ                 FLOAT-LONG.
  01 WS-BIG                 FLOAT-LONG VALUE 1000000.
- 01 WS-ONE                 FLOAT-LONG VALUE 1.
  01 WS-TAGGED              BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-DONE                BINARY-LONG.
+ 01 WS-STEPS               BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-SX                   FLOAT-LONG.
@@ -176,32 +176,22 @@
          COMPUTE WS-TZ = (WS-CZ - L-SZ) / WS-DZ
          COMPUTE WS-DTZ = -1 / WS-DZ
      END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 200 OR WS-DONE = 1
+*>   The walk visits at most one cell more than the cells between the start and the end cell on the three axes.
+     COMPUTE WS-STEPS = FUNCTION ABS(WS-FX - WS-CX) + FUNCTION ABS(WS-FY - WS-CY) + FUNCTION ABS(WS-FZ - WS-CZ) + 1
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-STEPS OR WS-DONE = 1
          CALL "GAME-EVENT-TAGGED" USING L-DIM WS-CX WS-CY WS-CZ WS-TAG WS-TAGGED
          IF WS-TAGGED = 1
              MOVE 1 TO L-HIT WS-DONE
          END-IF
-         IF WS-CX = WS-FX AND WS-CY = WS-FY AND WS-CZ = WS-FZ
-             MOVE 1 TO WS-DONE
-         END-IF
          IF WS-DONE = 0
              EVALUATE TRUE
                  WHEN WS-TX <= WS-TY AND WS-TX <= WS-TZ
-                     IF WS-TX > WS-ONE
-                         MOVE 1 TO WS-DONE
-                     END-IF
                      ADD WS-SX TO WS-CX
                      ADD WS-DTX TO WS-TX
                  WHEN WS-TY <= WS-TZ
-                     IF WS-TY > WS-ONE
-                         MOVE 1 TO WS-DONE
-                     END-IF
                      ADD WS-SY TO WS-CY
                      ADD WS-DTY TO WS-TY
                  WHEN OTHER
-                     IF WS-TZ > WS-ONE
-                         MOVE 1 TO WS-DONE
-                     END-IF
                      ADD WS-SZ TO WS-CZ
                      ADD WS-DTZ TO WS-TZ
              END-EVALUATE

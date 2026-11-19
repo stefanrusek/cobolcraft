@@ -323,6 +323,24 @@
      PERFORM CASE-LINE
      MOVE 0 TO PL-MODE(WS-PLAYER)
      PERFORM END-SCENE
+*>   7. The end of Sniffing at a mob: the nearest_attackable mob within 6 blocks horizontally gets 35 and, with no disturbance location, one at its block.
+     PERFORM NEW-SCENE
+     COMPUTE EN-X(WS-ZOMBIE) = EN-X(WS-WARDEN) + 4
+     MOVE WS-ZCODE TO WD-NEAR(WS-W)
+     MOVE 1 TO WD-SNIFFING(WS-W)
+     MOVE 84 TO WD-SNIFF(WS-W)
+     MOVE 1 TO PL-MODE(WS-PLAYER)
+     CALL "MOB-STEP" USING WS-WARDEN
+     MOVE "the sniff ends: the mob within 6 blocks gets 35 anger" TO TL-CASE
+     MOVE 35 TO TL-EXPECTED-N
+     MOVE WD-ANGER(WS-W, WS-ZCODE) TO TL-OBSERVED-N
+     PERFORM CASE-LINE
+     MOVE "and a disturbance location at its block" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = FUNCTION INTEGER(EN-X(WS-ZOMBIE))
+     MOVE WD-DX(WS-W) TO TL-OBSERVED-N
+     PERFORM CASE-LINE
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     PERFORM END-SCENE
      STOP RUN.
 
  CASE-LINE.

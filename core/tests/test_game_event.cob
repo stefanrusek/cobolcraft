@@ -11,6 +11,7 @@
  COPY CORESTATE.
  COPY CONTENT.
  COPY STDMOBS.
+ COPY CITEMS.
  COPY WARDENSTATE.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-PROW                BINARY-LONG.
@@ -59,6 +60,15 @@
  01 WS-LZ                  FLOAT-LONG.
  01 WS-SOURCE              BINARY-LONG.
  01 WS-TICKS0              BINARY-DOUBLE.
+ 01 WS-IID                 BINARY-LONG.
+ 01 WS-IROW                PIC X(270).
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-ARROW               BINARY-LONG.
+ 01 WS-VX                  FLOAT-LONG VALUE 0.
+ 01 WS-VY                  FLOAT-LONG VALUE 0.
+ 01 WS-VZ                  FLOAT-LONG VALUE 1.
+ 01 WS-BASE                BINARY-LONG VALUE 2000.
+ 01 WS-STALE               BINARY-LONG VALUE 1000.
  PROCEDURE DIVISION.
      CALL "PT-OPEN" USING WS-SKIP
      IF WS-SKIP = 1
@@ -333,6 +343,61 @@
      MOVE WS-OCCLUDED TO TL-OBSERVED-N
      PERFORM CASE-LINE
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-BY WS-CZ WS-AIR
+*>   4. Sources. A tracker row that is not in use is no source (the event is heard as one without); a dropped wool item is a dampening source, a stone item is not and is no living entity; an arrow carries its owner.
+     PERFORM NEW-WARDEN
+     MOVE "block_destroy" TO WS-EVENT
+     CALL "GAME-EVENT" USING WS-DIM WS-X WS-Y WS-Z WS-EVENT WS-STALE WS-NONE
+     MOVE "a source row that is not in use counts as no source: heard" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = CW-TICKS + 10
+     MOVE WD-V-DUE(WS-W) TO TL-OBSERVED-N
+     PERFORM CASE-LINE
+     CALL "ENTITY-REMOVE" USING WS-WARDEN
+     MOVE "minecraft:white_wool" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-IID WS-IROW WS-STATUS
+     CALL "ENTITY-ALLOC" USING WS-ITEM
+     MOVE WS-DIM TO EN-DIM(WS-ITEM)
+     MOVE CR-LOOSE-ITEM TO EN-TYPE(WS-ITEM)
+     MOVE WS-IID TO EN-ITEM(WS-ITEM)
+     MOVE WS-X TO EN-X(WS-ITEM)
+     MOVE WS-Y TO EN-Y(WS-ITEM)
+     MOVE WS-Z TO EN-Z(WS-ITEM)
+     PERFORM NEW-WARDEN
+     CALL "GAME-EVENT" USING WS-DIM WS-X WS-Y WS-Z WS-EVENT WS-ITEM WS-NONE
+     MOVE "a dropped wool item (item tag dampens_vibrations) is not a valid source" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WD-V-DUE(WS-W) TO TL-OBSERVED-N
+     PERFORM CASE-LINE
+     CALL "ENTITY-REMOVE" USING WS-WARDEN
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-IID WS-IROW WS-STATUS
+     MOVE WS-IID TO EN-ITEM(WS-ITEM)
+     PERFORM NEW-WARDEN
+     CALL "GAME-EVENT" USING WS-DIM WS-X WS-Y WS-Z WS-EVENT WS-ITEM WS-NONE
+     MOVE "a dropped stone item is a valid source: heard, no living source" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = CW-TICKS + 10
+     MOVE WD-V-DUE(WS-W) TO TL-OBSERVED-N
+     PERFORM CASE-LINE
+     MOVE "and the source code is 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WD-V-SRC(WS-W) TO TL-OBSERVED-N
+     PERFORM CASE-LINE
+     CALL "ENTITY-REMOVE" USING WS-WARDEN
+     CALL "ENTITY-REMOVE" USING WS-ITEM
+     PERFORM NEW-WARDEN
+     CALL "ARROW-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-BASE PL-ENTITY-ID(WS-PLAYER) WS-ARROW
+     PERFORM NEW-WARDEN
+     MOVE "projectile_land" TO WS-EVENT
+     CALL "GAME-EVENT" USING WS-DIM WS-X WS-Y WS-Z WS-EVENT WS-ARROW WS-NONE
+     MOVE "an event of an arrow is heard with the arrow's owner" TO TL-CASE
+     MOVE WS-PLAYER TO TL-EXPECTED-N
+     MOVE WD-V-OWNER(WS-W) TO TL-OBSERVED-N
+     PERFORM CASE-LINE
+     MOVE "and no source of its own (not a living entity)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WD-V-SRC(WS-W) TO TL-OBSERVED-N
+     PERFORM CASE-LINE
+     CALL "ENTITY-REMOVE" USING WS-ARROW
+     CALL "ENTITY-REMOVE" USING WS-WARDEN
      STOP RUN.
 
  CHECK-LISTENS-1.
