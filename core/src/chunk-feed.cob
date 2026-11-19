@@ -165,6 +165,10 @@
  01 WS-STARTED             BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-FLAG                BINARY-LONG.
+ 01 WS-OVER                BINARY-LONG.
+ 01 WS-T0                  BINARY-DOUBLE.
+ 01 WS-T1                  BINARY-DOUBLE.
+ 01 WS-US                  BINARY-DOUBLE.
  COPY PROTO.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
@@ -186,14 +190,15 @@
      END-IF
      MOVE CF-D(WS-PLAYER) TO WS-D
      COMPUTE WS-W = 2 * WS-D + 1
-     MOVE 0 TO WS-LOOKED WS-SENT WS-STARTED
-     PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > WS-D OR WS-LOOKED >= CF-LOOKS OR WS-SENT >= CF-SENDS
-         PERFORM VARYING WS-DZ FROM 0 BY 1 UNTIL WS-DZ > WS-R * 2 OR WS-LOOKED >= CF-LOOKS OR WS-SENT >= CF-SENDS
+     MOVE 0 TO WS-LOOKED WS-SENT WS-STARTED WS-OVER
+     CALL STATIC "clock" RETURNING WS-T0
+     PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > WS-D OR WS-LOOKED >= CF-LOOKS OR WS-SENT >= CF-SENDS OR WS-OVER = 1
+         PERFORM VARYING WS-DZ FROM 0 BY 1 UNTIL WS-DZ > WS-R * 2 OR WS-LOOKED >= CF-LOOKS OR WS-SENT >= CF-SENDS OR WS-OVER = 1
              MOVE 1 TO WS-STEP
              IF WS-DZ > 0 AND WS-DZ < WS-R * 2
                  COMPUTE WS-STEP = WS-R * 2
              END-IF
-             PERFORM VARYING WS-DX FROM 0 BY WS-STEP UNTIL WS-DX > WS-R * 2 OR WS-LOOKED >= CF-LOOKS OR WS-SENT >= CF-SENDS
+             PERFORM VARYING WS-DX FROM 0 BY WS-STEP UNTIL WS-DX > WS-R * 2 OR WS-LOOKED >= CF-LOOKS OR WS-SENT >= CF-SENDS OR WS-OVER = 1
                  COMPUTE WS-X = CF-CX(WS-PLAYER) + WS-DX - WS-R
                  COMPUTE WS-Z = CF-CZ(WS-PLAYER) + WS-DZ - WS-R
                  COMPUTE WS-I = (WS-DZ - WS-R + WS-D) * WS-W + (WS-DX - WS-R) + WS-D + 1
@@ -216,6 +221,11 @@
                              CALL "CORE-SEND" USING L-ID PB-BUFFER
                              MOVE 1 TO CF-SENT(WS-PLAYER, WS-I)
                              ADD 1 TO WS-SENT
+                             CALL STATIC "clock" RETURNING WS-T1
+                             COMPUTE WS-US = WS-T1 - WS-T0
+                             IF WS-US >= CF-BUDGET-US
+                                 MOVE 1 TO WS-OVER
+                             END-IF
                          END-IF
                      END-IF
                  END-IF
