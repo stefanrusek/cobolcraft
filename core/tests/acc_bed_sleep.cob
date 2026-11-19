@@ -203,6 +203,15 @@
      COMPUTE TL-OBSERVED-N = WS-SEEN-WAKE * 10 + WS-SEEN-POSE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   STOP_SLEEPING from a player who is not in bed does nothing.
+     MOVE 0 TO WS-COMMAND
+     CALL "TEST-PLAYER-COMMAND" USING WS-CONN WS-COMMAND
+     MOVE "acceptance bed sleep: STOP_SLEEPING while awake changes nothing" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE W2-SLEEPING(WS-ROW) TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   Sleeping through the night: after 100 ticks in bed the clock moves to the morning and she is awake (the sleep tick looks at the dimension of the world, row 3 here).
      MOVE 18000 TO CW-TIME
      PERFORM SET-WHOLE-BED
