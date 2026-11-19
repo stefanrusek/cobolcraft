@@ -351,7 +351,14 @@
          MOVE 2 TO RL-UI-LAYER
          CALL "SPECIAL-ITEM-KIND" USING CLIENT-STATE WS-ITEM WS-SKIND WS-SID1 WS-SL1 WS-SID2 WS-SL2 WS-SDYE
          IF WS-SKIND = 0
-             CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+*>           A block item is its model under the model's gui display transform (item-gui.cob): the isometric cube, a half-height slab; a flat item (or one whose quads do not
+*>           fit the icon layer) is the flat icon of its sprite.
+             COMPUTE WS-GX = SM-W-X(L-W) + WS-INSET
+             COMPUTE WS-GY = SM-W-Y(L-W) + WS-INSET
+             CALL "ITEM-GUI-ICON" USING CLIENT-STATE WS-ITEM WS-GX WS-GY WS-SDRAWN
+             IF WS-SDRAWN = 0
+                 CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+             END-IF
          ELSE
 *>           A code-drawn model (a chest, a shulker box, a banner: item-special.cob) is drawn as its model, not as the icon of its particle texture.
              COMPUTE WS-GX = SM-W-X(L-W) + WS-INSET

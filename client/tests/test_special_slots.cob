@@ -109,8 +109,8 @@
      MOVE WS-DIRT TO PL-SLOT-ITEM(1)
      MOVE 0 TO RL-IC-COUNT
      CALL "UI-RENDER" USING CLIENT-STATE
-     MOVE "bugbeitems dirt in a slot is still one quad" TO TL-CASE
-     MOVE 1 TO TL-EXPECTED-N
+     MOVE "bugbeitems dirt in a slot is its cube (lane bugguiitems: 3 quads, was one flat quad)" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = RL-IC-COUNT / 6
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The hand holding the chest.

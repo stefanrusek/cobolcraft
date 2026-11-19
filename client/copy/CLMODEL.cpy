@@ -26,6 +26,11 @@
 *>  rotation x y z (degrees), translation x y z (sixteenths) and scale x y z.
     05 MR-FP-PRESENT         PIC 9.
     05 MR-FP                 FLOAT-SHORT OCCURS 9 TIMES.
+*>  The display transform for the context gui (08 section 5.6, 12 section 8.1; DISPLAY-PARSE-GUI) as MR-FP, and the model's gui_light (08 section 5.1: the nearest model of the chain
+*>  that names one; 0 none named, 1 front, 2 side).
+    05 MR-GUI-PRESENT        PIC 9.
+    05 MR-GUI                FLOAT-SHORT OCCURS 9 TIMES.
+    05 MR-GUI-LIGHT          BINARY-LONG.
     05 MR-SLOT-COUNT         BINARY-LONG.
     05 MR-SLOT OCCURS 16 TIMES.
        10 MS-NAME            PIC X(32).

@@ -1154,6 +1154,20 @@
        10 IS-FP-VAL          FLOAT-SHORT OCCURS 18432 TIMES.
        10 IS-FACE-DONE       PIC 9 OCCURS 2048 TIMES.
        10 IS-FACE-SPRITE     BINARY-LONG OCCURS 12288 TIMES.
+*>     The GUI icon of a block item whose model has elements (ITEM-GUI-BAKE, item-gui.cob; 12 section 8.1): the quads of its model after the gui display transform that face the viewer,
+*>     far to near, in a pool shared by the items: item i has IS-GUI-COUNT(i + 1) quads from IG-QUAD number IS-GUI-FIRST(i + 1) (0 = none: the flat icon of the item's sprite is
+*>     drawn). IG-USED quads of the pool are taken. A corner is in GUI pixels of the 16 pixel icon cell (x right, y down), u and v are sprite units 0 to 16.
+       10 IS-GUI-FIRST       BINARY-LONG OCCURS 2048 TIMES.
+       10 IS-GUI-COUNT       BINARY-LONG OCCURS 2048 TIMES.
+       10 IG-USED            BINARY-LONG.
+       10 IG-QUAD OCCURS 8192 TIMES.
+          15 IG-SPRITE       BINARY-LONG.
+          15 IG-BRIGHT       FLOAT-SHORT.
+          15 IG-CORNER OCCURS 4 TIMES.
+             20 IG-X         FLOAT-SHORT.
+             20 IG-Y         FLOAT-SHORT.
+             20 IG-U         FLOAT-SHORT.
+             20 IG-V         FLOAT-SHORT.
 *>  ---- per-state tables (client/src/state-tables.cob): built once at load from the content set ----
     05 ST-STATE.
        10 ST-READY           PIC 9.          *> 1 = built (0 after CL-INIT; the mesher builds on demand)
