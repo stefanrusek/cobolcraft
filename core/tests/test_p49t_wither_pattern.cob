@@ -44,6 +44,7 @@
  01 WS-AXIS                BINARY-LONG.
  01 WS-TEXT                PIC X(1024).
  01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-TEXT-LEAD            PIC X(1100).
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE "N" TO TL-MODE
@@ -113,7 +114,10 @@
      PERFORM CHECK-N
      CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
      MOVE 0 TO WS-O
-     INSPECT WS-TEXT TALLYING WS-O FOR ALL " 47"
+*>   The packet ids are separated by blanks: a blank in front of the text counts a first Level Event (47) too (it was not first before the game event lane p49w).
+     MOVE SPACES TO WS-TEXT-LEAD
+     STRING " " FUNCTION TRIM(WS-TEXT) DELIMITED BY SIZE INTO WS-TEXT-LEAD
+     INSPECT WS-TEXT-LEAD TALLYING WS-O FOR ALL " 47"
      MOVE "acceptance US15 21§7.1 nine block break level events (2001), one per cell, the air cells too" TO WS-CASE
      MOVE 9 TO WS-E
      PERFORM CHECK-N

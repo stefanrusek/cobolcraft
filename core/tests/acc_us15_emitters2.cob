@@ -554,8 +554,10 @@
      PERFORM CHECK-EVENTS
      MOVE 0 TO WS-IDX
      MOVE WS-PROW TO WS-E-SRC
-     MOVE 205550 TO WS-E-Y
-     MOVE 10500 TO WS-E-Z
+*>   The position after the second step includes the acceleration of a free rocket (lane p49t, 21 section 8.7: x 1.15 horizontally and +0.04 upward a tick), which the
+*>   first version of this case did not have: y 205590 and z 10499 in the units of the case.
+     MOVE 205590 TO WS-E-Y
+     MOVE 10499 TO WS-E-Z
      MOVE "14.2.4 the explode at the rocket's position (the owner)" TO WS-WHY
      PERFORM CHECK-AT
      PERFORM CHECK-RESET

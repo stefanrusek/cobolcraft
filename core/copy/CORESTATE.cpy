@@ -658,6 +658,7 @@
        10 EN-IN-WATER        BINARY-LONG.        *> 1 while the entity was in water at its last pass (wasTouchingWater)
        10 EN-BORN            BINARY-DOUBLE.      *> the game tick at which the row was allocated (tickCount = CW-TICKS - EN-BORN)
        10 EN-FALL-FLY        BINARY-LONG.        *> gliding ticks counted by the elytra_glide emitter (fallFlyTicks), 0 when not gliding
+       10 EN-GROUP-VARIANT   BINARY-LONG.        *> the first fish of a tropical fish group: the variant the other members of the group take (AQUA-PACK, lane p49d; it held it in EN-LOVE-CAUSE, which is a player row)
 
 *> What each player's client has been sent (US3-5): VW-SEEN(player row)(entity row:1) is "1" while
 *> that client has the entity (Add Entity sent, Remove Entities not yet).

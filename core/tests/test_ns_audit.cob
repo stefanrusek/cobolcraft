@@ -384,6 +384,13 @@
 
      MOVE "ns audit @e[type=minecraft:item] counts the two ground items, @e[type=!minecraft:item] the two players, and summon names a standard mob minecraft:zombie"
          TO TL-CASE
+*>   The falling blocks of the gravity cases above are still falling: an entity that is no LivingEntity is selected whatever its health (45-8 section 1), so
+*>   they would count as non-items; the case counts the players only, with the falling blocks gone.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-PLAYER(WS-I) = 0 AND EN-TYPE(WS-I) NOT = CR-LOOSE-ITEM
+             CALL "ENTITY-REMOVE" USING WS-I
+         END-IF
+     END-PERFORM
      MOVE 40.5 TO WS-X-F
      MOVE 90 TO WS-Y-F
      MOVE 40.5 TO WS-Z-F

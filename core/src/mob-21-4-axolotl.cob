@@ -215,12 +215,12 @@
          GOBACK
      END-IF
      IF SM-KEY(WS-M) = "tropical_fish"
-         IF L-SIZE > 0 AND EN-LOVE-CAUSE(L-FIRST) > 0
-             MOVE EN-LOVE-CAUSE(L-FIRST) TO EN-VARIANT(L-ROW)
+         IF L-SIZE > 0 AND EN-GROUP-VARIANT(L-FIRST) > 0
+             MOVE EN-GROUP-VARIANT(L-FIRST) TO EN-VARIANT(L-ROW)
              CALL "STDMOB-VARIANT-SEND" USING L-ROW
          END-IF
-         IF EN-LOVE-CAUSE(L-FIRST) = 0 AND EN-WOOL(L-ROW) = 1
-             MOVE EN-VARIANT(L-ROW) TO EN-LOVE-CAUSE(L-FIRST)
+         IF EN-GROUP-VARIANT(L-FIRST) = 0 AND EN-WOOL(L-ROW) = 1
+             MOVE EN-VARIANT(L-ROW) TO EN-GROUP-VARIANT(L-FIRST)
          END-IF
 *>       isMaxGroupSizeReached is true for a tropical fish that is no school member: a lone fish ends the pack (44-1 RQ-1.14).
          IF EN-WOOL(L-ROW) = 0

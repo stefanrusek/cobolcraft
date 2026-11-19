@@ -601,6 +601,14 @@
      CALL "AQUA-GROW" USING L-ROW
      MOVE EN-YAW(L-ROW) TO WS-YAW
 *>   Air: a fish or squid 300 and 20 more (drown), the axolotl 6000 and 20 (dry out, 44 part 7 section 8.4), the guardian none (it breathes under water and flops on land, 21 section 4.8).
+*>   A dolphin's moistness refills in water or in rain (isInWaterOrRain, 44 part 7 section 4.2): rain wets it only for the moistness, not for swimming and gravity.
+     MOVE WS-WET TO WS-MOIST
+     IF WS-WET = 0 AND SM-KEY(L-M) = "dolphin"
+         CALL "WEATHER-RAINING" USING EN-DIM(L-ROW) WS-RAIN
+         IF WS-RAIN = 1
+             CALL "WEATHER-EXPOSED" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-HEIGHT WS-MOIST
+         END-IF
+     END-IF
      MOVE 320 TO WS-LIMIT
      MOVE 300 TO WS-RESET
      IF SM-KIND(L-M) = 5
@@ -610,7 +618,7 @@
      IF SM-KIND(L-M) = 6
          MOVE 0 TO WS-LIMIT
      END-IF
-     IF WS-WET = 1
+     IF WS-MOIST = 1
          MOVE 0 TO EN-DRY(L-ROW)
      ELSE
          ADD 1 TO EN-DRY(L-ROW)

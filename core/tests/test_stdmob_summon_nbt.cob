@@ -74,8 +74,8 @@
      CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
 
      MOVE "acceptance US15 /summon with an NBT: a mob that is not a table mob still has no NBT support" TO TL-CASE
-     MOVE "summon minecraft:wither 8.0 64.0 5.0 {NoAI:1b}" TO WS-LINE
-     MOVE "entity.not_summonable(minecraft:wither)" TO WS-EXPECTED
+     MOVE "summon minecraft:fishing_bobber 8.0 64.0 5.0 {NoAI:1b}" TO WS-LINE
+     MOVE "entity.not_summonable(minecraft:fishing_bobber)" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      STOP RUN.

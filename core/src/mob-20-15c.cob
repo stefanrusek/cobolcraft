@@ -84,6 +84,9 @@
                                  MOVE 0 TO L-CODE
                              END-IF
                          END-PERFORM
+*>               Bat.isPushable is false (the bat has a mob row since lane p49f).
+                     WHEN WS-KEY = "bat"
+                         MOVE 0 TO L-CODE
                      WHEN WS-KEY = "warden"
                          CALL "WD-FIND" USING EN-ID(L-ROW) WS-ZERO WS-SLOT
                          IF WS-SLOT > 0

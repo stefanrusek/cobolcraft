@@ -63,8 +63,9 @@
      MOVE 100 TO TL-EXPECTED-N
      MOVE SM-FOLLOW(WS-M) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance 44-6§9.1 ghast spawn rule 12 (checkGhastSpawnRules)" TO TL-CASE
-     MOVE 12 TO TL-EXPECTED-N
+*>   The ghast rule is code 18 in the merged tables: lane p49d took 12 to 15 for the aquatic rules.
+     MOVE "acceptance 44-6§9.1 ghast spawn rule 18 (checkGhastSpawnRules)" TO TL-CASE
+     MOVE 18 TO TL-EXPECTED-N
      MOVE SM-SPAWN(WS-M) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE WS-X = WS-X0 + 3

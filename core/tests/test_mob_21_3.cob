@@ -178,7 +178,8 @@
      MOVE "acceptance US15 21§3.2 and 4.11 tropical fish below the band in a biome with the tag passes (water below and above)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM RULE
-     COMPUTE WS-Y = WS-SEA - 30
+*>   The top of column C is sea - 28 (the stone at sea - 27 closes it, since the sky-light fixture of lane bugregress); lane p49d had a lower top.
+     COMPUTE WS-Y = WS-SEA - 28
      MOVE "acceptance US15 21§3.2 tropical fish in the tagged biome still needs a water block above (rock above the column top)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      PERFORM RULE

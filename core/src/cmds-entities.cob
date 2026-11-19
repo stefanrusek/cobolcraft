@@ -412,6 +412,7 @@
  01 WS-HAS-NBT             BINARY-LONG.
  01 WS-NODE                BINARY-LONG.
  01 WS-HEALTH-NODE         BINARY-LONG.
+ 01 WS-K-HEALTH            PIC X(16) VALUE "Health".
  01 WS-FIND-KEY            PIC X(64).
  01 WS-FIND-LENGTH         BINARY-LONG.
  01 WS-POS-LENGTH          BINARY-LONG VALUE 3.
@@ -533,6 +534,16 @@
                  CALL "SUMMON-SPAWN" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-ROOT WS-NEW
              WHEN WS-ROOT > 0
                  CALL "SUMMON-LOAD" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-ROOT WS-NEW
+*>               A mob loaded from an NBT without Health has its full health (16 section 5.8): the loader's default for a saved entity is none.
+                 IF WS-NEW > 0 AND WS-STD > 0
+                     CALL "NBX-FIND-N" USING WS-ROOT WS-K-HEALTH WS-HEALTH-NODE
+                     IF WS-HEALTH-NODE = 0
+                         CALL "STDMOB-INDEX" USING EN-TYPE(WS-NEW) WS-STD-ROW
+                         IF WS-STD-ROW > 0
+                             MOVE SM-HEALTH(WS-STD-ROW) TO EN-HEALTH(WS-NEW)
+                         END-IF
+                     END-IF
+                 END-IF
              WHEN OTHER
                  CALL "MOB-SPAWN" USING BS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-NEW
                  IF WS-STD > 0

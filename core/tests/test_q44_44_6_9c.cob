@@ -32,6 +32,7 @@
  01 WS-MIN                 BINARY-LONG.
  01 WS-MAX                 BINARY-LONG.
  01 WS-N                   BINARY-LONG.
+ 01 WS-CUBE-YAW            FLOAT-SHORT VALUE 0.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE "N" TO TL-MODE
@@ -53,9 +54,10 @@
      MOVE 0 TO EN-TARGET(WS-S)
 *>   On the ground the control counts the delay down and the cube stands still.
      MOVE 5 TO EN-HOP(WS-S)
-     MOVE 0.1 TO WS-HX
-     MOVE 0.1 TO WS-HZ
-     CALL "CUBE-HOP" USING WS-S WS-M WS-HX WS-HZ
+*>   The control adds its acceleration to the caller's forward input (the move of the hop, lane bugmobmove): between jumps it adds none, so a zero input stays zero.
+     MOVE 0 TO WS-HX
+     MOVE 0 TO WS-HZ
+     CALL "CUBE-HOP" USING WS-S WS-M WS-HX WS-HZ WS-CUBE-YAW
      MOVE "acceptance 44-6§9.3 jumpDelay counts down on the ground" TO TL-CASE
      MOVE 4 TO TL-EXPECTED-N
      MOVE EN-HOP(WS-S) TO TL-OBSERVED-N
@@ -76,13 +78,15 @@
      MOVE 0 TO EN-ON-GROUND(WS-S)
      MOVE 0.1 TO WS-HX
      MOVE 0.1 TO WS-HZ
-     CALL "CUBE-HOP" USING WS-S WS-M WS-HX WS-HZ
+     CALL "CUBE-HOP" USING WS-S WS-M WS-HX WS-HZ WS-CUBE-YAW
      MOVE "acceptance 44-6§9.3 in the air the delay stays" TO TL-CASE
      MOVE 4 TO TL-EXPECTED-N
      MOVE EN-HOP(WS-S) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   In the air the control adds 0.02 x the speed (0.4 for size 2) along the yaw (any yaw: the wander yaw is drawn): a push of 0.008 in all.
      MOVE 0 TO WS-FLAG
-     IF WS-HX = 0.1 AND WS-HZ = 0.1
+     COMPUTE WS-N ROUNDED = FUNCTION SQRT((WS-HX - 0.1) ** 2 + (WS-HZ - 0.1) ** 2) * 100000
+     IF WS-N = 800
          MOVE 1 TO WS-FLAG
      END-IF
      MOVE "acceptance 44-6§9.3 and the course" TO TL-CASE
@@ -92,7 +96,7 @@
 *>   At 0 the cube jumps (0.42) and takes a new delay of 10 to 29; the draws over 100 jumps cover that range and stay in it.
      MOVE 1 TO EN-ON-GROUND(WS-S)
      MOVE 1 TO EN-HOP(WS-S)
-     CALL "CUBE-HOP" USING WS-S WS-M WS-HX WS-HZ
+     CALL "CUBE-HOP" USING WS-S WS-M WS-HX WS-HZ WS-CUBE-YAW
      COMPUTE WS-N ROUNDED = EN-VY(WS-S) * 1000
      MOVE "acceptance 44-6§9.3 the jump velocity is 0.42" TO TL-CASE
      MOVE 420 TO TL-EXPECTED-N
@@ -101,9 +105,10 @@
      MOVE 1000 TO WS-MIN
      MOVE 0 TO WS-MAX
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 100
+         ADD 1 TO CW-TIME
          MOVE 1 TO EN-HOP(WS-S)
          MOVE 1 TO EN-ON-GROUND(WS-S)
-         CALL "CUBE-HOP" USING WS-S WS-M WS-HX WS-HZ
+         CALL "CUBE-HOP" USING WS-S WS-M WS-HX WS-HZ WS-CUBE-YAW
          IF EN-HOP(WS-S) < WS-MIN
              MOVE EN-HOP(WS-S) TO WS-MIN
          END-IF
@@ -124,9 +129,10 @@
      MOVE 1000 TO WS-MIN
      MOVE 0 TO WS-MAX
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 100
+         ADD 1 TO CW-TIME
          MOVE 1 TO EN-HOP(WS-S)
          MOVE 1 TO EN-ON-GROUND(WS-S)
-         CALL "CUBE-HOP" USING WS-S WS-M WS-HX WS-HZ
+         CALL "CUBE-HOP" USING WS-S WS-M WS-HX WS-HZ WS-CUBE-YAW
          IF EN-HOP(WS-S) < WS-MIN
              MOVE EN-HOP(WS-S) TO WS-MIN
          END-IF
@@ -145,9 +151,10 @@
      MOVE 1 TO EN-VARIANT(WS-S)
      MOVE 0 TO WS-MAX
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 50
+         ADD 1 TO CW-TIME
          MOVE 1 TO EN-HOP(WS-S)
          MOVE 1 TO EN-ON-GROUND(WS-S)
-         CALL "CUBE-HOP" USING WS-S WS-M WS-HX WS-HZ
+         CALL "CUBE-HOP" USING WS-S WS-M WS-HX WS-HZ WS-CUBE-YAW
          IF EN-HOP(WS-S) > WS-MAX
              MOVE EN-HOP(WS-S) TO WS-MAX
          END-IF
@@ -169,9 +176,10 @@
      MOVE 1000 TO WS-MIN
      MOVE 0 TO WS-MAX
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 100
+         ADD 1 TO CW-TIME
          MOVE 1 TO EN-HOP(WS-G)
          MOVE 1 TO EN-ON-GROUND(WS-G)
-         CALL "CUBE-HOP" USING WS-G WS-GM WS-HX WS-HZ
+         CALL "CUBE-HOP" USING WS-G WS-GM WS-HX WS-HZ WS-CUBE-YAW
          IF EN-HOP(WS-G) < WS-MIN
              MOVE EN-HOP(WS-G) TO WS-MIN
          END-IF
@@ -196,9 +204,10 @@
      MOVE 1000 TO WS-MIN
      MOVE 0 TO WS-MAX
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 100
+         ADD 1 TO CW-TIME
          MOVE 1 TO EN-HOP(WS-G)
          MOVE 1 TO EN-ON-GROUND(WS-G)
-         CALL "CUBE-HOP" USING WS-G WS-GM WS-HX WS-HZ
+         CALL "CUBE-HOP" USING WS-G WS-GM WS-HX WS-HZ WS-CUBE-YAW
          IF EN-HOP(WS-G) < WS-MIN
              MOVE EN-HOP(WS-G) TO WS-MIN
          END-IF
@@ -230,10 +239,11 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 5 TO EN-HOP(WS-S)
      MOVE EN-X(WS-S) TO WS-HX
-     MOVE EN-Y(WS-S) TO WS-HZ
+     MOVE EN-Z(WS-S) TO WS-HZ
      CALL "STDMOB-STEP" USING WS-S
+*>   The slime keeps the small velocity of its last air ticks (the air control of the hop adds 0.02 x speed a tick, lane bugmobmove); a walk would be 0.2 or more.
      MOVE 0 TO WS-FLAG
-     IF EN-X(WS-S) = WS-HX AND EN-Y(WS-S) = WS-HZ
+     IF FUNCTION ABS(EN-X(WS-S) - WS-HX) < 0.02 AND FUNCTION ABS(EN-Z(WS-S) - WS-HZ) < 0.02
          MOVE 1 TO WS-FLAG
      END-IF
      MOVE "acceptance 44-6§9.3 a slime waiting for its jump does not walk toward the player" TO TL-CASE
