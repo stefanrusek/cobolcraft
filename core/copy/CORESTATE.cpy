@@ -583,6 +583,9 @@
        10 EN-LEFTY           BINARY-LONG.        *> the left-handed flag (mob flag 2; finalizeSpawn rolls it, 7.1 step 2; saved as LeftHanded)
        10 EN-FOLLOW-BONUS    BINARY-LONG.        *> the random_spawn_bonus modifier of follow_range in millionths (7.1 step 1; ADD_MULTIPLIED_BASE), 0 = none yet
        10 EN-FROZEN          BINARY-LONG.        *> ticksFrozen (18 section 2.6 step 11): +1 a tick in powder snow, -2 otherwise, 140 = fully frozen
+       10 EN-ARROWS          BINARY-LONG.        *> the stuck-arrow count (metadata 12; 18 section 2.3 step 3): +1 for an arrow that hurt it, -1 when EN-ARROW-TIMER runs out
+       10 EN-ARROW-TIMER     BINARY-LONG.        *> removeArrowTime: 20 x (30 - count) ticks, counting down
+       10 EN-ARROWS-SENT     BINARY-LONG.        *> the stuck-arrow count last sent to the viewers
        10 EN-HP-SENT         BINARY-LONG.        *> the health (thousandths) last sent to the viewers as metadata 9 (18 section 9.3); 0 = nothing sent yet
        10 EN-AFFLICT         BINARY-LONG.        *> conversion tracker (20 section 3.8): ticks the afflicted condition has held (skeleton in powder snow: 140 to convert)
        10 EN-CONVERTING      BINARY-LONG.        *> 1 while converting (the synched flag); EN-CONVERT-LEFT counts the 300 ticks down

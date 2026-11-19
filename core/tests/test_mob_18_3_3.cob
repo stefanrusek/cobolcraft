@@ -115,6 +115,18 @@
      MOVE 7 TO WS-E
      MOVE EN-HEALTH(WS-ROW) TO WS-O
      PERFORM CHECK-N
+*>   A mob at 1 health in a cactus cell dies of it in the environment tick (which then ends).
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-AIR
+     MOVE "minecraft:cactus" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     MOVE 1 TO EN-HEALTH(WS-ROW)
+     MOVE 0 TO EN-HURT(WS-ROW) EN-HEALTH-MILLI(WS-ROW)
+     CALL "M182-ENV-TICK" USING WS-ROW
+     MOVE "acceptance US15 18§3.3 Collision, push and block effects: a cactus kills a mob of 1 health in the environment tick" TO WS-CASE
+     MOVE 0 TO WS-E
+     MOVE EN-HEALTH(WS-ROW) TO WS-O
+     PERFORM CHECK-N
      STOP RUN.
 
  TICK-COW.
