@@ -38,6 +38,9 @@
  01 WS-ZS                  BINARY-LONG VALUE 12.
  01 WS-KEY-W               BINARY-LONG VALUE CC-KEY-W.
  01 WS-KEY-SPACE           BINARY-LONG VALUE CC-KEY-SPACE.
+ 01 WS-KEY-SPRINT          BINARY-LONG VALUE CC-KEY-LEFT-CONTROL.
+ 01 WS-KEY-SHIFT           BINARY-LONG VALUE CC-KEY-LEFT-SHIFT.
+ 01 WS-JUMP                BINARY-LONG.
  01 WS-DOWN                BINARY-LONG VALUE CC-EV-KEY-DOWN.
  01 WS-UP                  BINARY-LONG VALUE CC-EV-KEY-UP.
  01 WS-TP0                 BINARY-LONG.
@@ -110,8 +113,8 @@
      CALL "CV-UNTIL-PLAY" USING CONVH WS-ALICE WS-JOINED
      MOVE 10 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
-     PERFORM VARYING WS-FEATURE FROM 1 BY 1 UNTIL WS-FEATURE > 12
-         PERFORM VARYING WS-RUN FROM 0 BY 1 UNTIL WS-RUN > 1
+     PERFORM VARYING WS-FEATURE FROM 1 BY 1 UNTIL WS-FEATURE > 13
+         PERFORM VARYING WS-RUN FROM 0 BY 1 UNTIL WS-RUN > 4
              IF WS-ONLY = 0 OR WS-ONLY = WS-FEATURE
                  PERFORM RUN-FEATURE
              END-IF
@@ -145,11 +148,19 @@
          CALL "BS-CORE-SHAPE" USING WS-TX WS-TY WS-TZ WS-SHAPE-S WS-STATE-S
          DISPLAY "  cell client state " WS-STATE-C " shape " WS-SHAPE-C " core state " WS-STATE-S " shape " WS-SHAPE-S
      END-IF
+     COMPUTE WS-JUMP = FUNCTION MOD(WS-RUN, 2)
+     IF WS-RUN = 4
+         MOVE 0 TO WS-JUMP
+         CALL "CV-KEY-SET" USING CONVH WS-ALICE WS-KEY-SHIFT WS-DOWN
+     END-IF
+     IF WS-RUN = 2 OR WS-RUN = 3
+         CALL "CV-KEY-SET" USING CONVH WS-ALICE WS-KEY-SPRINT WS-DOWN
+     END-IF
      CALL "CV-KEY-SET" USING CONVH WS-ALICE WS-KEY-W WS-DOWN
-     IF WS-RUN = 1
+     IF WS-JUMP = 1
          CALL "CV-KEY-SET" USING CONVH WS-ALICE WS-KEY-SPACE WS-DOWN
      END-IF
-     PERFORM VARYING WS-FRAME FROM 1 BY 1 UNTIL WS-FRAME > 80
+     PERFORM VARYING WS-FRAME FROM 1 BY 1 UNTIL WS-FRAME > 130
          CALL "CV-STEP" USING CONVH
          SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
          IF PL-Z < WS-LAST-Z - 0.001
@@ -159,7 +170,8 @@
              COMPUTE WS-F1 = PL-Y
              COMPUTE WS-F2 = PL-Z
              MOVE PL-ON-GROUND TO WS-D1
-             DISPLAY "  frame " WS-FRAME " y " WS-F1 " z " WS-F2 " ground " WS-D1
+             MOVE PL-POSE TO WS-D2
+             DISPLAY "  frame " WS-FRAME " y " WS-F1 " z " WS-F2 " ground " WS-D1 " pose " WS-D2
          END-IF
          MOVE PL-Z TO WS-LAST-Z
      END-PERFORM
@@ -167,29 +179,48 @@
      CALL "BS-TELEPORTS" USING WS-TP1
      COMPUTE WS-TELEPORTS = WS-TP1 - WS-TP0
      CALL "CV-KEY-SET" USING CONVH WS-ALICE WS-KEY-W WS-UP
-     IF WS-RUN = 1
+     IF WS-JUMP = 1
          CALL "CV-KEY-SET" USING CONVH WS-ALICE WS-KEY-SPACE WS-UP
+     END-IF
+     IF WS-RUN = 2 OR WS-RUN = 3
+         CALL "CV-KEY-SET" USING CONVH WS-ALICE WS-KEY-SPRINT WS-UP
+     END-IF
+     IF WS-RUN = 4
+         CALL "CV-KEY-SET" USING CONVH WS-ALICE WS-KEY-SHIFT WS-UP
      END-IF
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
      MOVE 0 TO WS-PASSED
      IF WS-END-Z > WS-ZS + WS-DEPTH + 0.5
          MOVE 1 TO WS-PASSED
      END-IF
-*>   Walking alone gets over a step of at most 0.6; a higher one needs the jump. With the jump held everything gets over.
-     MOVE 1 TO WS-WANT
-     IF WS-RUN = 0 AND WS-NEEDS-JUMP = 1
-         MOVE 0 TO WS-WANT
-     END-IF
+*>   What vanilla allows (WS-NEEDS-JUMP: 0 nothing needed, 1 a jump, 2 sneaking): walking or sprinting alone gets over a step of at most 0.6 and
+*>   through a gap 1.8 high; a jump gets over a higher step; the crouching box (1.5 high) is the only one that fits a gap of 1.5.
+     MOVE 0 TO WS-WANT
+     EVALUATE TRUE
+*>       Sneaking stops at the edge of the stairs' platform (a drop of 2: the edge clamp of 53 section 5.3), so the stairs are not crossed.
+         WHEN WS-RUN = 4
+             IF WS-NEEDS-JUMP NOT = 1 AND WS-FEATURE NOT = 3
+                 MOVE 1 TO WS-WANT
+             END-IF
+         WHEN WS-JUMP = 1
+             IF WS-NEEDS-JUMP NOT = 2
+                 MOVE 1 TO WS-WANT
+             END-IF
+         WHEN OTHER
+             IF WS-NEEDS-JUMP = 0
+                 MOVE 1 TO WS-WANT
+             END-IF
+     END-EVALUATE
      MOVE WS-TELEPORTS TO WS-D1
      MOVE WS-BACK TO WS-D2
      MOVE WS-PASSED TO WS-D3
      MOVE WS-RUN TO WS-D4
      MOVE WS-WANT TO WS-D5
      COMPUTE WS-F1 = WS-END-Z
-     DISPLAY "bugstep " FUNCTION TRIM(WS-NAME-OF) " jump " WS-RUN " teleports " FUNCTION TRIM(WS-D1)
+     DISPLAY "bugstep " FUNCTION TRIM(WS-NAME-OF) " run " WS-RUN " teleports " FUNCTION TRIM(WS-D1)
          " backward " FUNCTION TRIM(WS-D2) " passed " FUNCTION TRIM(WS-D3) " end z " WS-F1
      MOVE SPACES TO TL-CASE
-     STRING "acceptance bugstep given a " FUNCTION TRIM(WS-NAME-OF) " in front of the Player when W is held (jump held: "
+     STRING "acceptance bugstep given a " FUNCTION TRIM(WS-NAME-OF) " in front of the Player when W is held (run 0 walk, 1 jump, 2 sprint, 3 sprint jump, 4 sneak: "
          FUNCTION TRIM(WS-D4) ") then the core sends no teleport, the Player never moves backwards and gets over it as vanilla allows"
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "teleports 0 backward 0 passed ok" TO TL-EXPECTED
@@ -224,7 +255,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BS-BUILD.
-*> USING feature (1 to 12), first z of the feature (BINARY-LONG), depth out (cells along z), needs jump out (1 when the highest step is more than 0.6),
+*> USING feature (1 to 13), first z of the feature (BINARY-LONG), depth out (cells along z), needs out (1 when the highest step is more than 0.6: a jump; 2 when the gap is 1.5 high: sneaking),
 *> name out (PIC X(16)): the floor of the core world (feet at y -60) cleared of the earlier feature in x 2 to 7, z first to first + 5, y -60 to -57, then
 *> the feature set across x 2 to 7 on the floor from the first z on.
  DATA DIVISION.
@@ -316,6 +347,11 @@
              MOVE "chest" TO WS-KEY
              MOVE "chest" TO L-NAME
              MOVE 1 TO L-JUMP
+         WHEN 13
+             MOVE "oak_slab" TO WS-KEY
+             MOVE "type=top,waterlogged=false" TO WS-PAIRS
+             MOVE "low ceiling" TO L-NAME
+             MOVE 2 TO L-JUMP
          WHEN OTHER
              MOVE "flower_pot" TO WS-KEY
              MOVE "flower pot" TO L-NAME
@@ -324,6 +360,9 @@
      MOVE -60 TO WS-FLOORY
      IF L-FEATURE >= 5 AND L-FEATURE <= 7
          MOVE -61 TO WS-FLOORY
+     END-IF
+     IF L-FEATURE = 13
+         MOVE -59 TO WS-FLOORY
      END-IF
 *>   The stairs are a staircase of two steps then a flat top: stair, stone under a stair, stone and stone.
      IF L-FEATURE = 3
