@@ -77,6 +77,7 @@
  01 WS-TNT-BEFORE          BINARY-LONG.
  01 WS-ITEM2               BINARY-LONG.
  01 WS-HITS                BINARY-LONG.
+ 01 WS-HITS                BINARY-LONG.
  01 WS-KEYN                PIC X(48).
  01 WS-EXP-TMP             PIC X(160).
  01 WS-ECOUNT              BINARY-LONG.
