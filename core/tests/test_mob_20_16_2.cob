@@ -226,11 +226,11 @@
      COMPUTE TL-OBSERVED-N ROUNDED = WS-VZ * 100
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The jump vector refuses a target straight above the breeze (no horizontal distance) and one too high for the angle (the denominator of v2 is negative).
-     MOVE 0.5 TO WS-QX
+     MOVE 0 TO WS-QX
      MOVE 64 TO WS-QY
      MOVE 0 TO WS-QZ
      MOVE 40 TO WS-ANGLE
-     CALL "BREEZE-JUMP-VECTOR" USING WS-PX WS-PY WS-PZ WS-PX WS-QY WS-PZ WS-FOLLOW WS-GRAVITY WS-ANGLE WS-OK WS-VX WS-VY WS-VZ
+     CALL "BREEZE-JUMP-VECTOR" USING WS-PX WS-PY WS-PZ WS-QX WS-QY WS-QZ WS-FOLLOW WS-GRAVITY WS-ANGLE WS-OK WS-VX WS-VY WS-VZ
      MOVE "test mob 20 16: a jump target straight above the breeze gives no vector" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-OK TO TL-OBSERVED-N
