@@ -2079,21 +2079,31 @@
      MOVE 2 TO WS-OCX
      MOVE 5 TO WS-OCY
      MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of short_grass: the shape stays (the model moves)" TO WS-CASE
+     PERFORM CHECK-OFS
      MOVE -183333 TO WS-EXP-X
      MOVE -133333 TO WS-EXP-Y
      MOVE 50000 TO WS-EXP-Z
-     MOVE "T4506 offset of short_grass at (2, 0)" TO WS-CASE
-     PERFORM CHECK-OFS
+     MOVE "T4506 model offset of short_grass at (2, 0)" TO WS-CASE
+     PERFORM CHECK-MOFS
      MOVE "fern" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2 WS-P3
      MOVE 2 TO WS-OCX
      MOVE 5 TO WS-OCY
      MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of fern: the shape stays (the model moves)" TO WS-CASE
+     PERFORM CHECK-OFS
      MOVE -183333 TO WS-EXP-X
      MOVE -133333 TO WS-EXP-Y
      MOVE 50000 TO WS-EXP-Z
-     MOVE "T4506 offset of fern at (2, 0)" TO WS-CASE
-     PERFORM CHECK-OFS
+     MOVE "T4506 model offset of fern at (2, 0)" TO WS-CASE
+     PERFORM CHECK-MOFS
      MOVE "bamboo_sapling" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2 WS-P3
      MOVE 3 TO WS-OCX
@@ -2121,21 +2131,211 @@
      MOVE 4 TO WS-OCX
      MOVE 5 TO WS-OCY
      MOVE 2 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of small_dripleaf: the shape stays (the model moves)" TO WS-CASE
+     PERFORM CHECK-OFS
      MOVE 16667 TO WS-EXP-X
      MOVE -20000 TO WS-EXP-Y
      MOVE -183333 TO WS-EXP-Z
-     MOVE "T4506 offset of small_dripleaf at (4, 2)" TO WS-CASE
-     PERFORM CHECK-OFS
+     MOVE "T4506 model offset of small_dripleaf at (4, 2)" TO WS-CASE
+     PERFORM CHECK-MOFS
      MOVE "tall_seagrass" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2 WS-P3
      MOVE "half=lower" TO WS-P1
      MOVE -3 TO WS-OCX
      MOVE 5 TO WS-OCY
      MOVE -2 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of tall_seagrass: the shape stays (the model moves)" TO WS-CASE
+     PERFORM CHECK-OFS
      MOVE -116667 TO WS-EXP-X
      MOVE 0 TO WS-EXP-Y
      MOVE 150000 TO WS-EXP-Z
-     MOVE "T4506 offset of tall_seagrass at (-3, -2)" TO WS-CASE
+     MOVE "T4506 model offset of tall_seagrass at (-3, -2)" TO WS-CASE
+     PERFORM CHECK-MOFS
+     MOVE "bamboo" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 116667 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE -16667 TO WS-EXP-Z
+     MOVE "R4 shape offset of bamboo at (1, 0): the shape moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "mangrove_propagule" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 116667 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE -16667 TO WS-EXP-Z
+     MOVE "R4 shape offset of mangrove_propagule at (1, 0): the shape moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "open_eyeblossom" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 116667 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE -16667 TO WS-EXP-Z
+     MOVE "R4 shape offset of open_eyeblossom at (1, 0): the shape moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "closed_eyeblossom" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 116667 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE -16667 TO WS-EXP-Z
+     MOVE "R4 shape offset of closed_eyeblossom at (1, 0): the shape moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "wither_rose" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 116667 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE -16667 TO WS-EXP-Z
+     MOVE "R4 shape offset of wither_rose at (1, 0): the shape moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "sulfur_spike" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 116667 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE -16667 TO WS-EXP-Z
+     MOVE "R4 shape offset of sulfur_spike at (1, 0): the shape moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "tall_grass" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of tall_grass: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "large_fern" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of large_fern: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "rose_bush" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of rose_bush: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "sunflower" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of sunflower: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "lilac" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of lilac: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "peony" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of peony: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "pitcher_plant" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of pitcher_plant: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "warped_roots" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of warped_roots: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "crimson_roots" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of crimson_roots: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "nether_sprouts" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of nether_sprouts: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "hanging_roots" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of hanging_roots: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "tall_seagrass" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of tall_seagrass: only the model moves" TO WS-CASE
      PERFORM CHECK-OFS
      MOVE "stone" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2 WS-P3
@@ -2162,11 +2362,16 @@
      MOVE 5 TO WS-OCX
      MOVE 64 TO WS-OCY
      MOVE 1 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of tall_dry_grass: the shape stays (the model moves)" TO WS-CASE
+     PERFORM CHECK-OFS
      MOVE -116667 TO WS-EXP-X
      MOVE -133333 TO WS-EXP-Y
      MOVE 16667 TO WS-EXP-Z
-     MOVE "T4506 offset of tall_dry_grass at (5, 1)" TO WS-CASE
-     PERFORM CHECK-OFS
+     MOVE "T4506 model offset of tall_dry_grass at (5, 1)" TO WS-CASE
+     PERFORM CHECK-MOFS
      MOVE "poppy" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2 WS-P3
      MOVE -3 TO WS-OCX
@@ -2591,6 +2796,20 @@
  CHECK-OFS.
      PERFORM FIND-STATE
      PERFORM CHECK-OFS-STATE.
+
+ CHECK-MOFS.
+     PERFORM FIND-STATE
+     CALL "BSH-MODEL-OFFSET" USING WS-STATE WS-OCX WS-OCY WS-OCZ WS-OX WS-OY WS-OZ
+     MOVE WS-EXP-X TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OX * 1000000
+     MOVE WS-CASE TO TL-CASE
+     PERFORM ASSERT-N
+     MOVE WS-EXP-Y TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OY * 1000000
+     PERFORM ASSERT-N
+     MOVE WS-EXP-Z TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OZ * 1000000
+     PERFORM ASSERT-N.
 
  CHECK-OFS-STATE.
      CALL "BSH-OFFSET" USING WS-STATE WS-OCX WS-OCY WS-OCZ WS-OX WS-OY WS-OZ

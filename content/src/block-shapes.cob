@@ -37,8 +37,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-ADD-BOXES.
-*> USING box list text (PIC X(160): "x1 y1 z1 x2 y2 z2" items separated by ","; pixels, decimals allowed), key (BINARY-LONG 0 to 3: the
-*> yaw, 51 section 2.1; 4 up and 5 down, 51 section 2.2), mirror (BINARY-LONG 1: y becomes 16 - y first): appends the boxes, turned, to BSC-SHAPE (at most 12).
+*> USING box list text (PIC X(240): "x1 y1 z1 x2 y2 z2" items separated by ","; pixels, decimals allowed), key (BINARY-LONG 0 to 3: the
+*> yaw, 51 section 2.1; 4 up and 5 down, 51 section 2.2), mirror (BINARY-LONG 1: y becomes 16 - y first): appends the boxes, turned, to BSC-SHAPE (at most BSH-MAX-BOXES, 16).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTBSHAPE.
@@ -51,12 +51,12 @@
  01 WS-V                   BINARY-LONG OCCURS 6 TIMES.
  01 WS-N                   BINARY-LONG OCCURS 6 TIMES.
  LINKAGE SECTION.
- 01 L-TEXT                 PIC X(160).
+ 01 L-TEXT                 PIC X(240).
  01 L-KEY                  BINARY-LONG.
  01 L-MIRROR               BINARY-LONG.
  PROCEDURE DIVISION USING L-TEXT L-KEY L-MIRROR.
      MOVE 1 TO WS-POINTER
-     PERFORM UNTIL WS-POINTER > 160
+     PERFORM UNTIL WS-POINTER > 240
          MOVE SPACES TO WS-ITEM
          UNSTRING L-TEXT DELIMITED BY "," INTO WS-ITEM WITH POINTER WS-POINTER
          IF WS-ITEM NOT = SPACES
@@ -304,8 +304,8 @@
  01 WS-MIRROR              BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-NO-MIRROR           BINARY-LONG VALUE 0.
- 01 WS-POST                PIC X(160).
- 01 WS-ARM                 PIC X(160).
+ 01 WS-POST                PIC X(240).
+ 01 WS-ARM                 PIC X(240).
  01 WS-SIDES.
     05 FILLER              PIC X(24) VALUE "north".
     05 FILLER              PIC X(24) VALUE "east".
@@ -323,25 +323,25 @@
  01 WS-FACE-TABLE REDEFINES WS-FACES.
     05 WS-FACE-NAME        PIC X(24) OCCURS 6 TIMES.
  01 WS-FACE-BOXES.
-    05 FILLER              PIC X(160) VALUE "0 0 0 16 16 1".
-    05 FILLER              PIC X(160) VALUE "15 0 0 16 16 16".
-    05 FILLER              PIC X(160) VALUE "0 0 15 16 16 16".
-    05 FILLER              PIC X(160) VALUE "0 0 0 1 16 16".
-    05 FILLER              PIC X(160) VALUE "0 15 0 16 16 16".
-    05 FILLER              PIC X(160) VALUE "0 0 0 16 1 16".
+    05 FILLER              PIC X(240) VALUE "0 0 0 16 16 1".
+    05 FILLER              PIC X(240) VALUE "15 0 0 16 16 16".
+    05 FILLER              PIC X(240) VALUE "0 0 15 16 16 16".
+    05 FILLER              PIC X(240) VALUE "0 0 0 1 16 16".
+    05 FILLER              PIC X(240) VALUE "0 15 0 16 16 16".
+    05 FILLER              PIC X(240) VALUE "0 0 0 16 1 16".
  01 WS-FACE-BOX-TABLE REDEFINES WS-FACE-BOXES.
-    05 WS-FACE-BOX         PIC X(160) OCCURS 6 TIMES.
+    05 WS-FACE-BOX         PIC X(240) OCCURS 6 TIMES.
  01 WS-CHORUS-ARMS.
-    05 FILLER              PIC X(160) VALUE "3 3 0 13 13 8".
-    05 FILLER              PIC X(160) VALUE "8 3 3 16 13 13".
-    05 FILLER              PIC X(160) VALUE "3 3 8 13 13 16".
-    05 FILLER              PIC X(160) VALUE "0 3 3 8 13 13".
-    05 FILLER              PIC X(160) VALUE "3 8 3 13 16 13".
-    05 FILLER              PIC X(160) VALUE "3 0 3 13 8 13".
+    05 FILLER              PIC X(240) VALUE "3 3 0 13 13 8".
+    05 FILLER              PIC X(240) VALUE "8 3 3 16 13 13".
+    05 FILLER              PIC X(240) VALUE "3 3 8 13 13 16".
+    05 FILLER              PIC X(240) VALUE "0 3 3 8 13 13".
+    05 FILLER              PIC X(240) VALUE "3 8 3 13 16 13".
+    05 FILLER              PIC X(240) VALUE "3 0 3 13 8 13".
  01 WS-CHORUS-TABLE REDEFINES WS-CHORUS-ARMS.
-    05 WS-CHORUS-ARM       PIC X(160) OCCURS 6 TIMES.
+    05 WS-CHORUS-ARM       PIC X(240) OCCURS 6 TIMES.
  01 WS-NAME                PIC X(24).
- 01 WS-TEXT                PIC X(160).
+ 01 WS-TEXT                PIC X(240).
  LINKAGE SECTION.
  01 L-WHICH                BINARY-LONG.
  01 L-CODE                 PIC X(24).
@@ -567,14 +567,14 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-ADD-TEXT.
-*> USING rule text (PIC X(160): N none, F the full cube, else a box list), key (BINARY-LONG 0 to 3): appends the boxes, turned by the key.
+*> USING rule text (PIC X(240): N none, F the full cube, else a box list), key (BINARY-LONG 0 to 3): appends the boxes, turned by the key.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-NO-MIRROR           BINARY-LONG VALUE 0.
- 01 WS-FULL                PIC X(160) VALUE "0 0 0 16 16 16".
+ 01 WS-FULL                PIC X(240) VALUE "0 0 0 16 16 16".
  LINKAGE SECTION.
- 01 L-TEXT                 PIC X(160).
+ 01 L-TEXT                 PIC X(240).
  01 L-KEY                  BINARY-LONG.
  PROCEDURE DIVISION USING L-TEXT L-KEY.
      EVALUATE L-TEXT
@@ -596,16 +596,16 @@
  WORKING-STORAGE SECTION.
  COPY CTBSHAPE.
  COPY CTBSRULE.
- 01 WS-TEXT                PIC X(160).
+ 01 WS-TEXT                PIC X(240).
  01 WS-KEY                 BINARY-LONG.
  01 WS-NAME                PIC X(24).
  01 WS-VALUE               PIC X(16).
  01 WS-A-TEXT              PIC X(12).
  01 WS-B-TEXT              PIC X(12).
  01 WS-HEIGHT              BINARY-LONG.
- 01 WS-WALL                PIC X(160).
- 01 WS-FLOOR               PIC X(160).
- 01 WS-CEILING             PIC X(160).
+ 01 WS-WALL                PIC X(240).
+ 01 WS-FLOOR               PIC X(240).
+ 01 WS-CEILING             PIC X(240).
  01 WS-FACE                PIC X(16).
  LINKAGE SECTION.
  01 L-WHICH                BINARY-LONG.
@@ -718,6 +718,7 @@
  01 WS-LENGTH              BINARY-LONG.
  01 WS-KEY2                PIC X(40).
  01 WS-OFS                 BINARY-LONG.
+ 01 WS-SOFS                BINARY-LONG.
  01 WS-OHITS               BINARY-LONG.
  01 WS-LENGTH2             BINARY-LONG.
  01 WS-COND1               PIC X(40).
@@ -761,6 +762,7 @@
      END-PERFORM
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > BSH-MAX-STATES
          MOVE 0 TO BSH-COLL(WS-S) BSH-OUT(WS-S) BSH-CLIMB(WS-S) BSH-SLIP(WS-S) BSH-OFS(WS-S) BSH-CTX(WS-S)
+         MOVE 0 TO BSH-SOFS(WS-S) BSH-INT(WS-S) BSH-OCC(WS-S) BSH-DAMP(WS-S) BSH-LFLG(WS-S)
      END-PERFORM
      INITIALIZE BSH-SHAPE(1) BSC-SHAPE
      MOVE 1 TO BSC-N
@@ -858,6 +860,16 @@
              WHEN "small_dripleaf" WHEN "minecraft:small_dripleaf"
                  MOVE 4 TO WS-OFS
          END-EVALUATE
+*>       Only the shapes of the flower family, bamboo, the speleothems and the mangrove propagule move by the offset (51 section 1.4, R4); the
+*>       model of every other offset block moves alone.
+         MOVE 0 TO WS-SOFS
+         IF WS-OFS > 0
+             EVALUATE FUNCTION TRIM(CT-BR-CLASS)
+                 WHEN "FlowerBlock" WHEN "WitherRoseBlock" WHEN "EyeblossomBlock" WHEN "BambooStalkBlock" WHEN "BambooSaplingBlock"
+                 WHEN "MangrovePropaguleBlock" WHEN "PointedDripstoneBlock" WHEN "SulfurSpikeBlock"
+                     MOVE 1 TO WS-SOFS
+             END-EVALUATE
+         END-IF
          IF WS-NEEDS = 1
              CALL "BSH-PROPS-SPLIT" USING CT-BR-PROPS
          END-IF
@@ -904,6 +916,7 @@
              END-IF
              MOVE WS-SLIPPERY TO BSH-SLIP(WS-S)
              MOVE WS-OFS TO BSH-OFS(WS-S)
+             MOVE WS-SOFS TO BSH-SOFS(WS-S)
              IF CT-BR-CLASS = "LightBlock"
                  MOVE 1 TO BSH-CTX(WS-S)
              END-IF
@@ -1197,7 +1210,7 @@
  END PROGRAM BSH-RAY.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. BSH-OFFSET.
+ PROGRAM-ID. BSH-MODEL-OFFSET.
 *> USING state id, cell x, y, z (BINARY-LONG), dx, dy, dz out (FLOAT-LONG, blocks): the model offset of a block of an offset kind (51 section 1.4) at that cell; 0 for any
 *> other state. h = (int)(x 3129871) sign extended, XOR z 116129781 (64 bits), XOR y with y = 0 (both kinds take the seed at y 0, so the cell's own y is unused); seed =
 *> (h h 42317861 + h 11) >> 16 (64 bit wrap, arithmetic shift); dx = clamp(((seed AND 15) / 15 - 0.5) 0.5, -m, m), dz the same from (seed >> 8) AND 15, and for the XYZ
@@ -1272,6 +1285,31 @@
              COMPUTE L-DY = (WS-F - 1.0) * 0.1
          ELSE
              COMPUTE L-DY = (WS-F - 1.0) * 0.2
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BSH-MODEL-OFFSET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BSH-OFFSET.
+*> USING state id, cell x, y, z (BINARY-LONG), dx, dy, dz out (FLOAT-LONG, blocks): the offset that moves the SHAPES of the block (51 section 1.4, R4): the model offset of the flower family,
+*> bamboo stalk and sapling, speleothems and mangrove propagule (BSH-SOFS 1), 0 for every other state (the other offset blocks move only their drawn model, BSH-MODEL-OFFSET).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-DX                   FLOAT-LONG.
+ 01 L-DY                   FLOAT-LONG.
+ 01 L-DZ                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-STATE L-X L-Y L-Z L-DX L-DY L-DZ.
+     MOVE 0 TO L-DX L-DY L-DZ
+     IF L-STATE > 0 AND L-STATE < BSH-MAX-STATES
+         IF BSH-SOFS(L-STATE + 1) = 1
+             CALL "BSH-MODEL-OFFSET" USING L-STATE L-X L-Y L-Z L-DX L-DY L-DZ
          END-IF
      END-IF
      GOBACK.
