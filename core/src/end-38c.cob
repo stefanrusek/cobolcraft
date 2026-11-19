@@ -1,7 +1,8 @@
 *> The features of the End (docs/protocol/38-end.md section 8, with the engines of 35-worldgen-features-7 sections 8 to 10; T1735, T1736): the spike list
 *> and the obsidian pillars with cage and crystal, the platform, the island, the chorus plant, the podium and the gateway, each as a program that writes
 *> blocks through one level: mode 0 is the level of the chunk being generated (FL-OPEN of feat-level.cob: a write outside its column is discarded), mode 1
-*> is the world of the dimension DIM (WORLD-SET-BLOCK, for the arrival platform and the dragon fight). Blocks are found by key and property pairs in the
+*> is the world of the dimension DIM (WORLD-SET-BLOCK, for the arrival platform, which is built before the player's chunks go out), mode 2 is the same world through BLOCK-CHANGE (the
+*> dragon fight: the podium, the gateways and the regenerated pillars are built while players look at the chunks, so the viewers must be sent the changes). Blocks are found by key and property pairs in the
 *> open block table (BLOCKS-STATE-OF). The random source of a feature is the WorldgenRandom of ores.cob (WGR-*) the caller seeded (35-1 section 5).
 *>
 *> Entry points:
@@ -49,11 +50,14 @@
  01 L-Z                    BINARY-LONG.
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-MODE L-DIM L-X L-Y L-Z L-STATE.
-     IF L-MODE = 1
-         CALL "WORLD-SET-BLOCK" USING L-DIM L-X L-Y L-Z L-STATE
-     ELSE
-         CALL "FL-SET-STATE" USING L-X L-Y L-Z L-STATE WS-FLAGS WS-OK
-     END-IF
+     EVALUATE L-MODE
+         WHEN 1
+             CALL "WORLD-SET-BLOCK" USING L-DIM L-X L-Y L-Z L-STATE
+         WHEN 2
+             CALL "BLOCK-CHANGE" USING L-DIM L-X L-Y L-Z L-STATE
+         WHEN OTHER
+             CALL "FL-SET-STATE" USING L-X L-Y L-Z L-STATE WS-FLAGS WS-OK
+     END-EVALUATE
      GOBACK.
  END PROGRAM END-PUT.
 
@@ -69,7 +73,7 @@
  01 L-Z                    BINARY-LONG.
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-MODE L-DIM L-X L-Y L-Z L-STATE.
-     IF L-MODE = 1
+     IF L-MODE = 1 OR L-MODE = 2
          CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z L-STATE
      ELSE
          CALL "FL-GET-STATE" USING L-X L-Y L-Z L-STATE
