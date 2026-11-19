@@ -1,6 +1,6 @@
 *> Acceptance test (002-lane-p49b; docs/protocol/21 sections 3.1 and 3.2): spawn placement of the mobs of document 21. The natural spawn rule of each species row (SM-SPAWN) is the
 *> predicate section 3.1 names: the surface water animal rule (7: cod, salmon, pufferfish, squid, dolphin), the tropical fish rule (8), the glow squid rule (9), the any-light
-*> monster rule (10: blaze, zoglin, zombified piglin, magma cube), the ghast rule (12: not Peaceful, nextInt(20) = 0, then the floor test), the piglin and hoglin floor-only rule
+*> monster rule (10: blaze, zoglin, zombified piglin, magma cube), the ghast rule (18, since lane p49d took 12 to 15 for the aquatic rules: not Peaceful, nextInt(20) = 0, then the floor test), the piglin and hoglin floor-only rule
 *> (11) and the monster rule (2: skeleton, wither skeleton). The strider (IN_LAVA) and the shulker have no natural rule here. Live: a ghast on a stone floor passes about one try in 20
 *> and never on Peaceful.
  IDENTIFICATION DIVISION.
@@ -38,7 +38,7 @@
     05 FILLER              PIC X(32) VALUE "zoglin           10".
     05 FILLER              PIC X(32) VALUE "zombified_piglin 10".
     05 FILLER              PIC X(32) VALUE "magma_cube       10".
-    05 FILLER              PIC X(32) VALUE "ghast            12".
+    05 FILLER              PIC X(32) VALUE "ghast            18".
     05 FILLER              PIC X(32) VALUE "piglin           11".
     05 FILLER              PIC X(32) VALUE "hoglin           11".
     05 FILLER              PIC X(32) VALUE "skeleton         02".

@@ -121,10 +121,10 @@
      MOVE 1 TO WS-E
      MOVE WS-COWS TO WS-O
      PERFORM CHECK-N
-*>   an entity type that has no mob row: the round rolls a delay and stops
+*>   an entity type that has no mob row (the wither; the bat has a row since lane p49f): the round rolls a delay and stops
      PERFORM RESET-SPAWNER
-     MOVE "minecraft:bat" TO WS-SET-ID
-     MOVE 13 TO WS-SET-LEN
+     MOVE "minecraft:wither" TO WS-SET-ID
+     MOVE 16 TO WS-SET-LEN
      CALL "BE7-SET-ENTITY-ID" USING WS-BE WS-SET-ID WS-SET-LEN
      MOVE 0 TO BE-XI(WS-BE, 1)
      MOVE 500 TO BE-XI(WS-BE, 2) BE-XI(WS-BE, 3)

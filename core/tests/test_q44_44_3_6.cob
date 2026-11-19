@@ -63,17 +63,18 @@
      MOVE PB-POS TO WS-ROOT
      MOVE "Entities" TO WS-PATH
      CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-TEXT
-     MOVE "VillagerData:{type:minecraft:savanna,profession:minecraft:farmer,level:3},VillagerDataFinalized:1,FoodLevel:7,Xp:80," TO WS-WANT
+*>   The villager keys are written by VILLAGER6-NBT-WRITE (lane p49k, 45-6 section 7), which puts the Gossips between FoodLevel and Xp; MOB-VILLAGER-WRITE of this lane is no longer called.
+     MOVE "VillagerData:{type:minecraft:savanna,profession:minecraft:farmer,level:3},VillagerDataFinalized:1,FoodLevel:7," TO WS-WANT
      MOVE 0 TO WS-A
      INSPECT WS-TEXT TALLYING WS-A FOR ALL FUNCTION TRIM(WS-WANT)
-     MOVE "acceptance US15 44-3§3.2 the villager's saved fields: VillagerData, VillagerDataFinalized, FoodLevel, Xp in the documented order" TO WS-CASE
+     MOVE "acceptance US15 44-3§3.2 the villager's saved fields: VillagerData, VillagerDataFinalized, FoodLevel in the documented order" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
-     MOVE "LastRestock:12345,LastGossipDecay:24000,RestocksToday:2" TO WS-WANT
+     MOVE "Xp:80,LastRestock:12345,LastGossipDecay:24000,RestocksToday:2" TO WS-WANT
      MOVE 0 TO WS-A
      INSPECT WS-TEXT TALLYING WS-A FOR ALL FUNCTION TRIM(WS-WANT)
-     MOVE "acceptance US15 44-3§3.2 LastRestock, LastGossipDecay and RestocksToday follow" TO WS-CASE
+     MOVE "acceptance US15 44-3§3.2 Xp, LastRestock, LastGossipDecay and RestocksToday follow" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-A TO WS-O
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O

@@ -202,6 +202,14 @@
      MOVE PL-HEALTH(WS-BOB) TO WS-HEALTH0
      MOVE 0 TO WS-DX
      MOVE 5 TO WS-DZ
+*>   The two cows of the earlier cases are taken away: a live one standing in the line (at the player's z + 3, the player's own cell) would be the entity the arrow meets after the
+*>   player (hits are by order of the entity table), and the cow behind them would not be reached.
+     IF EN-USED(WS-COW) = 1
+         CALL "ENTITY-REMOVE" USING WS-COW
+     END-IF
+     IF EN-USED(WS-COW2) = 1
+         CALL "ENTITY-REMOVE" USING WS-COW2
+     END-IF
      CALL "RT-SPAWN-MOB" USING WS-PLAYER WS-KEY WS-DX WS-DZ WS-COW
      MOVE 100 TO EN-HEALTH(WS-COW)
      MOVE 1 TO WS-PIERCE-LEVEL

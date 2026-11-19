@@ -289,7 +289,8 @@
      MOVE EN-ID(WS-ROW) TO WS-ID
      CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
      MOVE SPACES TO WS-EXPECT
-     STRING "1 101(" FUNCTION TRIM(WS-ID) ";16=I1)" DELIMITED BY SIZE INTO WS-EXPECT
+*>   The health pair of lane p49a (STDMOB-HP-PAIR, metadata 9 of a new mob, 18 section 9.3) comes after the species data: the bat has 6 health.
+     STRING "1 101(" FUNCTION TRIM(WS-ID) ";16=I1) 101(" FUNCTION TRIM(WS-ID) ";9=F6.00)" DELIMITED BY SIZE INTO WS-EXPECT
      MOVE "A" TO TL-MODE
      MOVE "acceptance US15 minecraft:bat 21§8.10 a new bat is sent resting: Add Entity then metadata 16 = 1" TO TL-CASE
      MOVE WS-EXPECT TO TL-EXPECTED

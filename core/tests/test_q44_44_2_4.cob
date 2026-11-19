@@ -175,8 +175,10 @@
      COMPUTE WS-O = BE-XI(WS-BE, 1) * 1000000 + BE-TIME2(WS-BE)
      PERFORM CHECK-N
      CALL "TEST-DRAIN-IDS" USING PL-CONN(WS-PLAYER) WS-IDS
+*>   The active state of the block gives off light, so the Light Updates (49) of the changed chunk may come with the Level Event (47): since lane bugtorch the chunk's light sources
+*>   are counted, the state change is seen by the light engine. Exactly one Level Event, and no other kind of packet than the light updates, must reach the player.
      MOVE 0 TO WS-TALLY
-     IF WS-IDS = "47"
+     IF WS-IDS = "47" OR WS-IDS(1:6) = "47 49x"
          MOVE 1 TO WS-TALLY
      END-IF
      MOVE "acceptance US15 44-2§4 Trial spawner: the detection sends level event 3013 (exactly one Level Event packet, id 47, reaches the player)" TO WS-CASE

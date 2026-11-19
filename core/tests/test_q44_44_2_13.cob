@@ -10,6 +10,7 @@
  COPY CORESTATE.
  COPY CONTENT.
  COPY VILPOIX.
+ COPY VILPOI.
  COPY CUSTOMSP.
  COPY XORO.
  01 WS-CASE                PIC X(240).
@@ -120,7 +121,7 @@
      END-IF
      PERFORM CHECK-N
 
-*>   a village: a lattice of points of interest every 16 blocks covers the ring
+*>   a village: a lattice of claimed points of interest every 16 blocks covers the ring
      PERFORM VARYING WS-A FROM -4 BY 1 UNTIL WS-A > 4
          PERFORM VARYING WS-B FROM -4 BY 1 UNTIL WS-B > 4
              COMPUTE WS-I = (WS-A + 4) * 9 + WS-B + 5
@@ -129,6 +130,13 @@
              COMPUTE PX-X(WS-I) = WS-PX + WS-A * 16
              MOVE WS-PY TO PX-Y(WS-I)
              COMPUTE PX-Z(WS-I) = WS-PZ + WS-B * 16
+*>           isVillage reads the occupied records (lane p49h, Q3-LEVEL: a point of interest counts when a villager holds it, PXI-TICKETS): every bed is claimed.
+             MOVE 1 TO PO-OWNER(WS-I)
+             MOVE WS-DIM TO PO-DIM(WS-I)
+             MOVE PX-X(WS-I) TO PO-X(WS-I)
+             MOVE PX-Y(WS-I) TO PO-Y(WS-I)
+             MOVE PX-Z(WS-I) TO PO-Z(WS-I)
+             MOVE 2 TO PO-KIND(WS-I)
          END-PERFORM
      END-PERFORM
 

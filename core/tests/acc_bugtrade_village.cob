@@ -107,12 +107,16 @@
      CALL "CHUNKS-FOLLOW" USING WS-CONN
      PERFORM DRAIN
      PERFORM CENSUS-VILLAGERS
+*>   Since lane p49h a villager with no claimed job site, no experience and level 1 loses its profession on the brain beat (44-3 section 2.2, as in the game): the generated
+*>   villagers here claim no job site in 600 ticks, so each villager the village is made with is given the experience of a trade on the tick it appears (KEEP-PROFESSIONS)
+*>   and keeps its generated profession while the window is tried.
      PERFORM VARYING WS-TICK FROM 1 BY 1 UNTIL WS-TICK > 600
          IF FUNCTION MOD(WS-TICK, 20) = 1
              MOVE 6000 TO CW-TIME
          END-IF
          MOVE 999999999 TO CN-KA-DEADLINE(WS-CONN)
          CALL "TEST-TICKS" USING WS-ONE
+         PERFORM KEEP-PROFESSIONS
          IF FUNCTION MOD(WS-TICK, 20) = 0
              PERFORM DRAIN
          END-IF
@@ -243,6 +247,22 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
+ KEEP-PROFESSIONS.
+     PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
+         IF EN-USED(WS-ROW) = 1 AND WS-ROW NOT = PL-ENTITY-ROW(WS-PLAYER)
+             CALL "STDMOB-INDEX" USING EN-TYPE(WS-ROW) WS-S
+             IF WS-S > 0
+                 IF SM-KEY(WS-S) = "villager"
+                     CALL "VL-FIND" USING EN-ID(WS-ROW) WS-NO WS-SLOT
+                     IF WS-SLOT > 0
+                         IF VL-PROF(WS-SLOT) NOT = "none" AND VL-PROF(WS-SLOT) NOT = "nitwit"
+                             MOVE 1 TO VL-XP(WS-SLOT)
+                         END-IF
+                     END-IF
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM.
  CENSUS-VILLAGERS.
      MOVE 0 TO WS-CENSUS WS-WITH-PROF WS-PICK-ID
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT

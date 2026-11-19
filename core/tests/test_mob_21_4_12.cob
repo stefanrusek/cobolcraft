@@ -122,8 +122,20 @@
      MOVE WS-OK TO TL-OBSERVED-N
      PERFORM CHECK-N
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-CELL WS-BZ WS-SAND
-     COMPUTE WS-CELL = WS-SEA + 8
+*>   Since lane genlimits (T33320) the sky light of a cell is read with the sideways spread (LIGHT-SKY-SPREAD): a cell under a roof with open sides is lit by the sky beside it, as in
+*>   the game. A cell shut in by a roof and four walls of sand stays dark.
+     COMPUTE WS-CELL = WS-SEA + 3
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-CELL WS-BZ WS-SAND
+     ADD 1 TO WS-BX
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-SAND
+     SUBTRACT 2 FROM WS-BX
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-SAND
+     ADD 1 TO WS-BX
+     ADD 1 TO WS-BZ
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-SAND
+     SUBTRACT 2 FROM WS-BZ
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-SAND
+     ADD 1 TO WS-BZ
      CALL "MS6-RULE-AT" USING XR-STATE WS-DIM WS-M WS-BX WS-BY WS-BZ WS-REASON WS-OK
      MOVE "acceptance US15 19§1.4 turtle: under a solid roof the raw brightness is not above 8: fails" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N

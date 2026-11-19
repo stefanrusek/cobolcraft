@@ -279,7 +279,8 @@
      MOVE EN-ID(WS-ROW) TO WS-ID
      CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
      MOVE SPACES TO WS-EXPECT
-     STRING "1 101(" FUNCTION TRIM(WS-ID) ";18=Z0,19=Z0)" DELIMITED BY SIZE INTO WS-EXPECT
+*>   The health pair of lane p49a (STDMOB-HP-PAIR, metadata 9 of a new mob, 18 section 9.3) comes after the species data: the happy ghast has 20 health.
+     STRING "1 101(" FUNCTION TRIM(WS-ID) ";18=Z0,19=Z0) 101(" FUNCTION TRIM(WS-ID) ";9=F20.00)" DELIMITED BY SIZE INTO WS-EXPECT
      MOVE "A" TO TL-MODE
      MOVE "acceptance US15 minecraft:happy_ghast 21§8.11 a new ghast is sent with metadata 18 and 19 false" TO TL-CASE
      MOVE WS-EXPECT TO TL-EXPECTED

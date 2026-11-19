@@ -185,6 +185,9 @@
          MOVE WS-Y TO EN-Y(WS-ROW)
          MOVE WS-Z TO EN-Z(WS-ROW)
          ADD 1 TO CW-TICKS
+*>       The stroll roll of the walk goal is hashed from the entity id and the world time (RNG-HASH, STDMOB-STEP): the clock moves with the ticks, else this silverfish
+*>       would stroll on every roll (a walk cooldown that never reaches 0 at the merge test) or on none, by the one value of a fixed time.
+         ADD 1 TO CW-TIME
          CALL "MOB-STEP" USING WS-ROW
      END-PERFORM
      MOVE "acceptance US15 20§9.1 merge with stone discards the silverfish" TO TL-CASE
