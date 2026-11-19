@@ -699,6 +699,7 @@ New gaps:
     alternative: the skin is selectable only when the generated pack is present).
 12. **Built-in sky art.** Recipes for the procedural sun, eight moon phases and clouds image of the cobolcraft world
     type are not specified (6.1).
+    Pointer: the vanilla sky art structure, the renderer's requirements on the images and the cloud rules are read in protocol 12 §3.7.
 13. **Weather skin mechanism.** The standard renderer picks rain or snow by biome (14 §8.2); how the cobolcraft
     kinds `drizzle` and `hailstorm` select a texture, built-in or skin, is not specified (6.2).
 14. **GUI id list.** The list of 6.4 stops at the HUD, inventory, crafting and options screens; the ids of the GAP-19

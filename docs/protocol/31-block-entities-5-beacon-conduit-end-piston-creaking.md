@@ -251,7 +251,7 @@ Constants: `SPAWN_TIME = 200`, `COOLDOWN_TIME = 40`, `ATTENTION_INTERVAL = 2400`
 
 So `findExitPosition` (flag false) skips the centre column and rejects bedrock, while `findOrCreateValidTeleportPos` step 4 (flag true, radius 16) includes the centre column and accepts bedrock.
 
-The data features are `worldgen/feature/end_gateway_return` (`exact: false`) and `end_gateway_delayed` (`exact: true`, `exit: [100, 50, 0]`).
+The data features are `worldgen/feature/end_gateway_return` (`type end_gateway`, `exact: true`, `exit: [100, 50, 0]`: the return gateway, placed by the placed feature of the same name around the outer islands, teleports to exactly that exit position) and `worldgen/feature/end_gateway_delayed` (`type end_gateway`, `exact: false`, no `exit`: the gateway the dragon fight spawns, 21 section 6.4.5, which searches near its target, `getPortalPosition` above). *Corrected in round R2: an earlier version of this paragraph gave the two files' `exact` values and the exit the other way round; the values above are read from the two JSON files in the jar and agree with 35 part 7 and 38 section 15 item 7.*
 
 ---
 

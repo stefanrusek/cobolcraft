@@ -6,7 +6,7 @@
 | Does not cover | The jigsaw assembly algorithm itself (36-3), the template system and processor engines (36-2), placement and starts (36-1), terrain adaptation numbers (36-1 section 9), placed-feature engines (35), loot-table evaluation (26), the villager brain and trades (19, 44-3), raids and patrols (20 section 14). Those are cited by section and not repeated; only the parts of them that this family exercises are restated, as values or consequences |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact already recorded in [README.md](README.md); version 26.3, protocol 777, data version 5023) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`) of `JigsawStructure`, `JigsawPlacement` and its `Placer`, the pool element classes, `StructureTemplatePool`, `PoiTypes`, `PoiType`, `PoiManager`, `PoiSection`, `WorldGenRegion`, `ServerLevel`, `PatrollingMonster`, `Raider`, `Pillager`, `AgeableMob`, `Villager`; and of the JSON data and structure NBT inside the jar (read with a small read-only NBT parser, no execution of the artifact). A value is read from the artifact unless it is marked "(inferred)" or "(recalled, not verified)"; every mark is listed in the Open questions |
-| Round | RS20, part 9 (GAP-12b and the structure part of GAP-18 of [../design/README.md](../design/README.md)) |
+| Round | RS20, part 9 (GAP-12b and the structure part of GAP-18 of [../design/README.md](../design/README.md)); corrected or extended in round R1 (clean-room round 2026-11-18): section 2.2, section 12.1 and Open question 1. |
 | Operator decisions | Standard Minecraft content is the target. A tool extracts the data pack and resource pack from the user's jar, so data rows (structure JSON, structure sets, template pools, processor lists, biome tags, loot tables, structure NBT) are **not** tabulated here: this document gives the schema use, the semantics, the engines' consequences and aggregate profiles for validation (counts and weight sums, never the rows). Code-defined content is given completely. Ticket CC-0001, Decisions "World scope" and "Vanilla assets and data" |
 
 Class names in backticks say where a fact was read; they are not the design. References: "36-n section m" is part n of the structures
@@ -88,11 +88,11 @@ and the encoder writes the integer form exactly when the two components are equa
 (`DimensionType.Y_SIZE`, 4064, 36-3 section 2.4). The six definitions here use the integer form, so their limit volume is
 **80 blocks horizontally and 80 blocks vertically** around the stub position (section 5 gives the box).
 
-> Discrepancy with 36-3: 36-3 section 3.1 (field table), section 13.2 and worked example 18.2 treat the integer form as horizontal 80 with
+> Resolved in round R1 (36-3 corrected: its worked example 18.2 and Open question 13 now state vertical = horizontal for the integer form; its section 13.2 already did). The earlier discrepancy was that 36-3 treated the integer form as horizontal 80 with
 > vertical 4064. The bytecode (constructor `MaxDistance(int)` calls the two-argument constructor with the same value twice; the integer-form
 > decoder is that constructor) says vertical = 80 for the integer form. Effect: a piece whose box leaves `[stub.y - 80, stub.y + 80 + 1)`
 > cannot be placed. For villages (pieces are at most 10 blocks above the surface plus a few below) the effect is invisible on normal terrain
-> and matters on steep ground and for the outpost's 30-tall base plate on mountains. Listed in Open question 1 for the 36-3 owner.
+> and matters on steep ground and for the outpost's 30-tall base plate on mountains.
 
 The validation in the codec (`verifyRange`) is satisfied: horizontal 80 plus the extra range 12 that any adaptation other than `none` adds
 gives 92, below the limit 128.
@@ -591,8 +591,8 @@ Start position `pos = (80, 0, 112)`. Suppose the draws give rotation none and th
 `x` 0 to 7, `y` 0 to 4, `z` 0 to 14). Box at the origin: `x 80..87`, `y 0..4`, `z 112..126`. `cx = (87 + 80) / 2 = 83`, `cz = (126 + 112) / 2 = 119`.
 Suppose the world-generation heightmap at (83, 119) gives `getFirstFreeHeight = 70`. Then `y = 0 + 70 = 70`; the piece moves by
 `70 - (0 + 1) = 69`, so its box becomes `y 69..73` and its origin is `(80, 69, 112)`. The stub position is `(83, 70, 119)`; the biome is tested at quart cells
-`(20, 17, 29)`. The free volume (section 5) is `x [3, 164)`, `y [max(-10, -64), min(151, 320)) = [-10, 151)`, `z [39, 200)` minus the piece's box. With the 36-3 reading
-(vertical 4064) the y range would be `[-64, 320)`; the two differ only for pieces below -10 or above 150 at this stub.
+`(20, 17, 29)`. The free volume (section 5) is `x [3, 164)`, `y [max(-10, -64), min(151, 320)) = [-10, 151)`, `z [39, 200)` minus the piece's box. (An object-form value without `vertical` would give
+vertical 4064 and the y range `[-64, 320)`; no shipped structure uses it.)
 
 ### 12.2 One draw from a pool list
 
@@ -650,8 +650,7 @@ At a spawn position inside the outpost box with block light 6 and reason NATURAL
 
 ## 14. Open questions
 
-1. **Vertical limit for the integer form of `max_distance_from_center`.** Read here as `vertical = horizontal` (section 2.2); 36-3 (sections 3.1,
-   13.2, 18.2) says 4064. Confirmed from bytecode this round: `MaxDistance(int)` calls `MaxDistance(int,int)` with the same value twice, the decoder maps the integer branch through that constructor and the encoder writes the integer form only when both are equal, so vertical is 80 for these six structures and the 36-3 value 4064 is wrong (36-3 needs the correction; this document stands). 36-3 also contradicts itself: its field description of the integer form ("a single integer gives both") agrees with this document, while its limit value and the later sections use 4064; the correction is not yet applied there (not edited from this document). The padding terms of the box are given in section 5 item 6 (zero for these structures).
+1. (Closed in round R1.) **Vertical limit for the integer form of `max_distance_from_center`**: vertical equals horizontal (80 here, 116 for the ancient city and trial chambers); 36-3 is corrected and agrees. Section 2.2 and section 5 item 6 give the box.
 2. **`village/decays` templates.** Three templates are referenced by no pool, structure or tag found in the jar; a use in code (a feature or a
    command) was not searched beyond the worldgen JSON and the class constant pools of the packages read. Probably dead data (inferred).
 3. **Interior-jigsaw golem placement.** That each normal village gets exactly one golem is inferred from the single-element pool and the interior

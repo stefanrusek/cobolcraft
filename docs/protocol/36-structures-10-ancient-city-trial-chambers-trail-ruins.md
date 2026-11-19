@@ -7,7 +7,7 @@
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact already recorded in [README.md](README.md)) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`) of `JigsawStructure`, `JigsawPlacement` (and its inner `Placer`), `StructureTemplatePool`, `SinglePoolElement`, `ListPoolElement`, `FeaturePoolElement`, `EmptyPoolElement`, `PoolElementStructurePiece`, `DimensionPadding`, `PoolAliasLookup`, `PoolAliasBinding` and its three kinds, `LiquidSettings`, `StructureTemplate` (`placeInWorld`, `processBlockInfos`, `getJigsaws`), `JigsawBlock.canAttach`, `JigsawReplacementProcessor`, `BlockIgnoreProcessor`, `BlockRotProcessor`, `RuleProcessor`, `ProcessorRule`, `RandomBlockMatchTest`, `TagMatchTest`, `ProtectedBlockProcessor`, `CappedProcessor`, `AppendLoot`, `SequencedPriorityIterator`, `WeightedList`, `Util` (shuffle), `Mth.getSeed`, `LegacyRandomSource`, `SingleThreadedRandomSource`; and of the data files in the jar (`unzip -p`, JSON and gzip NBT decoded with scratch scripts, not part of the repository). No execution. |
 | Operator decisions | Standard Minecraft content is the target; a tool extracts the data pack and this document specifies the engines (ticket CC-0001, Decisions "World scope", "Vanilla assets and data"; design map `docs/design/README.md` GAP-12b, GAP-18, R4, R7, R10). |
-| Status | Written by the reader for round RS20, part 10. |
+| Status | Written by the reader for round RS20, part 10; corrected or extended in round R1 (clean-room round 2026-11-18): section 2.2 step 15. |
 
 Class names in backticks say where a fact was read; they are not the design. "(inferred)" marks a deduction and "(recalled, not
 verified)" marks something not read; both are listed in the Open questions. Nothing in this document is taken from recall: every
@@ -102,7 +102,7 @@ the horizontal and vertical `max_distance_from_center`; `bottom`, `top` = the di
 14. The generation stub's position is `(cx, ySurf + offset.y, cz)`. It is the position whose biome is tested (36-1 section 5.3 step 2).
     Without a heightmap it equals `(cx, y0, cz)` for every rotation (the `offset.y` cancels `piecePos.y`).
 15. The stub's consumer (run only after the biome check, 36-1 section 5.3 step 3) does the following. The piece list starts with the start piece.
-    If `size <= 0` stop. Otherwise define the **free space** as the set of integer cells with
+    If `size` is 0 (`size <= 0`), the callback returns at once and adds **no piece** to the builder, not even the start piece: the container is empty, the start is invalid and no structure generates (36-3 section 9.7 step 1; no structure of this document has size 0, sizes are 7 and 20 here; clarified in round R1). Otherwise define the **free space** as the set of integer cells with
     `x in [cx - h, cx + h]`, `z in [cz - h, cz + h]`, `y in [max(cy - v, minY + bottom), min(cy + v, maxY - top)]` (`cy` = the stub's y),
     minus the cells of the start piece's box, and run the child placement (section 2.3) with the start piece at depth 0. The pieces,
     in creation order, are then appended to the start's builder.

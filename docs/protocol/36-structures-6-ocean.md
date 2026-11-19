@@ -7,7 +7,7 @@
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact already recorded in [README.md](README.md)) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`) of `net.minecraft.world.level.levelgen.structure.structures.OceanRuinStructure`, `OceanRuinStructure$Type`, `OceanRuinPieces` (and `$OceanRuinPiece`), `ShipwreckStructure`, `ShipwreckPieces` (and `$ShipwreckPiece`), `OceanMonumentStructure`, `OceanMonumentPieces` and all its 23 nested classes (the switch-map class `$1`, `MonumentBuilding`, `OceanMonumentPiece`, `RoomDefinition`, `MonumentRoomFitter`, the seven `Fit*` classes and the eleven room, wing and penthouse classes), of `structure.TemplateStructurePiece`, `Structure`, `templatesystem.StructureTemplate`, `StructurePlaceSettings`, `BlockRotProcessor`, `BlockIgnoreProcessor`, `CappedProcessor`, `RuleProcessor`, `ProcessorRule`, `rule.blockentity.AppendLoot`, of `net.minecraft.util.Util`, `Mth`, `RandomSource`, `levelgen.LegacyRandomSource` (positional factory), `Direction` and `Direction$Plane`, `Rotation`, `biome.BiomeResolver`, `world.RandomizableContainer`, `storage.loot.BuiltInLootTables`, and of the data files named above under `data/minecraft/` (structure JSON, structure sets, tags) and the NBT of the 68 template files (sizes, palettes, data markers; read with a scratch NBT reader, no execution of the artifact). No execution of the artifact. Counts were taken with `unzip -Z1 <jar> | grep -v '/$' | grep <prefix> | wc -l`. Values marked "(computed)" were produced by throwaway scratch implementations of this document's own rules (a Java-LCG, `getSeed`, the monument room graph and the ruin cluster); they are test vectors, unverified against the artifact, and are listed in Open question 12. |
 | Operator decisions | Standard Minecraft content is the target; a tool extracts the data pack and this document specifies the engines and the code-defined geometry (ticket CC-0001, Decisions "World scope", "Vanilla assets and data"; design map `docs/design/README.md` GAP-12b, GAP-18, R4, R7, R10). |
-| Status | Written by the reader for round RS20, part 6. |
+| Status | Written by the reader for round RS20, part 6; corrected or extended in round R1 (clean-room round 2026-11-18): sections 2.3, 5.2, 5.3 and Open questions. |
 
 Class names in backticks say where a fact was read; they are not the design. "(inferred)" marks a deduction and "(recalled, not
 verified)" marks something not read; both are listed in the Open questions. No fact in this document is taken from recall.
@@ -103,7 +103,10 @@ Its NBT adds `TPX`, `TPY`, `TPZ` (ints) and `Template` (string) to the base keys
 `TemplateStructurePiece.postProcess(level, sm, generator, random, chunkBox, chunkPos, pivot)`:
 
 1. `settings.boundingBox = chunkBox`; recompute the piece box from `templatePosition`.
-2. `template.placeInWorld(level, templatePosition, templatePosition, settings, random, 2)` (block flags 2). When it returns true:
+2. `template.placeInWorld(level, templatePosition, pivot, settings, random, 2)` (block flags 2). The second position is the `pivot` argument of `postProcess`
+   (the `BlockPos` that `StructureStart.placeInChunk` passes to every piece: `(centre.x, box0.minY, centre.z)` of the **first** piece's box, 36-1 section 8 step 2), not the template position;
+   it is handed unchanged to each processor's `finalizeProcessing` as the pivot position and to `processBlock` as the anchor. No processor of this document reads it (`capped` seeds from the template position, section 2.4).
+   *(Corrected in the 2026-11 reader round R1: this section used to write the template position twice. Read in `TemplateStructurePiece.postProcess`: its `placeInWorld` call takes the `templatePosition` field first and the method's own seventh parameter second; the marker pass of step 3 uses `templatePosition` again.)* When it returns true:
 3. every block of the template (the raw palette blocks, rotated by the settings) that is a **structure block** in `DATA` mode and whose world
    position lies inside the chunk box is passed, in template block order, to `handleDataMarker(metadata, pos, level, random, chunkBox)`;
    the metadata is the structure block's `metadata` string (default empty). Because the list is taken from the raw template,
@@ -430,8 +433,8 @@ Room index: `index(x, y, z) = y * 25 + z * 5 + x` (so `x = index % 5`, `z = (ind
 
 That is **46 grid rooms**. Three further "special" definitions are created outside the grid: the **penthouse** with index 1003, the **left wing** 1001 and the **right wing** 1002
 (`PENTHOUSE_INDEX`, `LEFTWING_INDEX`, `RIGHTWING_INDEX`); a room with `index >= 75` is "special" (`isSpecial`). Named cells: `GRIDROOM_SOURCE_INDEX = index(2,0,0)` = 2
-(the entry room), `GRIDROOM_TOP_CONNECT_INDEX = index(2,2,0)` = 52 (connects up to the penthouse), `GRIDROOM_LEFTWING_CONNECT_INDEX = index(0,1,0)` = 5 and
-`GRIDROOM_RIGHTWING_CONNECT_INDEX = index(4,1,0)` = 9 (each connects "south" to its wing).
+(the entry room), `GRIDROOM_TOP_CONNECT_INDEX = index(2,2,0)` = 52 (connects up to the penthouse), `GRIDROOM_LEFTWING_CONNECT_INDEX = index(0,1,0)` = **25** and
+`GRIDROOM_RIGHTWING_CONNECT_INDEX = index(4,1,0)` = **29** (each connects "south" to its wing). *(Corrected in round R1: the earlier text printed 5 and 9, which contradicts the index formula `y * 25 + z * 5 + x` above; `getRoomIndex` and the static initialiser of `OceanMonumentPiece` were read: the four constants are computed by that formula from the cells (2,0,0), (2,2,0), (0,1,0), (4,1,0), giving 2, 52, 25 and 29. Cell 25 is the room at `x` 0, `y` 1, `z` 0 and cell 29 the room at `x` 4, `y` 1, `z` 0, the two end rooms of the front row of the middle layer.)*
 
 ### 5.3 The room graph (`RoomDefinition`, `generateRoomGraph`)
 
@@ -439,8 +442,9 @@ A `RoomDefinition` has: `index`, `connections[6]` (neighbouring definitions by 3
 
 * `setConnection(dir, other)`: `connections[dir] = other` and `other.connections[opposite(dir)] = this`.
 * `updateOpenings()`: `hasOpening[d] = (connections[d] exists)` for `d` 0..5.
-* `findSource(scan)`: true if `isSource`; else set `scanIndex = scan` and return true iff some `d` in 0..5 has a connection whose `hasOpening[d]` is true, whose `scanIndex != scan`, and
-  whose own `findSource(scan)` is true (depth first, in order of `d`); otherwise false.
+* `findSource(scan)`: true if `isSource`; else set `scanIndex = scan` and return true iff some `d` in 0..5 has a connection `connections[d]` (it exists) such that **this room's own** `hasOpening[d]` is true,
+  `connections[d].scanIndex != scan`, and `connections[d].findSource(scan)` is true (depth first, in order of `d`; the first `d` that satisfies all three returns true at once); otherwise false.
+  (Corrected in round R1: the earlier text said the flag was the connection's; the bytecode reads the flag array of the room the search is running on, at index `d`. The neighbour's flag in the opposite slot is not consulted. Because the pruning of step 6 below clears both flags of a link together and `updateOpenings` sets both, the two flags of a grid link always agree, so the difference shows only for the special rooms. The penthouse gets `updateOpenings` (step 5), so its `DOWN` flag starts true; the two wings never get `updateOpenings`, so all their flags start false, and a wing's flag in its link slot (`NORTH`) becomes true only when the pruning step restores a failed attempt on that link (step 6 sets both ends back to true). Either way a wing or the penthouse is a dead end: the only room it is linked to is the grid room the search came from, whose `scanIndex` is already the current scan, so the search never continues out of it, and the result of every search is the same as if the flags were as the earlier text assumed. `countOpenings` is called only by `OceanMonumentSimpleRoom` on a grid room; no later section of this document reads a special room's flags.)
 * `countOpenings()`: the number of true `hasOpening` entries.
 
 `generateRoomGraph(r)` (called by the building constructor, with the start random):
@@ -451,8 +455,8 @@ A `RoomDefinition` has: `index`, `connections[6]` (neighbouring definitions by 3
    `setConnection(direction, neighbour)`; **otherwise (a step along z) call `setConnection(opposite(direction), neighbour)`**. So the connection slots for the z axis are *mirrored*: the slot
    `NORTH` of a room leads to the room at `z + 1` and the slot `SOUTH` to the room at `z - 1`. (This is the artifact's code; all later rules use the slots, so the layout in the world follows it, section 5.5.)
    The grid has 36 links along x, 26 along y and 33 along z: **95** links.
-3. Specials: create definitions 1003 (penthouse), 1001 (left wing), 1002 (right wing). `setConnection(UP, penthouse)` on the room of index 52; `setConnection(SOUTH, leftWing)` on index 5;
-   `setConnection(SOUTH, rightWing)` on index 9. The three specials are marked `claimed`. The source room gets `isSource = true`. (98 links in all.)
+3. Specials: create definitions 1003 (penthouse), 1001 (left wing), 1002 (right wing). `setConnection(UP, penthouse)` on the room of index 52; `setConnection(SOUTH, leftWing)` on index 25;
+   `setConnection(SOUTH, rightWing)` on index 29 (corrected in round R1 from 5 and 9). The three specials are marked `claimed`. The source room gets `isSource = true`. (98 links in all.)
 4. **Core room**: `x = r.nextInt(4)`, `coreRoom` = the definition at `(x, 0, 2)`. It is marked `claimed`, and so are the seven cells that complete a 2 x 2 x 2 block with it:
    `connections[EAST]`, `connections[NORTH]` (the cell at `z + 1`), `connections[EAST].connections[NORTH]`, `connections[UP]`, `connections[EAST].connections[UP]`, `connections[NORTH].connections[UP]` and
    `connections[EAST].connections[NORTH].connections[UP]`. (So the core occupies `x`, `x + 1`, `z` 2..3, `y` 0..1.)
@@ -465,7 +469,7 @@ A `RoomDefinition` has: `index`, `connections[6]` (neighbouring definitions by 3
 7. Append the penthouse, left wing and right wing definitions (in that order) to the list and return it.
 
 Invariant: every opening that is closed leaves both of its rooms still reachable from the source through open connections (it is closed only if both ends still reach the source), so the open-door graph remains
-connected. Connections to the wing definitions are never closed (their `hasOpening` flags are false from the start, so the search from a grid room through that link fails and the flags are restored).
+connected. Connections to the wing definitions and to the penthouse are never closed: for such a link the room `R` clears both flags, `R.findSource` may succeed, but the second search, started in the wing or the penthouse, finds no path to the source (its only link is back to `R`, whose flag on that link is now false), so the flags are restored to **true** (a wing's flag in its link slot, false before, is true afterwards; the penthouse's was already true).
 
 ### 5.4 Room fitting and piece creation (`MonumentBuilding` constructor)
 
@@ -1371,9 +1375,7 @@ A `drowned` marker at `y = 62` with sea level 63: one drowned persists there and
 
 ## Open questions
 
-1. **Heightmap evolution inside one region.** `OceanRuinPiece.postProcess` and `ShipwreckPiece.postProcess` read `level.getHeight(OCEAN_FLOOR_WG | WORLD_SURFACE_WG, ...)` on the world-generation region at each call.
-   Whether the blocks written by earlier pieces (other ruins of a cluster, earlier chunk passes) change those heightmaps before a later piece reads them was not traced here (the update rule is 35-1 section 4); the ruin recomputes
-   its height on every call, the shipwreck only once (the `height_adjusted` flag).
+1. (Answered in round R1.) **Heightmap evolution inside one region.** `WorldGenRegion.getHeight(type, x, z)` is `ChunkAccess.getHeight(type, x & 15, z & 15) + 1` on the chunk containing the column. The two worldgen heightmaps `OCEAN_FLOOR_WG` and `WORLD_SURFACE_WG` are in the chunk's map from the early statuses; `ProtoChunk.setBlockState` updates only the heightmaps listed in `heightmapsAfter()` of the chunk's persisted status, and that set is the two worldgen maps for `empty`, `structure_starts`, `structure_references` and `biomes` and the four final maps (`OCEAN_FLOOR`, `WORLD_SURFACE`, `MOTION_BLOCKING`, `MOTION_BLOCKING_NO_LEAVES`) for `terrain`, `features`, `initialize_light`, `light`, `spawn` and `full` (read in the `ChunkStatus` static initialiser; 35-1 section 6). Writes made after the terrain stage, by earlier pieces of a cluster, by other structures or by features, therefore **do not change** `OCEAN_FLOOR_WG` or `WORLD_SURFACE_WG`: a ruin or shipwreck reads the terrain-stage surface (the heightmaps as they stood when the `terrain` status finished, inferred to be the persisted status while the `features` task of the chunk runs), whatever has been placed since. The ruin's per-call recomputation of its height and the shipwreck's single computation (`height_adjusted`) therefore read the same frozen values on every call.
 2. **Template engine details.** Section 2.3's description of `placeInWorld` (the barrier write, the `LootTableSeed` draw for randomizable containers, waterlogging, palette choice) was read from the decompiled method but belongs to 36-2;
    the exact interleaving of the loot-seed draws of several chests and the marker pass is as described, but the waterlogging pass and entity placement were not traced.
 3. (Closed.) The `Rot` and `BiomeType` spellings were read from `ExtraCodecs.legacyEnum` (section 3.5).
@@ -1385,7 +1387,7 @@ A `drowned` marker at `y = 62` with sea level 63: one drowned persists there and
 8. **Biome sampling for the monument.** `getBiomesWithin` is read; the climate sampler behind `getNoiseBiome` (10, 37) was not re-read.
 9. **Loot tables and the brushable block entity** (data rows, 26 and 31 part 4) were not read for this document beyond their names and paths.
 10. **Chest orientation in ruins.** The `chest` marker writes the default chest state with no orientation logic (read); rotated ruins therefore have north-facing chests. No other facing rule was found in the class.
-11. **Template block order in `placeInWorld`** (palette order, which orders the `LootTableSeed` draws and indexes the shuffle of the `capped` processor) is 36-2's and was only partly read.
+11. (Closed in round R1.) **Template block order in `placeInWorld`**: the palette order is the three-group sorted order of 36-2 section 1.3 (full cubes, then other blocks, then blocks with NBT; each group by template-local y, x, z ascending); it orders the `LootTableSeed` draws and indexes the shuffle of the `capped` processor. The remaining details of `placeInWorld` are 36-2 section 5.
 12. **Computed vectors.** Every value marked "(computed)" (sections 6.2 to 6.4: the room-graph run, the cluster run, the shipwreck choices, the palette indices, the capped shuffle, the rot floats) comes from throwaway scratch code written from this document's own rules, not from the artifact;
     it was cross-checked only against the `getSeed` and `setLargeFeatureSeed` vectors of 10 and 11 and against the known first output of `LCG(0).nextFloat()`. The scratch code is not kept. An independent reviewer re-derived the main vectors (the ruin and shipwreck vectors and the 28-room monument list) with separate scratch code from the artifact's rules and they agree; the "(derived)" `adaptedHeight` example is hand arithmetic and was confirmed correct. These remain test vectors, not artifact output.
 13. **Placement ordering side effects.** Fluid ticks and `placeBlock` side effects of the monument's writes (36-1 section 6.5) are as in 36-1; whether flowing water re-fills the cleared pit before all chunk passes finish is a generation-order question owned by 33.

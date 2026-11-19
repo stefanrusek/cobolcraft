@@ -608,8 +608,8 @@ The grey brightness and the colour of the sky-light blend are the constants list
 
 ### 3.6 Clouds (`CloudRenderer`)
 
-- **Texture**: `textures/environment/clouds.png`, 256 × 256, 1-bit greyscale. Each pixel is a cell; a cell is empty when its
-  alpha is below 10 (otherwise solid).
+- **Texture**: `textures/environment/clouds.png`, 256 × 256, 1-bit greyscale with a `tRNS` entry that makes black transparent. Each pixel is a cell; a cell is empty when its
+  alpha is below 10 (otherwise solid); only alpha is read (3.7f).
 - **Cell size**: 12 × 4 × 12 blocks (x, y, z). The pattern wraps every 256 cells (3072 blocks) in x and z.
 - **Height**: the cloud layer's bottom is at world y = `visual/cloud_height` (192.33 in the overworld); its top is 4 blocks higher.
 - **Movement**: with t = (gameTime mod (256 × 400)) + partialTick, the camera's cloud-space x = cameraX + t × 0.03, z = cameraZ + 3.96. One
@@ -618,8 +618,188 @@ The grey brightness and the colour of the sky-light blend are the constants list
   bottom 0.7, top 1.0, north 0.8, south 0.8, west 0.9, east 0.9. A flat cloud (see below) uses the top brightness.
 - **Fog**: the face alpha is multiplied by 1 − value(distance, 0, cloudEnd), distance = spherical distance to the vertex.
 - **Modes** (option `cloudStatus`): off; `FAST` = one flat quad per solid cell: the DOWN face of the cell at the layer's bottom, drawn without culling, with the top colour factor 1.0; `FANCY` = a box per solid cell, 12 × 4 × 12 blocks. Let (dx, dz) be the cell's offset from the camera's cell in cells, and d = cloud_height − cameraY. The camera is *below* the layer when d > 0, *above* it when d + 4 < 0, and *inside* it otherwise. A fancy cell emits: its UP face unless the camera is below; its DOWN face unless the camera is above; its NORTH face when the north neighbour cell is empty and dz > 0; SOUTH when the south neighbour is empty and dz < 0; WEST when the west neighbour is empty and dx > 0; EAST when the east neighbour is empty and dx < 0 (so side faces are only built on the camera-facing side). In addition, for cells with |dx| ≤ 1 and |dz| ≤ 1 (the camera's own cell and its 8 neighbours) all six faces are emitted again with the inside flag (reversed winding), so the camera can sit inside a cloud.
-- **Range and shape**: with the option `cloudRange` c (2–128; the default 128 is the value following the range in the option's constructor, Open question 10) the meshed radius is r = ceil(c × 16 / 12) cells. A cell at offset (dx, dz) from the camera's cell is meshed when dx² + dz² ≤ r² (a disc: the build loop visits dz ≥ 0 rows in a diamond-shaped scan, tests dx² + dz² against r² and mirrors each row to −dz). The texture index of a cell is ((cameraCellX + dx) mod 256, (cameraCellZ + dz) mod 256).
+- **Range and shape**: with the option `cloudRange` c (2–128; default 128, read in 3.7f) the meshed radius is r = ceil(c × 16 / 12) cells. A cell at offset (dx, dz) from the camera's cell is meshed when dx² + dz² ≤ r² (a disc: the build loop visits dz ≥ 0 rows in a diamond-shaped scan, tests dx² + dz² against r² and mirrors each row to −dz). The texture index of a cell is ((cameraCellX + dx) mod W, (cameraCellZ + dz) mod H) with W, H the image size (256 for the vanilla image; corrected in 3.7f, which also states the time wrap).
 - **Blend**: `TRANSLUCENT`, depth test default, written with depth.
+- **See also**: exact build, offset and shading rules, the vanilla image structure, the corrections to the 256-cell wrap and the neighbour wrap, and the built-in art recipes are in 3.7.
+
+### 3.7 Sun, moon and cloud art: exact geometry, phase selection, image rules and built-in art recipes
+
+Source: the same artifact as the rest of this document (`minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, version 26.3, the artifact recorded in [README.md](README.md)). Method: static reading of the bytecode (`SkyRenderer`, `CloudRenderer`, `RenderPipelines`, `BlendFunction`, `DepthStencilState`, `MoonPhase`, `AttributeTypes`, `AttributeType`, `LerpFunction`, `CloudStatus`, `Options`, `LevelExtractor`, `LevelRenderer`, `AtmosphericFogEnvironment`), the shaders `clouds`, `position_tex`, `stars`, `sky`, the JSON files `timeline/moon.json`, `dimension_type/*.json`, `atlases/celestials.json`, and a pixel-level analysis of the shipped images `textures/environment/celestial/sun.png`, `.../moon/*.png` and `textures/environment/clouds.png` (these are the vanilla jar's own images, not a resource pack), with no execution. 3.4c and 3.6 above state the main rules; this subsection confirms them, corrects two details, and adds what a replacement ("built-in art") needs. Where a statement of 3.4c or 3.6 was re-read and agrees, it is not repeated.
+
+#### 3.7a What is in the jar (files, sizes, how they are loaded)
+
+| Item | Path in the jar | Format | Size |
+|---|---|---|---|
+| Sun | `assets/minecraft/textures/environment/celestial/sun.png` | 8-bit palette PNG, no transparency chunk, every pixel alpha 255 | 32 × 32 |
+| Moon, 8 phases | `assets/minecraft/textures/environment/celestial/moon/<phase>.png` for `full_moon`, `waning_gibbous`, `third_quarter`, `waning_crescent`, `new_moon`, `waxing_crescent`, `first_quarter`, `waxing_gibbous` | the same, every pixel alpha 255 | 32 × 32 each |
+| End flash (not covered) | `.../celestial/end_flash.png` | palette PNG | 64 × 64 |
+| Clouds | `assets/minecraft/textures/environment/clouds.png` | 1-bit greyscale PNG with a `tRNS` chunk that makes grey value 0 transparent | 256 × 256 |
+
+There is **no moon atlas image**: each phase is its own file (the answer to "how are the phase cells arranged": they are not; there is nothing to arrange). The engine builds the `celestials` atlas itself: `atlases/celestials.json` has one source, a directory source with prefix `""` over `environment/celestial`, so the sprite ids are `minecraft:sun`, `minecraft:moon/<phase>` (the phase quad of `SkyRenderer.buildMoonPhases` asks for `moon/` + the serialized phase name) and `minecraft:end_flash`. The atlas is registered with `AtlasConfig.createMipmaps` = false (`AtlasManager.KNOWN_ATLASES`, the entry for `Sheets.CELESTIAL_SHEET`), and `TextureAtlas` samples with the nearest-neighbour filter and clamp-to-edge addressing (`SamplerCache.getClampToEdge(FilterMode.NEAREST …)`, read in the constructor; the upload path passes the same filter with a boolean that is taken to be the mipmap flag, inferred), so the sun and moon are point-sampled with no mip levels. A pack that supplies a larger image (any square size) works unchanged: the sprite rectangle is stretched over the same quad (3.4c).
+
+The cloud image is **not** a GPU texture. `CloudRenderer.prepare(ResourceManager, …)` reads `textures/environment/clouds.png` with `NativeImage.read` and turns it into a CPU table of one record per pixel; the shader never samples it (`clouds.fsh` has no sampler). A failure to read logs "Failed to load cloud texture" and the renderer then draws no clouds.
+
+#### 3.7b Sun and moon: placement formulas (confirms 3.4c, adds the sky-space mapping)
+
+Confirmed by re-reading `SkyRenderer.renderSunMoonAndStars`, `renderSun`, `renderMoon`, `applyCelestialBodyTransform` and `buildCelestialQuad`:
+
+- Matrix order for a body: M = R_y(−90°) · R_x(ψ) · T(0, 100, 0) · S(h, 1, h) with ψ the body's angle in radians (`visual/sun_angle` for the sun, `visual/moon_angle` for the moon), h = 30 (sun) or 20 (moon). The quad's local corners (before M) are (±1, 0, ±1); a vertex with local coordinates (lx, lz) ∈ [−1, 1]² therefore has the pre-rotation position (30·lx, 100, 30·lz) for the sun (20 for the moon). Axis conventions are right-handed (rotation about +X turns +y towards +z; about +Y turns +z towards +x, as `Axis.XP`/`Axis.YP` do).
+- Resulting world-aligned position (camera at the origin, +x east, +z south, +y up; the sky is drawn with the camera's rotation but not its position, 3.4a), with Lx = h·lx and Lz = h·lz:
+
+  P(ψ, Lx, Lz) = ( −(100·sin ψ + Lz·cos ψ), 100·cos ψ − Lz·sin ψ, Lx ).
+
+  The body centre is (−100 sin ψ, 100 cos ψ, 0): it moves in the x–y plane, **due east to due west through the zenith**, at distance 100. At ψ = 0 it is at the zenith; at ψ = 90° at the western horizon; at ψ = 180° at the nadir; at ψ = 270° at the eastern horizon. The quad is always tangent to the sphere of radius 100 (its normal points at the camera).
+- Direction of the image axes on the sky (u = texture x, v = texture y, both increasing towards the sprite's U1 and V1 edges):
+
+  | Body | UV assignment of corners 1..4 = (−1,−1), (1,−1), (1,1), (−1,1) | image +u points towards | image +v points towards (in the x–y plane) |
+  |---|---|---|---|
+  | Sun | (u0,v0), (u1,v0), (u1,v1), (u0,v1) | world +z (south), at every angle | (−cos ψ, −sin ψ): west at ψ = 0, down at ψ = 90°, east at ψ = 180°, up at ψ = 270° |
+  | Moon | (u1,v1), (u0,v1), (u0,v0), (u1,v0) | world −z (**north**), at every angle | (+cos ψ, +sin ψ): east at ψ = 0, up at ψ = 90°, west at ψ = 180°, down at ψ = 270° |
+
+  Consequence for the moon art: the image's right-hand side (large u) always faces **north** in the sky and its left-hand side faces south, whatever the time; the lit side of a phase is not turned towards the sun. The `waxing_*` images (lit part on the right, 3.7e) are lit on the north side of the moon, the `waning_*` images on the south side. Both quads wind counter-clockwise as seen from the camera at the origin (the camera is below the quad at ψ = 0), so back-face culling keeps them.
+- Angles at selected ticks, from the tracks of 3.2 (the cubic-bezier ease of those tracks was evaluated as control points (0.362, 0.241) and (0.638, 0.759) with endpoints (0, 0) and (1, 1), x taken as the independent variable; the parameter order is inferred, Open question 18): the bezier is point-symmetric, so at 18000 the sun angle is exactly 180° and the moon angle 360°; at tick 6000 sun 0°, moon 180°. At tick 0 (u = 0.75) the eased fraction is 0.78436, so the sun angle is 282.4° and the moon angle 462.4° (equivalent to 102.4°); at tick 12000 (u = 0.25) the fraction is 0.21564, sun angle 77.6°, moon angle 257.6°.
+
+Worked examples (centre positions from the formula):
+
+| Tick | Sun ψ | Sun centre | Moon ψ | Moon centre |
+|---|---|---|---|---|
+| 6000 | 0° | (0, 100, 0) overhead | 180° | (0, −100, 0) below |
+| 18000 | 180° | (0, −100, 0) below | 360° | (0, 100, 0) overhead |
+| 0 | 282.4° | (97.7, 21.47, 0) east, 21.5 above the horizon plane | 102.4° | (−97.7, −21.47, 0) west, below the horizon plane |
+| 12000 | 77.6° | (−97.7, 21.47, 0) west, above | 257.6° | (97.7, −21.47, 0) east, below |
+
+The moon image changes at tick 0 of each day (3.7d), when the moon is below the horizon plane, so the change is not visible (computed from the table above).
+
+**Blend and alpha, exact arithmetic.** Pipeline `CELESTIAL` (shader `position_tex`): fragment colour = texel × `ColorModulator`, discarded when the texel alpha is exactly 0; blend `OVERLAY` = colour factors (SRC_ALPHA, ONE), alpha factors (ONE, ZERO), op ADD (read from `BlendFunction`). The modulator is (1, 1, 1, rainBrightness) for sun and moon, where rainBrightness = 1 − `ClientLevel.getRainLevel(partialTick)` (the rain level; whether `getRainLevel` already includes the thunder level was not traced, Open question 19). So the framebuffer colour after the body is **dst.rgb + texel.rgb × texel.a × rainBrightness** (texel alpha as 0..1), and the destination alpha is replaced by texel.a × rainBrightness. Black texels therefore add nothing and the quad's rectangle is invisible against the sky; light texels brighten the sky and saturate at 1. Neither pipeline applies fog (their depth and cull state is the builder default, Open question 20). The sun and the moon both draw every frame (no visibility test was found in `SkyRenderer`; a body below the horizon plane is covered by the terrain drawn afterwards, inferred). Draw order: sky disc, sunrise fan, sun, moon, stars, dark disc (3.4), in the sky pass at the start of the level pass (3.3).
+
+Sun and moon are drawn only when the dimension's `skybox` is `overworld` (the default). `skybox: none` (the nether) draws nothing and `skybox: end` draws the end sky (not covered): neither the nether nor the end has a sun, moon or clouds.
+
+#### 3.7c Sun and moon images: what the vanilla art contains (basis for built-in art)
+
+Both images are 32 × 32 and are drawn at 60 and 40 blocks, so one image pixel is 1.875 blocks of sun and 1.25 blocks of moon. Coordinates below are pixel indices (0 to 31, x to the right, y down); the centre of symmetry is between pixels 15 and 16, so a pixel (x, y) has the distance d = √((x − 15.5)² + (y − 15.5)²) from the centre.
+
+**Glow (halo).** Every image has a soft round glow around a central 8 × 8 square. Its brightness for a pixel outside the square (x or y outside 12..19) is
+
+v(d) = round( 40 · min(1, (16.7 − d) / 11.8)^1.6 ), and 0 once d ≥ 16.7,
+
+(a fit to the shipped pixels: maximum error 2 levels on the sun's red channel and the moon's blue channel, all 960 halo pixels; the true values are not a closed formula). v is at most 40 (about 0.157) and is 14 at d ≈ 10.5, 5 at d ≈ 13.5, 1 at d ≈ 15.5. The shipped sun glow is symmetric under mirroring in x and y and under swapping x and y. Beyond d ≈ 16.7 the fit gives 0, while the shipped images still hold the value 1 (sun (1, 1, 0), moon (0, 0, 1)) out to d ≈ 18.4, for example at (1, 5), (2, 3) and (5, 1); the pixels farther out, in the four corner regions, are 0. The fit differs from the shipped pixels by at most 1 level beyond d = 16.7 (60 pixels in all).
+
+| Image | Halo colour (r, g, b) as a function of v | Examples at v = 40 |
+|---|---|---|
+| Sun | (v, v, round(0.38·v)) (blue/red ratio 0.30 to 0.41 over the rows read) | (40, 40, 16) |
+| Moon (all 8 phases, identical) | (round(0.38·v), round(0.57·v), v) | (16, 23, 40) |
+
+The sun's halo red channel equals the moon's halo blue channel in 958 of the 960 halo pixels (largest difference 2). The halo is the same in the eight moon images (0 differing pixels).
+
+**Sun core.** An 8 × 8 square at x, y = 12..19, fully opaque, three tones: the outer ring of 28 pixels `#ffd54a` (255, 213, 74); the next ring of 20 pixels `#ffffaa` (255, 255, 170); the central 4 × 4 (16 pixels) `#ffffd9` (255, 255, 217).
+
+**Moon core.** The same 8 × 8 square at x, y = 12..19 replaces the glow; it holds the phase (3.7e). Tones used:
+
+| Role | Colour |
+|---|---|
+| Unlit part (the dark side) | `#0c121f` (12, 18, 31) |
+| Terminator pixel (one pixel wide) and, for `new_moon`, the outline ring | `#2b2f38` (43, 47, 56) |
+| Lit surface, six tones from brightest to darkest | `#d9e4ff` (217, 228, 255), `#afb8cc` (175, 184, 204), `#9097a5` (144, 151, 165), `#747d93` (116, 125, 147), `#5f677a` (95, 103, 122), `#505666` (80, 86, 102) |
+
+The unlit tone is not black: it adds (12, 18, 31)/255 to the sky inside the 8 × 8 square, so the dark side shows as a slightly blue disc and a new moon is a faint disc with a lighter outline. In the `full_moon` image the brightest tone `#d9e4ff` fills the upper-left of the disc, marked with darker crater pixels (`#afb8cc`, `#9097a5`), and the tones fall off to `#5f677a`/`#505666` along the lower two rows and the right two columns (18 pixels `#d9e4ff`, 18 `#5f677a`, 12 `#afb8cc`, 6 `#9097a5`, 6 `#505666`, 4 `#747d93`). The lit pixels of the other phases are drawn per phase and are not a mask of the full-moon image (for example 7 of the 32 lit pixels of `first_quarter` equal the full-moon pixel at the same place), so only the tone set and the shape rules of 3.7e are required.
+
+#### 3.7d Moon phase selection from the day count
+
+- The attribute `visual/moon_phase` has type `moon_phase`, an enum of `MoonPhase` with the eight values in the order of 3.4c (index 0 `full_moon` to 7 `waxing_gibbous`; `MoonPhase.PHASE_LENGTH` = 24000). Its attribute type is `AttributeType.ofNotInterpolated`: **no interpolation**; between two keyframes the earlier value holds until the next keyframe's tick (the keyframe lerp is `LerpFunction.ofStep(1.0)`, which returns the earlier value for every fraction below 1; the state-change lerp is `ofStep(0)` (the new value at once), the spatial lerp `ofStep(0.5)`).
+- Source of the value: the `minecraft:moon` timeline (`data/minecraft/timeline/moon.json`, in the tag `#minecraft:in_overworld`, which also lists `#minecraft:universal`, `minecraft:day` and `minecraft:early_game`), clock `minecraft:overworld`, `period_ticks` 192000, a track `minecraft:visual/moon_phase` with eight keyframes, tick 0 `full_moon`, 24000 `waning_gibbous`, 48000 `third_quarter`, 72000 `waning_crescent`, 96000 `new_moon`, 120000 `waxing_crescent`, 144000 `first_quarter`, 168000 `waxing_gibbous`. (The same file has a second track, `minecraft:gameplay/surface_slime_spawn_chance`, ease `constant`, modifier `maximum`, keyframes 0.5, 0.375, 0.25, 0.125, 0.0, 0.125, 0.25, 0.375 at the same eight ticks; it is gameplay, not rendering.)
+- Rule: let T be the clock's total ticks (3.2c). **phase index = floor((T mod 192000) / 24000)**, so the phase is constant for each 24000-tick day, changes at T ≡ 0 (mod 24000) and repeats every 8 days; the moon seen in the night of day k (ticks 12000 to 24000 of that day) is phase k mod 8. The day count is T / 24000 rounded down, counted from the clock's zero, not the player's days played.
+- Worked examples: T = 0 to 23999 gives `full_moon`; T = 121000 gives index floor(121000 / 24000) = 5, `waxing_crescent`; T = 222000: 222000 mod 192000 = 30000, index 1, `waning_gibbous`; T = 191999 gives index 7, `waxing_gibbous`, and T = 192000 returns to `full_moon`.
+- The dimension types `overworld` and `overworld_caves` both have `timelines: #minecraft:in_overworld` (both files read); the nether and end have `has_fixed_time` true and `skybox` of `none` and `end` respectively, and their `timelines` are the tags `#minecraft:in_nether` and `#minecraft:in_end`, each of which lists only `#minecraft:universal` (that tag holds `minecraft:villager_schedule`), so they have no moon timeline.
+- A server that does not use the vanilla timeline can supply any phase by a different `visual/moon_phase` value (the data-driven attribute, 3.1); the renderer only needs the index 0..7.
+
+#### 3.7e Moon phase images: the shape of each 8 × 8 core
+
+Classes: L lit (any lit tone), r terminator or outline pixel `#2b2f38`, D unlit `#0c121f`. Columns are 0..7 within the core (core x = 12 + column), rows 0..7 (core y = 12 + row). "Rim column" is the column of the pixel `r` in each row; every pixel to the lit side of it is L and every pixel on the other side is D.
+
+| Phase (index) | Lit side | Rim column for rows 0 to 7 | Lit pixels |
+|---|---|---|---|
+| `full_moon` (0) | all | none | 64 |
+| `waning_gibbous` (1) | left (low u) | 4, 5, 6, 6, 6, 6, 5, 4 | 42 |
+| `third_quarter` (2) | left | 4 in every row | 32 |
+| `waning_crescent` (3) | left | 3, 2, 1, 1, 1, 1, 2, 3 | 14 |
+| `new_moon` (4) | none | outline: the whole outer ring of the 8 × 8 is `r`; the inner 6 × 6 is D | 0 |
+| `waxing_crescent` (5) | right (high u) | 4, 5, 6, 6, 6, 6, 5, 4 | 14 |
+| `first_quarter` (6) | right | 3 in every row | 32 |
+| `waxing_gibbous` (7) | right | 3, 2, 1, 1, 1, 1, 2, 3 | 42 |
+
+For the left-lit phases the lit pixels are columns 0 up to rim − 1 and D is columns rim + 1 to 7; for the right-lit phases D is columns 0 up to rim − 1 and lit is rim + 1 to 7. Measured against the quarter's rim (column 4 for the left-lit quarter, column 3 for the right-lit one), a gibbous rim lies further out by 0, 1, 2, 2, 2, 2, 1, 0 columns for rows 0 to 7, and a crescent rim lies further in by 1, 2, 3, 3, 3, 3, 2, 1 columns; the right-lit phases are the exact mirror (column c to 7 − c) of the left-lit ones. Left means the image's left half (low u); with 3.7b it is the south side of the sky moon for the waning phases, and the north side for the waxing ones.
+
+#### 3.7f Clouds: what the image means, and the exact build, offset and shading rules (confirms 3.6, adds detail and two corrections)
+
+**How the image is read** (`CloudRenderer.prepare` and `isCellEmpty`, `packCellData`): for each pixel (x, y), x from 0 to width − 1 and y from 0 to height − 1, the **alpha** byte of the decoded RGBA is the only datum used. The cell is empty when alpha < 10 and solid otherwise; the colour channels are never used (the cloud colour comes from `visual/cloud_color`, 3.6). The 1-bit PNG of the jar has a `tRNS` chunk naming grey 0 transparent, so its black pixels decode with alpha 0 (empty) and its white pixels with alpha 255 (solid): 47433 empty pixels and 18103 solid pixels (27.6 %), every alpha either 0 or 255. Each solid cell also records which of its four neighbours are empty: north is the pixel (x, y − 1), south (x, y + 1), west (x − 1, y), east (x + 1, y), looked up with wrap-around. **Correction to 3.6:** the wrap uses the image's own dimensions, not a fixed 256: the cell grid has width columns (x) and height rows (z), the pattern repeats every width × 12 blocks in x and height × 12 blocks in z, and the scroll time wraps at width × 400 ticks (below). The east and west neighbour lookups wrap with the image **height** where the width would be correct (the bytecode takes `floorMod(x ± 1, height)`), so the renderer is only exact for square images; a built-in image must be square. Texel axes: image x is world x, image y is world z.
+
+**Cell and layer size, scroll and offset** (`CloudRenderer.prepare(int cloudColor, CloudStatus, float cloudHeight, int cloudRange, Vec3 camera, long gameTime, float partialTick)`; the arguments come from `LevelExtractor`: `cloudColor` = the `visual/cloud_color` attribute at the camera for the partial tick as ARGB, `cloudHeight` = `visual/cloud_height`, read only when the colour's alpha is above 0). With W, H the image width and height:
+
+1. t = (gameTime mod (W × 400)) + partialTick.
+2. cloud-space x = camera.x + t × 0.030000001, cloud-space z = camera.z + 3.96 (the double constant 3.9600000381…).
+3. x := x − floor(x / (W × 12)) × (W × 12) and z := z − floor(z / (H × 12)) × (H × 12), the reduction into 0 ≤ x < 12W, 0 ≤ z < 12H.
+4. camera cell cx = floor(x / 12), cz = floor(z / 12); fractions fx = x − 12·cx, fz = z − 12·cz (0 ≤ fx, fz < 12).
+5. Uniforms for the shader: CloudColor = the ARGB colour as (r, g, b, a) in 0..1; CloudOffset = (−fx, cloudHeight − camera.y, −fz); CellSize = (12, 4, 12).
+6. A cell at offset (dx, dz) from the camera's cell is the image pixel ((cx + dx) mod W, (cz + dz) mod H). In camera-relative coordinates its box spans x from 12·dx − fx to 12·dx − fx + 12, y from cloudHeight − camera.y to that + 4 and z from 12·dz − fz to 12·dz − fz + 12.
+7. Because the sampling position is camera.x + 0.03 t, a feature stored at image column i sits at world x = 12·i − 0.03·t (modulo the period): the clouds **drift towards −x (west) at 0.03 blocks per tick** (read, not inferred; the other axis is fixed, a constant +3.96 offset shifts the grid by 3.96 blocks in z only: a feature at image row j sits at world z = 12·j − 3.96).
+   - The time wrap W × 400 ticks equals one full period of the pattern at 12 × 0.03 per cell: 400 ticks move the pattern by exactly one cell (0.03 × 400 = 12), so after W × 400 ticks it has moved W cells = one pattern period and the wrap is invisible.
+
+**Worked example.** Image 256 × 256, `gameTime` 1000, partial tick 0.5, camera (100.0, 70.0, −50.0), `cloud_height` 192.33: t = 1000.5; x = 100 + 1000.5 × 0.030000001 = 130.015; z = −50 + 3.96 = −46.04, which reduces by one period of 3072 to 3025.96. cx = floor(130.015 / 12) = 10, cz = floor(3025.96 / 12) = 252; fx = 10.015, fz = 1.96. CloudOffset = (−10.015, 122.33, −1.96); the camera cell is image pixel (10, 252); the cell (dx, dz) = (2, −1) is pixel (12, 251) and spans camera-relative x from 13.985 to 25.985. Since 122.33 > 0 the camera is below the layer.
+
+**Layer position and the camera's state.** d = cloudHeight − camera.y; the camera is above the layer when d + 4 < 0, below when d > 0, inside otherwise (confirms 3.6). The layer spans y in [cloudHeight, cloudHeight + 4]. The mesh is rebuilt when the camera cell, the camera state (above, inside, below), the cloud status or the loaded image changes, not every frame; the offset uniform is updated every frame.
+
+**Mesh build** (`buildMesh`, `tryBuildCell`, `buildFlatCell`, `buildExtrudedCell`, `encodeFace`): r = ceil(cloudRange × 16 / 12). The cells visited are all (dx, dz) with dx² + dz² ≤ r² (3.6; rings of increasing |dx| + |dz| up to 2r, the loop bound being 2r and the per-ring check |dz| ≤ r): the order in which cells are emitted does not change the picture, since the pipeline is translucent with depth, but is a diamond-ring order with each row emitted for −dz then +dz. A cell is skipped if its record is empty. For a solid cell:
+- FAST: one face, direction DOWN, the "use top colour" flag set (colour factor 1.0). The face is drawn by the pipeline `FLAT_CLOUDS`, which is `CLOUDS` with culling disabled.
+- FANCY: faces as in 3.6 (UP unless the camera is below; DOWN unless the camera is above; a side face only when that neighbour is empty and the cell is on the camera side; plus all six faces with the inside flag for the camera's 3 × 3 cells). The inside flag reverses the vertex order of the quad (the shader uses vertex 3 − k for the k-th vertex), turning the winding inside out so back-face culling shows the inside to a camera in a cloud. `CLOUDS` has the default culling (only `FLAT_CLOUDS` switches it off, `withCull(false)`), which culls back faces.
+
+**Vertex positions and face colours** (shader `clouds.vsh`): the six faces are listed in `Direction` data order DOWN 0, UP 1, NORTH 2, SOUTH 3, WEST 4, EAST 5, each four corners in the cell's unit box:
+
+| Direction | Corners (x, y, z) in cell units, in drawing order | Factor (r = g = b; alpha factor 1) |
+|---|---|---|
+| DOWN | (1,0,0), (1,0,1), (0,0,1), (0,0,0) | 0.7 |
+| UP | (0,1,0), (0,1,1), (1,1,1), (1,1,0) | 1.0 |
+| NORTH (−z) | (0,0,0), (0,1,0), (1,1,0), (1,0,0) | 0.8 |
+| SOUTH (+z) | (1,0,1), (1,1,1), (0,1,1), (0,0,1) | 0.8 |
+| WEST (−x) | (0,0,1), (0,1,1), (0,1,0), (0,0,0) | 0.9 |
+| EAST (+x) | (1,0,0), (1,1,0), (1,1,1), (1,0,1) | 0.9 |
+
+(A corner (a, b, c) is placed at a·12, b·4, c·12 plus the cell origin and CloudOffset.) The vertex colour is (factor, factor, factor, 1) × CloudColor componentwise, so the **alpha is not shaded**: a face's alpha is the cloud colour's alpha. The shading never touches alpha. The fragment multiplies alpha by 1 − value(spherical distance of the vertex, 0, FogCloudsEnd) (value as in 3.3, interpolated across the face) and writes no fog colour: fog fades clouds out, it does not tint them.
+
+**Fog end** (`AtmosphericFogEnvironment`): `cloudEnd` = min(cloudRange option × 16, `visual/cloud_fog_end_distance`) in the atmospheric environment (default 2048), so the default option 128 gives 2048 blocks (confirms 3.3). The meshed disc has a radius of r = ceil(128 × 16 / 12) = 171 cells, i.e. 2052 blocks, so the mesh slightly outruns the fog end.
+
+**Pipelines.** `CLOUDS` (fancy) and `FLAT_CLOUDS` (fast), shaders `core/clouds`, blend `TRANSLUCENT` = colour (SRC_ALPHA, ONE_MINUS_SRC_ALPHA), alpha (ONE, ONE_MINUS_SRC_ALPHA); depth test `GREATER_THAN_OR_EQUAL` with depth write enabled (`DepthStencilState.DEFAULT`, reversed depth, 3.3); topology quads. Clouds are drawn after the translucent terrain and the translucent features, before precipitation. There is also an order-independent-transparency variant (`OIT_CLOUDS`, `OIT_FLAT_CLOUDS`, `renderOit`) of the same shader and geometry, used when the improved-transparency option is on (below). In the normal path the clouds are drawn before the precipitation; in the OIT path the precipitation (`WeatherEffectRenderer.renderOit`) is drawn before the clouds within each OIT stage. Clouds are drawn only when the status is not `OFF` and the colour's alpha is above 0.
+
+**Improved transparency** (`Options.improvedTransparency`, saved as `improvedTransparency`, a boolean with default **false**; `GameRenderer.useImprovedTransparency` is true when the option is on and the terrain is not drawn as a wireframe): `LevelRenderer` runs `executeClassicTransparency` (the normal path of this subsection) when it is false and `executeOit` (the OIT path: `CloudRenderer.renderOit`) when it is true. So the normal path is the default; the OIT path is only partly traced (Open question 17).
+
+**Options** (`Options`, `CloudStatus`): `cloudStatus` (saved as `renderClouds`; the serialized names are `false` for `OFF`, `fast` for `FAST` and `true` for `FANCY`; a boolean is also accepted through an alternative codec, whose mapping function was not read, so `true` = FANCY and `false` = OFF is inferred; **default FANCY**); `cloudRange` (saved as `cloudRange`, an integer slider from 2 to 128 inclusive, **default 128**; read from the constructor argument `Integer.valueOf(128)` after the `IntRange(2, 128, …)`, which closes the "default 128" part of Open question 10). A status change forces a mesh rebuild (3.7f); whether the option listener of a range change forces one was not traced (the mesh radius is taken at build time).
+
+**Colour by weather and time.** Unchanged from 3.5 and 3.2: base `#ccffffff` (alpha 0.8), multiplied by the day track (`#ffffffff` by day, `#ff191926` at night, interpolated linearly with the keyframes of 3.2), and by the rain and thunder layers of 3.5. Examples: noon (tick 6000, no weather): colour (1, 1, 1, 0.8), so the top face is (1, 1, 1, 0.8), bottom (0.7, 0.7, 0.7, 0.8), north and south (0.8, 0.8, 0.8, 0.8), west and east (0.9, 0.9, 0.9, 0.8). Night (tick 18000): colour = (1, 1, 1, 0.8) × (0.098, 0.098, 0.149, 1.0) = (0.098, 0.098, 0.149, 0.8), top face the same, bottom (0.069, 0.069, 0.104, 0.8). In FAST mode every cloud cell is one quad with the top factor, so the cloud shows (1, 1, 1, 0.8) by day, brighter than the FANCY underside (0.7).
+- Face selection, worked example: the camera is below the layer and a solid cell lies at the offset (dx, dz) = (2, −1) from the camera's cell, with all four neighbour cells empty. In FANCY mode it emits DOWN (the camera is not above), SOUTH (the south neighbour is empty and dz < 0) and WEST (the west neighbour is empty and dx > 0): three faces. It emits no UP (the camera is below), no NORTH (dz is not > 0) and no EAST (dx is not < 0). The camera's own cell, (0, 0), emits DOWN plus all six inside-flag faces, each with its direction's colour factor and the reversed winding; its outward UP face is not emitted because the camera is below.
+
+#### 3.7g Built-in art recipes: what a replacement must provide
+
+**Sun image** (`minecraft:sun`, path `assets/minecraft/textures/environment/celestial/sun.png`).
+- Format and size requirements imposed by the renderer: a PNG that the texture loader accepts; any size is accepted by the atlas and scaled onto the 60 × 60 block quad, a **square** image keeps the shape round; no power-of-two requirement (inferred: the stitcher of 2.2 packs arbitrary sizes, and with `createMipmaps` false the padding of 2.2 is the minimum); the rgb channels are what is added to the sky (additive blend, 3.7b), the alpha channel only masks (a pixel with alpha exactly 0 is skipped, any other alpha scales the pixel's contribution, and the vanilla image is fully opaque with a black background). A black or alpha 0 background is therefore equivalent; a non-black background would add a visible square.
+- Role of each region (for a 32 × 32 image; scale linearly for other sizes): the glow is a soft round halo, 40/255 at its brightest next to the core, falling smoothly to 0 at 16.7 pixels from the centre, coloured (v, v, 0.38 v) (a warm yellow tint) by the formula of 3.7c; the core is a hard-edged 8 × 8 square of three bright tones (a `#ffd54a` outline of 28 pixels, a `#ffffaa` ring of 20, a `#ffffd9` centre of 16), centred on the image. The image is symmetric, so its orientation on the sky (3.7b) does not matter.
+- Test values for an original recipe: pixel (16, 16) is `#ffffd9`; pixel (12, 12) is `#ffd54a`; pixel (13, 13) is `#ffffaa`; pixel (0, 16) is (1, 1, 0); pixel (11, 16) is (40, 40, 16); pixel (5, 5) (d = 14.85) is (3, 3, 0), where the fit gives 2; the four image corner pixels are black.
+
+**Moon images** (`minecraft:moon/<phase>`, paths `.../celestial/moon/<phase>.png`, eight files; all must exist or the quad buffer is built for all eight phases when the sky renderer is created, `SkyRenderer.buildMoonPhases`; a phase with no image gets the atlas's missing-texture sprite, standard atlas behaviour, inferred).
+- The same format rules as the sun. The image is 32 × 32 at 40 blocks (1.25 blocks per pixel).
+- Glow: identical to the sun's shape, with the colour (0.38 v, 0.57 v, v) (a cold blue tint), identical in all eight images.
+- Core: the 8 × 8 square of 3.7c with the phase pattern of 3.7e; unlit `#0c121f`, terminator `#2b2f38`, lit tones the six of 3.7c; orientation on the sky per 3.7b (waxing phases lit on the high-u side, which is the sky's north side).
+- Test values: `new_moon` pixel (16, 16) is `#0c121f`, pixel (12, 12) is `#2b2f38`; `first_quarter` pixel (15, 16) is `#2b2f38` (core column 3), pixel (16, 16) is a lit tone, pixel (14, 16) is `#0c121f`; `third_quarter` pixel (16, 16) is `#2b2f38` (core column 4), pixel (15, 16) lit.
+
+**Clouds image** (`minecraft:environment/clouds`, path `assets/minecraft/textures/environment/clouds.png`).
+- Renderer constraints: PNG readable by the `NativeImage` loader; **only the alpha channel is used**, a cell is solid iff alpha ≥ 10, so a replacement can be any 8-bit RGBA or palette PNG with alpha 0 and 255 (the vanilla image gets the same effect with a 1-bit greyscale PNG and a `tRNS` entry for black); no power-of-two requirement (the image is not a GPU texture); **square** (3.7f: the east and west neighbours wrap with the height) and, for an unbroken drift, any width W, since the pattern then repeats every 12 W blocks and the clock wraps at 400 W ticks; the table costs 8 bytes per pixel in memory (inferred from the `long` per cell), so 256 × 256 = 512 KiB. Larger images give a longer pattern period, not larger cells: the cell size is fixed at 12 × 4 × 12 blocks.
+- Visual role: each pixel is one solid cloud cell or empty sky; solid cells touching form clouds. There is no softness, no shading and no per-pixel colour in the image: shading comes only from the face factors of 3.7f and the colour from `visual/cloud_color`.
+- Statistics of the vanilla image, to match when generating a lookalike: 256 × 256; 18103 of 65536 cells solid (27.6 %); the solid cells form 596 clumps under 4-neighbour connectivity with wrap-around (largest 628 cells, then 503, 423, 305, 297; median size 7; 139 single-cell clumps); the empty cells form one connected sea of 47310 cells plus 50 small holes (the next largest 26); each row has 7 to 134 solid cells and each column 20 to 101; horizontal runs of solid cells are 1 to 34 cells long (the most common run lengths are 3 (421 runs), 2 (313) and 4 (279)); the image is not seamless in the strict sense (43 of 256 left-right and 53 of 256 top-bottom edge pixel pairs differ), which does no harm since the renderer wraps.
+- Recipe for an original image (a design choice; the requirements above are the only hard ones): generate a seamless blob mask, for example by thresholding wrapped smooth noise so that about 28 % of the cells are solid, with clump widths from 1 to about 30 cells and a few large clumps of several hundred cells. With W = 256 the clouds repeat every 3072 blocks.
+
+#### 3.7h Not in the jar, or not answered here
+
+- There is no cloud "alpha from rain" code in `CloudRenderer`: rain and thunder change the cloud colour only through the layers of 3.5 (the alpha of `visual/cloud_color` is part of that colour).
+- There is no per-pixel cloud colour and no cloud animation other than the drift of 3.7f (no vertical movement, no per-cell variation).
+- The `end_sky.png` and `end_flash.png` images are not covered (3.4, Open question 14).
 
 ---
 
@@ -1116,10 +1296,15 @@ Sky colour at tick 6000: base `#78a7ff` × track `#ffffff` = `#78a7ff` = (0.4706
 7. **Third-person arm animation.** The `stab` swing and the last statements of the `whack` branch of `setupAttackAnimation`; swimming, elytra and crawling poses; the cape, elytra and armour layers; the skin-parts bits other than the listed layers (7.5, 7.6).
 8. **Biome colour tinting** (grass, foliage, water, the `tintindex` sources for blocks, and the `biomeBlendRadius` averaging) is not covered here; 08 has the item tint sources.
 9. **Camera and field of view.** The default of the `camera_distance` attribute for the player (4.0 inferred), `fovEffectScale` handling, the near plane and the far plane (7.2).
-10. **Option defaults read indirectly.** `cloudRange` default 128, `textureFiltering` default RGSS and `maxAnisotropyBit` default 2 (value 2^bit) were taken from the order of constructor arguments, not from named constants (2.1, 3.6).
+10. **Option defaults read indirectly.** `textureFiltering` default RGSS and `maxAnisotropyBit` default 2 (value 2^bit) were taken from the order of constructor arguments, not from named constants (2.1). The `cloudRange` part is answered: `IntRange(2, 128)`, default 128 (3.7f).
 11. **Default values of** `chunkSectionFadeInTime`, the glint strength and glint speed options, and the `UiLightmap` values used for GUI items.
 12. **Text colour with alpha 0.** How `Font` treats a text colour whose alpha is 0 (5.10).
 13. **Italic shear.** How the shear constants (0.25) combine with the glyph's vertical extent into x offsets (5.10).
 14. **End skybox and end flash** (`skybox` = `end`) are not covered.
 15. **Skin conversion.** The conversion of legacy 64 × 32 skins to the 64 × 64 layout (7.4).
 16. **Vanilla player dimensions** (hitbox 0.6 × 1.8, eye height 1.62) quoted in V20 and 7.3 were not read in this round.
+17. **Improved-transparency details.** The OIT cloud path (`renderOit`, 3.7f) was traced only as far as its selection by the `improvedTransparency` option; the OIT shader stages and the resulting blend of clouds, weather and water were not read, so the picture of that path is not specified.
+18. **Sun and moon angle ease.** The cubic-bezier control point order of the `visual/sun_angle` and `visual/moon_angle` tracks (3.2) was read as (x1, y1, x2, y2) = (0.362, 0.241, 0.638, 0.759) (inferred from the symmetry x1 + x2 = 1 and y1 + y2 = 1, which makes the ease point-symmetric about (0.5, 0.5); the constructor's argument order was not read); the angles at ticks other than 6000 and 18000 (3.7b) depend on it.
+19. **Rain level.** Whether `ClientLevel.getRainLevel` (the source of the sun and moon alpha, 3.7b) already includes the thunder level was not traced.
+20. **Sky pipeline depth and cull state.** The depth-test and culling state of the `CELESTIAL`, `STARS`, `SUNRISE_SUNSET` and `SKY` pipelines is the builder's default (no explicit state was set); the default was not read (3.7b).
+21. **Cloud option listeners.** Whether changing `cloudRange` forces an immediate mesh rebuild (3.7f).

@@ -283,9 +283,7 @@ Precision (read, `BlockBehaviour$Properties` offset callbacks): the masked value
 - `XZ`: offset (dx, 0, dz);
 - `XYZ`: offset (dx, dy, dz) with `dy = (((seed >> 4) & 15) / 15 - 1.0) * maxV` (float32 division as below) (so `dy` is between -0.2 and 0).
 
-Only `FlowerBlock` (the fifteen flowers of this range) applies the offset inside `getShape` (its outline box is moved by
-it). The other offset blocks (`short_grass`, `fern`, `short_dry_grass`, `tall_dry_grass`, `tall_seagrass`) do not move
-their `getShape` result in the block class; where the offset is applied for them is not read (Open question 6).
+Where the offset moves a **shape** (corrected in round R1 against the jar; details and the full list in 51 section 1.4): only the block classes that call `BlockState.getOffset` in `getShape` (and, for the bamboo stalk, `getCollisionShape`) move their authored box by the offset: `FlowerBlock` (the fifteen flowers of this range, and `wither_rose` and the eyeblossoms, which inherit it), `BambooStalkBlock`, `BambooSaplingBlock`, `SpeleothemBlock` (`pointed_dripstone`, `sulfur_spike`) and `MangrovePropaguleBlock`. Every other offset block (`short_grass`, `fern`, `short_dry_grass`, `tall_dry_grass`, `tall_seagrass`, the tall flowers, roots, `small_dripleaf` and so on) has an unshifted outline and collision shape; the offset moves only their drawn **model** (the client's `ModelBlockRenderer` calls `getOffset`; the block-break crack overlay in `LevelRenderer` too; inferred for the model, 51 section 1.4).
 
 ### 2.8 Colour collections
 
@@ -1227,9 +1225,7 @@ placement (7.8), flammability numbers (5.7), tint list (5.6). Also read: standin
    (`PistonStructureResolver`, `PistonMovingBlockEntity`), rail connection (`RailState`), redstone signal evaluation
    (`DefaultRedstoneWireEvaluator`), note block sounds, crop growth speed (29b part 2), bed sleeping, sign editing and the block entities of dispensers, chests, furnaces, spawners, shelves,
    chiseled bookshelves, signs and creaking hearts. The piston and rail engines are unspecified (searched 29, 31-block-entities-2 and 33: only update flags and the block-event queue are described); the others belong to 29, 29b and 31 where those documents cover them. Leaf particle chance and ambient sounds are in section 7.9 (constructor constants, read) and 42 part 4; the farmland moisture scan box is in 7.2.
-6. **Where the model offset is applied.** Only `FlowerBlock` moves its outline by the offset inside `getShape`. For
-   `short_grass`, `fern`, `short_dry_grass`, `tall_dry_grass` and `tall_seagrass` the state carries an offset function but the
-   block class does not use it; the consumer is outside the block classes (rendering, targeting). Not traced.
+6. (Answered in round R1.) **Where the model offset is applied**: section 2.7 and 51 section 1.4 (only the five block-class families move their shapes; the others move only the model).
 7. **Note block sounds.** The instrument choice is read (7.10). The sound events of each instrument, tunable pitch (`getPitchFromNote`) and the custom-head sound lookup were not read here.
 8. **Chest partner search.** Closed: `getStateForPlacement`, `getChestType`, `candidatePartnerFacing`, `chestCanConnectTo` and `updateShape` were read in full; the rules are in 7.7. Corrected against the first version of this document: in the sneaking branch the placed chest takes the partner's `facing`, and `type` is `right` when counter-clockwise of that facing equals the opposite of the clicked face. Not read: the double-chest container combiner (`DoubleBlockCombiner`), which belongs with the block-entity document.
 9. **Creaking heart state transitions.** Mostly closed: 7.12 gives the block-class transitions, the block entity's periodic recomputation (including the return to `uprooted`), the use of `natural` and the analog output formula, all read. The spawn constants, the resin-spread counts and the grace and emitter durations are now recorded in 7.12 item 6a. Not read in detail: the block placed by a resin spread and its acceptance test, the `SpawnUtil` placement search itself, and the particle details (left to 44 part 4 and 31 part 8). Searched: `CreakingHeartBlock`, `CreakingHeartBlockEntity.serverTick`, `updateCreakingState` and `computeAnalogOutputSignal`.

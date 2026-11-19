@@ -3,7 +3,7 @@
 | Item | Value |
 |---|---|
 | Covers | The terrain-shaping pipeline of the Nether (`minecraft:the_nether`, noise settings `minecraft:nether`): every field of the noise settings, the eight-entry noise router, the density tree of `final_density` (sloping gradients, the old blended 3D noise with the Nether parameters, the 0.64 factor, the 4 x 8 x 4 interpolation, `squeeze`), the **legacy random source** that this dimension turns on (it changes how the 3D noise and the two climate noises are seeded, and every named random of the surface pass), the fill without aquifers (lava below sea level 32), the climate wiring used for the biome lookup, the numeric bedrock floor and roof thresholds as an index, and worked values. |
-| Does not cover | Data rows: the extraction tool copies `data/minecraft/worldgen/noise_settings`, `density_function`, `noise` and `material_rule` (22, 23); they are cited to show wiring. The node semantics, noise primitives and chunk stages shared with the overworld are in 10 and are not repeated; this document says what differs. The dimension type values and dimension-driven behaviours (bed_rule, respawn_anchor_works, fast_lava, ambient light, fog, monster_spawn_light_level and the rest: 37-nether-1 sections 2 and 3), the Nether biome parameter table (37-nether-3 section 2), the surface rules and carvers (37-nether-4 sections 5 and 6), features (37-nether-5 section 2) and structures and spawns (37-nether-6 sections 2 and 9) are cross-referenced by those section references. The structure terrain adaptation term (`beardifier`) is only hooked here (section 10). |
+| Does not cover | Data rows: the extraction tool copies `data/minecraft/worldgen/noise_settings`, `density_function`, `noise` and `material_rule` (22, 23); they are cited to show wiring. The node semantics, noise primitives and chunk stages shared with the overworld are in 10 and are not repeated; this document says what differs. The dimension type values and dimension-driven behaviours (bed_rule, respawn_anchor_works, fast_lava, ambient light, fog, monster_spawn_light_level and the rest: 37-nether-1 sections 2 and 3), the Nether biome parameter table (37-nether-3 section 2), the surface rules and carvers (37-nether-4 sections 5 and 6), features (37-nether-5 section 2) and structures and spawns (37-nether-6 sections 2 and 9) are cross-referenced by those section references. The structure terrain adaptation term (`beardifier`) is specified in section 10 (general model: 36-1 section 9). |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact already recorded in [README.md](README.md)) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`) of the classes named in each section and of the JSON under `data/minecraft/` in the jar, with no execution of the artifact. Values marked "(computed)" were produced by applying this document's own text with a throwaway reference script written for the round (it uses 32-bit float rounding after every float operation); they are **not** observed from the artifact. |
 | Round | RS21, part 2 (GAP-13a of [../design/README.md](../design/README.md)) |
@@ -240,7 +240,7 @@ Writing `N` for the blended noise at a corner and `gt(y)`, `gb(y)` for the two g
 
 The terrain volume is `DensityVolume(16, 128, 16)` anchored at `(chunkMinX, 0, chunkMinZ)` with block step 1 (`NoiseBasedChunkGenerator.chunkVolume`). For an `interpolated[4, 8]` node the engine builds a corner volume with cell edges at world multiples of 4 (x, z) and 8 (y): the corner columns are `x0, x0 + 4, .., x0 + 16` (5 positions) and the same for z; the corner rows are `y = 0, 8, .., 128` (17 rows, **including y = 128**, one row above the highest block, because the number of corners is the number of cells plus one when the volume's max block is not a cell multiple: `floorMod(127, 8) != 0` and `floorMod(15, 4) != 0`). The input of the node (`mul(blend_density(S), 0.64)`) is evaluated once per corner: 5 x 17 x 5 = 425 corner evaluations per chunk, each costing one blended noise value (up to 40 perlin samples, section 5.2; fewer when the lazy `lerp` of the limit noises stops at `t == 0` or `t == 1`). The chunk path samples the 5 x 17 x 5 corner volume with `LerpFunction$ConstFirstSampler.sampleVolume` (read), which evaluates both children over the whole volume, so the blended noise **is** evaluated at the y = 128 row too (its alpha is 0 there, so the result is the first value `0.9375` and the noise value is discarded); only the point sampler (`sampleValue`) skips the second child when alpha is 0 or 1. Values are identical either way; only the cost differs.
 
-`InterpolatedFunction$Sampler.sampleVolume` first chooses among branches: a pass-through that samples the input directly with no interpolation (the review found that it applies when the volume's block step already equals the cell sizes or its size is 1 and the min corner is cell-aligned; its exact condition was not re-read in this round, Open question 12), `sampleWithNonBlockStep`, and `sampleWithBlockStep`. The chunk fill (volume 16 x 128 x 16, step 1) and the 1 x 128 x 1 column volume of 6.5 do not take the pass-through.
+`InterpolatedFunction$Sampler.sampleVolume` first chooses among branches: a pass-through that samples the input directly with no interpolation, `sampleWithNonBlockStep`, and `sampleWithBlockStep`. **Exact condition (read in round R2, Open question 12 answered):** the pass-through is taken when, on every axis, the volume's block step equals the node's cell size (`cell_size_xz` on x and z, `cell_size_y` on y) **or** the volume's size on that axis is 1, **and** `floorMod(minBlockX, cell_size_xz)`, `floorMod(minBlockY, cell_size_y)` and `floorMod(minBlockZ, cell_size_xz)` are all 0; otherwise, when the three block steps are all 1 the call goes to `sampleWithBlockStep`, and in every other case to `sampleWithNonBlockStep`. The chunk fill (volume 16 x 128 x 16, step 1) and the 1 x 128 x 1 column volume of 6.5 do not take the pass-through.
 
 ### 6.2 The fill interpolation (the production path) and a correction to 10 section 4.1
 
@@ -328,11 +328,74 @@ The roof is the mirror image of the floor in y (floor y `k` has the probability 
 
 ---
 
-## 10. Hook: the beardifier in the Nether
+## 10. The beardifier in the Nether (full term)
 
-`beardifier` is 0 unless structures with terrain adaptation start near the chunk (10 section 11.2). The Nether structure files read (`worldgen/structure/*.json`): `fortress` and `ruined_portal_nether` have no `terrain_adaptation` key; `bastion_remnant` (a jigsaw structure) has none either; `nether_fossil` has `"terrain_adaptation": "beard_thin"`. The value `beard_thin` is the structure's own adaptation mode; the term's formula (and whether jigsaw junctions of the bastion contribute) is the structure engine's, not read here (Open question 2). Fortress and ruined portals do not modify the density.
+The router's `final_density` is `add(squeeze(interpolated(...)), beardifier)` (read in `noise_settings/nether.json`: the `right` operand of the top `add` is the node `{"type": "minecraft:beardifier"}`). The beardifier is therefore **not** interpolated: its value at a block is added to the squeezed terrain value at that block, and a block is solid iff the sum is strictly greater than 0 (section 6.3). The general model (collection of contributors, the five modes, the evaluation grid) is 36-1 section 9; this section restates the exact term, re-read from `Beardifier` in this round (the result agrees with 36-1 section 9.3 in every constant and in the order of the operations), and says what applies in the Nether. The term is evaluated at **every block position** of the chunk volume (16 x 128 x 16, block step 1: section 6.1), outside the interpolation cell grid.
 
----
+### 10.1 Which structures contribute in the Nether
+
+A structure contributes only if its `terrain_adaptation` is not `none`; the field's default, when the JSON has no `terrain_adaptation` key, is `none` (read: `Structure$StructureSettings.DEFAULT` is built with the adjustment `NONE` and the codec uses it as the `optionalFieldOf` default). Of the 52 structure files only `nether_fossil` can exist in a Nether biome and has an adaptation:
+
+| Structure (biome tag members that reach the Nether) | `terrain_adaptation` | Contributes |
+|---|---|---|
+| `fortress` (`#is_nether`) | key absent, so `none` | no |
+| `bastion_remnant` (`crimson_forest`, `nether_wastes`, `soul_sand_valley`, `warped_forest`) | key absent, so `none` | no: no rigid record and **no junction record** is collected for a `none` structure, so the jigsaw junction term never occurs in the Nether |
+| `ruined_portal_nether` (`#is_nether`) | key absent, so `none` | no |
+| `nether_fossil` (`soul_sand_valley`) | `beard_thin` | yes, one rigid record per fossil piece |
+
+(The other 48 structure files have biome tags that name no Nether biome, so they never start in the Nether; the check was made by resolving every `worldgen/structure/*.json` `biomes` tag in `tags/worldgen/biome/has_structure/` against the five Nether biomes and `#is_nether`.) In the Nether the beardifier is therefore nonzero only near a nether fossil. The junction formula (10.4) is given because the same engine serves the overworld.
+
+### 10.2 Collecting the contributors for chunk P (restated)
+
+For chunk P with minimum block corner `(bx, bz)`: take every structure start that references P and whose structure's adaptation is not `none` (36-1 section 7.5). For each of its pieces, in piece order, that is within 12 blocks of P in x and z (the piece box widened by 12 on each side intersects the chunk's columns): if the piece is a jigsaw piece with a `rigid` element projection, add a record `{box, mode, groundLevelDelta}` and, for every junction of every jigsaw piece (any projection) with `bx - 12 < srcX < bx + 15 + 12` and `bz - 12 < srcZ < bz + 15 + 12` (both strict), add a junction record; for every other piece (the nether fossil is a template piece, not a jigsaw piece) add `{box, mode, 0}`. The sampling region (the "affected box") is the union of the boxes of the **rigid records** (every piece that produced one: a rigid jigsaw piece or a non-jigsaw piece) and the one-block boxes at the junction sources, enlarged by 24 in every direction. A jigsaw piece with a **non-rigid** (`terrain_matching`) projection adds no rigid record and **its own box is not added** to the affected box; it contributes only its junction boxes (a one-block box at each junction source that passed the strict range test; read in `Beardifier.forStructuresInChunk`, where only the rigid branch and the non-jigsaw branch call the box inclusion for the piece box); outside it the value is exactly 0, and with no record at all the beardifier is 0 everywhere. The terms are summed in single precision, rigid records first (in collection order), then junctions, starting from 0.0 (float addition is not associative, so the order is part of the rule).
+
+### 10.3 The term of one rigid record
+
+Let `B` be the record's box (`minX..maxX`, `minY..maxY`, `minZ..maxZ`, integers, inclusive), `g` its `groundLevelDelta` (0 for the nether fossil piece), `(x, y, z)` the block, and:
+
+| Name | Value |
+|---|---|
+| `dx` | `max(0, B.minX - x, x - B.maxX)` |
+| `dz` | `max(0, B.minZ - z, z - B.maxZ)` |
+| `bottom` | `B.minY + g` |
+| `yb` | `y - bottom` (signed) |
+| `dy` | `none`: unused; `bury` and `beard_thin`: `yb`; `beard_box`: `max(0, bottom - y, y - B.maxY)`; `encapsulate`: `max(0, B.minY - y, y - B.maxY)` |
+
+| Mode | Term (single-precision floats; a cast of an int to float is exact here) |
+|---|---|
+| `none` | 0.0 |
+| `bury` | `bury(dx, dy / 2.0f, dz)` |
+| `beard_thin`, `beard_box` | `beard(dx, dy, dz, yb) * 0.8f` |
+| `encapsulate` | `bury(dx / 2.0f, dy / 2.0f, dz / 2.0f) * 0.8f` |
+
+`bury(a, b, c)`: `L = a*a + b*b + c*c` (float, evaluated as `(a*a + b*b) + c*c`); if `L >= 36.0f` the result is 0.0, else `1.0f - sqrt(L) / 6.0f` (the square root is the double-precision `sqrt` of the float widened, narrowed to float). Its support is the ball of radius 6 in the scaled coordinates, so for `bury` a block contributes up to 11 blocks away vertically (`dy` is halved) and 5 blocks away horizontally (`dx`, `dz` are not), and the value is 1.0 at the box.
+
+`beard(dx, dy, dz, yb)` (all ints): let `ix = dx + 12`, `iy = dy + 12`, `iz = dz + 12`. If any of the three is outside `0..23` the result is 0.0. Otherwise `yf = (float) yb + 0.5f`; `L = dx*dx + yf*yf + dz*dz` (float, evaluated `(dx*dx + yf*yf) + dz*dz`); `v = (-yf * (float) fastInvSqrt((double)(L / 2.0f))) / 2.0f`; the result is `v * KERNEL[iz*576 + ix*24 + iy]`. `fastInvSqrt(x)` (double): `h = 0.5 * x`; take the raw 64-bit pattern `i` of `x`; `i' = 6910469410427058090 - (i >> 1)` (arithmetic shift); `y` is the double with pattern `i'`; the result is `y * (1.5 - h * y * y)`. So `v` is approximately `-yf / (2 * sqrt(L / 2))`: it is odd in `yf` and points downward (negative above the reference level, positive below it). The kernel is 24 x 24 x 24 floats, built once: for `i`, `j`, `k` in `0..23`, `KERNEL[i*576 + j*24 + k] = (float) pow(2.718281828459045, -(a*a + (b + 0.5)*(b + 0.5) + c*c) / 16.0)` with the doubles `a = j - 12`, `b = k - 12`, `c = i - 12` (the exponent is evaluated in double precision as `-L'/16.0`, then rounded to float when stored). The index in `beard` uses `ix` (x) as the middle stride, `iy` (y) as the fastest and `iz` (z) as the slowest.
+
+Reach of the `beard_thin` term of one record: horizontally `dx, dz` in `0..11` (12 or more outside the box gives 0), vertically `yb` from -12 to +11 (blocks from 12 below `bottom` up to 11 above it); no contribution beyond. The sign is positive below `bottom + 0` (terrain is added under the fossil) and negative at and above `bottom` (terrain is removed up through the fossil's height and beyond it, up to `bottom + 11`), and the 0.8f weight caps the magnitude at about 0.557 (computed, below) at a block in the fossil's bottom layer.
+
+### 10.4 The term of one junction (jigsaw only; never present in the Nether)
+
+For a junction with source `(srcX, srcGroundY, srcZ)`: `jx = x - srcX`, `jy = y - srcGroundY`, `jz = z - srcZ`; the term is `beard(jx, jy, jz, jy) * 0.4f` (`jx` and `jz` are signed here, so the kernel indices run over the full 24 cells, `-12..11`, on every axis). `0.8f` is the float 0.800000011920929 and `0.4f` is 0.4000000059604645.
+
+### 10.5 Worked examples (computed with a script that applies the formulas above in single precision; not observed from the artifact)
+
+One nether fossil piece (`fossil_5`, 2 x 5 x 1, rotation none) at template position `(100, 40, 200)`: box `(100, 40, 200)` to `(101, 44, 200)`, mode `beard_thin`, `g` = 0, `bottom` = 40. Kernel values: `KERNEL` at the centre cell (`ix = iy = iz = 12`) is 0.98449641 and `beard(0, 0, 0, 0) = -0.69596970`.
+
+| Block `(x, y, z)` | `dx, dz, yb` | Term (this record only) |
+|---|---|---|
+| (100, 40, 200) | 0, 0, 0 | -0.55677575 |
+| (100, 39, 200) | 0, 0, -1 | +0.55677575 |
+| (100, 38, 200) | 0, 0, -2 | +0.49142528 |
+| (100, 41, 200) | 0, 0, 1 | -0.49142528 |
+| (100, 44, 200) | 0, 0, 4 | -0.15928148 |
+| (100, 45, 200) | 0, 0, 5 | -0.08525947 |
+| (105, 40, 200) | 4, 0, 0 | -0.02540309 |
+| (105, 36, 203) | 4, 3, -4 | +0.03162176 |
+| (100, 52, 200) | 0, 0, 12 | 0 (`iy = 24` is out of range) |
+| (112, 40, 200) | 11, 0, 0 | -0.00001312 |
+
+The same box in the other modes at `(100, 39, 200)`: `bury` 0.91666669, `beard_box` +0.49135289 (`dy = max(0, 40 - 39, 39 - 44) = 1`, `yb = -1`), `encapsulate` 0.73333335; a junction at `(0, 0, 0)` evaluated at `(0, 0, 0)` gives `-0.27838787` and at `(0, -1, 0)` gives `+0.27838787`. At `(100, 40, 200)` a Nether block whose squeezed terrain value is 0.2 therefore becomes 0.2 - 0.5568 < 0, air; a block at `(100, 39, 200)` with value -0.3 becomes -0.3 + 0.5568 > 0, solid.
 
 ## 11. Noise definitions used by the Nether (index)
 
@@ -455,9 +518,9 @@ With the fill of section 6.2 and `squeeze`, the density of the column `(x, z) = 
 ## 15. Open questions
 
 1. **Interpolation order in 10 section 4.1.** This document reads (6.2) that the block-step volume path interpolates z, then x, then by per-block increments in y, while 10 section 4.1 gives the x, y, z `lerp3` order for every use. Results differ only by float rounding (largest difference found 9e-8, no sign change in three columns), but bit-exact terrain needs 6.2. 10 should be amended; the point-sampler path was read only in its first branch (direct evaluation at cell multiples) and the `lerp3` order was taken from 10.
-2. **Beardifier in the Nether.** `nether_fossil` has `terrain_adaptation beard_thin`; the beard shapes and any bastion jigsaw junction term were not read (10 section 11.2 only says the term is 0 without structures). 37-nether-6 section 3 and the structure engine must close this; the noise settings give no other source of structure-dependent density.
+2. **Beardifier in the Nether.** Answered: section 10 (only `nether_fossil` contributes, mode `beard_thin`; bastion and fortress have adaptation `none`; the junction term never occurs in the Nether).
 3. **Blending of old chunks.** A non-empty `Blender` changes `blend_density`, `blend_alpha`, `blend_offset` and the biome resolver (`decorateBiomeResolver`); not read. Applies only to chunks adjacent to legacy-format data.
-4. **Specialised stack classes.** `NoiseStack$Perlin` and `NoiseStack$SmearedPerlin` (the classes `NoiseStack$Builder.build` picks when all layers are plain or all smeared) were not read; the examples assume they compute the same value as the generic `NoiseStack` of 10 section 3.2, and the `PerlinNoise` / `SmearedPerlinNoise` arithmetic of 10 section 3.1 and 3.4 (the smeared `get` and `computeFudgeY` were re-read here and match 10; `sampleAndLerp`'s gradient table and `smoothstep` were taken from 10).
+4. Answered (round R2): `NoiseStack$Perlin` and `NoiseStack$SmearedPerlin` (chosen by `NoiseStack$Builder.build` when every layer is a plain, respectively smeared, Perlin noise) contain the same arithmetic as the generic `NoiseStack`: `get(x, y, z)` starts from the float 0 and, per layer in order, adds `amplitude * noise.get(x * frequency, y * frequency, z * frequency)` (the three products in double, the layer amplitude and the sum in float), and `addToVolume(buffer, volume, xzScale, yScale, amplitude)` calls the layer's `addToVolume` with `xzScale * frequency`, `yScale * frequency` and `amplitude * layerAmplitude` (float product), in layer order. The subclasses differ only in the static type of the call, so the examples' assumption holds.
 5. **Worked examples are computed.** Sections 12.1 to 12.6 come from a reference script written from this text (float rounding after each operation); they have not been compared with a run of the artifact. A mismatch would point at a misread detail of 4.3 (draw order) or 6.2.
 6. **Who else asks for `nether/temperature`.** `RandomState$1.createNoiseSampler` special-cases the two Nether climate noises; any other caller that requests these keys through `RandomState.getOrCreateNoise` would get the standard construction. No such caller was searched for.
 7. **Noise range (closed for the blended noise).** `BlendedNoise.range()` was read (5.4): about +-2.5012. Still open: the bounds of the two climate noises of 4.3 (section 8 gives only example values); `NormalNoise` range was not searched.
