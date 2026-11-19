@@ -636,6 +636,9 @@
  01 WS-I                   BINARY-LONG.
  01 WS-OFFS.
     05 WS-OF               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-OFX                 FLOAT-LONG.
+ 01 WS-OFY                 FLOAT-LONG.
+ 01 WS-OFZ                 FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-EYE-TABLE.
@@ -647,7 +650,10 @@
      CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SKY WS-BLK
      CALL "TARGET-OUTLINE" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SHAPE
 *>   The flower family, bamboo, speleothems and the propagule are drawn moved by their offset; every other offset block keeps its outline in the cell (51 section 1.4).
-     CALL "BSH-OFFSET" USING WS-STATE WS-CX WS-CY WS-CZ WS-OF(1) WS-OF(2) WS-OF(3)
+     CALL "BSH-OFFSET" USING WS-STATE WS-CX WS-CY WS-CZ WS-OFX WS-OFY WS-OFZ
+     MOVE WS-OFX TO WS-OF(1)
+     MOVE WS-OFY TO WS-OF(2)
+     MOVE WS-OFZ TO WS-OF(3)
      MOVE BSH-N(WS-SHAPE + 1) TO WS-BOXES
      IF WS-BOXES = 0
          MOVE 1 TO WS-BOXES
