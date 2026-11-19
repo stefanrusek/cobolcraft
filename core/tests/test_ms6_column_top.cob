@@ -89,6 +89,8 @@
 
 *> The walk of the replaced loop for column x, z, against MS6-COLUMN-TOP.
  COMPARE-COLUMN.
+*>   MS6-COLUMN-TOP first: a chunk that is not loaded is still unloaded for it (the walk below loads it)
+     CALL "MS6-COLUMN-TOP" USING WS-DIM WS-X WS-Z WS-GOT
      COMPUTE WS-Y = WS-MINY + DM-HEIGHT(WS-DIM) - 1
      MOVE 0 TO WS-STATE
      PERFORM UNTIL WS-STATE NOT = 0 OR WS-Y < WS-MINY
@@ -98,7 +100,6 @@
          END-IF
      END-PERFORM
      MOVE WS-Y TO WS-REF
-     CALL "MS6-COLUMN-TOP" USING WS-DIM WS-X WS-Z WS-GOT
      IF WS-GOT NOT = WS-REF
          ADD 1 TO WS-DIFFER
      END-IF

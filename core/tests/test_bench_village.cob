@@ -67,6 +67,9 @@
  01 WS-UDT                 BINARY-DOUBLE.
  01 WS-LAST-CHUNKS         BINARY-LONG.
  01 WS-STABLE              BINARY-LONG.
+ 01 WS-RANGE               BINARY-LONG.
+ 01 WS-LOW                 BINARY-LONG.
+ 01 WS-WANT                BINARY-LONG.
  01 WS-WARM                BINARY-LONG.
  01 WS-DRAINED             BINARY-DOUBLE.
  01 WS-DRAIN-MAX           BINARY-LONG.
@@ -215,9 +218,10 @@
      END-IF
      CALL "CHUNKS-FOLLOW" USING WS-CONN
      PERFORM DRAIN
-*>   warm-up: tick until the chunk count has not changed for 60 ticks (the queue makes a few chunks a tick), at most 6000 ticks
+*>   warm-up: tick until the chunk count has not changed for 60 ticks (the queue makes a few chunks a tick), at most 30000 ticks (and at least the chunks of the view)
      MOVE 0 TO WS-LAST-CHUNKS WS-STABLE WS-WARM
-     PERFORM UNTIL WS-STABLE >= 60 OR WS-WARM >= 6000
+     COMPUTE WS-WANT = (2 * WS-VIEW + 1) * (2 * WS-VIEW + 1)
+     PERFORM UNTIL (WS-STABLE >= 60 AND CK-COUNT >= WS-WANT) OR WS-WARM >= 30000
          CALL "TEST-TICKS" USING WS-ONE
          PERFORM DRAIN
          ADD 1 TO WS-WARM
@@ -497,12 +501,22 @@
      MOVE WS-FZ TO WS-VZ.
 
  SCAN-STARTS.
+*>   the first village start in x-major order within 30 chunks of the origin, else within 64
      MOVE 0 TO WS-VILLAGES WS-VX WS-VZ
      IF SD-POSS-DONE = 0
          CALL "STRUCT-POSSIBLE-BUILD"
      END-IF
-     PERFORM VARYING WS-CX FROM -30 BY 1 UNTIL WS-CX > 30
-         PERFORM VARYING WS-CZ FROM -30 BY 1 UNTIL WS-CZ > 30
+     MOVE 30 TO WS-RANGE
+     PERFORM SCAN-RANGE
+     IF WS-VILLAGES = 0
+         MOVE 64 TO WS-RANGE
+         PERFORM SCAN-RANGE
+     END-IF.
+
+ SCAN-RANGE.
+     COMPUTE WS-LOW = 0 - WS-RANGE
+     PERFORM VARYING WS-CX FROM WS-LOW BY 1 UNTIL WS-CX > WS-RANGE OR WS-VILLAGES > 0
+         PERFORM VARYING WS-CZ FROM WS-LOW BY 1 UNTIL WS-CZ > WS-RANGE OR WS-VILLAGES > 0
              CALL "STRUCT-CHUNK-STARTS" USING WS-SEED WS-CX WS-CZ WS-COUNT
              PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-COUNT
                  MOVE SDT-KEY(SC-STRUCT(WS-J)) TO WS-KEY80
