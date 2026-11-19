@@ -37,6 +37,19 @@
  01 WS-TY                  FLOAT-LONG.
  01 WS-TZ                  FLOAT-LONG.
  01 WS-NAME                PIC X(60).
+ 01 WS-MX                  FLOAT-LONG.
+ 01 WS-MY                  FLOAT-LONG.
+ 01 WS-MZ                  FLOAT-LONG.
+ 01 WS-AX                  FLOAT-LONG.
+ 01 WS-AZ                  FLOAT-LONG.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-D1                  FLOAT-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-YD                  BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
 *> The document's table: horizontal and vertical component after 0.95, thousandths per row (L 8 then L 16, angles 40 55 60 75 80); -1 is a rejected angle.
  01 WS-DATA.
     05 FILLER BINARY-LONG VALUE 587.
@@ -211,6 +224,107 @@
      MOVE "test mob 20 16: a target 5 away: the point is 3 behind the breeze (hundredths)" TO TL-CASE
      MOVE -300 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N ROUNDED = WS-VZ * 100
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The jump vector refuses a target straight above the breeze (no horizontal distance) and one too high for the angle (the denominator of v2 is negative).
+     MOVE 0.5 TO WS-QX
+     MOVE 64 TO WS-QY
+     MOVE 0 TO WS-QZ
+     MOVE 40 TO WS-ANGLE
+     CALL "BREEZE-JUMP-VECTOR" USING WS-PX WS-PY WS-PZ WS-PX WS-QY WS-PZ WS-FOLLOW WS-GRAVITY WS-ANGLE WS-OK WS-VX WS-VY WS-VZ
+     MOVE "test mob 20 16: a jump target straight above the breeze gives no vector" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 8.5 TO WS-QX
+     MOVE 84 TO WS-QY
+     CALL "BREEZE-JUMP-VECTOR" USING WS-PX WS-PY WS-PZ WS-QX WS-QY WS-QZ WS-FOLLOW WS-GRAVITY WS-ANGLE WS-OK WS-VX WS-VY WS-VZ
+     MOVE "test mob 20 16: a target 20 blocks higher at L 8 and 40 degrees gives no vector (v2 below 0)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   getPosAway in the four quadrants and on the axes: with the angle draw 0.5 the point lies along (mob - from) at dist = 0.5 x 5 x sqrt 2 = 3.5355 (draw 0.25).
+     MOVE 0.5 TO WS-MX
+     MOVE 64 TO WS-MY
+     MOVE 0.5 TO WS-MZ
+     MOVE 5 TO WS-H WS-V
+     MOVE 0.5 TO WS-D1
+     MOVE 0.25 TO WS-D2
+     MOVE 5 TO WS-YD
+     COMPUTE WS-AX = WS-MX - 3
+     COMPUTE WS-AZ = WS-MZ - 4
+     CALL "BREEZE-POS-AWAY" USING WS-MX WS-MY WS-MZ WS-AX WS-AZ WS-H WS-V WS-D1 WS-D2 WS-YD WS-OK WS-BX WS-BY WS-BZ
+     MOVE "test mob 20 16: getPosAway with the target to the south-west: the point is away, x 2 and z 3" TO TL-CASE
+     MOVE 203 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-BX * 100 + WS-BZ
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-AX = WS-MX + 3
+     COMPUTE WS-AZ = WS-MZ - 4
+     CALL "BREEZE-POS-AWAY" USING WS-MX WS-MY WS-MZ WS-AX WS-AZ WS-H WS-V WS-D1 WS-D2 WS-YD WS-OK WS-BX WS-BY WS-BZ
+     MOVE "test mob 20 16: target to the south-east: the point is x -2, z 3" TO TL-CASE
+     MOVE -197 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-BX * 100 + WS-BZ
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-AX = WS-MX + 3
+     COMPUTE WS-AZ = WS-MZ + 4
+     CALL "BREEZE-POS-AWAY" USING WS-MX WS-MY WS-MZ WS-AX WS-AZ WS-H WS-V WS-D1 WS-D2 WS-YD WS-OK WS-BX WS-BY WS-BZ
+     MOVE "test mob 20 16: target to the north-east: the point is x -2, z -3" TO TL-CASE
+     MOVE -203 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-BX * 100 + WS-BZ
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE WS-MX TO WS-AX
+     COMPUTE WS-AZ = WS-MZ - 5
+     CALL "BREEZE-POS-AWAY" USING WS-MX WS-MY WS-MZ WS-AX WS-AZ WS-H WS-V WS-D1 WS-D2 WS-YD WS-OK WS-BX WS-BY WS-BZ
+     MOVE "test mob 20 16: target due north of the mob (dx 0, dz positive): the point is z 4" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE WS-BZ TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE WS-MX TO WS-AX
+     MOVE WS-MZ TO WS-AZ
+     CALL "BREEZE-POS-AWAY" USING WS-MX WS-MY WS-MZ WS-AX WS-AZ WS-H WS-V WS-D1 WS-D2 WS-YD WS-OK WS-BX WS-BY WS-BZ
+     MOVE "test mob 20 16: mob and target at the same spot (atan2 0): the point is x 4" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE WS-BX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   getPosAway (16.5): the mob at (0.5, 64, 0.5), the target at (0.5, 5.5): away is -z. Angle draw 0.5, dist draw 0.25: dist = 0.5 x 5 x sqrt 2 = 3.5355, the block (0, 64, -4).
+     MOVE 0.5 TO WS-MX
+     MOVE 64 TO WS-MY
+     MOVE 0.5 TO WS-MZ
+     MOVE 0.5 TO WS-AX
+     MOVE 5.5 TO WS-AZ
+     MOVE 5 TO WS-H WS-V
+     MOVE 0.5 TO WS-D1
+     MOVE 0.25 TO WS-D2
+     MOVE 5 TO WS-YD
+     CALL "BREEZE-POS-AWAY" USING WS-MX WS-MY WS-MZ WS-AX WS-AZ WS-H WS-V WS-D1 WS-D2 WS-YD WS-OK WS-BX WS-BY WS-BZ
+     MOVE "test mob 20 16: getPosAway straight away: z of the block is -4" TO TL-CASE
+     MOVE -4 TO TL-EXPECTED-N
+     MOVE WS-BZ TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test mob 20 16: and x stays 0 and y 64 (the y draw 5 is the offset 0)" TO TL-CASE
+     MOVE 6400 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-BY * 100 + WS-BX
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The angle draw 0 turns the direction 90 degrees: x = -3.5355 (block -4), z = 0 (block 0).
+     MOVE 0 TO WS-D1
+     CALL "BREEZE-POS-AWAY" USING WS-MX WS-MY WS-MZ WS-AX WS-AZ WS-H WS-V WS-D1 WS-D2 WS-YD WS-OK WS-BX WS-BY WS-BZ
+     MOVE "test mob 20 16: getPosAway with the angle draw 0 is 90 degrees to the side: x -4, z 0" TO TL-CASE
+     MOVE -4 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-BX
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A distance draw of 0.81 gives 6.36 blocks: beyond h = 5, rejected; the y draw 0 gives the offset -5.
+     MOVE 0.5 TO WS-D1
+     MOVE 0.81 TO WS-D2
+     CALL "BREEZE-POS-AWAY" USING WS-MX WS-MY WS-MZ WS-AX WS-AZ WS-H WS-V WS-D1 WS-D2 WS-YD WS-OK WS-BX WS-BY WS-BZ
+     MOVE "test mob 20 16: getPosAway beyond the horizontal range is rejected" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0.25 TO WS-D2
+     MOVE 0 TO WS-YD
+     CALL "BREEZE-POS-AWAY" USING WS-MX WS-MY WS-MZ WS-AX WS-AZ WS-H WS-V WS-D1 WS-D2 WS-YD WS-OK WS-BX WS-BY WS-BZ
+     MOVE "test mob 20 16: the y draw 0 gives the offset -5" TO TL-CASE
+     MOVE 59 TO TL-EXPECTED-N
+     MOVE WS-BY TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

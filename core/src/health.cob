@@ -786,7 +786,8 @@
      CALL "ENDER-HURT" USING WS-ROW L-CAUSE WS-WITHER
      IF WS-WITHER = 1
          GOBACK
-     END-IF*>   A digging or emerging warden is invulnerable except to damage that bypasses invulnerability (20 section 15).
+     END-IF
+*>   A digging or emerging warden is invulnerable except to damage that bypasses invulnerability (20 section 15).
      CALL "WARDEN-INVULNERABLE" USING WS-ROW L-CAUSE WS-WITHER
      IF WS-WITHER = 1
          GOBACK

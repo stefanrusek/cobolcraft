@@ -202,6 +202,9 @@
  01 WS-TY                  FLOAT-LONG.
  01 WS-TZ                  FLOAT-LONG.
  01 WS-CHIT                BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-FX                   FLOAT-LONG.
@@ -249,9 +252,12 @@
                  COMPUTE WS-TA(WS-I) = WS-ST(WS-I) * WS-FRAC
          END-EVALUATE
      END-PERFORM
-     CALL "CREAKING-BLOCKS" USING L-DIM WS-CA(1) WS-CA(2) WS-CA(3) WS-BLOCKS
+     MOVE WS-CA(1) TO WS-CX
+     MOVE WS-CA(2) TO WS-CY
+     MOVE WS-CA(3) TO WS-CZ
+     CALL "CREAKING-BLOCKS" USING L-DIM WS-CX WS-CY WS-CZ WS-BLOCKS
      IF WS-BLOCKS = 1
-         CALL "CREAKING-CUBE-CLIP" USING WS-CA(1) WS-CA(2) WS-CA(3) WS-FX WS-FY WS-FZ WS-TX WS-TY WS-TZ WS-CHIT
+         CALL "CREAKING-CUBE-CLIP" USING WS-CX WS-CY WS-CZ WS-FX WS-FY WS-FZ WS-TX WS-TY WS-TZ WS-CHIT
          IF WS-CHIT = 1
              MOVE 1 TO L-HIT
              GOBACK
@@ -276,9 +282,12 @@
              IF WS-TA(WS-AXIS) < 1.0E299
                  COMPUTE WS-TA(WS-AXIS) = WS-TA(WS-AXIS) + WS-ST(WS-AXIS)
              END-IF
-             CALL "CREAKING-BLOCKS" USING L-DIM WS-CA(1) WS-CA(2) WS-CA(3) WS-BLOCKS
+             MOVE WS-CA(1) TO WS-CX
+             MOVE WS-CA(2) TO WS-CY
+             MOVE WS-CA(3) TO WS-CZ
+             CALL "CREAKING-BLOCKS" USING L-DIM WS-CX WS-CY WS-CZ WS-BLOCKS
              IF WS-BLOCKS = 1
-                 CALL "CREAKING-CUBE-CLIP" USING WS-CA(1) WS-CA(2) WS-CA(3) WS-FX WS-FY WS-FZ WS-TX WS-TY WS-TZ WS-CHIT
+                 CALL "CREAKING-CUBE-CLIP" USING WS-CX WS-CY WS-CZ WS-FX WS-FY WS-FZ WS-TX WS-TY WS-TZ WS-CHIT
                  IF WS-CHIT = 1
                      MOVE 1 TO L-HIT
                      MOVE 1 TO WS-DONE

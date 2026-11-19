@@ -96,6 +96,16 @@
      MOVE 10 TO WS-TICKS
      PERFORM FLY-AND-CHECK-X
      CALL "ENTITY-REMOVE" USING WS-MOB
+*>   1b. A wish without a speed modifier (0) acts as 1.0.
+     MOVE 0 TO WS-MOD
+     COMPUTE WS-WANT-X = WS-BX + 1000
+     COMPUTE WS-WANT-Y = WS-BY + 0.5
+     MOVE "no modifier" TO WS-NAME
+     PERFORM FLY-FROM-REST
+     MOVE 500 TO WS-EXPECT
+     MOVE 1 TO WS-TICKS
+     PERFORM FLY-AND-CHECK-X
+     CALL "ENTITY-REMOVE" USING WS-MOB
 *>   2. The random move (modifier 0.25 gives 0.0125).
      MOVE 0.25 TO WS-MOD
      MOVE "random move along x" TO WS-NAME

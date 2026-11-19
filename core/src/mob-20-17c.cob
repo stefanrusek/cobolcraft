@@ -184,16 +184,15 @@
          END-PERFORM
          IF WS-FOUND = 1
 *>           The candidate is the block above the cursor; the creaking (0.9 x 2.7) needs that cell and the two above it free.
-             MOVE 1 TO WS-ROOM
+             MOVE 0 TO WS-ROOM
              PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
                  COMPUTE WS-Y1 = WS-CY + WS-I
                  CALL "WORLD-GET-BLOCK" USING HT-DIM(L-SLOT) WS-CX WS-Y1 WS-CZ WS-STATE
                  CALL "CRK-STATE-SOLID" USING WS-STATE WS-SOLID WS-LEAVES
-                 IF WS-SOLID = 1
-                     MOVE 0 TO WS-ROOM
-                 END-IF
+                 ADD WS-SOLID TO WS-ROOM
              END-PERFORM
-             IF WS-ROOM = 1
+*>           WS-ROOM counts the solid cells: none, and the creaking fits.
+             IF WS-ROOM = 0
                  COMPUTE WS-X = WS-CX + 0.5
                  COMPUTE WS-Y = WS-CY + 1
                  COMPUTE WS-Z = WS-CZ + 0.5

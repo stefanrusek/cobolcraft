@@ -9,6 +9,7 @@
 *>   BREEZE-POINT-BEHIND USING tx, ty, tz (the target's feet), head yaw (FLOAT-LONG degrees), gaussian, unit (FLOAT-LONG, nextGaussian then nextFloat), px, py, pz out:
 *>     randomPointBehindTarget: yaw = head yaw + 180 + gaussian x 45, distance 4 + 4 x unit along Vec3.directionFromRotation(0, yaw).
 *>   WIND-BURST USING dim, x, y, z (FLOAT-LONG), source entity id: the explosion of a breeze wind charge (16.3): radius 3, push only.
+*>   BREEZE-POS-AWAY USING mob x, y, z, from x, z, h, v, the three draws, ok, block x, y, z: one candidate of getPosAway (16.5; 18 section 4.2).
 *>   BREEZE-POINT-MIDDLE USING bx, by, bz (the breeze), tx, ty, tz (the target), unit (FLOAT-LONG nextDouble), px, py, pz out: the point on the line to the target (8 - 4 x unit) blocks short of it.
 
  IDENTIFICATION DIVISION.
@@ -94,13 +95,11 @@
      COMPUTE WS-TWO-THETA = 2 * WS-THETA
      COMPUTE WS-COS = FUNCTION COS(WS-THETA)
      COMPUTE WS-DEN = WS-L * FUNCTION SIN(WS-TWO-THETA) - 2 * WS-DY * WS-COS * WS-COS
-     IF WS-DEN = 0
+*>   v2 = L squared x g / den: a denominator of 0 or below (a target too high for the angle) gives no vector (v2 below 0, or infinite).
+     IF WS-DEN <= 0
          GOBACK
      END-IF
      COMPUTE WS-V2 = (WS-L * WS-L * L-GRAVITY) / WS-DEN
-     IF WS-V2 < 0
-         GOBACK
-     END-IF
      COMPUTE WS-V = FUNCTION SQRT(WS-V2)
      COMPUTE WS-VMAX = L-FOLLOW * WS-F
      IF WS-V > WS-VMAX
@@ -362,3 +361,67 @@
      CALL "PB-FREE" USING PB-BUFFER
      GOBACK.
  END PROGRAM WIND-BURST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BREEZE-POS-AWAY.
+*> USING mob x, y, z, from x, z (FLOAT-LONG), h, v (BINARY-LONG: 5 and 5 for the slide), angle draw (nextFloat), dist draw (nextDouble), y draw (nextInt(2v + 1)), ok out, block x, y, z out
+*> (BINARY-LONG): one candidate of DefaultRandomPos.getPosAway (18 section 4.2, 44-3 section 2): the within-radians direction with minH 0, maxH h, maxAngle pi / 2 (1.5707963705062866) and
+*> dx, dz = mob minus from: angle = atan2(dz, dx) - pi / 2 + (2 x draw - 1) x maxAngle, dist = lerp(sqrt(nextDouble), 0, h) x sqrt(2), x = -dist x sin(angle), z = dist x cos(angle), rejected when
+*> |x| or |z| exceeds h, y = nextInt(2v + 1) - v; the block is that offset from the mob's position. The stability and malus tests and the scoring of the up to 10 candidates are the caller's.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-ATAN                FLOAT-LONG.
+ 01 WS-ANGLE               FLOAT-LONG.
+ 01 WS-DIST                FLOAT-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-PI                  FLOAT-LONG VALUE 3.141592653589793.
+ LINKAGE SECTION.
+ 01 L-MX                   FLOAT-LONG.
+ 01 L-MY                   FLOAT-LONG.
+ 01 L-MZ                   FLOAT-LONG.
+ 01 L-FX                   FLOAT-LONG.
+ 01 L-FZ                   FLOAT-LONG.
+ 01 L-H                    BINARY-LONG.
+ 01 L-V                    BINARY-LONG.
+ 01 L-ANGLE-DRAW           FLOAT-LONG.
+ 01 L-DIST-DRAW            FLOAT-LONG.
+ 01 L-Y-DRAW               BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ 01 L-BX                   BINARY-LONG.
+ 01 L-BY                   BINARY-LONG.
+ 01 L-BZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-MX L-MY L-MZ L-FX L-FZ L-H L-V L-ANGLE-DRAW L-DIST-DRAW L-Y-DRAW L-OK L-BX L-BY L-BZ.
+     MOVE 0 TO L-OK L-BX L-BY L-BZ
+     COMPUTE WS-DX = L-MX - L-FX
+     COMPUTE WS-DZ = L-MZ - L-FZ
+*>   atan2(dz, dx) from the arc tangent and the quadrant.
+     EVALUATE TRUE
+         WHEN WS-DX > 0
+             COMPUTE WS-ATAN = FUNCTION ATAN(WS-DZ / WS-DX)
+         WHEN WS-DX < 0 AND WS-DZ >= 0
+             COMPUTE WS-ATAN = FUNCTION ATAN(WS-DZ / WS-DX) + WS-PI
+         WHEN WS-DX < 0
+             COMPUTE WS-ATAN = FUNCTION ATAN(WS-DZ / WS-DX) - WS-PI
+         WHEN WS-DZ > 0
+             COMPUTE WS-ATAN = WS-PI / 2
+         WHEN WS-DZ < 0
+             COMPUTE WS-ATAN = - WS-PI / 2
+         WHEN OTHER
+             MOVE 0 TO WS-ATAN
+     END-EVALUATE
+     COMPUTE WS-ANGLE = WS-ATAN - WS-PI / 2 + (2 * L-ANGLE-DRAW - 1) * 1.5707963705062866
+     COMPUTE WS-DIST = FUNCTION SQRT(L-DIST-DRAW) * L-H * FUNCTION SQRT(2)
+     COMPUTE WS-X = - WS-DIST * FUNCTION SIN(WS-ANGLE)
+     COMPUTE WS-Z = WS-DIST * FUNCTION COS(WS-ANGLE)
+     IF FUNCTION ABS(WS-X) > L-H OR FUNCTION ABS(WS-Z) > L-H
+         GOBACK
+     END-IF
+     COMPUTE L-BX = FUNCTION INTEGER(L-MX + WS-X)
+     COMPUTE L-BY = FUNCTION INTEGER(L-MY + L-Y-DRAW - L-V)
+     COMPUTE L-BZ = FUNCTION INTEGER(L-MZ + WS-Z)
+     MOVE 1 TO L-OK
+     GOBACK.
+ END PROGRAM BREEZE-POS-AWAY.

@@ -504,6 +504,46 @@
      END-IF
      PERFORM CASE-LINE
      CALL "ENTITY-REMOVE" USING WS-WARDEN
+*>   A disturbance while it has an attack target refreshes the present dig cooldown (and arriving at the walk target ends the walk).
+     PERFORM NEW-WARDEN
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE WS-PLAYER TO EN-TARGET(WS-WARDEN)
+     MOVE 5 TO WD-DIG-CD(WS-W)
+     COMPUTE WS-BX = FUNCTION INTEGER(EN-X(WS-WARDEN)) - 4
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-Y)
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z)
+     CALL "WARDEN-DISTURB" USING WS-WARDEN WS-BX WS-BY WS-BZ
+     MOVE "a disturbance with an attack target refreshes the dig cooldown to 1200" TO TL-CASE
+     MOVE 1200 TO TL-EXPECTED-N
+     MOVE WD-DIG-CD(WS-W) TO TL-OBSERVED-N
+     PERFORM CASE-LINE
+     CALL "ENTITY-REMOVE" USING WS-WARDEN
+     PERFORM NEW-WARDEN
+     MOVE 1 TO PL-MODE(WS-PLAYER)
+     COMPUTE WS-BX = FUNCTION INTEGER(EN-X(WS-WARDEN)) - 5
+     CALL "WARDEN-DISTURB" USING WS-WARDEN WS-BX WS-BY WS-BZ
+     PERFORM 60 TIMES
+         CALL "MOB-STEP" USING WS-WARDEN
+     END-PERFORM
+     MOVE "the warden reaches a location 5 blocks away and stops walking (walk target cleared)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WD-WALK-ON(WS-W) TO TL-OBSERVED-N
+     PERFORM CASE-LINE
+     CALL "ENTITY-REMOVE" USING WS-WARDEN
+*>   With every state slot taken a warden has no brain state: the helpers do nothing.
+     PERFORM NEW-WARDEN
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WD-MAX
+         COMPUTE WD-ID(WS-I) = 900000 + WS-I
+     END-PERFORM
+     CALL "WD-FIND" USING EN-ID(WS-WARDEN) WS-ZERO WS-W
+     CALL "WARDEN-ACTIVE" USING WS-WARDEN WS-K WS-LAST
+     CALL "WARDEN-DISTURB" USING WS-WARDEN WS-BX WS-BY WS-BZ
+     CALL "WARDEN-HEAR-ONE" USING WS-WARDEN WS-EVENT-X WS-EVENT-Y WS-EVENT-Z WS-PLAYER WS-ZERO
+     MOVE "a warden without a state slot: level and top suspect are 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-K + WS-LAST + WS-W
+     PERFORM CASE-LINE
+     CALL "ENTITY-REMOVE" USING WS-WARDEN
      STOP RUN.
 
  CASE-LINE.

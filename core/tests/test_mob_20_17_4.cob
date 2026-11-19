@@ -49,6 +49,9 @@
  01 WS-HAS                 BINARY-LONG.
  01 WS-MAXY                BINARY-LONG.
  01 WS-IN-RANGE            BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-SOLID               BINARY-LONG.
+ 01 WS-LEAVES              BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
@@ -244,6 +247,45 @@
      MOVE EN-HEALTH(WS-CROW) TO TL-OBSERVED-N
      PERFORM ASSERT-LINE
      CALL "ENTITY-REMOVE" USING WS-CROW
+*>   A link to a creaking that does not exist is cleared once the heart is 30 ticks old.
+     MOVE 14000 TO WS-TIME
+     PERFORM NEW-HEART
+     MOVE 999999 TO HT-LINK(WS-SLOT)
+     MOVE 40 TO HT-AGE(WS-SLOT)
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     PERFORM 2 TIMES
+         CALL "HEART-TICK" USING WS-SLOT WS-LOGS WS-TIME WS-PERSIST
+     END-PERFORM
+     MOVE "a link to a creaking that is gone is cleared after the 30 tick grace period" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF HT-LINK(WS-SLOT) NOT = 999999
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     PERFORM ASSERT-LINE
+*>   A creaking bound to a heart position that has no heart record dies too.
+     COMPUTE WS-X = PL-X(WS-PLAYER) + 2
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-CROW
+     CALL "CREAKING-BIND" USING WS-CROW WS-HX WS-HY WS-HZ
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > HT-MAX
+         INITIALIZE HT-ENTRY(WS-I)
+     END-PERFORM
+     CALL "MOB-STEP" USING WS-CROW
+     MOVE "a creaking bound to a heart without a record dies" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-HEALTH(WS-CROW) TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+     CALL "ENTITY-REMOVE" USING WS-CROW
+*>   A leaves block is refused as a floor.
+     MOVE "minecraft:oak_leaves" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
+     CALL "CRK-STATE-SOLID" USING WS-STATE WS-SOLID WS-LEAVES
+     MOVE "oak leaves are solid and leaves (the strategy refuses them as a floor)" TO TL-CASE
+     MOVE 11 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-SOLID * 10 + WS-LEAVES
+     PERFORM ASSERT-LINE
 *>   No spawn: Peaceful; only a spectator; a player 40 blocks away; in the day; logs gone.
      MOVE 14000 TO WS-TIME
      MOVE 0 TO BW-DIFFICULTY

@@ -79,6 +79,10 @@
      MOVE "owned bite on Hard does 9" TO WS-LABEL
      MOVE 11000 TO TL-EXPECTED-N
      PERFORM BITE-PLAYER
+     MOVE 0 TO BW-DIFFICULTY
+     MOVE "owned bite on Peaceful does 0 (scaled)" TO WS-LABEL
+     MOVE 20000 TO TL-EXPECTED-N
+     PERFORM BITE-PLAYER
      MOVE 2 TO BW-DIFFICULTY
      PERFORM WEAR-CHEST
      MOVE "owned bite on Normal ignores an iron chestplate" TO WS-LABEL

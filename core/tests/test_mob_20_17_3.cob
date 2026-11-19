@@ -46,6 +46,8 @@
  01 WS-MOVED               FLOAT-LONG.
  01 WS-FLAG                BINARY-LONG.
  01 WS-TIME                BINARY-DOUBLE.
+ 01 WS-SPECIES             PIC X(24).
+ 01 WS-SCALE               FLOAT-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
@@ -315,6 +317,29 @@
      MOVE "and the sensor restarts at 20 ticks" TO TL-CASE
      MOVE 20 TO TL-EXPECTED-N
      MOVE CRK-SENSOR(WS-SLOT) TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+*>   The strolls of the warden and the creaking are scaled by the square of their stroll modifiers (0.5 against 1.2, and 0.3).
+     MOVE "warden" TO WS-SPECIES
+     CALL "STDMOB-STROLL-SCALE" USING WS-SPECIES WS-SCALE
+     MOVE "the warden's stroll scale is (0.5 / 1.2) squared (ten thousandths)" TO TL-CASE
+     MOVE 1736 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-SCALE * 10000
+     PERFORM ASSERT-LINE
+     MOVE "creaking" TO WS-SPECIES
+     CALL "STDMOB-STROLL-SCALE" USING WS-SPECIES WS-SCALE
+     MOVE "the creaking's stroll scale is 0.3 squared (hundredths)" TO TL-CASE
+     MOVE 9 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-SCALE * 100
+     PERFORM ASSERT-LINE
+*>   With every state slot taken a creaking has no brain: nothing happens to it.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CRK-MAX
+         COMPUTE CRK-ID(WS-I) = 900000 + WS-I
+     END-PERFORM
+     MOVE EN-X(WS-MOB) TO WS-MOVED
+     CALL "CREAKING-BRAIN" USING WS-MOB
+     MOVE "a creaking without a state slot is left alone" TO TL-CASE
+     COMPUTE TL-EXPECTED-N ROUNDED = WS-MOVED * 100
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-X(WS-MOB) * 100
      PERFORM ASSERT-LINE
      STOP RUN.
 

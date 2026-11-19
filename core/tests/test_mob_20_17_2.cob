@@ -41,6 +41,8 @@
  01 WS-TX                  FLOAT-LONG.
  01 WS-TY                  FLOAT-LONG.
  01 WS-TZ                  FLOAT-LONG.
+ 01 WS-IX                  BINARY-LONG.
+ 01 WS-IZ                  BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
@@ -139,12 +141,16 @@
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-HIT TO TL-OBSERVED-N
      PERFORM ASSERT-LINE
-     CALL "CREAKING-CLIP" USING WS-DIM WS-FX2 WS-FY2 WS-FZ2 WS-FX2 WS-FY2 WS-FZ2 WS-HIT
+     MOVE WS-FX2 TO WS-TX
+     MOVE WS-FY2 TO WS-TY
+     MOVE WS-FZ2 TO WS-TZ
+     CALL "CREAKING-CLIP" USING WS-DIM WS-FX2 WS-FY2 WS-FZ2 WS-TX WS-TY WS-TZ WS-HIT
      MOVE "a segment from a point to itself is a miss" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-HIT TO TL-OBSERVED-N
      PERFORM ASSERT-LINE
 *>   A segment along the top face of the block (y = 66 exactly over the block at y 65): it runs in the cells above and misses; 0.1 lower it hits.
+     COMPUTE WS-TX = WS-BX + 10.5
      COMPUTE WS-FY2 = WS-BY + 2
      COMPUTE WS-TY = WS-BY + 2
      CALL "CREAKING-CLIP" USING WS-DIM WS-FX2 WS-FY2 WS-FZ2 WS-TX WS-TY WS-TZ WS-HIT
@@ -159,6 +165,42 @@
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-HIT TO TL-OBSERVED-N
      PERFORM ASSERT-LINE
+*>   A segment that starts inside a solid cell hits it at once (the start-inside rule), a tiny one inside it does not (below the length of 3e-4), one along +z walks the z axis to a block.
+     COMPUTE WS-FY = WS-BY + 1
+     COMPUTE WS-FX = WS-BX + 5
+     COMPUTE WS-FX2 = WS-BX + 5.5
+     COMPUTE WS-FY2 = WS-BY + 1.5
+     COMPUTE WS-FZ2 = WS-BZ + 0.5
+     COMPUTE WS-TX = WS-BX + 9.5
+     COMPUTE WS-TY = WS-BY + 1.5
+     COMPUTE WS-TZ = WS-BZ + 0.5
+     CALL "CREAKING-CLIP" USING WS-DIM WS-FX2 WS-FY2 WS-FZ2 WS-TX WS-TY WS-TZ WS-HIT
+     MOVE "a segment starting inside the stone hits it at once" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-HIT TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+     COMPUTE WS-TX = WS-BX + 5.50001
+     CALL "CREAKING-CLIP" USING WS-DIM WS-FX2 WS-FY2 WS-FZ2 WS-TX WS-TY WS-TZ WS-HIT
+     MOVE "a segment of 1e-5 inside the stone is too short to hit" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HIT TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-FY WS-BZ WS-AIR
+     COMPUTE WS-IX = WS-BX + 8
+     COMPUTE WS-IZ = WS-BZ + 5
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-IX WS-FY WS-IZ WS-STONE
+     COMPUTE WS-FX2 = WS-BX + 8.5
+     COMPUTE WS-FY2 = WS-BY + 1.5
+     COMPUTE WS-FZ2 = WS-BZ + 0.5
+     COMPUTE WS-TX = WS-BX + 8.5
+     COMPUTE WS-TY = WS-BY + 1.5
+     COMPUTE WS-TZ = WS-BZ + 10.5
+     CALL "CREAKING-CLIP" USING WS-DIM WS-FX2 WS-FY2 WS-FZ2 WS-TX WS-TY WS-TZ WS-HIT
+     MOVE "a segment along +z hits the stone 5 cells ahead" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-HIT TO TL-OBSERVED-N
+     PERFORM ASSERT-LINE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-IX WS-FY WS-IZ WS-AIR
 *>   A diagonal segment through a cell corner of the walk and a downward one onto the floor.
      COMPUTE WS-FY2 = WS-BY + 5
      COMPUTE WS-TY = WS-BY - 3
