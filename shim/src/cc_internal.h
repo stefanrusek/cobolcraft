@@ -29,6 +29,8 @@ extern GLFWwindow *cc_win_window;
 #define CC_VK_MAX_SETS 256
 /* Frames the CPU may record and submit before the GPU has finished the oldest one (CC_VK_INFLIGHT=1 picks one). */
 #define CC_VK_FRAMES 2
+/* Entries of the CC_GPU_STATS phase table (ccshim.h CC_PHASE_*, 1 to 10; 0 unused). */
+#define CC_PHASES 11
 
 typedef struct {
     VkBuffer buffer;

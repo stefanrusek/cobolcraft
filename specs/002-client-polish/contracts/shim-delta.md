@@ -38,3 +38,5 @@ the texture only when they change. Environment variables read by `cc_vk_init` (a
 
 MoltenVK's own `MVK_CONFIG_*` environment variables apply as usual (for example `MVK_CONFIG_SYNCHRONOUS_QUEUE_SUBMITS=0` moves the
 Metal encoding of `vkQueueSubmit` off the calling thread).
+
+`cc_stat_phase(phase)` (diagnostics, ABI addition; constants `CC_PHASE_*` / `CC-PHASE-*`): with `CC_GPU_STATS=1` the program tells the shim which part of its frame it enters (input, pump, coretick, clienttick, controls, net, world, ui, rlist, submit); the statistics line is followed by `cc_gpu: phases ms/frame (entries/frame): ...` (the phases entered in the window; `coretick` entries per frame are the core ticks run). `cc_vk_frame_begin` ends the running phase. Without `CC_GPU_STATS` the call returns at once.

@@ -39,11 +39,17 @@ static void check(VkResult result, const char *what) {
 typedef struct {
     uint64_t frames, draws, verts, tex_updates, tex_full, meshes, mesh_verts, idle_waits, gpu_n;
     double app, fence, acquire, record, submit, present, idle, upload, gpu, gpu_max;
+    double phase_ms[CC_PHASES];
+    uint64_t phase_n[CC_PHASES];
 } stats_window_t;
+
+/* The names of the phases the program reports with cc_stat_phase (ccshim.h CC_PHASE_*), in order; index 0 is unused. */
+static const char *const phase_names[CC_PHASES] = {"", "input", "pump", "coretick", "clienttick", "controls", "net", "world", "ui", "rlist", "submit"};
 
 static struct {
     int on;
-    double report_t, last_end, record_from;
+    double report_t, last_end, record_from, phase_from;
+    int phase; /* the phase running (0 none) */
     int queried[CC_VK_FRAMES]; /* the slot's last frame wrote its timestamps */
     stats_window_t w;
 } stats;
@@ -76,8 +82,25 @@ void cc_vk_stats_flush(void) {
             (double)w->verts / n, (double)w->tex_updates / n, (double)w->tex_full / n, (double)w->meshes / n, (double)w->mesh_verts / n,
             (double)w->idle_waits / n, cc_vk_state.image_count, (int)cc_vk_state.present_mode, cc_vk_state.in_flight);
     fflush(stderr);
+    char phases[512] = "";
+    size_t used = 0;
+    for (int p = 1; p < CC_PHASES; p++)
+        if (w->phase_n[p] > 0) used += (size_t)snprintf(phases + used, sizeof phases - used, " %s=%.2f(x%.1f)", phase_names[p], w->phase_ms[p] / n, (double)w->phase_n[p] / n);
+    if (used > 0) fprintf(stderr, "cc_gpu: phases ms/frame (entries/frame):%s\n", phases);
     memset(w, 0, sizeof *w);
     stats.report_t = now;
+}
+
+/* The program enters phase `phase` (CC_PHASE_*, 0 none): the time since the last call is charged to the phase that was running. */
+void cc_stat_phase(int32_t phase) {
+    if (!stats.on || phase < 0 || phase >= CC_PHASES) return;
+    double now = monotonic_ms();
+    if (stats.phase > 0) {
+        stats.w.phase_ms[stats.phase] += now - stats.phase_from;
+        stats.w.phase_n[stats.phase]++;
+    }
+    stats.phase = phase;
+    stats.phase_from = now;
 }
 
 /* The GPU time of the render pass of the frame that last used `slot`, once its fence has been seen signalled. */
@@ -1048,6 +1071,7 @@ static int bound_pipeline;
 static VkDescriptorSet bound_set;
 
 int32_t cc_vk_frame_begin(const float clear_rgba[4]) {
+    cc_stat_phase(0);
     double t0 = stat_now();
     int w, h;
     glfwGetFramebufferSize(cc_win_window, &w, &h);

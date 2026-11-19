@@ -186,9 +186,11 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CL-STEP.
 *> USING CLIENT-STATE, events (24-byte records, shim-abi §8), event count, clock (BINARY-DOUBLE ms).
+*> The cc_stat_phase calls tell the shim's CC_GPU_STATS output which part of the frame runs (nothing otherwise).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CCSHIM.
  01 WS-I                   BINARY-LONG.
  01 WS-CONN                BINARY-LONG.
  01 WS-ID                  BINARY-LONG VALUE 13.
@@ -207,6 +209,7 @@
  01 L-COUNT                BINARY-LONG.
  01 L-NOW                  BINARY-DOUBLE.
  PROCEDURE DIVISION USING CLIENT-STATE L-EVENTS L-COUNT L-NOW.
+     CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-INPUT
      MOVE L-NOW TO CL-NOW-MS
      ADD 1 TO CL-FRAMES
      SET ADDRESS OF B-EVENTS TO ADDRESS OF L-EVENTS
@@ -229,9 +232,11 @@
      END-IF
 *>   A hosted world (US16): its due core ticks, unless paused; its console lines.
      IF SP-ACTIVE = 1
+         CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-PUMP
          CALL "SP-PUMP" USING CLIENT-STATE
      END-IF
 *>   Sprinting starts or stops before the tick that moves at its speed.
+     CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-CLIENT-TICK
      IF CN-PHASE(CONN-GAME) = PH-PLAY
          CALL "CONTROLS-SPRINT" USING CLIENT-STATE
          CALL "CONTROLS-SNEAK" USING CLIENT-STATE
@@ -274,6 +279,7 @@
 *>   The target (world screen only) and, in play, the block controls (which abort a break once the
 *>   world is left), the hotbar (world and inventory screens) and the throw keys (world screen;
 *>   on a container screen MENU-POINTER throws from a slot or the cursor).
+     CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-CONTROLS
      MOVE 0 TO TG-HIT TG-ENTITY-HIT
      IF SM-SCREEN = SCR-WORLD
          CALL "RAYCAST" USING CLIENT-STATE
@@ -296,6 +302,7 @@
          END-IF
      END-IF
 *>   The connections, never waiting (what this frame queued goes out now).
+     CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-NET
      IF SM-SCREEN = SCR-SERVER-LIST
          CALL "SERVER-LIST-PING" USING CLIENT-STATE
      END-IF
@@ -306,12 +313,15 @@
      END-PERFORM
      CALL "PACKS-PUMP" USING CLIENT-STATE
 *>   Daylight (SKY-UPDATE) is a draw-time uniform (SUBMIT-FRAME, cc_vk_daylight): no section is meshed again.
+     CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-WORLD
      CALL "SKY-UPDATE" USING CLIENT-STATE
      CALL "DIMFX-ENV" USING CLIENT-STATE
      CALL "ANIM-TICK" USING CLIENT-STATE CL-NOW-MS
      CALL "MESH-DIRTY" USING CLIENT-STATE WS-BUDGET
+     CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-UI
      CALL "SCREEN-BUILD" USING CLIENT-STATE
      CALL "UI-RENDER" USING CLIENT-STATE
+     CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-RENDER-LIST
      CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
      GOBACK.
  END PROGRAM CL-STEP.

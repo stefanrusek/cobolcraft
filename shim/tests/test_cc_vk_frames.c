@@ -144,7 +144,11 @@ int main(void) {
     dup2(fd, 2);
     cc_vk_stats_flush();
     for (int i = 0; i < 3; i++) {
-        cc_vk_frame_begin(CLEAR);
+        cc_stat_phase(CC_PHASE_INPUT);
+        cc_stat_phase(CC_PHASE_CORE_TICK);
+        cc_stat_phase(99); /* not a phase: ignored, the core tick goes on */
+        cc_stat_phase(-1);
+        cc_vk_frame_begin(CLEAR); /* ends the phase running */
         cc_vk_draw(1, CC_PIPE_OPAQUE, CC_TEX_BLOCKS, IDENTITY);
         cc_vk_frame_end();
     }
@@ -165,6 +169,9 @@ int main(void) {
     tl_int("test cc_gpu stats line starts with the frame rate", 1, strncmp(text, "cc_gpu: fps=", 12) == 0);
     tl_int("test cc_gpu stats line counts one draw of six vertices a frame", 1, strstr(text, "draws=1 verts=6 ") != NULL);
     tl_int("test cc_gpu stats line reports the frames in flight", 1, strstr(text, "in_flight=2") != NULL);
+    tl_int("test cc_gpu phase line names the phases the program entered with the entries per frame", 1,
+           strstr(text, "cc_gpu: phases ms/frame (entries/frame): input=") != NULL && strstr(text, "coretick=") != NULL && strstr(text, "(x1.0)") != NULL);
+    tl_int("test cc_gpu phase line leaves out the phases never entered", 1, strstr(text, "ui=") == NULL);
     tl_int("test cc_gpu stats line has the GPU time of the render pass", 1, strstr(text, "gpu ms/frame=") != NULL);
 
     cc_vk_shutdown();
