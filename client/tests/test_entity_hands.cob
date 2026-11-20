@@ -286,6 +286,8 @@
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   A full vertex budget: the held item is skipped when its 12 vertices no longer fit, and drawn when they just fit.
+*>   (the row's arm frames are dropped: with them ENTITY-HELD-EMIT hands the item to ENTITY-HELD-POSED)
+     MOVE 0 TO EN-HAND-FOK(1, 1) EN-HAND-FOK(1, 2)
      COMPUTE RL-GI-COUNT = CL-MAX-GI-VERTICES - 11
      MOVE 1 TO WS-ROW-N
      MOVE 1 TO WS-HAND-N

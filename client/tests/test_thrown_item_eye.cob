@@ -31,6 +31,7 @@
  01 WS-Z                   FLOAT-LONG.
  01 WS-YAW                 FLOAT-SHORT.
  01 WS-K                   BINARY-LONG.
+ 01 WS-ROW-N               BINARY-LONG.
  01 WS-U0                  FLOAT-SHORT.
  01 WS-V0                  FLOAT-SHORT.
  01 WS-U1                  FLOAT-SHORT.
@@ -223,6 +224,14 @@
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-POINT
      MOVE "T43410 a boat adds nothing" TO TL-CASE
      MOVE 24 TO TL-EXPECTED-N
+     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   a full ground item mesh takes no more thrown item (its 6 vertices do not fit)
+     COMPUTE RL-GI-COUNT = CL-MAX-GI-VERTICES - 5
+     MOVE 1 TO WS-ROW-N
+     CALL "ENTITY-THROWN-EMIT" USING CLIENT-STATE WS-ROW-N WS-EYE-POINT
+     MOVE "T43410 a thrown item that does not fit the vertex budget is skipped" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = CL-MAX-GI-VERTICES - 5
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
