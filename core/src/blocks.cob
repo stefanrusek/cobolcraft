@@ -411,6 +411,8 @@
      CALL "BLOCK-STATE-PROP" USING WS-WL-MODE WS-STATE WS-WL-NAME WS-WL-TEXT WS-FOUND-STATE
      MOVE WS-FOUND-STATE TO WS-STATE
      CALL "BE-PLACE-STATE" USING L-ID PLAY-SERVERBOUND WS-DIM WS-X WS-Y WS-Z WS-STATE
+*>   A redstone lamp, trapdoor, fence gate or door starts with the signal around its position (30 part 7 sections 3.3, 4.2, 5.2 and 6).
+     CALL "REDSTONE-PLACE-STATE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "SIGN-PLACED" USING L-ID WS-DIM WS-X WS-Y WS-Z WS-STATE
 *>   The game event block_place at the block centre with the player and the placed state as context (29 section 8 step 8): the warden hears it unless the state is wool.

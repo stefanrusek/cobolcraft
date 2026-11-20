@@ -1088,6 +1088,8 @@
      IF LS-BIT = 1
          MOVE -1 TO LS-SKIP
          CALL "BU-NEIGHBORS-EXCEPT" USING L-DIM L-X L-Y L-Z LS-OLD-BLOCK LS-SKIP
+*>       a new state with an analog output tells the comparators around it (3.4; redstone-live-d.cob)
+         CALL "RL-ANALOG-NOTICE-OF" USING L-DIM L-X L-Y L-Z LS-NEW-BLOCK
      END-IF
      COMPUTE LS-LOW = FUNCTION MOD(L-FLAGS, 32) - FUNCTION MOD(L-FLAGS, 16)
      IF LS-LOW = 0 AND L-BUDGET > 0

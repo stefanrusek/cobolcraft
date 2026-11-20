@@ -69,6 +69,7 @@
  01 WS-N-DELAY             PIC X(16) VALUE "delay".
  01 WS-N-LOCKED            PIC X(16) VALUE "locked".
  01 WS-N-MODE              PIC X(16) VALUE "mode".
+ 01 WS-N-POWER             PIC X(16) VALUE "power".
  01 WS-DIR                 BINARY-LONG.
  PROCEDURE DIVISION.
      IF RL-EPOCH = CB-EPOCH
@@ -102,8 +103,56 @@
                  MOVE 8 TO WS-CLASS
              WHEN WS-BARE = "hopper"
                  MOVE 10 TO WS-CLASS
+             WHEN WS-BARE = "redstone_lamp"
+                 MOVE 11 TO WS-CLASS
+             WHEN WS-BARE = "tnt"
+                 MOVE 14 TO WS-CLASS
+             WHEN WS-BARE = "note_block"
+                 MOVE 16 TO WS-CLASS
+             WHEN WS-BARE = "observer"
+                 MOVE 17 TO WS-CLASS
+             WHEN WS-BARE = "light_weighted_pressure_plate" OR "heavy_weighted_pressure_plate"
+                 MOVE 19 TO WS-CLASS
+             WHEN WS-BARE = "daylight_detector"
+                 MOVE 20 TO WS-CLASS
+             WHEN WS-BARE = "target"
+                 MOVE 21 TO WS-CLASS
+             WHEN WS-BARE = "detector_rail"
+                 MOVE 23 TO WS-CLASS
+             WHEN WS-BARE = "tripwire_hook"
+                 MOVE 24 TO WS-CLASS
+             WHEN WS-BARE = "tripwire"
+                 MOVE 25 TO WS-CLASS
+             WHEN WS-BARE = "sculk_sensor"
+                 MOVE 26 TO WS-CLASS
+             WHEN WS-BARE = "calibrated_sculk_sensor"
+                 MOVE 27 TO WS-CLASS
+             WHEN WS-BARE = "lectern"
+                 MOVE 28 TO WS-CLASS
+             WHEN WS-BARE = "dispenser"
+                 MOVE 29 TO WS-CLASS
+             WHEN WS-BARE = "dropper"
+                 MOVE 30 TO WS-CLASS
+             WHEN WS-BARE = "piston"
+                 MOVE 31 TO WS-CLASS
+             WHEN WS-BARE = "sticky_piston"
+                 MOVE 32 TO WS-CLASS
+             WHEN WS-BARE = "piston_head"
+                 MOVE 33 TO WS-CLASS
+             WHEN WS-BARE = "moving_piston"
+                 MOVE 34 TO WS-CLASS
              WHEN WS-LEN >= 10 AND WS-BARE(WS-LEN - 6:7) = "_button"
                  MOVE 6 TO WS-CLASS
+             WHEN WS-LEN >= 15 AND WS-BARE(WS-LEN - 14:15) = "_pressure_plate"
+                 MOVE 18 TO WS-CLASS
+             WHEN WS-LEN >= 13 AND WS-BARE(WS-LEN - 12:13) = "lightning_rod"
+                 MOVE 22 TO WS-CLASS
+             WHEN WS-LEN >= 11 AND WS-BARE(WS-LEN - 10:11) = "copper_bulb"
+                 MOVE 15 TO WS-CLASS
+             WHEN WS-LEN >= 11 AND WS-BARE(WS-LEN - 10:11) = "_fence_gate"
+                 MOVE 13 TO WS-CLASS
+             WHEN WS-LEN >= 5 AND WS-BARE(WS-LEN - 4:5) = "_door"
+                 MOVE 12 TO WS-CLASS
              WHEN WS-LEN >= 10 AND WS-BARE(WS-LEN - 8:9) = "_trapdoor"
                  MOVE 9 TO WS-CLASS
          END-EVALUATE
@@ -122,13 +171,60 @@
                      MOVE 1 TO RL-COND(WS-I)
                  END-IF
          END-EVALUATE
+*>       the analog output kind (30-2 section 5.3)
+         MOVE 0 TO RL-ANALOG(WS-I)
+         EVALUATE TRUE
+             WHEN WS-BARE = "chest" OR "trapped_chest"
+                 MOVE 1 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "barrel"
+                 MOVE 2 TO RL-ANALOG(WS-I)
+             WHEN WS-LEN >= 11 AND WS-BARE(WS-LEN - 10:11) = "shulker_box"
+                 MOVE 3 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "furnace" OR "smoker" OR "blast_furnace"
+                 MOVE 4 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "brewing_stand"
+                 MOVE 5 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "hopper"
+                 MOVE 6 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "dispenser" OR "dropper"
+                 MOVE 7 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "decorated_pot"
+                 MOVE 8 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "crafter"
+                 MOVE 9 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "chiseled_bookshelf"
+                 MOVE 10 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "lectern"
+                 MOVE 11 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "composter"
+                 MOVE 12 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "water_cauldron" OR "powder_snow_cauldron"
+                 MOVE 13 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "lava_cauldron"
+                 MOVE 14 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "cauldron"
+                 MOVE 15 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "cake"
+                 MOVE 16 TO RL-ANALOG(WS-I)
+             WHEN WS-LEN >= 11 AND WS-BARE(WS-LEN - 10:11) = "candle_cake"
+                 MOVE 17 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "beehive" OR "bee_nest"
+                 MOVE 18 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "end_portal_frame"
+                 MOVE 19 TO RL-ANALOG(WS-I)
+             WHEN WS-BARE = "respawn_anchor"
+                 MOVE 20 TO RL-ANALOG(WS-I)
+             WHEN WS-CLASS = 15
+                 MOVE 21 TO RL-ANALOG(WS-I)
+         END-EVALUATE
 *>       the decoded states of the signal blocks
-         IF WS-CLASS >= 3 AND WS-CLASS <= 8
+         IF (WS-CLASS >= 3 AND WS-CLASS <= 8) OR (WS-CLASS >= 17 AND WS-CLASS <= 30)
              COMPUTE WS-LAST = CB-FIRST-STATE(WS-I) + CB-STATES(WS-I) - 1
              PERFORM VARYING WS-S FROM CB-FIRST-STATE(WS-I) BY 1 UNTIL WS-S > WS-LAST
                  CALL "BLOCKS-STATE-PROPS" USING WS-S WS-TEXT
                  COMPUTE WS-START = WS-S + 1
                  MOVE 0 TO RL-S-DIR(WS-START) RL-S-ON(WS-START) RL-S-DELAY(WS-START) RL-S-LOCKED(WS-START) RL-S-MODE(WS-START)
+                     RL-S-POWER(WS-START)
                  CALL "RL-PROP" USING WS-TEXT WS-N-FACING WS-VALUE
                  EVALUATE WS-VALUE
                      WHEN "north"
@@ -139,6 +235,8 @@
                          MOVE 4 TO WS-DIR
                      WHEN "east"
                          MOVE 5 TO WS-DIR
+                     WHEN "up"
+                         MOVE 1 TO WS-DIR
                      WHEN OTHER
                          MOVE 0 TO WS-DIR
                  END-EVALUATE
@@ -159,6 +257,10 @@
                  END-IF
                  IF WS-VALUE = "true"
                      MOVE 1 TO RL-S-ON(WS-START)
+                 END-IF
+                 IF WS-CLASS = 19 OR WS-CLASS = 20 OR WS-CLASS = 21 OR WS-CLASS = 26 OR WS-CLASS = 27
+                     CALL "RL-PROP" USING WS-TEXT WS-N-POWER WS-VALUE
+                     MOVE FUNCTION NUMVAL(WS-VALUE) TO RL-S-POWER(WS-START)
                  END-IF
                  IF WS-CLASS = 7
                      CALL "RL-PROP" USING WS-TEXT WS-N-DELAY WS-VALUE
@@ -296,7 +398,12 @@
              WHEN 5
              WHEN 6
              WHEN 8
+             WHEN 18 THRU 24
+             WHEN 26 THRU 28
                  MOVE 1 TO WS-CONNECT
+             WHEN 17
+                 MOVE RL-S-DIR(WS-STATE + 1) TO WS-FACING
+                 CALL "RS1-OBS-CONNECT" USING WS-D WS-FACING WS-CONNECT
              WHEN 7
                  MOVE RL-S-DIR(WS-STATE + 1) TO WS-FACING
                  CALL "RS1-OPP" USING WS-FACING WS-OPP
@@ -396,6 +503,7 @@
  01 WS-SIDE                BINARY-LONG.
  01 WS-FACING              BINARY-LONG.
  01 WS-ON                  BINARY-LONG.
+ 01 WS-OWN                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-STATE                BINARY-LONG.
  01 L-DIM                  BINARY-LONG.
@@ -479,6 +587,47 @@
          WHEN 8
              IF WS-ON = 1 AND L-D = WS-FACING
                  CALL "RL-CMP-GET" USING L-DIM L-X L-Y L-Z L-OUT
+             END-IF
+         WHEN 17
+*>           the observer (30-2 6.2): 15 towards its back, weak and strong alike
+             CALL "RS1-OBS-SIGNAL" USING WS-ON WS-FACING L-D WS-OWN L-OUT
+         WHEN 18
+         WHEN 19
+         WHEN 23
+         WHEN 28
+*>           pressure plates (30-5 4.1), the detector rail (30-6) and the lectern: the own signal every way, strong only towards UP (asked by the block below)
+             MOVE 0 TO WS-OWN
+             IF WS-CLASS = 19
+                 MOVE RL-S-POWER(L-STATE + 1) TO WS-OWN
+             ELSE
+                 IF WS-ON = 1
+                     MOVE 15 TO WS-OWN
+                 END-IF
+             END-IF
+             IF L-DIRECT = 0 OR L-D = 1
+                 MOVE WS-OWN TO L-OUT
+             END-IF
+         WHEN 20
+         WHEN 21
+*>           the daylight detector (30-5 5) and the target block (30-5 6): the power every way, never strong
+             IF L-DIRECT = 0
+                 MOVE RL-S-POWER(L-STATE + 1) TO L-OUT
+             END-IF
+         WHEN 22
+         WHEN 24
+*>           the lightning rod (30-5 7) and the tripwire hook (30-8): 15 while powered every way, strong towards the facing
+             IF WS-ON = 1 AND (L-DIRECT = 0 OR L-D = WS-FACING)
+                 MOVE 15 TO L-OUT
+             END-IF
+         WHEN 26
+*>           the sculk sensor (30-8): the power every way, strong towards UP
+             IF L-DIRECT = 0 OR L-D = 1
+                 MOVE RL-S-POWER(L-STATE + 1) TO L-OUT
+             END-IF
+         WHEN 27
+*>           the calibrated sculk sensor: nothing towards its facing, else as the sensor
+             IF L-D NOT = WS-FACING AND (L-DIRECT = 0 OR L-D = 1)
+                 MOVE RL-S-POWER(L-STATE + 1) TO L-OUT
              END-IF
      END-EVALUATE
      GOBACK.
@@ -1216,6 +1365,20 @@
  01 WS-COND                BINARY-LONG.
  01 WS-OPP                 BINARY-LONG.
  01 WS-DIODES-ONLY         BINARY-LONG.
+ 01 WS-AHAS                BINARY-LONG.
+ 01 WS-AVAL                BINARY-LONG.
+ 01 WS-ACOND               BINARY-LONG.
+ 01 WS-ACLASS              BINARY-LONG.
+ 01 WS-FRAMES              BINARY-LONG.
+ 01 WS-FVAL                BINARY-LONG.
+ 01 WS-S2HAS               BINARY-LONG.
+ 01 WS-S2VAL               BINARY-LONG.
+ 01 WS-INPUT2              BINARY-LONG.
+ 01 WS-OPP-F               BINARY-LONG.
+ 01 WS-AX2                 BINARY-LONG.
+ 01 WS-AY2                 BINARY-LONG.
+ 01 WS-AZ2                 BINARY-LONG.
+ 01 WS-ASTATE              BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -1239,6 +1402,22 @@
      COMPUTE WS-NZ = L-Z + WS-DZ
      CALL "RL-SIGNAL" USING L-DIM WS-NX WS-NY WS-NZ WS-F WS-S
      MOVE WS-S TO L-INPUT
+     IF WS-CLASS = 8
+*>       getInputSignal of the comparator (30-2 4.2): the analog output of the cell it faces replaces the input, else a frame or an analog block behind one conductor
+         CALL "RS1-OPP" USING WS-F WS-OPP-F
+         CALL "RL-ANALOG-AT" USING L-DIM WS-NX WS-NY WS-NZ WS-OPP-F WS-AHAS WS-AVAL
+         CALL "RL-LOOK" USING L-DIM WS-NX WS-NY WS-NZ WS-ASTATE WS-ACLASS WS-ACOND
+         MOVE 0 TO WS-FRAMES WS-FVAL WS-S2HAS WS-S2VAL
+         IF WS-ACOND = 1
+             COMPUTE WS-AX2 = WS-NX + WS-DX
+             COMPUTE WS-AY2 = WS-NY + WS-DY
+             COMPUTE WS-AZ2 = WS-NZ + WS-DZ
+             CALL "RL-FRAME-AT" USING L-DIM WS-AX2 WS-AY2 WS-AZ2 WS-F WS-FRAMES WS-FVAL
+             CALL "RL-ANALOG-AT" USING L-DIM WS-AX2 WS-AY2 WS-AZ2 WS-OPP-F WS-S2HAS WS-S2VAL
+         END-IF
+         CALL "RS1-CMP-INPUT" USING L-INPUT WS-AHAS WS-AVAL WS-ACOND WS-FRAMES WS-FVAL WS-S2HAS WS-S2VAL WS-INPUT2
+         MOVE WS-INPUT2 TO L-INPUT
+     END-IF
      MOVE 0 TO WS-DIODES-ONLY
      IF WS-CLASS = 7
          MOVE 1 TO WS-DIODES-ONLY
@@ -1643,7 +1822,7 @@
  01 L-B                    BINARY-LONG.
  01 L-OUT                  BINARY-LONG.
  PROCEDURE DIVISION USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT.
-     IF L-KIND NOT = 1 AND L-KIND NOT = 2 AND L-KIND NOT = 3 AND L-KIND NOT = 4 AND L-KIND NOT = 7
+     IF L-KIND NOT = 1 AND L-KIND NOT = 2 AND L-KIND NOT = 3 AND L-KIND NOT = 4 AND L-KIND NOT = 7 AND L-KIND NOT = 10
          GOBACK
      END-IF
      CALL "REDSTONE-IDS-ENSURE"
@@ -1664,6 +1843,52 @@
          WHEN 7
          WHEN 8
              CALL "RL-DIODE-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
+         WHEN 11
+             IF L-KIND = 3 OR L-KIND = 7
+                 CALL "RL-LAMP-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE
+             END-IF
+         WHEN 9
+         WHEN 12
+         WHEN 13
+             IF L-KIND = 3
+                 CALL "RL-OPEN-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A
+             END-IF
+         WHEN 14
+             IF L-KIND = 1 OR L-KIND = 3
+                 CALL "RL-TNT-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A
+             END-IF
+         WHEN 15
+             IF L-KIND = 1 OR L-KIND = 3
+                 CALL "RL-BULB-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A
+             END-IF
+         WHEN 10
+             IF L-KIND = 1 OR L-KIND = 3
+                 CALL "RL-HOPPER-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A
+             END-IF
+         WHEN 29
+         WHEN 30
+             IF L-KIND = 3 OR L-KIND = 7
+                 CALL "RL-DISP-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE
+             END-IF
+         WHEN 16
+             IF L-KIND = 3 OR L-KIND = 10
+                 CALL "RL-NOTE-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
+             END-IF
+         WHEN 24
+             IF L-KIND = 1 OR L-KIND = 2 OR L-KIND = 7
+                 CALL "RL-HOOK-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B
+             END-IF
+         WHEN 25
+             CALL "RL-TRIP-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
+         WHEN 21
+             IF L-KIND = 1 OR L-KIND = 7
+                 CALL "RL-TARGET-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A
+             END-IF
+         WHEN 17
+             CALL "RL-OBS-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B
+         WHEN 18
+         WHEN 19
+             CALL "RL-PLATE-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B
      END-EVALUATE
      GOBACK.
  END PROGRAM REDSTONE-HOOK.
