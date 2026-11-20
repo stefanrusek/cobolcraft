@@ -312,6 +312,12 @@
  01 WS-COMMAND             BINARY-LONG VALUE BC-EFFECT.
  01 WS-PATH                PIC X(256).
  PROCEDURE DIVISION.
+     MOVE "effect clear" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "effect clear <targets:entities>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "effect clear <targets:entities> <effect:effecttype>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "effect give <targets:entities> <effect:effecttype>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "effect give <targets:entities> <effect:effecttype> <seconds:int:1:1000000>" TO WS-PATH
@@ -326,12 +332,6 @@
      MOVE "effect give <targets:entities> <effect:effecttype> infinite <amplifier:int:0:255>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "effect give <targets:entities> <effect:effecttype> infinite <amplifier:int:0:255> <hideParticles:bool>" TO WS-PATH
-     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "effect clear" TO WS-PATH
-     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "effect clear <targets:entities>" TO WS-PATH
-     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "effect clear <targets:entities> <effect:effecttype>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-EFFECT.

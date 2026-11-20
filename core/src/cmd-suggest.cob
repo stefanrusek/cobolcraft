@@ -261,7 +261,9 @@
                      PERFORM LIST-TAGS
                  END-IF
              WHEN BR-P-RESOURCE-KEY
-                 PERFORM LIST-RECIPES
+                 IF BR-N-REG-LENGTH(WS-CHILD) = 16 AND BR-N-REG(WS-CHILD)(1:16) = "minecraft:recipe"
+                     PERFORM LIST-RECIPES
+                 END-IF
          END-EVALUATE
      END-IF.
 

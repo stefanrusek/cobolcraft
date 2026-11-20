@@ -83,7 +83,7 @@
      CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
      MOVE "acceptance US13 /damage an unknown damage type" TO TL-CASE
      MOVE "damage Alice 1 cobolcraft:nothing" TO WS-LINE
-     MOVE "argument.resource.not_found(cobolcraft:nothing,minecraft:damage_type)" TO WS-EXPECTED
+     MOVE "argument.resource.not_found(cobolcraft:nothing,minecraft:damage_type) |" TO WS-EXPECTED
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
      MOVE "acceptance US13 /damage at a location" TO TL-CASE

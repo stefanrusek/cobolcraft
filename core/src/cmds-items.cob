@@ -517,13 +517,13 @@
  01 WS-COMMAND             BINARY-LONG VALUE BC-RECIPE.
  01 WS-PATH                PIC X(256).
  PROCEDURE DIVISION.
-     MOVE "recipe give <targets:players> *" TO WS-PATH
-     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "recipe give <targets:players> <recipe:recipetype>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "recipe take <targets:players> *" TO WS-PATH
+     MOVE "recipe give <targets:players> *" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "recipe take <targets:players> <recipe:recipetype>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "recipe take <targets:players> *" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-RECIPE.
@@ -568,11 +568,10 @@
  COPY CITEMS.
  COPY BRRUN.
  COPY PROTO.
- 01 WS-NAME-TARGETS        PIC X(32) VALUE "targets".
- 01 WS-NAME-POS            PIC X(32) VALUE "pos".
+ 78 WS-TYPE-BLOCK-POS     VALUE 8.
+ 01 WS-NAME-TARGETS        PIC X(32) VALUE "target".
  01 WS-NAME-SLOTS          PIC X(32) VALUE "slots".
- 01 WS-NAME-SOURCES        PIC X(32) VALUE "sourceEntities".
- 01 WS-NAME-SOURCE-POS     PIC X(32) VALUE "sourcePos".
+ 01 WS-NAME-SOURCES        PIC X(32) VALUE "source".
  01 WS-NAME-SOURCE-SLOTS   PIC X(32) VALUE "sourceSlots".
  01 WS-NAME-MODIFIER       PIC X(32) VALUE "modifier".
  01 WS-NAME-ITEM           PIC X(32) VALUE "item".
@@ -762,8 +761,8 @@
          MOVE 1 TO BR-R-FAILED
      END-IF
      IF BR-R-FAILED = 0
-         CALL "BX-FIND" USING WS-NAME-SOURCE-POS WS-INDEX
-         IF WS-INDEX > 0
+         CALL "BX-FIND" USING WS-NAME-SOURCES WS-INDEX
+         IF WS-INDEX > 0 AND BA-TYPE(WS-INDEX) = WS-TYPE-BLOCK-POS
              MOVE "commands.item.source.not_a_container" TO WS-KEY
              PERFORM RAISE-BLOCK
          END-IF
@@ -772,8 +771,8 @@
          PERFORM GET-SOURCE
      END-IF
      IF BR-R-FAILED = 0
-         CALL "BX-FIND" USING WS-NAME-POS WS-INDEX
-         IF WS-INDEX > 0
+         CALL "BX-FIND" USING WS-NAME-TARGETS WS-INDEX
+         IF WS-INDEX > 0 AND BA-TYPE(WS-INDEX) = WS-TYPE-BLOCK-POS
              MOVE "commands.item.target.not_a_container" TO WS-KEY
              PERFORM RAISE-BLOCK
          END-IF
@@ -847,17 +846,17 @@
  01 WS-VERB-TABLE REDEFINES WS-VERBS.
     05 WS-VERB             PIC X(8) OCCURS 3 TIMES.
  01 WS-HOLDERS.
-    05 FILLER              PIC X(48) VALUE "entity <targets:entities> <slots:slots>".
-    05 FILLER              PIC X(48) VALUE "block <pos:pos> <slots:slots>".
+    05 FILLER              PIC X(48) VALUE "entity <target:entities> <slots:slotsrc>".
+    05 FILLER              PIC X(48) VALUE "block <target:pos> <slots:slotsrc>".
  01 WS-HOLDER-TABLE REDEFINES WS-HOLDERS.
     05 WS-HOLDER           PIC X(48) OCCURS 2 TIMES.
  01 WS-TAILS.
+    05 FILLER              PIC X(96) VALUE "from entity <source:entities> <sourceSlots:slotsrc>".
+    05 FILLER              PIC X(96) VALUE "from entity <source:entities> <sourceSlots:slotsrc> <modifier:modifier>".
+    05 FILLER              PIC X(96) VALUE "from block <source:pos> <sourceSlots:slotsrc>".
+    05 FILLER              PIC X(96) VALUE "from block <source:pos> <sourceSlots:slotsrc> <modifier:modifier>".
     05 FILLER              PIC X(96) VALUE "with <item:item>".
     05 FILLER              PIC X(96) VALUE "with <item:item> <count:int:1:99>".
-    05 FILLER              PIC X(96) VALUE "from entity <sourceEntities:entities> <sourceSlots:slots>".
-    05 FILLER              PIC X(96) VALUE "from entity <sourceEntities:entities> <sourceSlots:slots> <modifier:modifier>".
-    05 FILLER              PIC X(96) VALUE "from block <sourcePos:pos> <sourceSlots:slots>".
-    05 FILLER              PIC X(96) VALUE "from block <sourcePos:pos> <sourceSlots:slots> <modifier:modifier>".
  01 WS-TAIL-TABLE REDEFINES WS-TAILS.
     05 WS-TAIL             PIC X(96) OCCURS 6 TIMES.
  01 WS-V                   BINARY-LONG.
@@ -874,9 +873,9 @@
              END-PERFORM
          END-PERFORM
      END-PERFORM
-     MOVE "item modify entity <targets:entities> <slots:slots> <modifier:modifier>" TO WS-PATH
+     MOVE "item modify entity <target:entities> <slots:slotsrc> <modifier:modifier>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "item modify block <pos:pos> <slots:slots> <modifier:modifier>" TO WS-PATH
+     MOVE "item modify block <target:pos> <slots:slotsrc> <modifier:modifier>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-ITEM.
@@ -905,7 +904,7 @@
  01 WS-NAME-COUNT          PIC X(32) VALUE "count".
  01 WS-NAME-TARGET-POS     PIC X(32) VALUE "targetPos".
  01 WS-NAME-PLAYERS        PIC X(32) VALUE "players".
- 01 WS-NAME-TABLE          PIC X(32) VALUE "table".
+ 01 WS-NAME-TABLE          PIC X(32) VALUE "loot_table".
  01 WS-NAME-POS            PIC X(32) VALUE "pos".
  01 WS-NAME-KILL           PIC X(32) VALUE "target".
  01 WS-NAME-TOOL           PIC X(32) VALUE "tool".
@@ -1272,11 +1271,11 @@
  01 WS-TARGET-TABLE REDEFINES WS-TARGETS.
     05 WS-TARGET           PIC X(64) OCCURS 7 TIMES.
  01 WS-SOURCES.
-    05 FILLER              PIC X(80) VALUE "fish <table:loottable> <pos:pos>".
-    05 FILLER              PIC X(80) VALUE "fish <table:loottable> <pos:pos> <tool:item>".
-    05 FILLER              PIC X(80) VALUE "fish <table:loottable> <pos:pos> mainhand".
-    05 FILLER              PIC X(80) VALUE "fish <table:loottable> <pos:pos> offhand".
-    05 FILLER              PIC X(80) VALUE "loot <table:loottable>".
+    05 FILLER              PIC X(80) VALUE "fish <loot_table:loottable> <pos:pos>".
+    05 FILLER              PIC X(80) VALUE "fish <loot_table:loottable> <pos:pos> <tool:item>".
+    05 FILLER              PIC X(80) VALUE "fish <loot_table:loottable> <pos:pos> mainhand".
+    05 FILLER              PIC X(80) VALUE "fish <loot_table:loottable> <pos:pos> offhand".
+    05 FILLER              PIC X(80) VALUE "loot <loot_table:loottable>".
     05 FILLER              PIC X(80) VALUE "kill <target:entity>".
     05 FILLER              PIC X(80) VALUE "mine <pos:pos>".
     05 FILLER              PIC X(80) VALUE "mine <pos:pos> <tool:item>".
@@ -1396,21 +1395,21 @@
  PROCEDURE DIVISION.
      PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 2
          MOVE SPACES TO WS-PATH
-         STRING "advancement " FUNCTION TRIM(WS-VERB(WS-V)) " <targets:players> only <advancement:resloc>" DELIMITED BY SIZE INTO WS-PATH
+         STRING "advancement " FUNCTION TRIM(WS-VERB(WS-V)) " <targets:players> only <advancement:advkey>" DELIMITED BY SIZE INTO WS-PATH
          CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
          MOVE SPACES TO WS-PATH
-         STRING "advancement " FUNCTION TRIM(WS-VERB(WS-V)) " <targets:players> only <advancement:resloc> <criterion:greedy>"
+         STRING "advancement " FUNCTION TRIM(WS-VERB(WS-V)) " <targets:players> only <advancement:advkey> <criterion:greedy>"
              DELIMITED BY SIZE INTO WS-PATH
-         CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-         MOVE SPACES TO WS-PATH
-         STRING "advancement " FUNCTION TRIM(WS-VERB(WS-V)) " <targets:players> everything" DELIMITED BY SIZE INTO WS-PATH
          CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
          PERFORM VARYING WS-M FROM 1 BY 1 UNTIL WS-M > 3
              MOVE SPACES TO WS-PATH
              STRING "advancement " FUNCTION TRIM(WS-VERB(WS-V)) " <targets:players> " FUNCTION TRIM(WS-MODE(WS-M))
-                 " <advancement:resloc>" DELIMITED BY SIZE INTO WS-PATH
+                 " <advancement:advkey>" DELIMITED BY SIZE INTO WS-PATH
              CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
          END-PERFORM
+         MOVE SPACES TO WS-PATH
+         STRING "advancement " FUNCTION TRIM(WS-VERB(WS-V)) " <targets:players> everything" DELIMITED BY SIZE INTO WS-PATH
+         CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      END-PERFORM
      GOBACK.
  END PROGRAM CMDS-REG-ADVANCEMENT.

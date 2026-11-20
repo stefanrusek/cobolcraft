@@ -10,7 +10,7 @@
 *>   holder and holders (score_holder, one or several); pos, colpos, vec3, vec2, rotation, angle, swizzle (coordinates);
 *>   blockstate, blockpred, item, itempred, component, style, message, nbt (compound), nbttag, nbtpath; objective, criteria,
 *>   operation, particle, team, slot, slots, resloc, function, anchor, intrange, floatrange, dimension, gamemode, uuid,
-*>   hexcolor, teamcolor, dslot (a scoreboard display slot); time (min ticks); entitytype and effecttype and enchanttype and recipetype (a resource of the registry minecraft:entity_type, minecraft:mob_effect, minecraft:enchantment, minecraft:recipe).
+*>   hexcolor, teamcolor, dslot (a scoreboard display slot); slotsrc (slot_source, read as slots); time (min ticks); entitytype and effecttype and enchanttype and recipetype (a resource of the registry minecraft:entity_type, minecraft:mob_effect, minecraft:enchantment, minecraft:recipe).
 *>
 *> Entry points:
 *>   BR-REG USING level (of the first word), command id, line (PIC X(256)): adds the nodes and sets the command of the last
@@ -189,6 +189,7 @@
          WHEN "team"        MOVE BR-P-TEAM TO WS-TYPE-ID
          WHEN "slot"        MOVE BR-P-ITEM-SLOT TO WS-TYPE-ID
          WHEN "slots"       MOVE BR-P-ITEM-SLOTS TO WS-TYPE-ID
+         WHEN "slotsrc"     MOVE BR-P-SLOT-SOURCE TO WS-TYPE-ID
          WHEN "resloc"      MOVE BR-P-RESLOC TO WS-TYPE-ID
          WHEN "function"    MOVE BR-P-FUNCTION TO WS-TYPE-ID
          WHEN "anchor"      MOVE BR-P-ANCHOR TO WS-TYPE-ID
@@ -218,6 +219,15 @@
          WHEN "modifier"    MOVE BR-P-LOOT-MODIFIER TO WS-TYPE-ID
          WHEN "ctxfloat"    MOVE BR-P-CTX-FLOAT TO WS-TYPE-ID
          WHEN "ctxint"      MOVE BR-P-CTX-INT TO WS-TYPE-ID
+         WHEN "advkey"
+             MOVE BR-P-RESOURCE-KEY TO WS-TYPE-ID
+             MOVE "minecraft:advancement" TO WS-REGISTRY
+         WHEN "attrtype"
+             MOVE BR-P-RESOURCE TO WS-TYPE-ID
+             MOVE "minecraft:attribute" TO WS-REGISTRY
+         WHEN "damagetype"
+             MOVE BR-P-RESOURCE TO WS-TYPE-ID
+             MOVE "minecraft:damage_type" TO WS-REGISTRY
          WHEN "recipetype"
              MOVE BR-P-RESOURCE-KEY TO WS-TYPE-ID
              MOVE "minecraft:recipe" TO WS-REGISTRY

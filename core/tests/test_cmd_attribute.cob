@@ -126,11 +126,11 @@
      CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
      MOVE "acceptance US13 /attribute an unknown attribute" TO TL-CASE
      MOVE "attribute Alice minecraft:bogus base get" TO WS-LINE
-     MOVE "commands.attribute.failed.no_attribute(Alice,minecraft:bogus)" TO WS-EXPECTED
+     MOVE "argument.resource.not_found(minecraft:bogus,minecraft:attribute) |" TO WS-EXPECTED
      CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
      MOVE "acceptance US13 /attribute an attribute of another namespace" TO TL-CASE
      MOVE "attribute Alice foo:max_health get" TO WS-LINE
-     MOVE "commands.attribute.failed.no_attribute(Alice,foo:max_health)" TO WS-EXPECTED
+     MOVE "argument.resource.not_found(foo:max_health,minecraft:attribute) |" TO WS-EXPECTED
      CALL "TA-CHECK" USING WS-ID-OPAL TL-CASE WS-LINE WS-EXPECTED
      MOVE "acceptance US13 /attribute a ground item is not a valid entity" TO TL-CASE
      MOVE "attribute @e[type=cobolcraft:loose_item,limit=1] minecraft:max_health get" TO WS-LINE

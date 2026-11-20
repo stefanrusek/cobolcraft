@@ -413,10 +413,10 @@
  01 WS-FORMS.
     05 FILLER PIC X(80) VALUE "function <name:function>".
     05 FILLER PIC X(80) VALUE "function <name:function> <arguments:nbt>".
+    05 FILLER PIC X(80) VALUE "function <name:function> with entity <source:entity>".
+    05 FILLER PIC X(80) VALUE "function <name:function> with entity <source:entity> <path:nbtpath>".
     05 FILLER PIC X(80) VALUE "function <name:function> with block <source:pos>".
     05 FILLER PIC X(80) VALUE "function <name:function> with block <source:pos> <path:nbtpath>".
-    05 FILLER PIC X(80) VALUE "function <name:function> with entity <source:entities>".
-    05 FILLER PIC X(80) VALUE "function <name:function> with entity <source:entities> <path:nbtpath>".
     05 FILLER PIC X(80) VALUE "function <name:function> with storage <source:resloc>".
     05 FILLER PIC X(80) VALUE "function <name:function> with storage <source:resloc> <path:nbtpath>".
  01 WS-FORM-TABLE REDEFINES WS-FORMS.
@@ -736,15 +736,15 @@
  01 WS-PATH                PIC X(256).
  01 WS-I                   BINARY-LONG.
  01 WS-FORMS.
+    05 FILLER PIC X(80) VALUE "datapack enable <name:phrase>".
+    05 FILLER PIC X(80) VALUE "datapack enable <name:phrase> after <existing:phrase>".
+    05 FILLER PIC X(80) VALUE "datapack enable <name:phrase> before <existing:phrase>".
+    05 FILLER PIC X(80) VALUE "datapack enable <name:phrase> last".
+    05 FILLER PIC X(80) VALUE "datapack enable <name:phrase> first".
+    05 FILLER PIC X(80) VALUE "datapack disable <name:phrase>".
     05 FILLER PIC X(80) VALUE "datapack list".
     05 FILLER PIC X(80) VALUE "datapack list available".
     05 FILLER PIC X(80) VALUE "datapack list enabled".
-    05 FILLER PIC X(80) VALUE "datapack enable <name:phrase>".
-    05 FILLER PIC X(80) VALUE "datapack enable <name:phrase> first".
-    05 FILLER PIC X(80) VALUE "datapack enable <name:phrase> last".
-    05 FILLER PIC X(80) VALUE "datapack enable <name:phrase> before <existing:phrase>".
-    05 FILLER PIC X(80) VALUE "datapack enable <name:phrase> after <existing:phrase>".
-    05 FILLER PIC X(80) VALUE "datapack disable <name:phrase>".
     05 FILLER PIC X(80) VALUE "datapack create@4 <id:phrase> <description:component>".
  01 WS-FORM-TABLE REDEFINES WS-FORMS.
     05 WS-FORM              PIC X(80) OCCURS 10 TIMES.

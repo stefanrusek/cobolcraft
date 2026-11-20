@@ -332,11 +332,11 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "teleport <targets:entities> <location:vec3> <rotation:rotation>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "teleport <targets:entities> <location:vec3> facing <facingLocation:vec3>" TO WS-PATH
-     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "teleport <targets:entities> <location:vec3> facing entity <facingEntity:entity>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "teleport <targets:entities> <location:vec3> facing entity <facingEntity:entity> <facingAnchor:anchor>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "teleport <targets:entities> <location:vec3> facing <facingLocation:vec3>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "teleport <targets:entities> <destination:entity>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
@@ -948,13 +948,13 @@
  PROCEDURE DIVISION.
      MOVE "damage <target:entity> <amount:float:0>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "damage <target:entity> <amount:float:0> <damageType:resloc>" TO WS-PATH
+     MOVE "damage <target:entity> <amount:float:0> <damageType:damagetype>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "damage <target:entity> <amount:float:0> <damageType:resloc> at <location:vec3>" TO WS-PATH
+     MOVE "damage <target:entity> <amount:float:0> <damageType:damagetype> at <location:vec3>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "damage <target:entity> <amount:float:0> <damageType:resloc> by <entity:entity>" TO WS-PATH
+     MOVE "damage <target:entity> <amount:float:0> <damageType:damagetype> by <entity:entity>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "damage <target:entity> <amount:float:0> <damageType:resloc> by <entity:entity> from <cause:entity>" TO WS-PATH
+     MOVE "damage <target:entity> <amount:float:0> <damageType:damagetype> by <entity:entity> from <cause:entity>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-DAMAGE.
@@ -1114,11 +1114,11 @@
  PROCEDURE DIVISION.
      MOVE "rotate <target:entity> <rotation:rotation>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "rotate <target:entity> facing <facingLocation:vec3>" TO WS-PATH
-     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "rotate <target:entity> facing entity <facingEntity:entity>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "rotate <target:entity> facing entity <facingEntity:entity> <facingAnchor:anchor>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "rotate <target:entity> facing <facingLocation:vec3>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-ROTATE.
@@ -3605,9 +3605,9 @@
  01 WS-FORMS.
     05 FILLER              PIC X(72) VALUE "get".
     05 FILLER              PIC X(72) VALUE "get <scale:double>".
+    05 FILLER              PIC X(72) VALUE "base set <value:double>".
     05 FILLER              PIC X(72) VALUE "base get".
     05 FILLER              PIC X(72) VALUE "base get <scale:double>".
-    05 FILLER              PIC X(72) VALUE "base set <value:double>".
     05 FILLER              PIC X(72) VALUE "base reset".
     05 FILLER              PIC X(72) VALUE "modifier add <id:resloc> <value:double> add_value".
     05 FILLER              PIC X(72) VALUE "modifier add <id:resloc> <value:double> add_multiplied_base".
@@ -3621,7 +3621,7 @@
  PROCEDURE DIVISION.
      PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 12
          MOVE SPACES TO WS-PATH
-         STRING "attribute <target:entity> <attribute:resloc> " FUNCTION TRIM(WS-FORM(WS-F)) DELIMITED BY SIZE INTO WS-PATH
+         STRING "attribute <target:entity> <attribute:attrtype> " FUNCTION TRIM(WS-FORM(WS-F)) DELIMITED BY SIZE INTO WS-PATH
          CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      END-PERFORM
      GOBACK.
