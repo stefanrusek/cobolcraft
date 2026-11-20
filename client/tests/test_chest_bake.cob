@@ -93,7 +93,7 @@
      MOVE BM-QUAD-COUNT(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   The first quad is the table's DOWN face, which is the top of the cuboid (the artwork is laid out for y down).
+*>   The first quad is the top of the base cuboid (the face at the top corners of the table; lid and base rectangles: test_chest_lid_top).
      MOVE SPACES TO WS-LIST
      MOVE 1 TO WS-PTR
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4

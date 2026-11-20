@@ -48,27 +48,36 @@
      CALL "PACKS-RELOAD" USING CLIENT-STATE
      MOVE "T" TO TL-MODE
 
-*>   The sun: the corner (the sprite's black background) is clear, the centre (255 255 217) is opaque with its colour.
+*>   The sun (lane bugsunchest: vanilla's sun is a white square with a pale blue halo, ours was gold with an orange rim): the sprite is added over the day sky, where
+*>   its gold rim (255 213 74) and pale centre (255 255 217) saturate to white, so the baked pixels are white with the share of the way to white as alpha. The corner
+*>   (black background) is white and clear, the centre and the rim white and opaque, a halo pixel (14 14 5) white with a low alpha (34: the mean of the red share
+*>   14 / 135 and the green share 14 / 88).
      MOVE "minecraft:sun" TO WS-ID
      MOVE 13 TO WS-ID-LENGTH
      CALL "ATLAS-FIND" USING CLIENT-STATE WS-ID WS-ID-LENGTH WS-SPRITE
      MOVE 0 TO WS-PX WS-PY
      PERFORM READ-PIXEL
      MOVE "acceptance sky: given the vanilla sun sprite when it is on the block atlas then its black corner pixel is clear (alpha 0)" TO TL-CASE
-     MOVE "00000000" TO TL-EXPECTED
+     MOVE "FFFFFF00" TO TL-EXPECTED
      MOVE WS-HEX TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 16 TO WS-PX WS-PY
      PERFORM READ-PIXEL
-     MOVE "acceptance sky: given the vanilla sun sprite when it is on the block atlas then its centre is opaque and keeps its colour" TO TL-CASE
-     MOVE "FFFFD9FF" TO TL-EXPECTED
+     MOVE "acceptance sky: given the vanilla sun sprite when it is on the block atlas then its centre is white and opaque, not the sprite's pale yellow" TO TL-CASE
+     MOVE "FFFFFFFF" TO TL-EXPECTED
      MOVE WS-HEX TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   A pixel of the glow (14 14 5) has the hue at full brightness and its brightness as alpha, so the blend adds 14 14 5 over the sky.
+     MOVE 12 TO WS-PX WS-PY
+     PERFORM READ-PIXEL
+     MOVE "acceptance sky: given the vanilla sun sprite when it is on the block atlas then its gold rim (255 213 74) is white and opaque (it saturates over the sky)" TO TL-CASE
+     MOVE "FFFFFFFF" TO TL-EXPECTED
+     MOVE WS-HEX TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A pixel of the glow (14 14 5) is white with the share of the way to white that the addition reaches as its alpha.
      MOVE 8 TO WS-PX WS-PY
      PERFORM READ-PIXEL
-     MOVE "acceptance sky: given the vanilla sun sprite when it is on the block atlas then a dark glow pixel has the full-brightness hue and low alpha" TO TL-CASE
-     MOVE "FFFF5B0E" TO TL-EXPECTED
+     MOVE "acceptance sky: given the vanilla sun sprite when it is on the block atlas then a dark glow pixel is white with a low alpha (a pale blue halo over the sky)" TO TL-CASE
+     MOVE "FFFFFF22" TO TL-EXPECTED
      MOVE WS-HEX TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

@@ -342,7 +342,11 @@
              AND (AT-NAME(WS-S) = "minecraft:sun" OR AT-NAME(WS-S) = "minecraft:end_flash"
                  OR AT-NAME(WS-S)(1:15) = "minecraft:moon/")
              COMPUTE WS-BYTES = AT-SW(WS-S) * AT-SH(WS-S)
-             CALL "ATLAS-ADDITIVE" USING WS-IMAGE WS-BYTES
+             IF AT-NAME(WS-S) = "minecraft:sun"
+                 CALL "ATLAS-ADDITIVE-DAY" USING WS-IMAGE WS-BYTES
+             ELSE
+                 CALL "ATLAS-ADDITIVE" USING WS-IMAGE WS-BYTES
+             END-IF
          END-IF
          PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y >= AT-SH(WS-S)
              COMPUTE WS-I = ((AT-Y(WS-S) + WS-Y) * AT-W + AT-X(WS-S)) * 4 + 1
@@ -400,6 +404,46 @@
      END-PERFORM
      GOBACK.
  END PROGRAM ATLAS-TRANSLUCENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ATLAS-ADDITIVE-DAY.
+*> USING RGBA bytes (the first byte of the image), pixel count: the sun sprite's version of ATLAS-ADDITIVE (lane bugsunchest; operator try19 play: vanilla's sun is a pure
+*> white square with a pale blue halo, ours was a gold square with an orange rim). The sun is added to the DAY sky (12 section 3.4c, blend SRC_ALPHA, ONE) and the sum
+*> saturates: the sprite's gold rim (255, 213, 74) and its pale centre (255, 255, 217) both reach white over the overworld's sky colour #78a7ff (120, 167, 255), and
+*> its dim halo pixels (a few units of red and green) only lighten the blue. The shim's alpha blend cannot clamp a sum, so each pixel is baked against that sky colour:
+*> the colour is white and the alpha is the share of the way to white the sum reaches, the mean of the red share min(1, r / (255 - 120)) and the green share
+*> min(1, g / (255 - 167)) (the blue of the sky is already full), times the pixel's own alpha. A black pixel or one with alpha 0 gets alpha 0, so the sprite's
+*> background stays clear.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-G                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-SHARE-R             BINARY-LONG.
+ 01 WS-SHARE-G             BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 B-IMAGE                PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ 01 L-IMAGE                PIC X.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-IMAGE L-COUNT.
+     SET ADDRESS OF B-IMAGE TO ADDRESS OF L-IMAGE
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= L-COUNT
+         COMPUTE WS-R = FUNCTION ORD(B-IMAGE(WS-I * 4 + 1:1)) - 1
+         COMPUTE WS-G = FUNCTION ORD(B-IMAGE(WS-I * 4 + 2:1)) - 1
+         COMPUTE WS-A = FUNCTION ORD(B-IMAGE(WS-I * 4 + 4:1)) - 1
+         COMPUTE WS-SHARE-R = FUNCTION MIN(255, (WS-R * 255 + 67) / 135)
+         COMPUTE WS-SHARE-G = FUNCTION MIN(255, (WS-G * 255 + 44) / 88)
+         COMPUTE WS-V = ((WS-SHARE-R + WS-SHARE-G) * WS-A + 255) / 510
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+             MOVE FUNCTION CHAR(256) TO B-IMAGE(WS-I * 4 + WS-K:1)
+         END-PERFORM
+         MOVE FUNCTION CHAR(WS-V + 1) TO B-IMAGE(WS-I * 4 + 4:1)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ATLAS-ADDITIVE-DAY.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ATLAS-ADDITIVE.

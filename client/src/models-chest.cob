@@ -197,9 +197,9 @@
        10 FILLER BINARY-LONG VALUE 5.
        10 FILLER BINARY-LONG VALUE 1.
        10 FILLER BINARY-LONG VALUE 2.
-       10 FILLER BINARY-LONG VALUE 1.
-       10 FILLER BINARY-LONG VALUE 0.
        10 FILLER BINARY-LONG VALUE 2.
+       10 FILLER BINARY-LONG VALUE 0.
+       10 FILLER BINARY-LONG VALUE 3.
        10 FILLER BINARY-LONG VALUE 1.
     05 FILLER.
        10 FILLER BINARY-LONG VALUE 1.
@@ -207,9 +207,9 @@
        10 FILLER BINARY-LONG VALUE 4.
        10 FILLER BINARY-LONG VALUE 8.
        10 FILLER BINARY-LONG VALUE 7.
-       10 FILLER BINARY-LONG VALUE 2.
        10 FILLER BINARY-LONG VALUE 1.
-       10 FILLER BINARY-LONG VALUE 3.
+       10 FILLER BINARY-LONG VALUE 1.
+       10 FILLER BINARY-LONG VALUE 2.
        10 FILLER BINARY-LONG VALUE 0.
     05 FILLER.
        10 FILLER BINARY-LONG VALUE 5.
@@ -337,8 +337,11 @@
          COMPUTE WS-Z1 = WS-D-Z(WS-I) + WS-D-D(WS-I)
          MOVE WS-D-X(WS-I) TO WS-CORNER-X(1) WS-CORNER-X(4) WS-CORNER-X(5) WS-CORNER-X(8)
          MOVE WS-X1 TO WS-CORNER-X(2) WS-CORNER-X(3) WS-CORNER-X(6) WS-CORNER-X(7)
-*>       The artwork is laid out for a model with y down (the top rectangle belongs to the face the table calls DOWN): the letters
-*>       take the opposite end of y, so the table's DOWN face is the top of the cuboid and its UP face the bottom (52 open question 1).
+*>       The side rectangles of the artwork are laid out for a model with y down: the letters take the opposite end of y, so the side
+*>       strips read upright. The top and bottom rectangles are not mirrored with them (52 open question 1, lane bugsunchest, read from the
+*>       pixels): the geometric top of a cuboid reads the UP rectangle (u + d + w, v) (the planks of a lid, the black inside of the base)
+*>       and its bottom the DOWN rectangle (u + d, v) (the dark inside of a lid, the planks under the base), so the face table pairs the face
+*>       at the top corners (letters 1, 2, 5, 6) with the UP rectangle and the face at the bottom corners with the DOWN rectangle.
          MOVE WS-Y1 TO WS-CORNER-Y(1) WS-CORNER-Y(2) WS-CORNER-Y(5) WS-CORNER-Y(6)
          MOVE WS-D-Y(WS-I) TO WS-CORNER-Y(3) WS-CORNER-Y(4) WS-CORNER-Y(7) WS-CORNER-Y(8)
          MOVE WS-D-Z(WS-I) TO WS-CORNER-Z(1) WS-CORNER-Z(2) WS-CORNER-Z(3) WS-CORNER-Z(4)
