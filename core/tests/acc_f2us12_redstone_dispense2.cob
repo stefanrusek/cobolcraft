@@ -14,6 +14,7 @@
  COPY BESTATE.
  COPY PROJSTATE.
  01 WS-SKIP                BINARY-LONG.
+ 01 WS-WORLD-FOLDER        PIC X(64) VALUE "build/p46h-dispense2-world".
  01 WS-NAME                PIC X(16) VALUE "Alice".
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-ALICE               BINARY-LONG.
@@ -84,7 +85,7 @@
  01 WS-HIT                 BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
-     CALL "PT-OPEN" USING WS-SKIP
+     CALL "PT-OPEN-IN" USING WS-SKIP WS-WORLD-FOLDER
      IF WS-SKIP = 1
          MOVE "N" TO TL-MODE
          MOVE "acceptance US12-4 redstone dispense: no generated packs here, skipped" TO TL-CASE
