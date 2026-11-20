@@ -1,3 +1,4 @@
+*> Taken again at the merge of the p70 chain (batch16c2): the entity table grew by 14 models (item frames, minecarts, trident, wind charges, leash knot, cushion, spectral arrow) and the dragon draws more, so the entity atlas is taller (every later model's v is a different fraction); a comparison with the code before the merge of every model alone (same vertex counts except the dragon's extra 1440) and of the first vertices of the orb and the arrow showed only v moving.
 *> Equivalence test of the entity mesh (lane perfframe): the vertices ENTITIES-MESH makes for every entity model of the table that has an entity type, in four
 *> states (at rest; walking with a head turn and a pitch; aggressive, baby and swinging; the eye elsewhere), are digested (CRC-32 of the 44-byte vertex records
 *> of a batch of 16 rows, the digests summed with the batch and the state as weights). The digest was taken from the code before the lane's changes and must stay the
@@ -175,7 +176,7 @@
      MOVE "test entities digest: the digest of the entity mesh of every model in four states is the one taken before the optimisations" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE SPACES TO TL-EXPECTED TL-OBSERVED
-     MOVE "6106902634934864984" TO TL-EXPECTED
+     MOVE "1429702255458470596" TO TL-EXPECTED
      MOVE WS-DIGEST TO WS-D20
      MOVE FUNCTION TRIM(WS-D20) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

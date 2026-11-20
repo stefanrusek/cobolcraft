@@ -238,7 +238,7 @@
      MOVE CL-HAND-ITEM TO CL-ATK-LAST
      MOVE 100 TO CL-ATK-TICKER
      MOVE 1 TO CL-HAND-H CL-HAND-OH
-     MOVE 0 TO CL-OHAND-ITEM CL-SWING-AT CL-BOB-INIT EF-COUNT
+     MOVE 0 TO CL-OHAND-ITEM CL-SWING-AT CL-BOB-INIT EF-COUNT PL-WALK PL-WALK-O PL-BOB PL-BOB-O PL-DEATH-TIME PL-HURT-UNTIL CL-PARTIAL
      MOVE 3000000 TO CL-NOW-MS
      MOVE CL-NOW-MS TO CL-HAND-TICK-MS
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
@@ -349,7 +349,7 @@
      MOVE "T28500 the off hand banner's pole (after the arm's 72 vertices) is at the left, the entry mirrored" TO WS-NAME
      PERFORM CHECK-VERTEX
      MOVE 0 TO PL-OFFHAND-COUNT CL-OHAND-ITEM
-*>   An inline pattern draws no layer (3 cuboids and the base layer: 144); another code-drawn model (a chest) draws nothing at all.
+*>   An inline pattern draws no layer (3 cuboids and the base layer: 144); a chest is drawn by HAND-SPECIAL-MESH, not as a banner (merged with lane bugbeitem; before the merge any other code-drawn model drew nothing).
      MOVE 1 TO PB-ISX-ADDED-COUNT
      MOVE 8 TO PB-ISX-VALUE-LENGTH(1)
      MOVE X"0100026162016305" TO PB-ISX-VALUE(1)(1:8)
@@ -365,8 +365,8 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      COMPUTE CL-HAND-ITEM = WS-CHEST + 1
      CALL "HAND-MESH" USING CLIENT-STATE
-     MOVE "T28500 a chest, another code-drawn model, draws nothing in the hand" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
+     MOVE "T28500 a chest is a code-drawn model of its own quads (lane bugbeitem, HAND-SPECIAL-MESH): 36 vertices, no banner" TO TL-CASE
+     MOVE 36 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = RL-HA-COUNT + RL-HAND-COUNT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   A held banner with no atlas slot for the banner model draws nothing.

@@ -23,6 +23,8 @@
  01 WS-SPRITE              BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-IN                  BINARY-LONG.
+ 01 WS-EYE-TABLE.
+    05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES VALUE 0.
  01 WS-TINTED              BINARY-LONG.
  01 WS-U0                  FLOAT-LONG.
  01 WS-U1                  FLOAT-LONG.
@@ -141,15 +143,17 @@
      MOVE RL-HAND-COUNT TO TL-EXPECTED-N
      MOVE WS-IN TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   The hand holding the red banner: the dyed cloth is tinted by the diffuse colour of red (B02E26).
+*>   The hand holding the red banner: the dyed cloth is tinted by the diffuse colour of red (B02E26). Since the merge with lane p70d the banner is the hand renderer's
+*>   (HAND-BANNER, the arm mesh RL-HA, atlas slots made by the entity pass), no longer HAND-SPECIAL-MESH's.
      COMPUTE CL-HAND-ITEM = WS-BANNER + 1
      MOVE WS-BANNER TO PL-SLOT-ITEM(PL-HELD + 1)
      MOVE 0 TO CL-HAND-KEY-COUNT CL-HAND-KEY-ITEM
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE 0 TO WS-TINTED
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-HAND-COUNT
-         IF FUNCTION ABS(RL-HAND-R(WS-I) - 0.6902) < 0.001 AND FUNCTION ABS(RL-HAND-G(WS-I) - 0.1804) < 0.001
-                 AND FUNCTION ABS(RL-HAND-BLUE(WS-I) - 0.149) < 0.001
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-HA-COUNT
+         IF FUNCTION ABS(RL-HA-R(WS-I) - 0.6902) < 0.001 AND FUNCTION ABS(RL-HA-G(WS-I) - 0.1804) < 0.001
+                 AND FUNCTION ABS(RL-HA-BLUE(WS-I) - 0.149) < 0.001
              ADD 1 TO WS-TINTED
          END-IF
      END-PERFORM

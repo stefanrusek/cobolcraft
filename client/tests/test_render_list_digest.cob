@@ -49,6 +49,8 @@
      MOVE 256 TO PL-HEIGHT
      MOVE -64 TO PL-MIN-Y
      MOVE SCR-WORLD TO SM-SCREEN
+*>   A spectator has no hand (53 section 15.1): the digest is of the world's render list, not of the hand drawn over it (the empty hand's arm of lane p70).
+     MOVE 3 TO PL-MODE
      MOVE 0 TO PL-HAS-SKY
      MOVE 6000 TO PL-TIME
      MOVE 12 TO PL-VIEW-DISTANCE

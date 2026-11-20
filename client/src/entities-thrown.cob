@@ -10,10 +10,15 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CONTENT.
  01 WS-I.
     05 WS-IV               FLOAT-LONG OCCURS 32 TIMES.
  01 WS-O.
     05 WS-OV               FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-DEFAULT             PIC X(112).
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
  01 WS-Q.
     05 WS-QV               FLOAT-LONG OCCURS 64 TIMES.
  01 WS-KEY                 PIC X(24).
@@ -53,10 +58,29 @@
  01 L-EYE-TABLE.
     05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
  PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-EYE-TABLE.
-     IF EN-STACK-COUNT(L-ROW) <= 0 OR RL-GI-COUNT + 6 > CL-MAX-GI-VERTICES
+     IF RL-GI-COUNT + 6 > CL-MAX-GI-VERTICES
          GOBACK
      END-IF
      MOVE EN-KEY(L-ROW) TO WS-KEY
+     MOVE EN-STACK-ITEM(L-ROW) TO WS-ITEM
+*>   The server does not send the stack of an eye of ender, snowball, egg or ender pearl (lane buglocate3: the thrown eye was invisible): the item of the type is its default.
+     IF EN-STACK-COUNT(L-ROW) <= 0
+         MOVE SPACES TO WS-DEFAULT
+         EVALUATE WS-KEY
+             WHEN "eye_of_ender"
+                 MOVE "ender_eye" TO WS-DEFAULT
+             WHEN "snowball"
+                 MOVE "snowball" TO WS-DEFAULT
+             WHEN "egg"
+                 MOVE "egg" TO WS-DEFAULT
+             WHEN "ender_pearl"
+                 MOVE "ender_pearl" TO WS-DEFAULT
+         END-EVALUATE
+         IF WS-DEFAULT = SPACES
+             GOBACK
+         END-IF
+         CALL "CONTENT-ITEM-BY-KEY" USING WS-DEFAULT WS-ITEM WS-ITEM-ROW WS-STATUS
+     END-IF
      MOVE 0 TO WS-ANGLE
      IF WS-KEY = "firework_rocket"
          MOVE 1 TO WS-OV(1)
@@ -71,7 +95,7 @@
      END-IF
      MOVE WS-OV(2) TO WS-SCALE
      MOVE WS-OV(3) TO WS-FULL
-     CALL "ITEM-SPRITE-OF" USING CLIENT-STATE EN-STACK-ITEM(L-ROW) WS-SPRITE
+     CALL "ITEM-SPRITE-OF" USING CLIENT-STATE WS-ITEM WS-SPRITE
      MOVE FUNCTION MAX(WS-SPRITE, 1) TO WS-SPRITE
      COMPUTE WS-CX = FUNCTION INTEGER(EN-X(L-ROW))
      COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(L-ROW))

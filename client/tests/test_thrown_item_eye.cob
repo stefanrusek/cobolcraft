@@ -4,6 +4,8 @@
 *> ender_eye, snowball, egg, ender_pearl): the quad of the dropped item without bob and spin (0.5 wide, y -0.125 to 0.375 of the ground transform of 12 section 8.2), facing the
 *> camera (billboard), scale 1.0, both sides (12 vertices), block light 15 for the eye of ender (full bright), the normal light for the others. The generated vanilla pack is
 *> read from CC_GENERATED_DIR (a pass without it).
+*> After the merge with lane p70e (ENTITY-THROWN-EMIT, 34-9 section 7): one quad of 6 vertices turned to the camera's yaw, its size from the document's EF9-THROWN-QUAD;
+*> the default item of a type without a sent stack stays.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-THROWN-ITEM-EYE.
  DATA DIVISION.
@@ -100,8 +102,8 @@
      MOVE 0 TO WS-EYE(1) WS-EYE(2) WS-EYE(3)
      MOVE 0 TO RL-GI-COUNT
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-POINT
-     MOVE "T43410 the eye_of_ender entity (no stack sent) is drawn: 2 sides of 6 vertices" TO TL-CASE
-     MOVE 12 TO TL-EXPECTED-N
+     MOVE "T43410 the eye_of_ender entity (no stack sent) is drawn: one quad of 6 vertices" TO TL-CASE
+     MOVE 6 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      PERFORM MEASURE
@@ -187,13 +189,13 @@
      CALL "TIE-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
      MOVE 0 TO RL-GI-COUNT
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-POINT
-     MOVE "T43410 a snowball beside the eye adds 12 vertices" TO TL-CASE
-     MOVE 24 TO TL-EXPECTED-N
+     MOVE "T43410 a snowball beside the eye adds 6 vertices" TO TL-CASE
+     MOVE 12 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "T43410 the snowball is not full bright (night, brightness 0.1)" TO TL-CASE
-     MOVE 100 TO TL-EXPECTED-N
-     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER(RL-GI-B(13) * 1000 + 0.5)
+     MOVE "T43410 the snowball is not full bright (night: the cell's own light, 0; the ground items' floor of 0.1 is not the thrown items')" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER(RL-GI-B(7) * 1000 + 0.5)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE SPACES TO WS-KEY
      MOVE "egg" TO WS-KEY
@@ -207,8 +209,8 @@
      CALL "TIE-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
      MOVE 0 TO RL-GI-COUNT
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-POINT
-     MOVE "T43410 the egg and the ender pearl too: 4 thrown items, 48 vertices" TO TL-CASE
-     MOVE 48 TO TL-EXPECTED-N
+     MOVE "T43410 the egg and the ender pearl too: 4 thrown items, 24 vertices" TO TL-CASE
+     MOVE 24 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   a boat is not a thrown item
@@ -220,12 +222,12 @@
      MOVE 0 TO RL-GI-COUNT
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-POINT
      MOVE "T43410 a boat adds nothing" TO TL-CASE
-     MOVE 48 TO TL-EXPECTED-N
+     MOVE 24 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
-*> The extent of the first quad's 12 vertices (the eye of ender) in x, y, z, u and v.
+*> The extent of the first quad's 6 vertices (the eye of ender) in x, y, z, u and v.
  MEASURE.
      COMPUTE WS-MIN-X = RL-GI-X(1) + WS-EYE(1)
      MOVE WS-MIN-X TO WS-MAX-X
@@ -237,7 +239,7 @@
      MOVE WS-MIN-U TO WS-MAX-U
      MOVE RL-GI-V(1) TO WS-MIN-V
      MOVE WS-MIN-V TO WS-MAX-V
-     PERFORM VARYING WS-K FROM 2 BY 1 UNTIL WS-K > 12
+     PERFORM VARYING WS-K FROM 2 BY 1 UNTIL WS-K > 6
          PERFORM EXTEND-ONE
      END-PERFORM.
 

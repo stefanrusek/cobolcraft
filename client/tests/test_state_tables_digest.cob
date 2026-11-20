@@ -1,4 +1,5 @@
 *> Lane bugleaves moved leaves from ST-LIKE to the new ST-LEAF column of ST-STATE, so the digest below was taken again after that change (batch16b merge).
+*> Taken again at the merge of the p70 chain (batch16c2): the block shapes of content/src/block-shapes.cob grew (BSH-OFS, six-direction facing rules "R", the BSR-MAX 320 rule table: shulker boxes, offset blocks, continuous top surfaces), and ST-SHAPED, ST-OWN, ST-NB and ST-COVER are built from those shapes.
 *> Equivalence test (lane perfsteady): STATE-TABLES-BUILD over the standard block table (every state of the set, about 30 000 through CONTENT-BLOCK-OF-STATE, whose answer was a binary search over text rows
 *> a state, and the rule strings of the block searched again for every state) holds the same tables after the lane's change that it held before: the CRC-32 of the whole ST-STATE group (opacity, block, block names,
 *> fluid, level, overlay, shape, likeness, the face classes of every state and the cover table) is the value taken from the code before the change. The build is timed (CPU, clock()).
@@ -18,7 +19,7 @@
  01 WS-T1                  BINARY-DOUBLE.
  01 WS-US                  BINARY-DOUBLE.
  01 WS-E                   PIC Z(19)9.
- 01 WS-EXPECT              PIC X(24) VALUE "1239678850".
+ 01 WS-EXPECT              PIC X(24) VALUE "1349833988".
  PROCEDURE DIVISION.
      CALL "CL-INIT" USING CLIENT-STATE
      MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
