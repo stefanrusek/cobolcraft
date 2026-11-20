@@ -20,6 +20,8 @@
 *>   CB-S-DAMP   the sky light dampening of each state (docs/protocol/32-light-engine.md section 7, 24 part 2 section 5.3), by the rules of L32-BLOCK-RULES:
 *>               15 when the occlusion shape is a full cube (CB-OPAQUE and an outline shape of one box), the class overrides (leaves 1, tinted glass 15, liquids 1), else 0
 *>               when the state propagates sky light down (its outline is not a full cube and its fluid is empty: plants, glass, paths, slabs, stairs), else 1.
+*>   CB-INSTRUMENT the note block instrument of the block (30-5 section 8.1 number 0 to 26, from the Instrument column of 24; blank is harp; the dyed collections that say "see 5" take the rule of 24 part 5).
+*>   CB-PUSH     the push reaction (30-3 section 5.4): 0 PUSH_PULL, 1 PUSH, 2 POPPED, 3 IMMOVEABLE (the Push column where filled, else the lists of 30-3).
 *> CB-EPOCH rises by one at every BLOCKS-OPEN, so a program that caches ids resolved from keys can tell.
  78 CB-MAX-BLOCKS         VALUE 1400.
  78 CB-MAX-STATES         VALUE 40000.
@@ -41,6 +43,8 @@
        10 CB-STATES          BINARY-LONG.
        10 CB-DEFAULT-STATE   BINARY-LONG.
        10 CB-REPLACEABLE     BINARY-LONG.
+       10 CB-INSTRUMENT      BINARY-LONG.
+       10 CB-PUSH            BINARY-LONG.
     05 CB-STATE OCCURS 40000 TIMES.
        10 CB-S-BLOCK         BINARY-SHORT UNSIGNED.
        10 CB-S-LIGHT         BINARY-CHAR UNSIGNED.

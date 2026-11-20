@@ -1,12 +1,25 @@
 *> Test infrastructure of the portal tests (lane nether; docs/protocol/39-portals.md). COPY it after the test program (after CORETEST).
 *>   PT-OPEN USING skip out: 1 and nothing opened when the generated packs are missing (CC_GENERATED_DIR, default /tmp/cc-test/generated);
 *>     else a standard world with the extra dimensions on is open (the Nether on its placeholder terrain: ND-PLACEHOLDER 1, NETHERDIM.cpy; a test of the real terrain moves 0 to it) (view distance 2, creative default, no hostile mobs, no weather).
+*>   PT-OPEN-IN USING skip out, folder (PIC X(64)): PT-OPEN with the world in a folder of the test's own (see TEST-OPEN-WORLD-IN).
 *>   PT-STATE USING key (PIC X(48)), pairs (PIC X(160)), state out: BLOCKS-STATE-OF of a block key and "name=value" pairs.
 *>   PT-FRAME USING dim, x, y, z of the bottom-left interior cell, axis (0 X, 1 Z), width, height: the obsidian frame (corners included)
 *>     round that interior, which is cleared to air; the right direction is WEST (X) or SOUTH (Z).
 *>   PT-PORTALS USING dim, x, y, z, axis, width, height, count out: the nether_portal blocks in that interior.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PT-OPEN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-FOLDER              PIC X(64) VALUE "build/core-test-world".
+ LINKAGE SECTION.
+ 01 L-SKIP                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-SKIP.
+     CALL "PT-OPEN-IN" USING L-SKIP WS-FOLDER
+     GOBACK.
+ END PROGRAM PT-OPEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PT-OPEN-IN.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -18,7 +31,8 @@
  01 WS-FILE-INFO           PIC X(16).
  LINKAGE SECTION.
  01 L-SKIP                 BINARY-LONG.
- PROCEDURE DIVISION USING L-SKIP.
+ 01 L-FOLDER               PIC X(64).
+ PROCEDURE DIVISION USING L-SKIP L-FOLDER.
      MOVE 0 TO L-SKIP
      MOVE SPACES TO WS-ENV
      ACCEPT WS-ENV FROM ENVIRONMENT "CC_GENERATED_DIR"
@@ -41,9 +55,9 @@
      MOVE 0 TO CS-HOSTILE-MOBS CS-WEATHER-CHANGES
      MOVE 1 TO CS-EXTRA-DIMENSIONS
      MOVE 1 TO ND-PLACEHOLDER
-     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD-IN" USING CORE-SETTINGS L-FOLDER
      GOBACK.
- END PROGRAM PT-OPEN.
+ END PROGRAM PT-OPEN-IN.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PT-STATE.

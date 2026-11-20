@@ -662,6 +662,9 @@
          IF BE-USED(WS-I) = 1 AND BE-DIM(WS-I) > 0 AND BE-TYPE(WS-I) = 12
              CALL "BREW-TICK-LIVE" USING WS-I BE-DIM(WS-I)
          END-IF
+         IF BE-USED(WS-I) = 1 AND BE-DIM(WS-I) > 0 AND BE-TYPE(WS-I) = 11
+             CALL "PST-MBE-TICK" USING WS-I
+         END-IF
      END-PERFORM
      CALL "HEART-SWEEP"
      GOBACK.

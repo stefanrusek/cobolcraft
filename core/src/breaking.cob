@@ -276,6 +276,8 @@
 *>   playerWillDestroy: the destroy effect (level event 2001 with the state's id) goes to everybody but the breaker; removeBlock leaves the water
 *>   of a waterlogged block or a water plant (29 sections 2.2 and 10.4).
      CALL "LEVEL-EVENT" USING L-DIM WS-EVENT L-X L-Y L-Z WS-STATE L-ROW
+*>   a tripwire cut with shears is disarmed first, so that it counts as absent (30-8 7.5)
+     CALL "RL-WIRE-SHEARS" USING L-ROW L-DIM L-X L-Y L-Z WS-STATE
      CALL "SUP-DESTROY-STATE" USING WS-STATE WS-NEW
      CALL "BLOCK-CHANGE" USING L-DIM L-X L-Y L-Z WS-NEW
 *>   The game event block_destroy at the block centre with the player and the old state (29 section 9 step 5).
@@ -386,6 +388,8 @@
      END-IF
      CALL "PIGLIN-GUARDED-BREAK" USING L-ROW L-STATE
      CALL "LEVEL-EVENT" USING L-DIM WS-EVENT L-X L-Y L-Z L-STATE L-ROW
+*>   a tripwire cut with shears is disarmed first, so that it counts as absent (30-8 7.5)
+     CALL "RL-WIRE-SHEARS" USING L-ROW L-DIM L-X L-Y L-Z L-STATE
      CALL "SUP-DESTROY-STATE" USING L-STATE WS-NEW
 *>   BedBlock.playerWillDestroy: the head half of a broken foot goes first, without drops (the shape update of the foot's removal would drop it).
      CALL "BED-CREATIVE-BREAK" USING L-DIM L-X L-Y L-Z L-STATE L-ROW
@@ -478,6 +482,10 @@
      CALL "WORLD-GET-BLOCK" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE
      COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
      MOVE CB-BREAK-MS(WS-BLOCK) TO WS-HARDNESS
+*>   Starting to dig is the attack of the block (30-5 section 8.4: a note block plays).
+     IF PSB-ACTION = 0
+         CALL "RL-NOTE-ATTACK" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE
+     END-IF
      EVALUATE TRUE
          WHEN PSB-ACTION = 2
              CALL "BLOCK-BREAK-END" USING WS-ROW

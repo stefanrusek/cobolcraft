@@ -195,16 +195,22 @@
  END PROGRAM TEST-SETTINGS.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. TEST-OPEN-WORLD.
+ PROGRAM-ID. TEST-OPEN-WORLD-IN.
+*> USING CORE-SETTINGS, folder (PIC X(64), space padded): removes the folder, then CORE-WORLD-OPEN on it. A test that must not share the world folder of the
+*> other test programs (build/core-test-world) opens its own.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-PATH                PIC X(64) VALUE Z"build/core-test-world".
- 01 WS-COMMAND             PIC X(64) VALUE "rm -rf build/core-test-world".
+ 01 WS-PATH                PIC X(64).
+ 01 WS-COMMAND             PIC X(80).
  01 WS-CREATED             BINARY-LONG.
  COPY GENQUEUE.
  LINKAGE SECTION.
  COPY COREAPI.
- PROCEDURE DIVISION USING CORE-SETTINGS.
+ 01 L-FOLDER               PIC X(64).
+ PROCEDURE DIVISION USING CORE-SETTINGS L-FOLDER.
+     MOVE SPACES TO WS-PATH WS-COMMAND
+     STRING FUNCTION TRIM(L-FOLDER) X"00" DELIMITED BY SIZE INTO WS-PATH
+     STRING "rm -rf " FUNCTION TRIM(L-FOLDER) DELIMITED BY SIZE INTO WS-COMMAND
      CALL "SYSTEM" USING WS-COMMAND
 *>   The tests build around the origin, so the spawn search of a standard world stays centred on chunk (0, 0) as before lane p45i (the noise finder's origin chunk is far from it);
 *>   a test of the origin search itself sets GQ-SP-PIN to 2 first.
@@ -212,6 +218,18 @@
          MOVE 1 TO GQ-SP-PIN
      END-IF
      CALL "CORE-WORLD-OPEN" USING WS-PATH CORE-SETTINGS WS-CREATED
+     GOBACK.
+ END PROGRAM TEST-OPEN-WORLD-IN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-OPEN-WORLD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-FOLDER              PIC X(64) VALUE "build/core-test-world".
+ LINKAGE SECTION.
+ COPY COREAPI.
+ PROCEDURE DIVISION USING CORE-SETTINGS.
+     CALL "TEST-OPEN-WORLD-IN" USING CORE-SETTINGS WS-FOLDER
      GOBACK.
  END PROGRAM TEST-OPEN-WORLD.
 
