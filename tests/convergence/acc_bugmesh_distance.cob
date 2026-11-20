@@ -5,7 +5,7 @@
 *> test allows, every section whose cells expose a face (an opaque cell with a non-opaque neighbour inside the chunk) has been meshed, its mesh has
 *> been listed as an upload and it is in the draw list of the render lists of four views (north, east, south, west); no section is left dirty
 *> and no section a chunk received left out of the queue.
-*> BM_VIEW (default 8; the report was 12) is the view distance, BM_FRAMES (default 4500) the frames allowed after the join, BM_SEED the seed text, BM_CREDIT (default
+*> BM_VIEW (default 8; the report was 12) is the view distance, BM_FRAMES (default 9000: the standard generator's chunks arrive at most one a tick since lane perfsteady, the world of view 8 is complete at about 6200 frames) the frames allowed after the join, BM_SEED the seed text, BM_CREDIT (default
 *> 1) the credit switch; BM_TRACE=1 prints progress lines (every 25 frames) and the per-frame cost.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-BUGMESH-DISTANCE.
@@ -29,7 +29,7 @@
  01 WS-DIR-ENV             PIC X(1024).
  01 WS-ENV                 PIC X(64).
  01 WS-VIEW                BINARY-LONG VALUE 8.
- 01 WS-FRAMES              BINARY-LONG VALUE 4500.
+ 01 WS-FRAMES              BINARY-LONG VALUE 9000.
  01 WS-CREDIT              BINARY-LONG VALUE 1.
  01 WS-TRACE               BINARY-LONG VALUE 0.
  01 WS-F                   BINARY-LONG.

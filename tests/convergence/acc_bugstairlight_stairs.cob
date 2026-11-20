@@ -323,6 +323,12 @@
                          MOVE 1 TO WS-ODD
                      END-IF
                  END-PERFORM
+*>               Since lane bugsunchest the chest's bottom rectangles belong to its down faces (the base bottom on the floor, the lid's underside and the latch's
+*>               underside inside the model), and a down face reads the light of the cell below, which is the floor: those three faces are never seen, so the
+*>               vertices on their planes (y 0, 7/16 and 9/16 of the cell) are not measured for the chest.
+                 IF L-WHICH = 3 AND (WS-FY < 0.001 OR FUNCTION ABS(WS-FY - 0.4375) < 0.001 OR FUNCTION ABS(WS-FY - 0.5625) < 0.001)
+                     MOVE 0 TO WS-ODD
+                 END-IF
                  IF WS-ODD = 1
                      ADD 1 TO L-SEEN
                      MOVE WS-VF(6) TO WS-BR
