@@ -228,7 +228,7 @@
      PERFORM CHECK
      MOVE '{"type":"minecraft:jigsaw","start_pool":"test:start","size":2,"start_height":{"absolute":5},"max_distance_from_center":9,"pool_aliases":[{"type":"minecraft:direct"}]}' TO WS-TEXT
      PERFORM PARSE-READ-ONE
-     MOVE "test struct jigsaw unit given pool aliases when a jigsaw file is read then it is not ok" TO TL-CASE
+     MOVE "test struct jigsaw unit given a pool alias binding without alias and target when a jigsaw file is read then it is not ok" TO TL-CASE
      MOVE 0 TO WS-FLAG
      IF SDT-JIG-OK(1) = 0
          MOVE 1 TO WS-FLAG
@@ -244,9 +244,9 @@
      PERFORM CHECK
      MOVE '{"type":"minecraft:jigsaw","start_pool":"test:start","start_jigsaw_name":"minecraft:city_anchor","size":2,"start_height":{"absolute":5},"max_distance_from_center":9}' TO WS-TEXT
      PERFORM PARSE-READ-ONE
-     MOVE "test struct jigsaw unit given a start_jigsaw_name when a jigsaw file is read then it is not ok" TO TL-CASE
+     MOVE "test struct jigsaw unit given a start_jigsaw_name when a jigsaw file is read then it is ok and the name is kept" TO TL-CASE
      MOVE 0 TO WS-FLAG
-     IF SDT-JIG-OK(1) = 0
+     IF SDT-JIG-OK(1) = 1 AND SDT-JIG-NAMED(1) = 1 AND SDT-JIG-NAME(1) = "minecraft:city_anchor"
          MOVE 1 TO WS-FLAG
      END-IF
      PERFORM CHECK
@@ -520,6 +520,7 @@
      MOVE 20 TO SDT-JIG-HOR(1)
      MOVE 20 TO SDT-JIG-VER(1)
      MOVE 0 TO SDT-JIG-PADB(1) SDT-JIG-PADT(1) SDT-JIG-LIQ(1)
+     MOVE 0 TO SDT-JIG-NAMED(1) SDT-JIG-PADSET(1) SDT-JIG-YKIND(1) SDT-JIG-AL-N(1)
      MOVE 1 TO SDT-JIG-OK(1)
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
          MOVE WW-CX(WS-I) TO WS-CX
@@ -575,6 +576,7 @@
      PERFORM NO-START
      MOVE "test struct jigsaw unit given a structure that is not ok when the start is built then there is no structure" TO TL-CASE
      PERFORM CHECK-NONE
+     MOVE 0 TO SDT-JIG-NAMED(1) SDT-JIG-PADSET(1) SDT-JIG-YKIND(1) SDT-JIG-AL-N(1)
      MOVE 1 TO SDT-JIG-OK(1)
      MOVE "test:missing" TO SDT-JIG-POOL(1)
      PERFORM NO-START

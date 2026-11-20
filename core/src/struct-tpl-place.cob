@@ -167,7 +167,8 @@
      EVALUATE TN-KIND(L-TAG)
          WHEN 1
              CALL "MSP-RNG-LONG" USING WS-SEED
-             IF TN-LOOT(L-TAG) NOT = SPACES
+*>           the request channel keeps loot keys of 48 bytes (GENBE.cpy): a longer key (trial_chambers/intersection_barrel, 51) cannot be asked for yet and its container is not requested
+             IF TN-LOOT(L-TAG) NOT = SPACES AND TN-LOOT(L-TAG)(49:32) = SPACES
                  MOVE 1 TO WS-KIND
                  MOVE TN-LOOT(L-TAG) TO WS-LOOT
                  CALL "GBE-ADD" USING L-X L-Y L-Z WS-KIND WS-LOOT WS-SEED WS-NOTHING

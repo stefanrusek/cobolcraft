@@ -93,7 +93,33 @@
        10 SDT-JIG-OK         BINARY-LONG.
        10 SDT-RP-FIRST       BINARY-LONG.
        10 SDT-RP-N           BINARY-LONG.
+*>  more fields of a jigsaw structure (STRUCT-JIG-READ, 36-3 3.1; 0 or absent in a row that was not read from a file): SDT-JIG-NAMED 1 when start_jigsaw_name is given (SDT-JIG-NAME its value),
+*>  SDT-JIG-PADSET 1 when dimension_padding was decoded from the data (the zero padding check of 9.5 is skipped only for an absent one), SDT-JIG-YKIND 0 an absolute start height (SDT-JIG-Y) or
+*>  1 a uniform one from SDT-JIG-Y to SDT-JIG-Y2 inclusive, SDT-JIG-AL-FIRST and SDT-JIG-AL-N the run of top-level pool alias bindings in SD-AL-NODE
+       10 SDT-JIG-NAMED       BINARY-LONG.
+       10 SDT-JIG-NAME        PIC X(80).
+       10 SDT-JIG-PADSET      BINARY-LONG.
+       10 SDT-JIG-YKIND       BINARY-LONG.
+       10 SDT-JIG-Y2          BINARY-LONG.
+       10 SDT-JIG-AL-FIRST    BINARY-LONG.
+       10 SDT-JIG-AL-N        BINARY-LONG.
     05 SD-BIOME             PIC X(40) OCCURS 8192 TIMES.
+*>  the pool alias bindings of the jigsaw structures (36-3 3.4 and 7.1), a tree: a node is a binding (AN-TYPE 1 direct with AN-ALIAS and AN-TARGET, 2 random with AN-ALIAS and a run of
+*>  AN-COUNT entries from AN-FIRST holding AE-KEY and AE-WEIGHT, 3 random_group with a run of entries whose AE-CHILD-FIRST and AE-CHILD-N name a run of nodes); AN-TOTAL the weights' sum
+    05 SD-AL-COUNT          BINARY-LONG.
+    05 SD-AL-ECOUNT         BINARY-LONG.
+    05 SD-AL-NODE OCCURS 96 TIMES.
+       10 AN-TYPE           BINARY-LONG.
+       10 AN-ALIAS          PIC X(80).
+       10 AN-TARGET         PIC X(80).
+       10 AN-FIRST          BINARY-LONG.
+       10 AN-COUNT          BINARY-LONG.
+       10 AN-TOTAL          BINARY-LONG.
+    05 SD-AL-ENTRY OCCURS 192 TIMES.
+       10 AE-KEY            PIC X(80).
+       10 AE-WEIGHT         BINARY-LONG.
+       10 AE-CHILD-FIRST    BINARY-LONG.
+       10 AE-CHILD-N        BINARY-LONG.
 *>  the ring list of a concentric_rings set for one seed: SR-SEED the world seed it was built for (SR-SET 0 = unused row), SR-N positions. SR-RAW-X, SR-RAW-Z and
 *>  SR-FORK are a position before the biome snap and its forked seed (STRUCT-RINGS-RAW); SR-X, SR-Z its chunk after the snap, valid once SR-DONE is 1: a position
 *>  is snapped when a chunk within reach of it is asked for (STRUCT-RING-HAS) or the whole list is (STRUCT-RINGS-ALL, STRUCT-RINGS-BUILD).

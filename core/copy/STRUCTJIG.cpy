@@ -92,3 +92,11 @@
        10 JJ-Z              BINARY-LONG.
        10 JJ-DELTA          BINARY-LONG.
        10 JJ-PROJ           BINARY-LONG.
+*> STRUCT-JIG-ALIASES: the pool alias map of the start being built (36-3 7.2): JM-COUNT pairs, JM-DUP 1 when a resolution bound one alias twice (the game throws; no structure is made).
+ 78 JM-MAX                VALUE 32.
+ 01 STRUCT-JIG-ALIASES EXTERNAL.
+    05 JM-COUNT             BINARY-LONG.
+    05 JM-DUP               BINARY-LONG.
+    05 JM-REC OCCURS 32 TIMES.
+       10 JM-ALIAS          PIC X(80).
+       10 JM-TARGET         PIC X(80).
