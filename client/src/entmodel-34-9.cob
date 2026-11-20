@@ -1,0 +1,161 @@
+*> Entity models part 9, non-living entities (docs/protocol/34-entity-models-9-non-living-entities.md): the lead knot (12) and the cushion (16).
+*>   EF9-LAYER layer(X(32) upper case: LEASH_KNOT, CUSHION) model ok(out) builds the layer of this part or gives ok 0;
+*>   EF9-KNOT-OPS IN() OUT(ops: count, then code and three values per op; 1 translate, 2 scale, 3 rotate Y degrees, 6 rotate X degrees): the submit of 12 (scale (-1, -1, 1));
+*>   EF9-KNOT-TEXTURE path(out X(60), relative to textures/);
+*>   EF9-CUSHION-OPS IN(entity yRot degrees) OUT(ops of 16: rotate Y by 180 - direction.toYRot, rotate X by 180, translate (0, -0.25, 0); the direction is Direction.fromYRot of 24-4 2:
+*>     data value floor(y / 90 + 0.5) and 3, SOUTH 0, WEST 1, NORTH 2, EAST 3, toYRot 90 x data);
+*>   EF9-CUSHION-TEXTURE IN(dye id 0 to 15) path(out X(60), relative to textures/): entity/cushion/<colour>_cushion.png.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF9-M-LEASH-KNOT.
+*> USING model: the lead knot (12, texture 32 x 32): one part knot, tex (0, 0), origin (-3, -8, -3), size 6 x 8 x 6, pose zero.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS1.
+    05 FILLER PIC X(100) VALUE "P knot root 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C knot 0 0 -3 -8 -3 6 8 6 0 0".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 78 TIMES.
+ 01 WS-ROWS1-R REDEFINES WS-ROWS1.
+    05 WS-ROW1             PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N1                  BINARY-LONG VALUE 2.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CALL "EMM-INIT" USING EMM-MODEL
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS1-R WS-N1 WS-ZERO
+     MOVE 32 TO MM-TEXW
+     MOVE 32 TO MM-TEXH
+     GOBACK.
+ END PROGRAM EF9-M-LEASH-KNOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF9-M-CUSHION.
+*> USING model: the cushion (16, texture 64 x 64): part cushion at (23, 4, -7), tex (0, 0), origin (-31, -4, -1), size 16 x 4 x 16, deformation -0.005.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS1.
+    05 FILLER PIC X(100) VALUE "P cushion root 23 4 -7 0 0 0".
+    05 FILLER PIC X(100) VALUE "C cushion 0 0 -31 -4 -1 16 4 16 -0.005 0".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 78 TIMES.
+ 01 WS-ROWS1-R REDEFINES WS-ROWS1.
+    05 WS-ROW1             PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N1                  BINARY-LONG VALUE 2.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CALL "EMM-INIT" USING EMM-MODEL
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS1-R WS-N1 WS-ZERO
+     MOVE 64 TO MM-TEXW
+     MOVE 64 TO MM-TEXH
+     GOBACK.
+ END PROGRAM EF9-M-CUSHION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF9-LAYER.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-LAYER                PIC X(32).
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING EMM-MODEL L-LAYER L-OK.
+     MOVE 1 TO L-OK
+     EVALUATE L-LAYER
+         WHEN "LEASH_KNOT"
+             CALL "EF9-M-LEASH-KNOT" USING EMM-MODEL
+         WHEN "CUSHION"
+             CALL "EF9-M-CUSHION" USING EMM-MODEL
+         WHEN OTHER
+             MOVE 0 TO L-OK
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM EF9-LAYER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF9-KNOT-OPS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 32 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 1 TO L-O(1)
+     MOVE 2 TO L-O(2)
+     MOVE -1 TO L-O(3) L-O(4)
+     MOVE 1 TO L-O(5)
+     GOBACK.
+ END PROGRAM EF9-KNOT-OPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF9-KNOT-TEXTURE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 32 TIMES.
+ 01 L-PATH                 PIC X(60).
+ PROCEDURE DIVISION USING L-IN L-PATH.
+     MOVE "entity/lead_knot/lead_knot.png" TO L-PATH
+     GOBACK.
+ END PROGRAM EF9-KNOT-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF9-CUSHION-OPS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DATA                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 32 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE WS-DATA = FUNCTION MOD(FUNCTION INTEGER(L-I(1) / 90 + 0.5), 4)
+     MOVE 3 TO L-O(1)
+     MOVE 3 TO L-O(2)
+     COMPUTE L-O(3) = 180 - WS-DATA * 90
+     MOVE 0 TO L-O(4) L-O(5)
+     MOVE 6 TO L-O(6)
+     MOVE 180 TO L-O(7)
+     MOVE 0 TO L-O(8) L-O(9)
+     MOVE 1 TO L-O(10)
+     MOVE 0 TO L-O(11) L-O(13)
+     MOVE -0.25 TO L-O(12)
+     GOBACK.
+ END PROGRAM EF9-CUSHION-OPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF9-CUSHION-TEXTURE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAMES-DATA.
+    05 FILLER PIC X(12) VALUE "white".
+    05 FILLER PIC X(12) VALUE "orange".
+    05 FILLER PIC X(12) VALUE "magenta".
+    05 FILLER PIC X(12) VALUE "light_blue".
+    05 FILLER PIC X(12) VALUE "yellow".
+    05 FILLER PIC X(12) VALUE "lime".
+    05 FILLER PIC X(12) VALUE "pink".
+    05 FILLER PIC X(12) VALUE "gray".
+    05 FILLER PIC X(12) VALUE "light_gray".
+    05 FILLER PIC X(12) VALUE "cyan".
+    05 FILLER PIC X(12) VALUE "purple".
+    05 FILLER PIC X(12) VALUE "blue".
+    05 FILLER PIC X(12) VALUE "brown".
+    05 FILLER PIC X(12) VALUE "green".
+    05 FILLER PIC X(12) VALUE "red".
+    05 FILLER PIC X(12) VALUE "black".
+ 01 WS-NAMES REDEFINES WS-NAMES-DATA.
+    05 WS-NAME             PIC X(12) OCCURS 16 TIMES.
+ 01 WS-DYE                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 32 TIMES.
+ 01 L-PATH                 PIC X(60).
+ PROCEDURE DIVISION USING L-IN L-PATH.
+     COMPUTE WS-DYE = FUNCTION MOD(FUNCTION INTEGER(L-I(1)), 16)
+     MOVE SPACES TO L-PATH
+     STRING "entity/cushion/" FUNCTION TRIM(WS-NAME(WS-DYE + 1)) "_cushion.png" DELIMITED BY SIZE INTO L-PATH
+     GOBACK.
+ END PROGRAM EF9-CUSHION-TEXTURE.

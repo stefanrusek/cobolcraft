@@ -505,6 +505,11 @@
          COMPUTE WS-HOOK-X = WS-HOOK-X * (1 + 0.003 * (EN-OVN(WS-ROW) - 8))
          COMPUTE WS-HOOK-Y = WS-HOOK-Y * (1 + 0.003 * (EN-OVN(WS-ROW) - 8))
      END-IF
+*>   The scale attribute (34-1 6.3 state.scale, Update Attributes): the whole model about the entity origin (a row nobody set has 0: no scale). A slime or magma cube takes its size from entry 18 instead.
+     IF EN-ATTR-SCALE(WS-ROW) > 0 AND EN-ATTR-SCALE(WS-ROW) NOT = 1 AND NOT (EN-KEY(WS-ROW) = "slime" OR "magma_cube")
+         COMPUTE WS-HOOK-X = WS-HOOK-X * EN-ATTR-SCALE(WS-ROW)
+         COMPUTE WS-HOOK-Y = WS-HOOK-Y * EN-ATTR-SCALE(WS-ROW)
+     END-IF
 *>   The key of the bake: everything the mesh depends on besides the position.
      MOVE EN-MODEL(WS-ROW) TO WS-KN(1)
      MOVE WS-SLOT TO WS-KN(2)
@@ -745,12 +750,11 @@
              MOVE WS-WPOS TO WS-I(3)
              MOVE WS-WSPEED TO WS-I(4)
              MOVE WS-AGE TO WS-I(5)
-             CALL "EF8-NAUTILUS-ANIM" USING EMM-MODEL WS-IN
-             IF CL-MD-KEY(WS-K) = "zombie_nautilus~w" AND EN-EQ(WS-ROW, 7) > 0
-                 MOVE "corals" TO WS-FK
-                 CALL "EMM-FIND" USING EMM-MODEL WS-FK WS-HK
-                 MOVE 0 TO MM-VISIBLE(WS-HK)
+             MOVE 0 TO WS-I(6)
+             IF EN-EQ(WS-ROW, 7) > 0
+                 MOVE 1 TO WS-I(6)
              END-IF
+             CALL "EF8-NAUTILUS-ANIM" USING EMM-MODEL WS-IN
          WHEN "B"
              MOVE WS-WPOS TO WS-I(3)
              MOVE WS-WSPEED TO WS-I(4)

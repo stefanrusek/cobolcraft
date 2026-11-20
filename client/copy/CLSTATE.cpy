@@ -744,6 +744,7 @@
           15 EN-WALK-SPEED   FLOAT-LONG.
           15 EN-WALK-POS     FLOAT-LONG.
           15 EN-WALK-SCALE   FLOAT-LONG.
+          15 EN-ATTR-SCALE   FLOAT-LONG.   *> the scale attribute (18 section 3, id 30, range 0.0625 to 16, default 1): Update Attributes, state.scale of 34-1 6.3
           15 EN-OX           FLOAT-LONG.
           15 EN-OY           FLOAT-LONG.
           15 EN-OZ           FLOAT-LONG.

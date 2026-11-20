@@ -241,6 +241,7 @@
 *>               The walk animation and the swing start at rest (54 section 1.1); the position of the previous tick is this one.
                  MOVE 0 TO EN-WALK-SPEED-OLD(WS-ROW) EN-WALK-SPEED(WS-ROW) EN-WALK-POS(WS-ROW)
                  MOVE 1 TO EN-WALK-SCALE(WS-ROW)
+                 MOVE 1 TO EN-ATTR-SCALE(WS-ROW)
                  MOVE WS-X TO EN-OX(WS-ROW)
                  MOVE WS-Y TO EN-OY(WS-ROW)
                  MOVE WS-Z TO EN-OZ(WS-ROW)
@@ -719,3 +720,25 @@
      END-IF
      GOBACK.
  END PROGRAM ENTITY-EQ-COMPONENTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-ATTRIBUTE.
+*> USING CLIENT-STATE, entity id, attribute id, value (FLOAT-LONG, the final value of the snapshot: Update Attributes, 05b 0x86): the replica keeps the scale attribute
+*> (id 30; range 0.0625 to 16 of 18 section 3) of an entity it knows, which the renderer applies as state.scale (34-1 6.3). Another attribute or an unknown entity changes nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-ATTRIBUTE            BINARY-LONG.
+ 01 L-VALUE                FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ENTITY L-ATTRIBUTE L-VALUE.
+     IF L-ATTRIBUTE = 30
+         CALL "ENTITY-FIND" USING CLIENT-STATE L-ENTITY WS-ROW
+         IF WS-ROW > 0
+             COMPUTE EN-ATTR-SCALE(WS-ROW) = FUNCTION MIN(FUNCTION MAX(L-VALUE, 0.0625), 16)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-ATTRIBUTE.

@@ -109,6 +109,10 @@
  COPY CLMODELS.
  01 WS-BASE                PIC X(20).
  01 WS-TAIL                PIC X(2).
+ 01 WS-TD-IN.
+    05 WS-TDI              FLOAT-LONG OCCURS 32 TIMES.
+ 01 WS-TD-OUT.
+    05 WS-TDO              FLOAT-LONG OCCURS 64 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ROW                  BINARY-LONG.
@@ -126,7 +130,9 @@
 *>   An extra layer (the sheep's wool, the slime's outer layer) keeps its own image.
 *>   The pattern layer of a tropical fish: the pattern index of the packed variant plus 1.
      IF EN-VAR(L-ROW) >= 0 AND WS-BASE = "tropical_pattern"
-         COMPUTE L-CODE = FUNCTION MOD(FUNCTION INTEGER(EN-VAR(L-ROW) / 256), 256) + 1
+         MOVE EN-VAR(L-ROW) TO WS-TDI(1)
+         CALL "EF8-TROPICAL-DECODE" USING WS-TD-IN WS-TD-OUT
+         COMPUTE L-CODE = WS-TDO(3) + 1
      END-IF
      IF EN-VAR(L-ROW) >= 0 AND WS-BASE = EN-KEY(L-ROW)
          EVALUATE EN-KEY(L-ROW)
@@ -488,6 +494,10 @@
  01 WS-G                   BINARY-LONG.
  01 WS-B                   BINARY-LONG.
  01 WS-MODE                BINARY-LONG.
+ 01 WS-TD-IN.
+    05 WS-TDI              FLOAT-LONG OCCURS 32 TIMES.
+ 01 WS-TD-OUT.
+    05 WS-TDO              FLOAT-LONG OCCURS 64 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ROW                  BINARY-LONG.
@@ -510,12 +520,16 @@
          WHEN "tropical_fish"
              MOVE 2 TO WS-MODE
              IF EN-VAR(L-ROW) >= 0
-                 COMPUTE WS-DYE = FUNCTION MOD(FUNCTION INTEGER(EN-VAR(L-ROW) / 65536), 16)
+                 MOVE EN-VAR(L-ROW) TO WS-TDI(1)
+                 CALL "EF8-TROPICAL-DECODE" USING WS-TD-IN WS-TD-OUT
+                 MOVE WS-TDO(4) TO WS-DYE
              END-IF
          WHEN "tropical_pattern"
              MOVE 2 TO WS-MODE
              IF EN-VAR(L-ROW) >= 0
-                 COMPUTE WS-DYE = FUNCTION MOD(FUNCTION INTEGER(EN-VAR(L-ROW) / 16777216), 16)
+                 MOVE EN-VAR(L-ROW) TO WS-TDI(1)
+                 CALL "EF8-TROPICAL-DECODE" USING WS-TD-IN WS-TD-OUT
+                 MOVE WS-TDO(5) TO WS-DYE
              END-IF
          WHEN OTHER
              CONTINUE
@@ -556,6 +570,10 @@
  COPY CLMODELS.
  01 WS-KEY                 PIC X(24).
  01 WS-FIND                BINARY-LONG.
+ 01 WS-TD-IN.
+    05 WS-TDI              FLOAT-LONG OCCURS 32 TIMES.
+ 01 WS-TD-OUT.
+    05 WS-TDO              FLOAT-LONG OCCURS 64 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ROW                  BINARY-LONG.
@@ -569,7 +587,9 @@
      IF L-MODEL > 0 AND EN-VAR(L-ROW) >= 0
          EVALUATE EN-KEY(L-ROW)
              WHEN "tropical_fish"
-                 IF FUNCTION MOD(EN-VAR(L-ROW), 256) = 1
+                 MOVE EN-VAR(L-ROW) TO WS-TDI(1)
+                 CALL "EF8-TROPICAL-DECODE" USING WS-TD-IN WS-TD-OUT
+                 IF WS-TDO(2) = 1
                      MOVE "tropical_fish~l" TO WS-KEY
                  END-IF
              WHEN "pufferfish"

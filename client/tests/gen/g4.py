@@ -10,7 +10,7 @@ DOCS={4:'docs/protocol/34-entity-models-4-farm-animals-equines.md'}
 for _c in range(5,10):
     DOCS[_c]=glob.glob(REPO+'docs/protocol/34-entity-models-%d-*.md'%_c)[0][len(REPO):]
 def tasktitle(ch,n):
-    s=open(REPO+'specs/002-client-polish/tasks.md').read()
+    s=open(REPO+'specs/002-client-polish/tasks.md').read()+open(REPO+'specs/002-client-polish/tasks/client/phase-70c.md').read()
     m=re.search(r'test_entmodel_34_%d_%d\.cob` for (.*?) \(`docs'%(ch,n),s)
     return m.group(1)
 WSX="""

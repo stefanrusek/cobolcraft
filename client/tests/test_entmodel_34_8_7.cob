@@ -1,0 +1,3963 @@
+*> Acceptance test of docs/protocol/34-entity-models-8-aquatic-nautilus-boats.md section 7 (boats and rafts): 7.1 the boat, chest boat, raft, chest raft and water patch meshes (every part, pose and box), 7.2 the paddle animation (set, not added;
+*> the right paddle mirrored), 7.4 the render pose (translate 0.375, Y rotation 180 - yaw, the hurt tilt, the bubble column tilt, scale, Y rotation 90) with the worked examples E12 and E13, 7.4 step 7 (the water patch only for a boat that is not under water),
+*> 7.5 passenger seats and the leash offset, and the Validation rows for the boat and the raft. The paddle clock and bubble tick of 7.3 are proved by test_entity_boats and test_entity_boat_hurt.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTMODEL-34-8-7.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLEMM.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-E                   FLOAT-LONG.
+ 01 WS-O                   FLOAT-LONG.
+ 01 WS-IN.
+    05 WS-IV                FLOAT-LONG OCCURS 32 TIMES.
+ 01 WS-OUT.
+    05 WS-OV                FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-LAYER              PIC X(32).
+ 01 WS-OK                 BINARY-LONG.
+ 01 WS-PARTS              BINARY-LONG.
+ 01 WS-CUBES              BINARY-LONG.
+ 01 WS-P                  BINARY-LONG.
+ 01 WS-PN                 PIC X(24).
+ COPY EMCHKW.
+
+ 01 WS-X32               PIC X(32).
+ 01 WS-X32B              PIC X(32).
+ 01 WS-X120              PIC X(120).
+ 01 WS-X24               PIC X(24).
+ 01 WS-X40               PIC X(40).
+ 01 WS-FL                BINARY-LONG.
+ COPY CLSTATE.
+ PROCEDURE DIVISION.
+     MOVE "BOAT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer BOAT is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§7 Boats and rafts 7 BOAT" TO CK-PREFIX
+     MOVE "P bottom root 0 3 1 1.5707964 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C bottom 0 0 -14 -9 -3 28 16 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P back root -15 4 4 0 4.712389 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C back 0 19 -13 -7 -1 18 6 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P front root 15 4 0 0 1.5707964 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C front 0 27 -8 -7 -1 16 6 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right root 0 4 -9 0 3.1415927 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right 0 35 -14 -7 -1 28 6 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left root 0 4 9 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left 0 43 -14 -7 -1 28 6 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_paddle root 3 -5 9 0 0 0.19634955" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_paddle 62 0 -1 0 -5 2 2 18 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_paddle 62 0 -1.001 -3 8 1 6 7 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_paddle root 3 -5 -9 0 3.1415927 0.19634955" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_paddle 62 20 -1 0 -5 2 2 18 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_paddle 62 20 0.001 -3 8 1 6 7 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "7 BOAT: parts below the root" TO WS-NAME
+     MOVE 7 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7 BOAT: cuboids" TO WS-NAME
+     MOVE 9 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7 BOAT: texture width" TO WS-NAME
+     MOVE 128.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7 BOAT: texture height" TO WS-NAME
+     MOVE 64.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHEST_BOAT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer CHEST_BOAT is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§7 Boats and rafts 7 CHEST_BOAT" TO CK-PREFIX
+     MOVE "P bottom root 0 3 1 1.5707964 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C bottom 0 0 -14 -9 -3 28 16 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P back root -15 4 4 0 4.712389 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C back 0 19 -13 -7 -1 18 6 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P front root 15 4 0 0 1.5707964 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C front 0 27 -8 -7 -1 16 6 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right root 0 4 -9 0 3.1415927 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right 0 35 -14 -7 -1 28 6 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left root 0 4 9 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left 0 43 -14 -7 -1 28 6 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_paddle root 3 -5 9 0 0 0.19634955" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_paddle 62 0 -1 0 -5 2 2 18 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_paddle 62 0 -1.001 -3 8 1 6 7 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_paddle root 3 -5 -9 0 3.1415927 0.19634955" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_paddle 62 20 -1 0 -5 2 2 18 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_paddle 62 20 0.001 -3 8 1 6 7 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P chest_bottom root -2 -5 -6 0 -1.5707964 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C chest_bottom 0 76 0 0 0 12 8 12 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P chest_lid root -2 -9 -6 0 -1.5707964 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C chest_lid 0 59 0 0 0 12 4 12 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P chest_lock root -1 -6 -1 0 -1.5707964 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C chest_lock 0 59 0 0 0 2 4 1 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "7 CHEST_BOAT: parts below the root" TO WS-NAME
+     MOVE 10 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7 CHEST_BOAT: cuboids" TO WS-NAME
+     MOVE 12 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7 CHEST_BOAT: texture width" TO WS-NAME
+     MOVE 128.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7 CHEST_BOAT: texture height" TO WS-NAME
+     MOVE 128.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "RAFT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer RAFT is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§7 Boats and rafts 7 RAFT" TO CK-PREFIX
+     MOVE "P bottom root 0 -2.1 1 1.5708 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C bottom 0 0 -14 -11 -4 28 20 4 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C bottom 0 0 -14 -9 -8 28 16 4 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_paddle root 3 -4 9 0 0 0.19634955" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_paddle 0 24 -1 0 -5 2 2 18 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_paddle 0 24 -1.001 -3 8 1 6 7 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_paddle root 3 -4 -9 0 3.1415927 0.19634955" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_paddle 40 24 -1 0 -5 2 2 18 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_paddle 40 24 0.001 -3 8 1 6 7 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "7 RAFT: parts below the root" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7 RAFT: cuboids" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7 RAFT: texture width" TO WS-NAME
+     MOVE 128.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7 RAFT: texture height" TO WS-NAME
+     MOVE 64.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHEST_RAFT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer CHEST_RAFT is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§7 Boats and rafts 7 CHEST_RAFT" TO CK-PREFIX
+     MOVE "P bottom root 0 -2.1 1 1.5708 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C bottom 0 0 -14 -11 -4 28 20 4 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C bottom 0 0 -14 -9 -8 28 16 4 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_paddle root 3 -4 9 0 0 0.19634955" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_paddle 0 24 -1 0 -5 2 2 18 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_paddle 0 24 -1.001 -3 8 1 6 7 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_paddle root 3 -4 -9 0 3.1415927 0.19634955" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_paddle 40 24 -1 0 -5 2 2 18 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_paddle 40 24 0.001 -3 8 1 6 7 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P chest_bottom root -2 -10.1 -6 0 -1.5707964 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C chest_bottom 0 76 0 0 0 12 8 12 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P chest_lid root -2 -14.1 -6 0 -1.5707964 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C chest_lid 0 59 0 0 0 12 4 12 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P chest_lock root -1 -11.1 -1 0 -1.5707964 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C chest_lock 0 59 0 0 0 2 4 1 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "7 CHEST_RAFT: parts below the root" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7 CHEST_RAFT: cuboids" TO WS-NAME
+     MOVE 9 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7 CHEST_RAFT: texture width" TO WS-NAME
+     MOVE 128.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7 CHEST_RAFT: texture height" TO WS-NAME
+     MOVE 128.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "BOAT_WATER_PATCH" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer BOAT_WATER_PATCH is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§7 Boats and rafts 7 BOAT_WATER_PATCH" TO CK-PREFIX
+     MOVE "P water_patch root 0 -3 1 1.5707964 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C water_patch 0 0 -14 -9 -3 28 16 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "7 BOAT_WATER_PATCH: parts below the root" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7 BOAT_WATER_PATCH: cuboids" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7 BOAT_WATER_PATCH: texture width" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7 BOAT_WATER_PATCH: texture height" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "BOAT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.6544985 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE 0.660889797 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -0.6544985 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 2.480702903 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5707964 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "BOAT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0.3926991 TO WS-IV(3)
+     MOVE 1.2 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.804777946 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE 0.448189889 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -1.02050941 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 3.297627235 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5707964 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "BOAT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 2.5 TO WS-IV(3)
+     MOVE -1.5 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.889517972 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE -0.783430767 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -0.262783117 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 2.671553755 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5707964 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "BOAT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 7 TO WS-IV(3)
+     MOVE 3.3 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.912496546 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE 0.219452429 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -0.592551908 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 3.727268231 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5707964 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHEST_BOAT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.6544985 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE 0.660889797 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -0.6544985 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 2.480702903 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5707964 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHEST_BOAT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0.3926991 TO WS-IV(3)
+     MOVE 1.2 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.804777946 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE 0.448189889 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -1.02050941 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 3.297627235 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5707964 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHEST_BOAT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 2.5 TO WS-IV(3)
+     MOVE -1.5 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.889517972 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE -0.783430767 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -0.262783117 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 2.671553755 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5707964 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHEST_BOAT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 7 TO WS-IV(3)
+     MOVE 3.3 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.912496546 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE 0.219452429 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -5.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -0.592551908 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 3.727268231 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5707964 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "RAFT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.6544985 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE 0.660889797 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -0.6544985 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 2.480702903 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE -2.1 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5708 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "RAFT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0.3926991 TO WS-IV(3)
+     MOVE 1.2 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.804777946 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE 0.448189889 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -1.02050941 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 3.297627235 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE -2.1 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5708 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "RAFT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 2.5 TO WS-IV(3)
+     MOVE -1.5 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.889517972 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE -0.783430767 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -0.262783117 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 2.671553755 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE -2.1 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5708 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "RAFT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 7 TO WS-IV(3)
+     MOVE 3.3 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.912496546 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE 0.219452429 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -0.592551908 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 3.727268231 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE -2.1 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5708 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHEST_RAFT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.6544985 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE 0.660889797 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -0.6544985 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 2.480702903 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE -2.1 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5708 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHEST_RAFT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0.3926991 TO WS-IV(3)
+     MOVE 1.2 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.804777946 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE 0.448189889 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -1.02050941 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 3.297627235 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE -2.1 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5708 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHEST_RAFT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 2.5 TO WS-IV(3)
+     MOVE -1.5 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.889517972 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE -0.783430767 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -0.262783117 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 2.671553755 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE -2.1 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5708 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "CHEST_RAFT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 7 TO WS-IV(3)
+     MOVE 3.3 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.z" TO WS-NAME
+     MOVE 9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.912496546 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE 0.219452429 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.x" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.y" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.z" TO WS-NAME
+     MOVE -9.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xrot" TO WS-NAME
+     MOVE -0.592551908 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 3.727268231 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.y" TO WS-NAME
+     MOVE -2.1 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.z" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xrot" TO WS-NAME
+     MOVE 1.5708 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "bottom" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "bottom.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "BOAT" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     CALL "EF8-BOAT-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.xrot" TO WS-NAME
+     MOVE -0.6544985 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.yrot" TO WS-NAME
+     MOVE 0.66089 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_paddle.yrot" TO WS-NAME
+     MOVE 2.4807 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_paddle" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_paddle.zrot" TO WS-NAME
+     MOVE 0.19634955 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-FL
+     MOVE 90 TO EN-YAW(1)
+     MOVE 0 TO EN-BHT(1)
+     MOVE 0 TO EN-BDM(1)
+     MOVE 1 TO EN-BHD(1)
+     MOVE 0 TO EN-BBA(1)
+     MOVE 0 TO EN-BUW(1)
+     CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 1" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 2" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 3" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 4" TO WS-NAME
+     MOVE 0.375 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 5" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 6" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 7" TO WS-NAME
+     MOVE 90 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 8" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 9" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 10" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 11" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 12" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 13" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 14" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 15" TO WS-NAME
+     MOVE 90 TO WS-E
+     MOVE WS-OV(15) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 16" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(16) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 0 damage 0 dir 1 bubble 0 under water 0 value 17" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(17) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-FL
+     MOVE 90 TO EN-YAW(1)
+     MOVE 6 TO EN-BHT(1)
+     MOVE 21 TO EN-BDM(1)
+     MOVE 1 TO EN-BHD(1)
+     MOVE 0 TO EN-BBA(1)
+     MOVE 0 TO EN-BUW(1)
+     CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 1" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 2" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 3" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 4" TO WS-NAME
+     MOVE 0.375 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 5" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 6" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 7" TO WS-NAME
+     MOVE 90 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 8" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 9" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 10" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 11" TO WS-NAME
+     MOVE -9.589242747 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 12" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 13" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 14" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 15" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(15) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 16" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(16) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 17" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(17) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 18" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(18) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 19" TO WS-NAME
+     MOVE 90 TO WS-E
+     MOVE WS-OV(19) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 20" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(20) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 90 hurtTime 6 damage 21 dir 1 bubble 0 under water 0 value 21" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(21) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-FL
+     MOVE 0 TO EN-YAW(1)
+     MOVE 3 TO EN-BHT(1)
+     MOVE 11 TO EN-BDM(1)
+     MOVE -1 TO EN-BHD(1)
+     MOVE 0 TO EN-BBA(1)
+     MOVE 0 TO EN-BUW(1)
+     CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 1" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 2" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 3" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 4" TO WS-NAME
+     MOVE 0.375 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 5" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 6" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 7" TO WS-NAME
+     MOVE 180 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 8" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 9" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 10" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 11" TO WS-NAME
+     MOVE -1.818594854 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 12" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 13" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 14" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 15" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(15) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 16" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(16) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 17" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(17) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 18" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(18) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 19" TO WS-NAME
+     MOVE 90 TO WS-E
+     MOVE WS-OV(19) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 20" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(20) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 0 hurtTime 3 damage 11 dir -1 bubble 0 under water 0 value 21" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(21) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-FL
+     MOVE 45 TO EN-YAW(1)
+     MOVE 0 TO EN-BHT(1)
+     MOVE 0 TO EN-BDM(1)
+     MOVE 1 TO EN-BHD(1)
+     MOVE 4.5 TO EN-BBA(1)
+     MOVE 0 TO EN-BUW(1)
+     CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 1" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 2" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 3" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 4" TO WS-NAME
+     MOVE 0.375 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 5" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 6" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 7" TO WS-NAME
+     MOVE 135 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 8" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 9" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 10" TO WS-NAME
+     MOVE 8 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 11" TO WS-NAME
+     MOVE 4.5 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 12" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 13" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 14" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 15" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(15) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 16" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(16) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 17" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(17) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 18" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(18) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 19" TO WS-NAME
+     MOVE 90 TO WS-E
+     MOVE WS-OV(19) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 20" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(20) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 0 value 21" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(21) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-FL
+     MOVE 45 TO EN-YAW(1)
+     MOVE 0 TO EN-BHT(1)
+     MOVE 0 TO EN-BDM(1)
+     MOVE 1 TO EN-BHD(1)
+     MOVE 4.5 TO EN-BBA(1)
+     MOVE 1 TO EN-BUW(1)
+     CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 1" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 2" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 3" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 4" TO WS-NAME
+     MOVE 0.375 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 5" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 6" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 7" TO WS-NAME
+     MOVE 135 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 8" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 9" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 10" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 11" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 12" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 13" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 14" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 15" TO WS-NAME
+     MOVE 90 TO WS-E
+     MOVE WS-OV(15) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 16" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(16) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 45 hurtTime 0 damage 0 dir 1 bubble 4.5 under water 1 value 17" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(17) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-FL
+     MOVE 10 TO EN-YAW(1)
+     MOVE 6 TO EN-BHT(1)
+     MOVE 21 TO EN-BDM(1)
+     MOVE 1 TO EN-BHD(1)
+     MOVE -3 TO EN-BBA(1)
+     MOVE 0 TO EN-BUW(1)
+     CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 1" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 2" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 3" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 4" TO WS-NAME
+     MOVE 0.375 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 5" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 6" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 7" TO WS-NAME
+     MOVE 170 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 8" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 9" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 10" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 11" TO WS-NAME
+     MOVE -9.589242747 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 12" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 13" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 14" TO WS-NAME
+     MOVE 8 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 15" TO WS-NAME
+     MOVE -3 TO WS-E
+     MOVE WS-OV(15) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 16" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(16) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 17" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(17) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 18" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(18) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 19" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(19) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 20" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(20) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 21" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(21) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 22" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(22) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 23" TO WS-NAME
+     MOVE 90 TO WS-E
+     MOVE WS-OV(23) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 24" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(24) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 6 damage 21 dir 1 bubble -3 under water 0 value 25" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(25) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-FL
+     MOVE 10 TO EN-YAW(1)
+     MOVE 1 TO EN-BHT(1)
+     MOVE 5 TO EN-BDM(1)
+     MOVE 1 TO EN-BHD(1)
+     MOVE 0.000001 TO EN-BBA(1)
+     MOVE 0 TO EN-BUW(1)
+     CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 1" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 2" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 3" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 4" TO WS-NAME
+     MOVE 0.375 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 5" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 6" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 7" TO WS-NAME
+     MOVE 170 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 8" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 9" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 10" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 11" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 12" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 13" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 14" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 15" TO WS-NAME
+     MOVE 90 TO WS-E
+     MOVE WS-OV(15) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 16" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(16) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.4 pose yaw 10 hurtTime 1 damage 5 dir 1 bubble 1e-06 under water 0 value 17" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(17) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-FL
+     MOVE 90 TO EN-YAW(1)
+     MOVE 6 TO EN-BHT(1)
+     MOVE 21 TO EN-BDM(1)
+     MOVE 1 TO EN-BHD(1)
+     MOVE 0 TO EN-BBA(1)
+     MOVE 0 TO EN-BUW(1)
+     CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "E13 the damaged boat rotates about X by -9.589 degrees" TO WS-NAME
+     MOVE -9.589242747 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "E13 the Y rotation is 180 - 90" TO WS-NAME
+     MOVE 90 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     CALL "EF8-BOAT-PATCH-DRAWN" USING WS-IN WS-OUT
+     MOVE "7.4 water patch for raft 0 under water 0" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     CALL "EF8-BOAT-PATCH-DRAWN" USING WS-IN WS-OUT
+     MOVE "7.4 water patch for raft 0 under water 1" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     CALL "EF8-BOAT-PATCH-DRAWN" USING WS-IN WS-OUT
+     MOVE "7.4 water patch for raft 1 under water 0" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     CALL "EF8-BOAT-PATCH-DRAWN" USING WS-IN WS-OUT
+     MOVE "7.4 water patch for raft 1 under water 1" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     CALL "EF8-BOAT-SEAT" USING WS-IN WS-OUT
+     MOVE "7.5 seat raft 0 chest 0 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [2]" TO WS-NAME
+     MOVE 0.1875 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [4]" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     CALL "EF8-BOAT-SEAT" USING WS-IN WS-OUT
+     MOVE "7.5 seat raft 1 chest 0 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 1 chest 0 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [2]" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 1 chest 0 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 1 chest 0 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [4]" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     CALL "EF8-BOAT-SEAT" USING WS-IN WS-OUT
+     MOVE "7.5 seat raft 0 chest 1 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 1 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [2]" TO WS-NAME
+     MOVE 0.1875 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 1 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [3]" TO WS-NAME
+     MOVE 0.15 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 1 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [4]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     CALL "EF8-BOAT-SEAT" USING WS-IN WS-OUT
+     MOVE "7.5 seat raft 1 chest 1 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 1 chest 1 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [2]" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 1 chest 1 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [3]" TO WS-NAME
+     MOVE 0.15 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 1 chest 1 passengers 1 index 0 animal 0 (x, y, z, maximum passengers) [4]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     CALL "EF8-BOAT-SEAT" USING WS-IN WS-OUT
+     MOVE "7.5 seat raft 0 chest 0 passengers 0 index 0 animal 0 (x, y, z, maximum passengers) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 0 index 0 animal 0 (x, y, z, maximum passengers) [2]" TO WS-NAME
+     MOVE 0.1875 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 0 index 0 animal 0 (x, y, z, maximum passengers) [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 0 index 0 animal 0 (x, y, z, maximum passengers) [4]" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     CALL "EF8-BOAT-SEAT" USING WS-IN WS-OUT
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 0 animal 0 (x, y, z, maximum passengers) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 0 animal 0 (x, y, z, maximum passengers) [2]" TO WS-NAME
+     MOVE 0.1875 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 0 animal 0 (x, y, z, maximum passengers) [3]" TO WS-NAME
+     MOVE 0.2 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 0 animal 0 (x, y, z, maximum passengers) [4]" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     CALL "EF8-BOAT-SEAT" USING WS-IN WS-OUT
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 1 animal 0 (x, y, z, maximum passengers) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 1 animal 0 (x, y, z, maximum passengers) [2]" TO WS-NAME
+     MOVE 0.1875 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 1 animal 0 (x, y, z, maximum passengers) [3]" TO WS-NAME
+     MOVE -0.6 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 1 animal 0 (x, y, z, maximum passengers) [4]" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     CALL "EF8-BOAT-SEAT" USING WS-IN WS-OUT
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 0 animal 1 (x, y, z, maximum passengers) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 0 animal 1 (x, y, z, maximum passengers) [2]" TO WS-NAME
+     MOVE 0.1875 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 0 animal 1 (x, y, z, maximum passengers) [3]" TO WS-NAME
+     MOVE 0.4 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 0 animal 1 (x, y, z, maximum passengers) [4]" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     CALL "EF8-BOAT-SEAT" USING WS-IN WS-OUT
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 1 animal 1 (x, y, z, maximum passengers) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 1 animal 1 (x, y, z, maximum passengers) [2]" TO WS-NAME
+     MOVE 0.1875 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 1 animal 1 (x, y, z, maximum passengers) [3]" TO WS-NAME
+     MOVE -0.4 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 0 chest 0 passengers 2 index 1 animal 1 (x, y, z, maximum passengers) [4]" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     CALL "EF8-BOAT-SEAT" USING WS-IN WS-OUT
+     MOVE "7.5 seat raft 1 chest 0 passengers 2 index 1 animal 0 (x, y, z, maximum passengers) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 1 chest 0 passengers 2 index 1 animal 0 (x, y, z, maximum passengers) [2]" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 1 chest 0 passengers 2 index 1 animal 0 (x, y, z, maximum passengers) [3]" TO WS-NAME
+     MOVE -0.6 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 seat raft 1 chest 0 passengers 2 index 1 animal 0 (x, y, z, maximum passengers) [4]" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1.375 TO WS-IV(1)
+     MOVE 0.5625 TO WS-IV(2)
+     CALL "EF8-BOAT-LEASH" USING WS-IN WS-OUT
+     MOVE "7.5 leash offset of the 1.375 x 0.5625 box (x, y, z) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 leash offset of the 1.375 x 0.5625 box (x, y, z) [2]" TO WS-NAME
+     MOVE 0.495 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 leash offset of the 1.375 x 0.5625 box (x, y, z) [3]" TO WS-NAME
+     MOVE 0.88 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     CALL "EF8-BOAT-LEASH" USING WS-IN WS-OUT
+     MOVE "7.5 leash offset of a 2 x 1 box [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 leash offset of a 2 x 1 box [2]" TO WS-NAME
+     MOVE 0.88 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "7.5 leash offset of a 2 x 1 box [3]" TO WS-NAME
+     MOVE 1.28 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     STOP RUN.
+
+ COPY EMCHKP.
+
+ CHECK-NUM.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US15 34-8§7 Boats and rafts: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     IF FUNCTION ABS(WS-O - WS-E) <= 0.00002
+         MOVE WS-E TO WS-O
+     END-IF
+     COMPUTE TL-EXPECTED-N ROUNDED = WS-E * 100000
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O * 100000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK-TEXT.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US15 34-8§7 Boats and rafts: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-ENTMODEL-34-8-7.
