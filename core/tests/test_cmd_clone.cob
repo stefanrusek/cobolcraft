@@ -1,5 +1,5 @@
 *> Acceptance test of docs/protocol/16-commands-catalog.md §7.4 `clone` (permission level 2): the source box is copied to the destination (replace, masked,
-*> filtered <predicate>; normal, force and move modes; strict; from and to dimensions), commands.clone.success [count] is broadcast and the result is the number of
+*> filtered <predicate>; normal, force and move modes, which follow replace, masked or filtered (57-client-closures-4 section 7.7); strict; from and to dimensions), commands.clone.success [count] is broadcast and the result is the number of
 *> blocks written; the same dimension with intersecting boxes in normal mode is commands.clone.overlap, a volume above max_block_modifications is
 *> commands.clone.toobig [max, volume], a box in a chunk that is not loaded is argument.pos.unloaded, nothing written is commands.clone.failed. Opal holds operator
 *> status; the world has the extra dimension (cobolcraft:subroutine). Blocks are read back with WORLD-GET-BLOCK.
@@ -86,7 +86,7 @@
      MOVE "clone 0 100 0 1 100 1 1 100 1 replace" TO WS-LINE
      PERFORM RUN-TEXT
      MOVE "acceptance US13 /clone strict does not change the overlap rule" TO TL-CASE
-     MOVE "clone 0 100 0 1 100 1 1 100 1 strict normal" TO WS-LINE
+     MOVE "clone 0 100 0 1 100 1 1 100 1 strict replace normal" TO WS-LINE
      PERFORM RUN-TEXT
      MOVE "acceptance US13 /clone the overlap error is not the toobig error" TO TL-CASE
      MOVE "clone 0 100 0 1 100 1 1 100 1 masked" TO WS-LINE
@@ -104,7 +104,7 @@
      MOVE "fill 0 100 10 1 100 10 cobolcraft:loam" TO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "acceptance US13 /clone move: the blocks are written" TO TL-CASE
-     MOVE "clone 0 100 10 1 100 10 4 100 10 move" TO WS-LINE
+     MOVE "clone 0 100 10 1 100 10 4 100 10 replace move" TO WS-LINE
      MOVE "commands.clone.success(2)" TO WS-EXPECTED
      PERFORM RUN-TEXT
      MOVE "acceptance US13 /clone move: the source is air afterwards" TO TL-CASE
@@ -243,7 +243,7 @@
      MOVE 1 TO WS-SUGGESTION-ID
      CALL "TEST-SUGGEST" USING WS-ID-OPAL WS-SUGGESTION-ID WS-LINE WS-LENGTH
      CALL "TEST-DRAIN-SUGGESTIONS" USING WS-ID-OPAL WS-TEXT
-     MOVE "1 32 0 [filtered,force,masked,move,normal,replace,strict]" TO WS-EXPECTED
+     MOVE "1 32 0 [filtered,masked,replace,strict]" TO WS-EXPECTED
      CALL "TEST-EXPECT" USING TL-CASE WS-EXPECTED WS-TEXT
 *>   Syntax.
      MOVE "acceptance US13 /clone the destination is required" TO TL-CASE

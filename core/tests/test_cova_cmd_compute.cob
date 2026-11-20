@@ -30,7 +30,7 @@
      CALL "TEST-JOIN-OP" USING WS-NAME WS-NAME-LENGTH WS-ID-OPAL
      CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
      MOVE SPACES TO WS-LINE
-     STRING "compute float 0." FUNCTION TRIM(WS-PAD) "1" DELIMITED BY SIZE INTO WS-LINE
+     STRING "compute default float 0." FUNCTION TRIM(WS-PAD) "1" DELIMITED BY SIZE INTO WS-LINE
      CALL "TEST-RUN" USING WS-ID-OPAL WS-LINE WS-TEXT
      MOVE "test cova cmd compute a number line over 112 characters still answers with a compute message" TO TL-CASE
      MOVE 1 TO WS-EXPECTED-N

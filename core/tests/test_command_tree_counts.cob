@@ -1,9 +1,7 @@
 *> Test of the Commands packet the core sends per permission level (docs/protocol/57-client-closures-4 sections 4, 5 and 10; T2014): the node count of a dedicated
 *> server's tree at levels 0 and 1 (26, with the totals of 5.2 by kind: literal and argument nodes, executable, redirect, executable and redirect, restricted and
-*> custom-suggestion nodes) and of the integrated host's (28), the byte-exact level 0 packets of 10.1 and 10.2, and the sizes of the levels 2 to 4. The vanilla counts of those
-*> levels (dedicated 2333, 2385, 2396 and integrated 2333, 2353, 2360) are not reached: the core's grammars of ten commands differ (test_command_tree_commands lists them), so the
-*> rows of levels 2 to 4 pin the core's own totals (a count below the document's by the missing nodes of execute, data, time, test and random reset, less the extra nodes of
-*> clone, compute and swing) and a change of them is a change of the tree.
+*> custom-suggestion nodes) and of the integrated host's (28), the byte-exact level 0 packets of 10.1 and 10.2, and the sizes and totals by kind of the levels 2 to 4: dedicated
+*> 2333, 2385 and 2396 nodes (the integrated host's 2333, 2353 and 2360), equal to 5.1 and 5.2, and the 131 custom suggestion providers of 2.3 by Identifier (114, 13, 2, 2).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-COMMAND-TREE-COUNTS.
  DATA DIVISION.
@@ -43,14 +41,14 @@
  01 WS-EXPECT-TABLE.
     05 FILLER              PIC X(60) VALUE "0 0 26 15 10 12 3 0 0 1".
     05 FILLER              PIC X(60) VALUE "0 1 26 15 10 12 3 0 0 1".
-    05 FILLER              PIC X(60) VALUE "0 2 1846 887 958 1213 25 8 64 77".
-    05 FILLER              PIC X(60) VALUE "0 3 1896 918 977 1247 25 8 77 86".
-    05 FILLER              PIC X(60) VALUE "0 4 1907 927 979 1255 25 8 83 86".
+    05 FILLER              PIC X(60) VALUE "0 2 2333 1116 1216 1371 78 44 66 121".
+    05 FILLER              PIC X(60) VALUE "0 3 2385 1148 1236 1406 78 44 80 131".
+    05 FILLER              PIC X(60) VALUE "0 4 2396 1157 1238 1414 78 44 86 131".
     05 FILLER              PIC X(60) VALUE "1 0 28 17 10 14 3 0 0 1".
     05 FILLER              PIC X(60) VALUE "1 1 28 17 10 14 3 0 0 1".
-    05 FILLER              PIC X(60) VALUE "1 2 1846".
-    05 FILLER              PIC X(60) VALUE "1 3 1864".
-    05 FILLER              PIC X(60) VALUE "1 4 1871".
+    05 FILLER              PIC X(60) VALUE "1 2 2333".
+    05 FILLER              PIC X(60) VALUE "1 3 2353".
+    05 FILLER              PIC X(60) VALUE "1 4 2360".
     05 FILLER              PIC X(60) VALUE "0 0 26 15 10 12 3 0 0 1".
  01 WS-EXPECTS REDEFINES WS-EXPECT-TABLE.
     05 WS-EXPECT           PIC X(60) OCCURS 11 TIMES.
@@ -131,8 +129,8 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-MISSING TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "test command tree counts the provider rows applied to the core's tree (60 strict rows and those of the commands whose paths exist)" TO TL-CASE
-     MOVE 87 TO TL-EXPECTED-N
+     MOVE "test command tree counts the provider rows applied to the core's tree (the 131 rows of 2.3: every command is built like the document)" TO TL-CASE
+     MOVE 131 TO TL-EXPECTED-N
      MOVE WS-APPLIED TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 4 TO WS-LEVEL
@@ -145,7 +143,7 @@
      MOVE SPACES TO TL-OBSERVED TL-EXPECTED
      STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) " " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "test command tree counts level 4 nodes by provider: ask_server, available_sounds, summonable_entities, post_effects" TO TL-CASE
-     MOVE "70 13 1 2" TO TL-EXPECTED
+     MOVE "114 13 2 2" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

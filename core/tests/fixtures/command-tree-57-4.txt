@@ -1,0 +1,2463 @@
+0 advancement R2
+1 grant
+2 <targets:entity#6(players)>
+3 only
+4 <advancement:resource_key#47(minecraft:advancement)> x
+5 <criterion:string#5(greedy)> x sug=ask
+3 from
+4 <advancement:resource_key#47(minecraft:advancement)> x
+3 until
+4 <advancement:resource_key#47(minecraft:advancement)> x
+3 through
+4 <advancement:resource_key#47(minecraft:advancement)> x
+3 everything x
+1 revoke
+2 <targets:entity#6(players)>
+3 only
+4 <advancement:resource_key#47(minecraft:advancement)> x
+5 <criterion:string#5(greedy)> x sug=ask
+3 from
+4 <advancement:resource_key#47(minecraft:advancement)> x
+3 until
+4 <advancement:resource_key#47(minecraft:advancement)> x
+3 through
+4 <advancement:resource_key#47(minecraft:advancement)> x
+3 everything x
+0 attribute R2
+1 <target:entity#6(single)>
+2 <attribute:resource#46(minecraft:attribute)>
+3 get x
+4 <scale:double#2> x
+3 base
+4 set
+5 <value:double#2> x
+4 get x
+5 <scale:double#2> x
+4 reset x
+3 modifier
+4 add
+5 <id:resource_location#36>
+6 <value:double#2>
+7 add_value x
+7 add_multiplied_base x
+7 add_multiplied_total x
+4 remove
+5 <id:resource_location#36> x sug=ask
+4 value
+5 get
+6 <id:resource_location#36> x sug=ask
+7 <scale:double#2> x
+0 execute R2
+1 run ->/
+1 if
+2 block
+3 <pos:block_pos#8>
+4 <block:block_predicate#13> x ->/execute
+2 biome
+3 <pos:block_pos#8>
+4 <biome:resource_or_tag#44(minecraft:worldgen/biome)> x ->/execute
+2 loaded
+3 <pos:block_pos#8> x ->/execute
+2 dimension
+3 <dimension:dimension#41> x ->/execute
+2 score
+3 <target:score_holder#31> sug=ask
+4 <targetObjective:objective#24>
+5 =
+6 <source:score_holder#31> sug=ask
+7 <sourceObjective:objective#24> x ->/execute
+5 <
+6 <source:score_holder#31> sug=ask
+7 <sourceObjective:objective#24> x ->/execute
+5 <=
+6 <source:score_holder#31> sug=ask
+7 <sourceObjective:objective#24> x ->/execute
+5 >
+6 <source:score_holder#31> sug=ask
+7 <sourceObjective:objective#24> x ->/execute
+5 >=
+6 <source:score_holder#31> sug=ask
+7 <sourceObjective:objective#24> x ->/execute
+5 matches
+6 <range:int_range#39> x ->/execute
+2 blocks
+3 <start:block_pos#8>
+4 <end:block_pos#8>
+5 <destination:block_pos#8>
+6 all x ->/execute
+6 masked x ->/execute
+2 entity
+3 <entities:entity#6> x ->/execute
+2 predicate
+3 <predicate:loot_predicate#53> x ->/execute
+2 function
+3 <name:function#37> ->/execute sug=ask
+2 stopwatch
+3 <id:resource_location#36> sug=ask
+4 <range:float_range#40> x ->/execute
+2 data
+3 entity
+4 <source:entity#6(single)>
+5 <path:nbt_path#23> x ->/execute
+3 block
+4 <source:block_pos#8>
+5 <path:nbt_path#23> x ->/execute
+3 storage
+4 <source:resource_location#36> sug=ask
+5 <path:nbt_path#23> x ->/execute
+2 items
+3 entity
+4 <source:entity#6>
+5 <slots:slot_source#57>
+6 <item_predicate:item_predicate#15> x ->/execute
+3 block
+4 <source:block_pos#8>
+5 <slots:slot_source#57>
+6 <item_predicate:item_predicate#15> x ->/execute
+2 slots
+3 entity
+4 <source:entity#6>
+5 <slots:slot_source#57> x ->/execute
+3 block
+4 <source:block_pos#8>
+5 <slots:slot_source#57> x ->/execute
+1 unless
+2 block
+3 <pos:block_pos#8>
+4 <block:block_predicate#13> x ->/execute
+2 biome
+3 <pos:block_pos#8>
+4 <biome:resource_or_tag#44(minecraft:worldgen/biome)> x ->/execute
+2 loaded
+3 <pos:block_pos#8> x ->/execute
+2 dimension
+3 <dimension:dimension#41> x ->/execute
+2 score
+3 <target:score_holder#31> sug=ask
+4 <targetObjective:objective#24>
+5 =
+6 <source:score_holder#31> sug=ask
+7 <sourceObjective:objective#24> x ->/execute
+5 <
+6 <source:score_holder#31> sug=ask
+7 <sourceObjective:objective#24> x ->/execute
+5 <=
+6 <source:score_holder#31> sug=ask
+7 <sourceObjective:objective#24> x ->/execute
+5 >
+6 <source:score_holder#31> sug=ask
+7 <sourceObjective:objective#24> x ->/execute
+5 >=
+6 <source:score_holder#31> sug=ask
+7 <sourceObjective:objective#24> x ->/execute
+5 matches
+6 <range:int_range#39> x ->/execute
+2 blocks
+3 <start:block_pos#8>
+4 <end:block_pos#8>
+5 <destination:block_pos#8>
+6 all x ->/execute
+6 masked x ->/execute
+2 entity
+3 <entities:entity#6> x ->/execute
+2 predicate
+3 <predicate:loot_predicate#53> x ->/execute
+2 function
+3 <name:function#37> ->/execute sug=ask
+2 stopwatch
+3 <id:resource_location#36> sug=ask
+4 <range:float_range#40> x ->/execute
+2 data
+3 entity
+4 <source:entity#6(single)>
+5 <path:nbt_path#23> x ->/execute
+3 block
+4 <source:block_pos#8>
+5 <path:nbt_path#23> x ->/execute
+3 storage
+4 <source:resource_location#36> sug=ask
+5 <path:nbt_path#23> x ->/execute
+2 items
+3 entity
+4 <source:entity#6>
+5 <slots:slot_source#57>
+6 <item_predicate:item_predicate#15> x ->/execute
+3 block
+4 <source:block_pos#8>
+5 <slots:slot_source#57>
+6 <item_predicate:item_predicate#15> x ->/execute
+2 slots
+3 entity
+4 <source:entity#6>
+5 <slots:slot_source#57> x ->/execute
+3 block
+4 <source:block_pos#8>
+5 <slots:slot_source#57> x ->/execute
+1 as
+2 <targets:entity#6> ->/execute
+1 at
+2 <targets:entity#6> ->/execute
+1 store
+2 result
+3 score
+4 <targets:score_holder#31(multiple)> sug=ask
+5 <objective:objective#24> ->/execute
+3 bossbar
+4 <id:resource_location#36> sug=ask
+5 value ->/execute
+5 max ->/execute
+3 entity
+4 <target:entity#6(single)>
+5 <path:nbt_path#23>
+6 int
+7 <scale:double#2> ->/execute
+6 float
+7 <scale:double#2> ->/execute
+6 short
+7 <scale:double#2> ->/execute
+6 long
+7 <scale:double#2> ->/execute
+6 double
+7 <scale:double#2> ->/execute
+6 byte
+7 <scale:double#2> ->/execute
+3 block
+4 <target:block_pos#8>
+5 <path:nbt_path#23>
+6 int
+7 <scale:double#2> ->/execute
+6 float
+7 <scale:double#2> ->/execute
+6 short
+7 <scale:double#2> ->/execute
+6 long
+7 <scale:double#2> ->/execute
+6 double
+7 <scale:double#2> ->/execute
+6 byte
+7 <scale:double#2> ->/execute
+3 storage
+4 <target:resource_location#36> sug=ask
+5 <path:nbt_path#23>
+6 int
+7 <scale:double#2> ->/execute
+6 float
+7 <scale:double#2> ->/execute
+6 short
+7 <scale:double#2> ->/execute
+6 long
+7 <scale:double#2> ->/execute
+6 double
+7 <scale:double#2> ->/execute
+6 byte
+7 <scale:double#2> ->/execute
+2 success
+3 score
+4 <targets:score_holder#31(multiple)> sug=ask
+5 <objective:objective#24> ->/execute
+3 bossbar
+4 <id:resource_location#36> sug=ask
+5 value ->/execute
+5 max ->/execute
+3 entity
+4 <target:entity#6(single)>
+5 <path:nbt_path#23>
+6 int
+7 <scale:double#2> ->/execute
+6 float
+7 <scale:double#2> ->/execute
+6 short
+7 <scale:double#2> ->/execute
+6 long
+7 <scale:double#2> ->/execute
+6 double
+7 <scale:double#2> ->/execute
+6 byte
+7 <scale:double#2> ->/execute
+3 block
+4 <target:block_pos#8>
+5 <path:nbt_path#23>
+6 int
+7 <scale:double#2> ->/execute
+6 float
+7 <scale:double#2> ->/execute
+6 short
+7 <scale:double#2> ->/execute
+6 long
+7 <scale:double#2> ->/execute
+6 double
+7 <scale:double#2> ->/execute
+6 byte
+7 <scale:double#2> ->/execute
+3 storage
+4 <target:resource_location#36> sug=ask
+5 <path:nbt_path#23>
+6 int
+7 <scale:double#2> ->/execute
+6 float
+7 <scale:double#2> ->/execute
+6 short
+7 <scale:double#2> ->/execute
+6 long
+7 <scale:double#2> ->/execute
+6 double
+7 <scale:double#2> ->/execute
+6 byte
+7 <scale:double#2> ->/execute
+1 positioned
+2 <pos:vec3#10> ->/execute
+2 as
+3 <targets:entity#6> ->/execute
+2 over
+3 <heightmap:heightmap#51> ->/execute
+1 rotated
+2 <rot:rotation#29> ->/execute
+2 as
+3 <targets:entity#6> ->/execute
+1 facing
+2 entity
+3 <targets:entity#6>
+4 <anchor:entity_anchor#38> ->/execute
+2 <pos:vec3#10> ->/execute
+1 align
+2 <axes:swizzle#32> ->/execute
+1 anchored
+2 <anchor:entity_anchor#38> ->/execute
+1 in
+2 <dimension:dimension#41> ->/execute
+1 summon
+2 <entity:resource#46(minecraft:entity_type)> ->/execute sug=summonable_entities
+1 on
+2 owner ->/execute
+2 leasher ->/execute
+2 target ->/execute
+2 attacker ->/execute
+2 vehicle ->/execute
+2 controller ->/execute
+2 origin ->/execute
+2 passengers ->/execute
+0 bossbar R2
+1 add
+2 <id:resource_location#36>
+3 <name:component#18> x
+1 remove
+2 <id:resource_location#36> x sug=ask
+1 list x
+1 set
+2 <id:resource_location#36> sug=ask
+3 name
+4 <name:component#18> x
+3 color
+4 pink x
+4 blue x
+4 red x
+4 green x
+4 yellow x
+4 purple x
+4 white x
+3 style
+4 progress x
+4 notched_6 x
+4 notched_10 x
+4 notched_12 x
+4 notched_20 x
+3 value
+4 <value:integer#3(min=0)> x
+3 max
+4 <max:integer#3(min=1)> x
+3 visible
+4 <visible:bool#0> x
+3 players x
+4 <targets:entity#6(players)> x
+1 get
+2 <id:resource_location#36> sug=ask
+3 value x
+3 max x
+3 visible x
+3 players x
+0 clear x R2
+1 <targets:entity#6(players)> x
+2 <item:item_predicate#15> x
+3 <maxCount:integer#3(min=0)> x
+0 clone R2
+1 <begin:block_pos#8>
+2 <end:block_pos#8>
+3 <destination:block_pos#8> x
+4 replace x
+5 force x
+5 move x
+5 normal x
+4 masked x
+5 force x
+5 move x
+5 normal x
+4 filtered
+5 <filter:block_predicate#13> x
+6 force x
+6 move x
+6 normal x
+4 strict x
+5 replace x
+6 force x
+6 move x
+6 normal x
+5 masked x
+6 force x
+6 move x
+6 normal x
+5 filtered
+6 <filter:block_predicate#13> x
+7 force x
+7 move x
+7 normal x
+3 to
+4 <targetDimension:dimension#41>
+5 <destination:block_pos#8> x
+6 replace x
+7 force x
+7 move x
+7 normal x
+6 masked x
+7 force x
+7 move x
+7 normal x
+6 filtered
+7 <filter:block_predicate#13> x
+8 force x
+8 move x
+8 normal x
+6 strict x
+7 replace x
+8 force x
+8 move x
+8 normal x
+7 masked x
+8 force x
+8 move x
+8 normal x
+7 filtered
+8 <filter:block_predicate#13> x
+9 force x
+9 move x
+9 normal x
+1 from
+2 <sourceDimension:dimension#41>
+3 <begin:block_pos#8>
+4 <end:block_pos#8>
+5 <destination:block_pos#8> x
+6 replace x
+7 force x
+7 move x
+7 normal x
+6 masked x
+7 force x
+7 move x
+7 normal x
+6 filtered
+7 <filter:block_predicate#13> x
+8 force x
+8 move x
+8 normal x
+6 strict x
+7 replace x
+8 force x
+8 move x
+8 normal x
+7 masked x
+8 force x
+8 move x
+8 normal x
+7 filtered
+8 <filter:block_predicate#13> x
+9 force x
+9 move x
+9 normal x
+5 to
+6 <targetDimension:dimension#41>
+7 <destination:block_pos#8> x
+8 replace x
+9 force x
+9 move x
+9 normal x
+8 masked x
+9 force x
+9 move x
+9 normal x
+8 filtered
+9 <filter:block_predicate#13> x
+10 force x
+10 move x
+10 normal x
+8 strict x
+9 replace x
+10 force x
+10 move x
+10 normal x
+9 masked x
+10 force x
+10 move x
+10 normal x
+9 filtered
+10 <filter:block_predicate#13> x
+11 force x
+11 move x
+11 normal x
+0 compute R2
+1 default
+2 float
+3 <provider:context_float_provider#55> x
+4 <scale:float#1> x
+2 integer
+3 <provider:context_int_provider#56> x
+1 block
+2 <computePos:block_pos#8>
+3 float
+4 <provider:context_float_provider#55> x
+5 <scale:float#1> x
+3 integer
+4 <provider:context_int_provider#56> x
+1 entity
+2 <computeTarget:entity#6(single)>
+3 float
+4 <provider:context_float_provider#55> x
+5 <scale:float#1> x
+3 integer
+4 <provider:context_int_provider#56> x
+0 damage R2
+1 <target:entity#6(single)>
+2 <amount:float#1(min=0)> x
+3 <damageType:resource#46(minecraft:damage_type)> x
+4 at
+5 <location:vec3#10> x
+4 by
+5 <entity:entity#6(single)> x
+6 from
+7 <cause:entity#6(single)> x
+0 data R2
+1 merge
+2 entity
+3 <target:entity#6(single)>
+4 <nbt:nbt_compound_tag#21> x
+2 block
+3 <target:block_pos#8>
+4 <nbt:nbt_compound_tag#21> x
+2 storage
+3 <target:resource_location#36> sug=ask
+4 <nbt:nbt_compound_tag#21> x
+1 get
+2 entity
+3 <target:entity#6(single)> x
+4 <path:nbt_path#23> x
+5 <scale:double#2> x
+2 block
+3 <target:block_pos#8> x
+4 <path:nbt_path#23> x
+5 <scale:double#2> x
+2 storage
+3 <target:resource_location#36> x sug=ask
+4 <path:nbt_path#23> x
+5 <scale:double#2> x
+1 remove
+2 entity
+3 <target:entity#6(single)>
+4 <path:nbt_path#23> x
+2 block
+3 <target:block_pos#8>
+4 <path:nbt_path#23> x
+2 storage
+3 <target:resource_location#36> sug=ask
+4 <path:nbt_path#23> x
+1 modify
+2 entity
+3 <target:entity#6(single)>
+4 <targetPath:nbt_path#23>
+5 insert
+6 <index:integer#3>
+7 from
+8 entity
+9 <source:entity#6(single)> x
+10 <sourcePath:nbt_path#23> x
+8 block
+9 <source:block_pos#8> x
+10 <sourcePath:nbt_path#23> x
+8 storage
+9 <source:resource_location#36> x sug=ask
+10 <sourcePath:nbt_path#23> x
+7 string
+8 entity
+9 <source:entity#6(single)> x
+10 <sourcePath:nbt_path#23> x
+11 <start:integer#3> x
+12 <end:integer#3> x
+8 block
+9 <source:block_pos#8> x
+10 <sourcePath:nbt_path#23> x
+11 <start:integer#3> x
+12 <end:integer#3> x
+8 storage
+9 <source:resource_location#36> x sug=ask
+10 <sourcePath:nbt_path#23> x
+11 <start:integer#3> x
+12 <end:integer#3> x
+7 compute
+8 default
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+8 block
+9 <computePos:block_pos#8>
+10 float
+11 <provider:context_float_provider#55> x
+10 integer
+11 <provider:context_int_provider#56> x
+8 entity
+9 <computeTarget:entity#6(single)>
+10 float
+11 <provider:context_float_provider#55> x
+10 integer
+11 <provider:context_int_provider#56> x
+7 value
+8 <value:nbt_tag#22> x
+5 prepend
+6 from
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+6 string
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+6 compute
+7 default
+8 float
+9 <provider:context_float_provider#55> x
+8 integer
+9 <provider:context_int_provider#56> x
+7 block
+8 <computePos:block_pos#8>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+7 entity
+8 <computeTarget:entity#6(single)>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+6 value
+7 <value:nbt_tag#22> x
+5 append
+6 from
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+6 string
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+6 compute
+7 default
+8 float
+9 <provider:context_float_provider#55> x
+8 integer
+9 <provider:context_int_provider#56> x
+7 block
+8 <computePos:block_pos#8>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+7 entity
+8 <computeTarget:entity#6(single)>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+6 value
+7 <value:nbt_tag#22> x
+5 set
+6 from
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+6 string
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+6 compute
+7 default
+8 float
+9 <provider:context_float_provider#55> x
+8 integer
+9 <provider:context_int_provider#56> x
+7 block
+8 <computePos:block_pos#8>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+7 entity
+8 <computeTarget:entity#6(single)>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+6 value
+7 <value:nbt_tag#22> x
+5 merge
+6 from
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+6 string
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+6 compute
+7 default
+8 float
+9 <provider:context_float_provider#55> x
+8 integer
+9 <provider:context_int_provider#56> x
+7 block
+8 <computePos:block_pos#8>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+7 entity
+8 <computeTarget:entity#6(single)>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+6 value
+7 <value:nbt_tag#22> x
+2 block
+3 <target:block_pos#8>
+4 <targetPath:nbt_path#23>
+5 insert
+6 <index:integer#3>
+7 from
+8 entity
+9 <source:entity#6(single)> x
+10 <sourcePath:nbt_path#23> x
+8 block
+9 <source:block_pos#8> x
+10 <sourcePath:nbt_path#23> x
+8 storage
+9 <source:resource_location#36> x sug=ask
+10 <sourcePath:nbt_path#23> x
+7 string
+8 entity
+9 <source:entity#6(single)> x
+10 <sourcePath:nbt_path#23> x
+11 <start:integer#3> x
+12 <end:integer#3> x
+8 block
+9 <source:block_pos#8> x
+10 <sourcePath:nbt_path#23> x
+11 <start:integer#3> x
+12 <end:integer#3> x
+8 storage
+9 <source:resource_location#36> x sug=ask
+10 <sourcePath:nbt_path#23> x
+11 <start:integer#3> x
+12 <end:integer#3> x
+7 compute
+8 default
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+8 block
+9 <computePos:block_pos#8>
+10 float
+11 <provider:context_float_provider#55> x
+10 integer
+11 <provider:context_int_provider#56> x
+8 entity
+9 <computeTarget:entity#6(single)>
+10 float
+11 <provider:context_float_provider#55> x
+10 integer
+11 <provider:context_int_provider#56> x
+7 value
+8 <value:nbt_tag#22> x
+5 prepend
+6 from
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+6 string
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+6 compute
+7 default
+8 float
+9 <provider:context_float_provider#55> x
+8 integer
+9 <provider:context_int_provider#56> x
+7 block
+8 <computePos:block_pos#8>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+7 entity
+8 <computeTarget:entity#6(single)>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+6 value
+7 <value:nbt_tag#22> x
+5 append
+6 from
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+6 string
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+6 compute
+7 default
+8 float
+9 <provider:context_float_provider#55> x
+8 integer
+9 <provider:context_int_provider#56> x
+7 block
+8 <computePos:block_pos#8>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+7 entity
+8 <computeTarget:entity#6(single)>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+6 value
+7 <value:nbt_tag#22> x
+5 set
+6 from
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+6 string
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+6 compute
+7 default
+8 float
+9 <provider:context_float_provider#55> x
+8 integer
+9 <provider:context_int_provider#56> x
+7 block
+8 <computePos:block_pos#8>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+7 entity
+8 <computeTarget:entity#6(single)>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+6 value
+7 <value:nbt_tag#22> x
+5 merge
+6 from
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+6 string
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+6 compute
+7 default
+8 float
+9 <provider:context_float_provider#55> x
+8 integer
+9 <provider:context_int_provider#56> x
+7 block
+8 <computePos:block_pos#8>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+7 entity
+8 <computeTarget:entity#6(single)>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+6 value
+7 <value:nbt_tag#22> x
+2 storage
+3 <target:resource_location#36> sug=ask
+4 <targetPath:nbt_path#23>
+5 insert
+6 <index:integer#3>
+7 from
+8 entity
+9 <source:entity#6(single)> x
+10 <sourcePath:nbt_path#23> x
+8 block
+9 <source:block_pos#8> x
+10 <sourcePath:nbt_path#23> x
+8 storage
+9 <source:resource_location#36> x sug=ask
+10 <sourcePath:nbt_path#23> x
+7 string
+8 entity
+9 <source:entity#6(single)> x
+10 <sourcePath:nbt_path#23> x
+11 <start:integer#3> x
+12 <end:integer#3> x
+8 block
+9 <source:block_pos#8> x
+10 <sourcePath:nbt_path#23> x
+11 <start:integer#3> x
+12 <end:integer#3> x
+8 storage
+9 <source:resource_location#36> x sug=ask
+10 <sourcePath:nbt_path#23> x
+11 <start:integer#3> x
+12 <end:integer#3> x
+7 compute
+8 default
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+8 block
+9 <computePos:block_pos#8>
+10 float
+11 <provider:context_float_provider#55> x
+10 integer
+11 <provider:context_int_provider#56> x
+8 entity
+9 <computeTarget:entity#6(single)>
+10 float
+11 <provider:context_float_provider#55> x
+10 integer
+11 <provider:context_int_provider#56> x
+7 value
+8 <value:nbt_tag#22> x
+5 prepend
+6 from
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+6 string
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+6 compute
+7 default
+8 float
+9 <provider:context_float_provider#55> x
+8 integer
+9 <provider:context_int_provider#56> x
+7 block
+8 <computePos:block_pos#8>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+7 entity
+8 <computeTarget:entity#6(single)>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+6 value
+7 <value:nbt_tag#22> x
+5 append
+6 from
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+6 string
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+6 compute
+7 default
+8 float
+9 <provider:context_float_provider#55> x
+8 integer
+9 <provider:context_int_provider#56> x
+7 block
+8 <computePos:block_pos#8>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+7 entity
+8 <computeTarget:entity#6(single)>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+6 value
+7 <value:nbt_tag#22> x
+5 set
+6 from
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+6 string
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+6 compute
+7 default
+8 float
+9 <provider:context_float_provider#55> x
+8 integer
+9 <provider:context_int_provider#56> x
+7 block
+8 <computePos:block_pos#8>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+7 entity
+8 <computeTarget:entity#6(single)>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+6 value
+7 <value:nbt_tag#22> x
+5 merge
+6 from
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+6 string
+7 entity
+8 <source:entity#6(single)> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 block
+8 <source:block_pos#8> x
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+7 storage
+8 <source:resource_location#36> x sug=ask
+9 <sourcePath:nbt_path#23> x
+10 <start:integer#3> x
+11 <end:integer#3> x
+6 compute
+7 default
+8 float
+9 <provider:context_float_provider#55> x
+8 integer
+9 <provider:context_int_provider#56> x
+7 block
+8 <computePos:block_pos#8>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+7 entity
+8 <computeTarget:entity#6(single)>
+9 float
+10 <provider:context_float_provider#55> x
+9 integer
+10 <provider:context_int_provider#56> x
+6 value
+7 <value:nbt_tag#22> x
+0 datapack R2
+1 enable
+2 <name:string#5(phrase)> x sug=ask
+3 after
+4 <existing:string#5(phrase)> x sug=ask
+3 before
+4 <existing:string#5(phrase)> x sug=ask
+3 last x
+3 first x
+1 disable
+2 <name:string#5(phrase)> x sug=ask
+1 list x
+2 available x
+2 enabled x
+1 create R4
+2 <id:string#5(phrase)>
+3 <description:component#18> x
+0 debug R3
+1 start x
+1 stop x
+1 function R3
+2 <name:function#37> x sug=ask
+0 defaultgamemode R2
+1 <gamemode:gamemode#42> x
+0 dialog R2
+1 show
+2 <targets:entity#6(players)>
+3 <dialog:dialog#58> x
+1 clear
+2 <targets:entity#6(players)> x
+0 difficulty x R2
+1 peaceful x
+1 easy x
+1 normal x
+1 hard x
+0 effect R2
+1 clear x
+2 <targets:entity#6> x
+3 <effect:resource#46(minecraft:mob_effect)> x
+1 give
+2 <targets:entity#6>
+3 <effect:resource#46(minecraft:mob_effect)> x
+4 <seconds:integer#3(min=1,max=1000000)> x
+5 <amplifier:integer#3(min=0,max=255)> x
+6 <hideParticles:bool#0> x
+4 infinite x
+5 <amplifier:integer#3(min=0,max=255)> x
+6 <hideParticles:bool#0> x
+0 me
+1 <action:message#20> x
+0 enchant R2
+1 <targets:entity#6>
+2 <enchantment:resource#46(minecraft:enchantment)> x
+3 <level:integer#3(min=0)> x
+0 experience R2
+1 add
+2 <target:entity#6(players)>
+3 <amount:integer#3> x
+4 points x
+4 levels x
+1 set
+2 <target:entity#6(players)>
+3 <amount:integer#3(min=0)> x
+4 points x
+4 levels x
+1 query
+2 <target:entity#6(single,players)>
+3 points x
+3 levels x
+0 xp R2 ->/experience
+0 fill R2
+1 <from:block_pos#8>
+2 <to:block_pos#8>
+3 <block:block_state#12> x
+4 outline x
+4 hollow x
+4 destroy x
+4 strict x
+4 replace x
+5 <filter:block_predicate#13> x
+6 outline x
+6 hollow x
+6 destroy x
+6 strict x
+4 keep x
+0 fillbiome R2
+1 <from:block_pos#8>
+2 <to:block_pos#8>
+3 <biome:resource#46(minecraft:worldgen/biome)> x
+4 replace
+5 <filter:resource_or_tag#44(minecraft:worldgen/biome)> x
+0 forceload R2
+1 add
+2 <from:column_pos#9> x
+3 <to:column_pos#9> x
+1 remove
+2 <from:column_pos#9> x
+3 <to:column_pos#9> x
+2 all x
+1 query x
+2 <pos:column_pos#9> x
+0 function R2
+1 <name:function#37> x sug=ask
+2 <arguments:nbt_compound_tag#21> x
+2 with
+3 entity
+4 <source:entity#6(single)> x
+5 <path:nbt_path#23> x
+3 block
+4 <source:block_pos#8> x
+5 <path:nbt_path#23> x
+3 storage
+4 <source:resource_location#36> x sug=ask
+5 <path:nbt_path#23> x
+0 gamemode R2
+1 <gamemode:gamemode#42> x
+2 <target:entity#6(players)> x
+0 gamerule R2
+1 advance_time x
+2 <value:bool#0> x
+1 minecraft:advance_time x
+2 <value:bool#0> x
+1 advance_weather x
+2 <value:bool#0> x
+1 minecraft:advance_weather x
+2 <value:bool#0> x
+1 allow_entering_nether_using_portals x
+2 <value:bool#0> x
+1 minecraft:allow_entering_nether_using_portals x
+2 <value:bool#0> x
+1 block_drops x
+2 <value:bool#0> x
+1 minecraft:block_drops x
+2 <value:bool#0> x
+1 block_explosion_drop_decay x
+2 <value:bool#0> x
+1 minecraft:block_explosion_drop_decay x
+2 <value:bool#0> x
+1 command_blocks_work x
+2 <value:bool#0> x
+1 minecraft:command_blocks_work x
+2 <value:bool#0> x
+1 command_block_output x
+2 <value:bool#0> x
+1 minecraft:command_block_output x
+2 <value:bool#0> x
+1 drowning_damage x
+2 <value:bool#0> x
+1 minecraft:drowning_damage x
+2 <value:bool#0> x
+1 elytra_movement_check x
+2 <value:bool#0> x
+1 minecraft:elytra_movement_check x
+2 <value:bool#0> x
+1 ender_pearls_vanish_on_death x
+2 <value:bool#0> x
+1 minecraft:ender_pearls_vanish_on_death x
+2 <value:bool#0> x
+1 entity_drops x
+2 <value:bool#0> x
+1 minecraft:entity_drops x
+2 <value:bool#0> x
+1 fall_damage x
+2 <value:bool#0> x
+1 minecraft:fall_damage x
+2 <value:bool#0> x
+1 fire_damage x
+2 <value:bool#0> x
+1 minecraft:fire_damage x
+2 <value:bool#0> x
+1 fire_spread_radius_around_player x
+2 <value:integer#3(min=-1)> x
+1 minecraft:fire_spread_radius_around_player x
+2 <value:integer#3(min=-1)> x
+1 forgive_dead_players x
+2 <value:bool#0> x
+1 minecraft:forgive_dead_players x
+2 <value:bool#0> x
+1 freeze_damage x
+2 <value:bool#0> x
+1 minecraft:freeze_damage x
+2 <value:bool#0> x
+1 global_sound_events x
+2 <value:bool#0> x
+1 minecraft:global_sound_events x
+2 <value:bool#0> x
+1 immediate_respawn x
+2 <value:bool#0> x
+1 minecraft:immediate_respawn x
+2 <value:bool#0> x
+1 keep_inventory x
+2 <value:bool#0> x
+1 minecraft:keep_inventory x
+2 <value:bool#0> x
+1 lava_source_conversion x
+2 <value:bool#0> x
+1 minecraft:lava_source_conversion x
+2 <value:bool#0> x
+1 limited_crafting x
+2 <value:bool#0> x
+1 minecraft:limited_crafting x
+2 <value:bool#0> x
+1 locator_bar x
+2 <value:bool#0> x
+1 minecraft:locator_bar x
+2 <value:bool#0> x
+1 log_admin_commands x
+2 <value:bool#0> x
+1 minecraft:log_admin_commands x
+2 <value:bool#0> x
+1 max_block_modifications x
+2 <value:integer#3(min=1)> x
+1 minecraft:max_block_modifications x
+2 <value:integer#3(min=1)> x
+1 max_command_forks x
+2 <value:integer#3(min=0)> x
+1 minecraft:max_command_forks x
+2 <value:integer#3(min=0)> x
+1 max_command_sequence_length x
+2 <value:integer#3(min=0)> x
+1 minecraft:max_command_sequence_length x
+2 <value:integer#3(min=0)> x
+1 max_entity_cramming x
+2 <value:integer#3(min=0)> x
+1 minecraft:max_entity_cramming x
+2 <value:integer#3(min=0)> x
+1 max_snow_accumulation_height x
+2 <value:integer#3(min=0,max=8)> x
+1 minecraft:max_snow_accumulation_height x
+2 <value:integer#3(min=0,max=8)> x
+1 mob_drops x
+2 <value:bool#0> x
+1 minecraft:mob_drops x
+2 <value:bool#0> x
+1 mob_explosion_drop_decay x
+2 <value:bool#0> x
+1 minecraft:mob_explosion_drop_decay x
+2 <value:bool#0> x
+1 mob_griefing x
+2 <value:bool#0> x
+1 minecraft:mob_griefing x
+2 <value:bool#0> x
+1 natural_health_regeneration x
+2 <value:bool#0> x
+1 minecraft:natural_health_regeneration x
+2 <value:bool#0> x
+1 player_movement_check x
+2 <value:bool#0> x
+1 minecraft:player_movement_check x
+2 <value:bool#0> x
+1 players_nether_portal_creative_delay x
+2 <value:integer#3(min=0)> x
+1 minecraft:players_nether_portal_creative_delay x
+2 <value:integer#3(min=0)> x
+1 players_nether_portal_default_delay x
+2 <value:integer#3(min=0)> x
+1 minecraft:players_nether_portal_default_delay x
+2 <value:integer#3(min=0)> x
+1 players_sleeping_percentage x
+2 <value:integer#3(min=0)> x
+1 minecraft:players_sleeping_percentage x
+2 <value:integer#3(min=0)> x
+1 projectiles_can_break_blocks x
+2 <value:bool#0> x
+1 minecraft:projectiles_can_break_blocks x
+2 <value:bool#0> x
+1 pvp x
+2 <value:bool#0> x
+1 minecraft:pvp x
+2 <value:bool#0> x
+1 raids x
+2 <value:bool#0> x
+1 minecraft:raids x
+2 <value:bool#0> x
+1 random_tick_speed x
+2 <value:integer#3(min=0)> x
+1 minecraft:random_tick_speed x
+2 <value:integer#3(min=0)> x
+1 reduced_debug_info x
+2 <value:bool#0> x
+1 minecraft:reduced_debug_info x
+2 <value:bool#0> x
+1 respawn_radius x
+2 <value:integer#3(min=0)> x
+1 minecraft:respawn_radius x
+2 <value:integer#3(min=0)> x
+1 send_command_feedback x
+2 <value:bool#0> x
+1 minecraft:send_command_feedback x
+2 <value:bool#0> x
+1 show_advancement_messages x
+2 <value:bool#0> x
+1 minecraft:show_advancement_messages x
+2 <value:bool#0> x
+1 show_death_messages x
+2 <value:bool#0> x
+1 minecraft:show_death_messages x
+2 <value:bool#0> x
+1 spawner_blocks_work x
+2 <value:bool#0> x
+1 minecraft:spawner_blocks_work x
+2 <value:bool#0> x
+1 spawn_mobs x
+2 <value:bool#0> x
+1 minecraft:spawn_mobs x
+2 <value:bool#0> x
+1 spawn_monsters x
+2 <value:bool#0> x
+1 minecraft:spawn_monsters x
+2 <value:bool#0> x
+1 spawn_patrols x
+2 <value:bool#0> x
+1 minecraft:spawn_patrols x
+2 <value:bool#0> x
+1 spawn_phantoms x
+2 <value:bool#0> x
+1 minecraft:spawn_phantoms x
+2 <value:bool#0> x
+1 spawn_wandering_traders x
+2 <value:bool#0> x
+1 minecraft:spawn_wandering_traders x
+2 <value:bool#0> x
+1 spawn_wardens x
+2 <value:bool#0> x
+1 minecraft:spawn_wardens x
+2 <value:bool#0> x
+1 spectators_generate_chunks x
+2 <value:bool#0> x
+1 minecraft:spectators_generate_chunks x
+2 <value:bool#0> x
+1 spread_vines x
+2 <value:bool#0> x
+1 minecraft:spread_vines x
+2 <value:bool#0> x
+1 tnt_explodes x
+2 <value:bool#0> x
+1 minecraft:tnt_explodes x
+2 <value:bool#0> x
+1 tnt_explosion_drop_decay x
+2 <value:bool#0> x
+1 minecraft:tnt_explosion_drop_decay x
+2 <value:bool#0> x
+1 universal_anger x
+2 <value:bool#0> x
+1 minecraft:universal_anger x
+2 <value:bool#0> x
+1 water_source_conversion x
+2 <value:bool#0> x
+1 minecraft:water_source_conversion x
+2 <value:bool#0> x
+0 give R2
+1 <targets:entity#6(players)>
+2 <item:item_stack#14> x
+3 <count:integer#3(min=1)> x
+0 help x
+1 <command:string#5(greedy)> x
+0 item R2
+1 replace
+2 entity
+3 <target:entity#6>
+4 <slots:slot_source#57>
+5 from
+6 entity
+7 <source:entity#6>
+8 <sourceSlots:slot_source#57> x
+9 <modifier:loot_modifier#54> x
+6 block
+7 <source:block_pos#8>
+8 <sourceSlots:slot_source#57> x
+9 <modifier:loot_modifier#54> x
+5 with
+6 <item:item_stack#14> x
+7 <count:integer#3(min=1,max=99)> x
+2 block
+3 <target:block_pos#8>
+4 <slots:slot_source#57>
+5 from
+6 entity
+7 <source:entity#6>
+8 <sourceSlots:slot_source#57> x
+9 <modifier:loot_modifier#54> x
+6 block
+7 <source:block_pos#8>
+8 <sourceSlots:slot_source#57> x
+9 <modifier:loot_modifier#54> x
+5 with
+6 <item:item_stack#14> x
+7 <count:integer#3(min=1,max=99)> x
+1 fill
+2 entity
+3 <target:entity#6>
+4 <slots:slot_source#57>
+5 from
+6 entity
+7 <source:entity#6>
+8 <sourceSlots:slot_source#57> x
+9 <modifier:loot_modifier#54> x
+6 block
+7 <source:block_pos#8>
+8 <sourceSlots:slot_source#57> x
+9 <modifier:loot_modifier#54> x
+5 with
+6 <item:item_stack#14> x
+7 <count:integer#3(min=1,max=99)> x
+2 block
+3 <target:block_pos#8>
+4 <slots:slot_source#57>
+5 from
+6 entity
+7 <source:entity#6>
+8 <sourceSlots:slot_source#57> x
+9 <modifier:loot_modifier#54> x
+6 block
+7 <source:block_pos#8>
+8 <sourceSlots:slot_source#57> x
+9 <modifier:loot_modifier#54> x
+5 with
+6 <item:item_stack#14> x
+7 <count:integer#3(min=1,max=99)> x
+1 override
+2 entity
+3 <target:entity#6>
+4 <slots:slot_source#57>
+5 from
+6 entity
+7 <source:entity#6>
+8 <sourceSlots:slot_source#57> x
+9 <modifier:loot_modifier#54> x
+6 block
+7 <source:block_pos#8>
+8 <sourceSlots:slot_source#57> x
+9 <modifier:loot_modifier#54> x
+5 with
+6 <item:item_stack#14> x
+7 <count:integer#3(min=1,max=99)> x
+2 block
+3 <target:block_pos#8>
+4 <slots:slot_source#57>
+5 from
+6 entity
+7 <source:entity#6>
+8 <sourceSlots:slot_source#57> x
+9 <modifier:loot_modifier#54> x
+6 block
+7 <source:block_pos#8>
+8 <sourceSlots:slot_source#57> x
+9 <modifier:loot_modifier#54> x
+5 with
+6 <item:item_stack#14> x
+7 <count:integer#3(min=1,max=99)> x
+1 modify
+2 entity
+3 <target:entity#6>
+4 <slots:slot_source#57>
+5 <modifier:loot_modifier#54> x
+2 block
+3 <target:block_pos#8>
+4 <slots:slot_source#57>
+5 <modifier:loot_modifier#54> x
+0 kick R3
+1 <targets:entity#6(players)> x
+2 <reason:message#20> x
+0 kill x R2
+1 <targets:entity#6> x
+0 list x
+1 uuids x
+0 locate R2
+1 structure
+2 <structure:resource_or_tag_key#45(minecraft:worldgen/structure)> x
+1 biome
+2 <biome:resource_or_tag#44(minecraft:worldgen/biome)> x
+1 poi
+2 <poi:resource_or_tag#44(minecraft:point_of_interest_type)> x
+0 loot R2
+1 replace
+2 entity
+3 <entities:entity#6>
+4 <slot:item_slot#34>
+5 fish
+6 <loot_table:loot_table#52>
+7 <pos:block_pos#8> x
+8 <tool:item_stack#14> x
+8 mainhand x
+8 offhand x
+5 loot
+6 <loot_table:loot_table#52> x
+5 kill
+6 <target:entity#6(single)> x
+5 mine
+6 <pos:block_pos#8> x
+7 <tool:item_stack#14> x
+7 mainhand x
+7 offhand x
+5 <count:integer#3(min=0)>
+6 fish
+7 <loot_table:loot_table#52>
+8 <pos:block_pos#8> x
+9 <tool:item_stack#14> x
+9 mainhand x
+9 offhand x
+6 loot
+7 <loot_table:loot_table#52> x
+6 kill
+7 <target:entity#6(single)> x
+6 mine
+7 <pos:block_pos#8> x
+8 <tool:item_stack#14> x
+8 mainhand x
+8 offhand x
+2 block
+3 <targetPos:block_pos#8>
+4 <slot:item_slot#34>
+5 fish
+6 <loot_table:loot_table#52>
+7 <pos:block_pos#8> x
+8 <tool:item_stack#14> x
+8 mainhand x
+8 offhand x
+5 loot
+6 <loot_table:loot_table#52> x
+5 kill
+6 <target:entity#6(single)> x
+5 mine
+6 <pos:block_pos#8> x
+7 <tool:item_stack#14> x
+7 mainhand x
+7 offhand x
+5 <count:integer#3(min=0)>
+6 fish
+7 <loot_table:loot_table#52>
+8 <pos:block_pos#8> x
+9 <tool:item_stack#14> x
+9 mainhand x
+9 offhand x
+6 loot
+7 <loot_table:loot_table#52> x
+6 kill
+7 <target:entity#6(single)> x
+6 mine
+7 <pos:block_pos#8> x
+8 <tool:item_stack#14> x
+8 mainhand x
+8 offhand x
+1 insert
+2 <targetPos:block_pos#8>
+3 fish
+4 <loot_table:loot_table#52>
+5 <pos:block_pos#8> x
+6 <tool:item_stack#14> x
+6 mainhand x
+6 offhand x
+3 loot
+4 <loot_table:loot_table#52> x
+3 kill
+4 <target:entity#6(single)> x
+3 mine
+4 <pos:block_pos#8> x
+5 <tool:item_stack#14> x
+5 mainhand x
+5 offhand x
+1 give
+2 <players:entity#6(players)>
+3 fish
+4 <loot_table:loot_table#52>
+5 <pos:block_pos#8> x
+6 <tool:item_stack#14> x
+6 mainhand x
+6 offhand x
+3 loot
+4 <loot_table:loot_table#52> x
+3 kill
+4 <target:entity#6(single)> x
+3 mine
+4 <pos:block_pos#8> x
+5 <tool:item_stack#14> x
+5 mainhand x
+5 offhand x
+1 spawn
+2 <targetPos:vec3#10>
+3 fish
+4 <loot_table:loot_table#52>
+5 <pos:block_pos#8> x
+6 <tool:item_stack#14> x
+6 mainhand x
+6 offhand x
+3 loot
+4 <loot_table:loot_table#52> x
+3 kill
+4 <target:entity#6(single)> x
+3 mine
+4 <pos:block_pos#8> x
+5 <tool:item_stack#14> x
+5 mainhand x
+5 offhand x
+0 msg
+1 <targets:entity#6(players)>
+2 <message:message#20> x
+0 tell ->/msg
+0 w ->/msg
+0 swing x R2
+1 <targets:entity#6> x
+2 mainhand x
+3 <animation:swing_animation#60> x
+4 <duration:time#43(min=1)> x
+2 offhand x
+3 <animation:swing_animation#60> x
+4 <duration:time#43(min=1)> x
+0 particle R2
+1 <name:particle#27> x
+2 <pos:vec3#10> x
+3 <delta:vec3#10>
+4 <speed:float#1(min=0)>
+5 <count:integer#3(min=0)> x
+6 force x
+7 <viewers:entity#6(players)> x
+6 normal x
+7 <viewers:entity#6(players)> x
+0 place R2
+1 feature
+2 <feature:feature#59> x
+3 <pos:block_pos#8> x
+1 jigsaw
+2 <pool:resource_key#47(minecraft:worldgen/template_pool)>
+3 <target:resource_location#36>
+4 <max_depth:integer#3(min=1,max=20)> x
+5 <position:block_pos#8> x
+1 structure
+2 <structure:resource_key#47(minecraft:worldgen/structure)> x
+3 <pos:block_pos#8> x
+1 template
+2 <template:resource_location#36> x sug=ask
+3 <pos:block_pos#8> x
+4 <rotation:template_rotation#50> x
+5 <mirror:template_mirror#49> x
+6 <integrity:float#1(min=0,max=1)> x
+7 <seed:integer#3> x
+8 strict x
+0 playsound R2
+1 <sound:resource_location#36> x sug=available_sounds
+2 master x
+3 <targets:entity#6(players)> x
+4 <pos:vec3#10> x
+5 <volume:float#1(min=0)> x
+6 <pitch:float#1(min=0,max=2)> x
+7 <minVolume:float#1(min=0,max=1)> x
+2 music x
+3 <targets:entity#6(players)> x
+4 <pos:vec3#10> x
+5 <volume:float#1(min=0)> x
+6 <pitch:float#1(min=0,max=2)> x
+7 <minVolume:float#1(min=0,max=1)> x
+2 record x
+3 <targets:entity#6(players)> x
+4 <pos:vec3#10> x
+5 <volume:float#1(min=0)> x
+6 <pitch:float#1(min=0,max=2)> x
+7 <minVolume:float#1(min=0,max=1)> x
+2 weather x
+3 <targets:entity#6(players)> x
+4 <pos:vec3#10> x
+5 <volume:float#1(min=0)> x
+6 <pitch:float#1(min=0,max=2)> x
+7 <minVolume:float#1(min=0,max=1)> x
+2 block x
+3 <targets:entity#6(players)> x
+4 <pos:vec3#10> x
+5 <volume:float#1(min=0)> x
+6 <pitch:float#1(min=0,max=2)> x
+7 <minVolume:float#1(min=0,max=1)> x
+2 hostile x
+3 <targets:entity#6(players)> x
+4 <pos:vec3#10> x
+5 <volume:float#1(min=0)> x
+6 <pitch:float#1(min=0,max=2)> x
+7 <minVolume:float#1(min=0,max=1)> x
+2 neutral x
+3 <targets:entity#6(players)> x
+4 <pos:vec3#10> x
+5 <volume:float#1(min=0)> x
+6 <pitch:float#1(min=0,max=2)> x
+7 <minVolume:float#1(min=0,max=1)> x
+2 player x
+3 <targets:entity#6(players)> x
+4 <pos:vec3#10> x
+5 <volume:float#1(min=0)> x
+6 <pitch:float#1(min=0,max=2)> x
+7 <minVolume:float#1(min=0,max=1)> x
+2 ambient x
+3 <targets:entity#6(players)> x
+4 <pos:vec3#10> x
+5 <volume:float#1(min=0)> x
+6 <pitch:float#1(min=0,max=2)> x
+7 <minVolume:float#1(min=0,max=1)> x
+2 voice x
+3 <targets:entity#6(players)> x
+4 <pos:vec3#10> x
+5 <volume:float#1(min=0)> x
+6 <pitch:float#1(min=0,max=2)> x
+7 <minVolume:float#1(min=0,max=1)> x
+2 ui x
+3 <targets:entity#6(players)> x
+4 <pos:vec3#10> x
+5 <volume:float#1(min=0)> x
+6 <pitch:float#1(min=0,max=2)> x
+7 <minVolume:float#1(min=0,max=1)> x
+0 posteffect R2
+1 add
+2 <targets:entity#6(players)>
+3 <posteffect:resource_location#36> x sug=post_effects
+1 clear
+2 <targets:entity#6(players)> x
+1 list
+2 <target:entity#6(single,players)> x
+1 remove
+2 <targets:entity#6(players)>
+3 <posteffect:resource_location#36> x sug=post_effects
+0 random
+1 value
+2 <range:int_range#39> x
+3 <sequence:resource_location#36> x R2 sug=ask
+1 roll
+2 <range:int_range#39> x
+3 <sequence:resource_location#36> x R2 sug=ask
+1 reset R2
+2 * x
+3 <seed:integer#3> x
+4 <includeWorldSeed:bool#0> x
+5 <includeSequenceId:bool#0> x
+2 <sequence:resource_location#36> x sug=ask
+3 <seed:integer#3> x
+4 <includeWorldSeed:bool#0> x
+5 <includeSequenceId:bool#0> x
+0 reload x R2
+0 recipe R2
+1 give
+2 <targets:entity#6(players)>
+3 <recipe:resource_key#47(minecraft:recipe)> x
+3 * x
+1 take
+2 <targets:entity#6(players)>
+3 <recipe:resource_key#47(minecraft:recipe)> x
+3 * x
+0 fetchprofile R2
+1 name
+2 <name:string#5(greedy)> x
+1 id
+2 <id:uuid#61> x
+1 entity
+2 <entity:entity#6(single)> x
+0 return R2
+1 <value:integer#3> x
+1 fail x
+1 run ->/
+0 ride R2
+1 <target:entity#6(single)>
+2 mount
+3 <vehicle:entity#6(single)> x
+2 dismount x
+0 rotate R2
+1 <target:entity#6(single)>
+2 <rotation:rotation#29> x
+2 facing
+3 entity
+4 <facingEntity:entity#6(single)> x
+5 <facingAnchor:entity_anchor#38> x
+3 <facingLocation:vec3#10> x
+0 say R2
+1 <message:message#20> x
+0 schedule R2
+1 function
+2 <function:function#37> sug=ask
+3 <time:time#43(min=0)> x
+4 append x
+4 replace x
+1 clear
+2 <function:resource_location#36> x sug=ask
+0 scoreboard R2
+1 objectives
+2 list x
+2 add
+3 <objective:string#5(word)>
+4 <criteria:objective_criteria#25> x
+5 <displayName:component#18> x
+2 modify
+3 <objective:objective#24>
+4 displayname
+5 <displayName:component#18> x
+4 rendertype
+5 integer x
+5 hearts x
+4 displayautoupdate
+5 <value:bool#0> x
+4 numberformat x
+5 blank x
+5 fixed
+6 <contents:component#18> x
+5 styled
+6 <style:style#19> x
+2 remove
+3 <objective:objective#24> x
+2 setdisplay
+3 <slot:scoreboard_slot#30> x
+4 <objective:objective#24> x
+1 players
+2 list x
+3 <target:score_holder#31> x sug=ask
+2 set
+3 <targets:score_holder#31(multiple)> sug=ask
+4 <objective:objective#24>
+5 <score:integer#3> x
+2 get
+3 <target:score_holder#31> sug=ask
+4 <objective:objective#24> x
+2 add
+3 <targets:score_holder#31(multiple)> sug=ask
+4 <objective:objective#24>
+5 <score:integer#3(min=0)> x
+2 remove
+3 <targets:score_holder#31(multiple)> sug=ask
+4 <objective:objective#24>
+5 <score:integer#3(min=0)> x
+2 reset
+3 <targets:score_holder#31(multiple)> x sug=ask
+4 <objective:objective#24> x
+2 enable
+3 <targets:score_holder#31(multiple)> sug=ask
+4 <objective:objective#24> x sug=ask
+2 display
+3 name
+4 <targets:score_holder#31(multiple)> sug=ask
+5 <objective:objective#24> x
+6 <name:component#18> x
+3 numberformat
+4 <targets:score_holder#31(multiple)> sug=ask
+5 <objective:objective#24> x
+6 blank x
+6 fixed
+7 <contents:component#18> x
+6 styled
+7 <style:style#19> x
+2 operation
+3 <targets:score_holder#31(multiple)> sug=ask
+4 <targetObjective:objective#24>
+5 <operation:operation#26>
+6 <source:score_holder#31(multiple)> sug=ask
+7 <sourceObjective:objective#24> x
+0 seed x R2
+0 version x R2
+0 setblock R2
+1 <pos:block_pos#8>
+2 <block:block_state#12> x
+3 destroy x
+3 keep x
+3 replace x
+3 strict x
+0 spawnpoint x R2
+1 <targets:entity#6(players)> x
+2 <pos:block_pos#8> x
+3 <rotation:rotation#29> x
+0 setworldspawn x R2
+1 <pos:block_pos#8> x
+2 <rotation:rotation#29> x
+0 spectate x R2
+1 <target:entity#6(single)> x
+2 <player:entity#6(single,players)> x
+0 spreadplayers R2
+1 <center:vec2#11>
+2 <spreadDistance:float#1(min=0)>
+3 <maxRange:float#1(min=1)>
+4 <respectTeams:bool#0>
+5 <targets:entity#6> x
+4 under
+5 <maxHeight:integer#3>
+6 <respectTeams:bool#0>
+7 <targets:entity#6> x
+0 stopsound R2
+1 <targets:entity#6(players)> x
+2 *
+3 <sound:resource_location#36> x sug=available_sounds
+2 master x
+3 <sound:resource_location#36> x sug=available_sounds
+2 music x
+3 <sound:resource_location#36> x sug=available_sounds
+2 record x
+3 <sound:resource_location#36> x sug=available_sounds
+2 weather x
+3 <sound:resource_location#36> x sug=available_sounds
+2 block x
+3 <sound:resource_location#36> x sug=available_sounds
+2 hostile x
+3 <sound:resource_location#36> x sug=available_sounds
+2 neutral x
+3 <sound:resource_location#36> x sug=available_sounds
+2 player x
+3 <sound:resource_location#36> x sug=available_sounds
+2 ambient x
+3 <sound:resource_location#36> x sug=available_sounds
+2 voice x
+3 <sound:resource_location#36> x sug=available_sounds
+2 ui x
+3 <sound:resource_location#36> x sug=available_sounds
+0 stopwatch R2
+1 create
+2 <id:resource_location#36> x
+1 query
+2 <id:resource_location#36> x sug=ask
+3 <scale:double#2> x
+1 restart
+2 <id:resource_location#36> x sug=ask
+1 remove
+2 <id:resource_location#36> x sug=ask
+0 summon R2
+1 <entity:resource#46(minecraft:entity_type)> x sug=summonable_entities
+2 <pos:vec3#10> x
+3 <nbt:nbt_compound_tag#21> x
+0 tag R2
+1 <targets:entity#6>
+2 add
+3 <name:string#5(word)> x
+2 remove
+3 <name:string#5(word)> x sug=ask
+2 list x
+0 team R2
+1 list x
+2 <team:team#33> x
+1 add
+2 <team:string#5(word)> x
+3 <displayName:component#18> x
+1 remove
+2 <team:team#33> x
+1 empty
+2 <team:team#33> x
+1 join
+2 <team:team#33> x
+3 <members:score_holder#31(multiple)> x sug=ask
+1 leave
+2 <members:score_holder#31(multiple)> x sug=ask
+1 modify
+2 <team:team#33>
+3 displayName
+4 <displayName:component#18> x
+3 color
+4 reset x
+4 <value:team_color#16> x
+3 friendlyFire
+4 <allowed:bool#0> x
+3 seeFriendlyInvisibles
+4 <allowed:bool#0> x
+3 nametagVisibility
+4 never x
+4 hideForOtherTeams x
+4 hideForOwnTeam x
+4 always x
+3 deathMessageVisibility
+4 never x
+4 hideForOtherTeams x
+4 hideForOwnTeam x
+4 always x
+3 collisionRule
+4 never x
+4 pushOwnTeam x
+4 pushOtherTeams x
+4 always x
+3 prefix
+4 <prefix:component#18> x
+3 suffix
+4 <suffix:component#18> x
+0 teammsg
+1 <message:message#20> x
+0 tm ->/teammsg
+0 teleport R2
+1 <location:vec3#10> x
+1 <destination:entity#6(single)> x
+1 <targets:entity#6>
+2 <location:vec3#10> x
+3 <rotation:rotation#29> x
+3 facing
+4 entity
+5 <facingEntity:entity#6(single)> x
+6 <facingAnchor:entity_anchor#38> x
+4 <facingLocation:vec3#10> x
+2 <destination:entity#6(single)> x
+0 tp R2 ->/teleport
+0 tellraw R2
+1 <targets:entity#6(players)>
+2 <message:component#18> x
+0 test R2
+1 run
+2 <tests:resource_selector#48(minecraft:test_instance)> x sug=ask
+3 <numberOfTimes:integer#3(min=0)> x
+4 <untilFailed:bool#0> x
+5 <rotationSteps:integer#3> x
+6 <testsPerRow:integer#3> x
+1 runmultiple
+2 <tests:resource_selector#48(minecraft:test_instance)> x sug=ask
+3 <amount:integer#3> x
+1 runthese x
+2 <numberOfTimes:integer#3(min=0)> x
+3 <untilFailed:bool#0> x
+1 runclosest x
+2 <numberOfTimes:integer#3(min=0)> x
+3 <untilFailed:bool#0> x
+1 runthat x
+2 <numberOfTimes:integer#3(min=0)> x
+3 <untilFailed:bool#0> x
+1 runfailed x
+2 <onlyRequiredTests:bool#0> x
+3 <numberOfTimes:integer#3(min=0)> x
+4 <untilFailed:bool#0> x
+5 <rotationSteps:integer#3> x
+6 <testsPerRow:integer#3> x
+2 <numberOfTimes:integer#3(min=0)> x
+3 <untilFailed:bool#0> x
+4 <rotationSteps:integer#3> x
+5 <testsPerRow:integer#3> x
+1 verify
+2 <tests:resource_selector#48(minecraft:test_instance)> x sug=ask
+1 locate
+2 <tests:resource_selector#48(minecraft:test_instance)> x sug=ask
+1 resetclosest x
+1 resetthese x
+1 resetthat x
+1 clearthat x
+1 clearthese x
+1 clearall x
+2 <radius:integer#3> x
+1 stop x
+1 pos x
+2 <var:string#5(word)> x
+1 create
+2 <id:resource_location#36> x
+3 <width:integer#3> x
+4 <height:integer#3>
+5 <depth:integer#3> x
+0 tick R3
+1 query x
+1 rate
+2 <rate:float#1(min=1,max=10000)> x sug=ask
+1 step x
+2 stop x
+2 <time:time#43(min=1)> x sug=ask
+1 sprint
+2 stop x
+2 <time:time#43(min=1)> x sug=ask
+1 unfreeze x
+1 freeze x
+0 time R2
+1 set
+2 <time:time#43(min=0)> x
+2 <timemarker:resource_location#36> x sug=ask
+1 add
+2 <time:time#43(min=-2147483648)> x
+1 pause x
+1 resume x
+1 rate
+2 <rate:float#1(min=1.0E-5,max=1000)> x
+1 query
+2 time x
+2 <timeline:resource#46(minecraft:timeline)> x sug=ask
+3 repetition x
+2 gametime x
+1 of
+2 <clock:resource#46(minecraft:world_clock)>
+3 set
+4 <time:time#43(min=0)> x
+4 <timemarker:resource_location#36> x sug=ask
+3 add
+4 <time:time#43(min=-2147483648)> x
+3 pause x
+3 resume x
+3 rate
+4 <rate:float#1(min=1.0E-5,max=1000)> x
+3 query
+4 time x
+4 <timeline:resource#46(minecraft:timeline)> x sug=ask
+5 repetition x
+0 title R2
+1 <targets:entity#6(players)>
+2 clear x
+2 reset x
+2 title
+3 <title:component#18> x
+2 subtitle
+3 <title:component#18> x
+2 actionbar
+3 <title:component#18> x
+2 times
+3 <fadeIn:time#43(min=0)>
+4 <stay:time#43(min=0)>
+5 <fadeOut:time#43(min=0)> x
+0 trigger
+1 <objective:objective#24> x sug=ask
+2 add
+3 <value:integer#3> x
+2 set
+3 <value:integer#3> x
+0 waypoint R2
+1 list x
+1 modify
+2 <waypoint:entity#6(single)>
+3 color
+4 <color:team_color#16> x
+4 hex
+5 <color:hex_color#17> x
+4 reset x
+3 style
+4 reset x
+4 set
+5 <style:resource_location#36> x
+0 weather R2
+1 clear x
+2 <duration:time#43(min=1)> x
+1 rain x
+2 <duration:time#43(min=1)> x
+1 thunder x
+2 <duration:time#43(min=1)> x
+0 worldborder R2
+1 add
+2 <distance:double#2(min=-59999968,max=59999968)> x
+3 <time:time#43(min=0)> x
+1 set
+2 <distance:double#2(min=-59999968,max=59999968)> x
+3 <time:time#43(min=0)> x
+1 center
+2 <pos:vec2#11> x
+1 damage
+2 amount
+3 <damagePerBlock:float#1(min=0)> x
+2 buffer
+3 <distance:float#1(min=0)> x
+1 get x
+1 warning
+2 distance
+3 <distance:integer#3(min=0)> x
+2 time
+3 <time:time#43(min=0)> x
+0 ban-ip R3
+1 <target:string#5(word)> x
+2 <reason:message#20> x
+0 banlist x R3
+1 ips x
+1 players x
+0 ban R3
+1 <targets:game_profile#7> x
+2 <reason:message#20> x
+0 deop R3
+1 <targets:game_profile#7> x sug=ask
+0 op R3
+1 <targets:game_profile#7> x sug=ask
+0 pardon R3
+1 <targets:game_profile#7> x sug=ask
+0 pardon-ip R3
+1 <target:string#5(word)> x sug=ask
+0 perf R4
+1 start x
+1 stop x
+0 save-all x R4
+1 flush x
+0 save-off x R4
+0 save-on x R4
+0 setidletimeout R3
+1 <minutes:integer#3(min=0)> x
+0 stop x R4
+0 transfer R3
+1 <hostname:string#5(phrase)> x
+2 <port:integer#3(min=1,max=65535)> x
+3 <players:entity#6(players)> x
+0 whitelist R3
+1 on x
+1 off x
+1 list x
+1 add
+2 <targets:game_profile#7> x sug=ask
+1 remove
+2 <targets:game_profile#7> x sug=ask
+1 reload x

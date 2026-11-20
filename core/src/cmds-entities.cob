@@ -1514,7 +1514,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CMDS-REG-SWING.
-*> The forms of swing (16 §5.14).
+*> The forms of swing (16 §5.14, 57-client-closures-4 section 7.35): the swing of the executing entity (BR-DOC-FILL, not run), of the targets, and per hand with an animation and a duration.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRCMD.
@@ -1522,15 +1522,19 @@
  01 WS-COMMAND             BINARY-LONG VALUE BC-SWING.
  01 WS-PATH                PIC X(256).
  PROCEDURE DIVISION.
+     MOVE "swing <targets:entities>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "swing <targets:entities> mainhand" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "swing <targets:entities> mainhand <animation:swing_animation>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "swing <targets:entities> mainhand <animation:swing_animation> <duration:time:1>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "swing <targets:entities> offhand" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "swing <targets:entities> none <duration:time:1>" TO WS-PATH
+     MOVE "swing <targets:entities> offhand <animation:swing_animation>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "swing <targets:entities> whack <duration:time:1>" TO WS-PATH
-     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "swing <targets:entities> stab <duration:time:1>" TO WS-PATH
+     MOVE "swing <targets:entities> offhand <animation:swing_animation> <duration:time:1>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-SWING.

@@ -1,7 +1,8 @@
-*> Implementation test of the command tree and the suggestions (client/src/protocol-client.cob
+*> Implementation test of the command tree and the suggestions (client/src/protocol-play.cob
 *> COMMANDS-READ, SUGGESTIONS-READ; client/src/screens/chat.cob CHAT-SUGGEST; 05a 0x0F, 0x10;
-*> 09 §3.3 command tree): a Commands packet cut short leaves no tree; at most CL-MAX-SUGGEST names
-*> are suggested; words follow argument nodes (relocate <player> at <x>), a greedy argument or an
+*> 09 §3.3 command tree; the trees of 57-client-closures-4: everyone is the level 0 tree of 10.1, operator the level 4 tree of a dedicated server, 2396 nodes): a Commands packet
+*> cut short leaves no tree; the whole operator tree is kept; the 91 commands are suggested (the chat shows the first CL-MAX-SUGGEST);
+*> words follow argument nodes (teleport <location> ...), a greedy argument or an
 *> unknown word ends the suggestions; an answer to an older request is dropped, tooltips are read
 *> and not shown, a malformed answer leaves none; a line that needs no answer forgets the last.
  IDENTIFICATION DIVISION.
@@ -55,38 +56,43 @@
      CALL "PB-GET-VARINT" USING PB-BUFFER WS-VALUE
      CALL "COMMANDS-READ" USING CLIENT-STATE PB-BUFFER
      CALL "CHAT-SUGGEST" USING CLIENT-STATE
-     MOVE "test command tree / with the operator tree keeps all 24 commands, sorted by lower-cased text (the chat shows the first 10)"
+     MOVE "test command tree / with the operator tree keeps all 91 commands, sorted by lower-cased text (the chat shows the first 10)"
          TO TL-CASE
      PERFORM SUGGESTED-TEXT
-     MOVE "24 announce bar barlist clock conjure demote eject empty guestlist homestead howto mode murmur persist promote "
-         & "ration relocate roster shutdown skies supply sweep unbar vitality"
+     MOVE "91 advancement attribute ban ban-ip banlist bossbar clear clone compute damage data datapack debug " &
+         "defaultgamemode deop dialog difficulty effect enchant execute experience fetchprofile fill fillbiome forceload " &
+         "function gamemode gamerule give help item kick kill list locate loot me msg op pardon pardon-ip particle perf " &
+         "place playsound posteffect random recipe reload return ride rotate save-all save-off save-on say schedule " &
+         "scoreboard seed setblock setidletimeout setworldspawn spawnpoint spectate spreadplayers stop stopsound " &
+         "stopwatch summon swing tag team teammsg teleport tell tellraw test tick time title tm tp transfer trigger " &
+         "version w waypoint weather whitelist worldborder xp"
          TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE "/vitality Alice f" TO CH-LINE
-     MOVE 17 TO CH-LINE-LENGTH
+     MOVE "/execute positioned a" TO CH-LINE
+     MOVE 21 TO CH-LINE-LENGTH
      CALL "CHAT-SUGGEST" USING CLIENT-STATE
-     MOVE "test command tree after an argument word (vitality <player>) the fixed words starting "
-         & "with the typed one are suggested and the amount argument asks nothing" TO TL-CASE
+     MOVE "test command tree after a literal word (execute positioned) the fixed words starting "
+         & "with the typed one are suggested and the position argument asks nothing" TO TL-CASE
      PERFORM SUGGESTED-TEXT
-     MOVE "1 full asked 0" TO TL-EXPECTED
+     MOVE "1 as asked 0" TO TL-EXPECTED
      PERFORM ASKED-TEXT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE "/relocate Alice at 1 " TO CH-LINE
-     MOVE 21 TO CH-LINE-LENGTH
+     MOVE "/teleport Alice 1 " TO CH-LINE
+     MOVE 18 TO CH-LINE-LENGTH
      CALL "CHAT-SUGGEST" USING CLIENT-STATE
-     MOVE "test command tree words follow argument nodes (relocate <player> at <x>, then <y>): "
+     MOVE "test command tree words follow argument nodes (teleport <location> then the next word): "
          & "nothing to suggest, nothing asked" TO TL-CASE
      PERFORM SUGGESTED-TEXT
      MOVE "0 asked 0" TO TL-EXPECTED
      PERFORM ASKED-TEXT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE "/announce hello th" TO CH-LINE
-     MOVE 18 TO CH-LINE-LENGTH
+     MOVE "/help hello th" TO CH-LINE
+     MOVE 14 TO CH-LINE-LENGTH
      CALL "CHAT-SUGGEST" USING CLIENT-STATE
-     MOVE "test command tree a greedy argument (announce <message>) takes the rest of the line: "
+     MOVE "test command tree a greedy argument (help <command>) takes the rest of the line: "
          & "nothing suggested" TO TL-CASE
      PERFORM SUGGESTED-TEXT
      MOVE "0 asked 0" TO TL-EXPECTED
@@ -102,16 +108,16 @@
      PERFORM ASKED-TEXT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   /relocate Al: the player argument asks the server.
-     MOVE "/relocate Al" TO CH-LINE
-     MOVE 12 TO CH-LINE-LENGTH
+*>   /trigger ob: the objective argument asks the server.
+     MOVE "/trigger ob" TO CH-LINE
+     MOVE 11 TO CH-LINE-LENGTH
      CALL "CHAT-SUGGEST" USING CLIENT-STATE
      CALL "TEST-STEP" USING CLIENT-STATE
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-TEXT WS-THRESHOLD
-     MOVE "test command tree /relocate Al asks the server (transaction 1)" TO TL-CASE
+     MOVE "test command tree /trigger ob asks the server (transaction 1)" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "0f010c2f72656c6f6361746520416c" TO TL-EXPECTED
+     MOVE "0f010b2f74726967676572206f62" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   An answer to transaction 0 (older): dropped.
@@ -166,8 +172,8 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 2 TO CS-ANSWERS
-     MOVE "/relocate" TO CH-LINE
-     MOVE 9 TO CH-LINE-LENGTH
+     MOVE "/trigger" TO CH-LINE
+     MOVE 8 TO CH-LINE-LENGTH
      CALL "CHAT-SUGGEST" USING CLIENT-STATE
      MOVE "test command tree a line that needs no answer forgets the question and its answers"
          TO TL-CASE
@@ -177,7 +183,7 @@
      STRING FUNCTION TRIM(TL-OBSERVED) " answers " FUNCTION TRIM(WS-E) DELIMITED BY SIZE
          INTO WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "1 relocate answers 0 asked 0" TO TL-EXPECTED
+     MOVE "1 trigger answers 0 asked 0" TO TL-EXPECTED
      PERFORM ASKED-TEXT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.

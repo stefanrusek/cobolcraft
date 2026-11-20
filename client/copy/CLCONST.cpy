@@ -275,10 +275,10 @@
  78 CL-DRAW-RESERVE         VALUE 7.
  78 CL-MAX-DIM-TYPES        VALUE 8.
  78 CL-MAX-LEVELS           VALUE 8.
- 78 CL-MAX-NODES            VALUE 2048.
- 78 CL-MAX-LINKS            VALUE 4096.
+ 78 CL-MAX-NODES            VALUE 4096.   *> the tree of a dedicated server's operator has 2396 nodes (57-client-closures-4 section 5.1)
+ 78 CL-MAX-LINKS            VALUE 8192.
  78 CL-MAX-SUGGEST          VALUE 10.   *> suggestion lines shown
- 78 CL-MAX-COMMANDS         VALUE 64.   *> command suggestions kept (sorted, then the first CL-MAX-SUGGEST shown)
+ 78 CL-MAX-COMMANDS         VALUE 128.  *> command suggestions kept (sorted, then the first CL-MAX-SUGGEST shown)
  78 CL-MAX-PACKS            VALUE 16.
  78 CL-MAX-LOCAL-PACKS      VALUE 32.  *> packs listed from resourcepacks/ (US18-1)
  78 CL-MAX-SERVER-PACKS     VALUE 8.   *> server-pushed packs of one connection (08 §9)

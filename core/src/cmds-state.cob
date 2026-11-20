@@ -122,7 +122,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CX-TIME.
 *> time (16 §4.5, level 2) on the one clock of the world, cobolcraft:daylight (minecraft:overworld in a world of the standard
-*> set): query gametime | time | timeline <day or villager_schedule>, set <time>, set <marker> (day 1000, noon 6000, night 13000,
+*> set): query gametime | time | <timeline> (day or villager_schedule), set <time>, set <timemarker> (day 1000, noon 6000, night 13000,
 *> midnight 18000: the next time after now), add <time>, pause, resume, rate <rate>. The clock is the time of day: a set or add
 *> wraps to the day and the ticks the messages show are those of the day (total ticks, `time of <clock>`, the timelines moon and
 *> early_game and `repetition` are BLOCKED). A change sends Set Time to every player; the changes are broadcast, the queries not.
@@ -386,7 +386,7 @@
              PERFORM QUERY-GAMETIME
          WHEN WS-LAST = "time" AND WS-ARG = SPACES
              PERFORM QUERY-TIME
-         WHEN WS-LAST = "timeline"
+         WHEN WS-LAST = "query" AND WS-ARG = "timeline"
              PERFORM QUERY-TIMELINE
          WHEN WS-LAST = "set" AND WS-ARG = "time"
              PERFORM SET-TICKS
@@ -406,7 +406,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CMDS-REG-TIME.
-*> The forms of time (16 §4.5): `time of <clock>` and `repetition` are BLOCKED.
+*> The forms of time (16 §4.5, 57-client-closures-4 section 7.67): `time of <clock>` and `repetition` are BLOCKED (BR-DOC-FILL adds their nodes; they report cobolcraft.command.unsupported).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRCMD.
@@ -418,11 +418,11 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "time query time" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "time query timeline <timeline:resloc>" TO WS-PATH
+     MOVE "time query <timeline:resloc>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "time set <time:time:0>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "time set <marker:resloc>" TO WS-PATH
+     MOVE "time set <timemarker:resloc>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "time add <time:time:-2147483648>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
@@ -1222,11 +1222,12 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CMDS-REG-GAMERULE.
-*> The forms of gamerule (16 §4.4, §13): for each of the rules of BRRULES.cpy the name and the minecraft: name, each with a query and
+*> The forms of gamerule (16 §4.4, §13; 57-client-closures-4 section 7.25): for each of the rules of BRRULES.cpy (max_minecart_speed only with the feature minecart_improvements, BRFEAT.cpy) the name and the minecraft: name, each with a query and
 *> a set (a bool, or an integer within the range of the rule).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRRULES.
+ COPY BRFEAT.
  COPY BRCMD.
  01 WS-LEVEL               BINARY-LONG VALUE 2.
  01 WS-COMMAND             BINARY-LONG VALUE BC-GAMERULE.
@@ -1238,9 +1239,12 @@
  01 WS-MIN                 PIC -(10)9.
  01 WS-MAX                 PIC -(10)9.
  01 WS-LIMITS              PIC X(40).
+ 01 WS-MIN-TEXT            PIC X(12).
+ 01 WS-MAX-TEXT            PIC X(12).
  PROCEDURE DIVISION.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > GR-COUNT
          PERFORM VARYING WS-PASS FROM 1 BY 1 UNTIL WS-PASS > 2
+           IF GR-D-NAME(WS-I) NOT = "max_minecart_speed" OR BRF-MINECART-IMPROVEMENTS = 1
              MOVE SPACES TO WS-NAME
              MOVE FUNCTION LENGTH(FUNCTION TRIM(GR-D-NAME(WS-I) TRAILING)) TO WS-NAME-LENGTH
              IF WS-PASS = 1
@@ -1256,14 +1260,22 @@
              IF GR-D-TYPE(WS-I) = "B"
                  STRING "gamerule " WS-NAME(1:WS-NAME-LENGTH) " <value:bool>" DELIMITED BY SIZE INTO WS-PATH
              ELSE
-                 MOVE GR-D-MIN(WS-I) TO WS-MIN
-                 MOVE GR-D-MAX(WS-I) TO WS-MAX
+                 MOVE SPACES TO WS-MIN-TEXT WS-MAX-TEXT
+                 IF GR-D-MIN(WS-I) NOT = -2147483648
+                     MOVE GR-D-MIN(WS-I) TO WS-MIN
+                     MOVE FUNCTION TRIM(WS-MIN) TO WS-MIN-TEXT
+                 END-IF
+                 IF GR-D-MAX(WS-I) NOT = 2147483647
+                     MOVE GR-D-MAX(WS-I) TO WS-MAX
+                     MOVE FUNCTION TRIM(WS-MAX) TO WS-MAX-TEXT
+                 END-IF
                  MOVE SPACES TO WS-LIMITS
-                 STRING FUNCTION TRIM(WS-MIN) ":" FUNCTION TRIM(WS-MAX) DELIMITED BY SIZE INTO WS-LIMITS
+                 STRING FUNCTION TRIM(WS-MIN-TEXT) ":" FUNCTION TRIM(WS-MAX-TEXT) DELIMITED BY SIZE INTO WS-LIMITS
                  STRING "gamerule " WS-NAME(1:WS-NAME-LENGTH) " <value:int:" FUNCTION TRIM(WS-LIMITS TRAILING) ">"
                      DELIMITED BY SIZE INTO WS-PATH
              END-IF
              CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+           END-IF
          END-PERFORM
      END-PERFORM
      GOBACK.

@@ -1028,7 +1028,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CMDS-REG-CLONE.
-*> The forms of clone (16 §7.4): the four prefixes (with or without from and to dimensions), strict or not, the filter modes and the move modes.
+*> The forms of clone (16 §7.4, 57-client-closures-4 section 7.7): the four prefixes (with or without from and to dimensions), strict or not, the filter modes and the move modes
+*> (force, move and normal only after replace, masked or filtered).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRCMD.
@@ -1049,9 +1050,6 @@
     05 WS-PREFIX            PIC X(120) OCCURS 4 TIMES.
  01 WS-TAILS.
     05 FILLER               PIC X(40) VALUE SPACES.
-    05 FILLER               PIC X(40) VALUE " force".
-    05 FILLER               PIC X(40) VALUE " move".
-    05 FILLER               PIC X(40) VALUE " normal".
     05 FILLER               PIC X(40) VALUE " replace".
     05 FILLER               PIC X(40) VALUE " replace force".
     05 FILLER               PIC X(40) VALUE " replace move".
@@ -1065,11 +1063,11 @@
     05 FILLER               PIC X(40) VALUE " filtered <filter:blockpred> move".
     05 FILLER               PIC X(40) VALUE " filtered <filter:blockpred> normal".
  01 WS-TAIL-TABLE REDEFINES WS-TAILS.
-    05 WS-TAIL              PIC X(40) OCCURS 16 TIMES.
+    05 WS-TAIL              PIC X(40) OCCURS 13 TIMES.
  PROCEDURE DIVISION.
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 4
          PERFORM VARYING WS-B FROM 1 BY 1 UNTIL WS-B > 2
-             PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > 16
+             PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > 13
                  MOVE SPACES TO WS-PATH
                  MOVE 1 TO WS-PTR
                  STRING FUNCTION TRIM(WS-PREFIX(WS-P)) DELIMITED BY SIZE INTO WS-PATH POINTER WS-PTR

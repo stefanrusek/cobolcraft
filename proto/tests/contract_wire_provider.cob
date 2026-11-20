@@ -381,9 +381,13 @@
  01 CM-TEXT               PIC X(300).
  01 CM-COMMANDS-TABLE.
     05 FILLER PIC X(100) VALUE "play-s2c-10-commands-everyone".
-    05 FILLER PIC X(300) VALUE "6 0 3 2 3 0 0 1".
+    05 FILLER PIC X(300) VALUE "26 0 15 10 12 0 3 1".
     05 FILLER PIC X(100) VALUE "play-s2c-10-commands-operator".
-    05 FILLER PIC X(300) VALUE "90 0 42 47 44 0 0 22".
+    05 FILLER PIC X(300) VALUE "2396 0 1157 1238 1414 86 78 131".
+    05 FILLER PIC X(100) VALUE "play-s2c-10-commands-level2-dedicated".
+    05 FILLER PIC X(300) VALUE "2333 0 1116 1216 1371 66 78 121".
+    05 FILLER PIC X(100) VALUE "play-s2c-10-commands-level3-dedicated".
+    05 FILLER PIC X(300) VALUE "2385 0 1148 1236 1406 80 78 131".
     05 FILLER PIC X(100) VALUE "play-s2c-10-commands-all-parsers".
     05 FILLER PIC X(300) VALUE "67 0 3 63 64 1 1 1".
     05 FILLER PIC X(100) VALUE "play-s2c-10-commands-level0-dedicated".
@@ -391,7 +395,7 @@
     05 FILLER PIC X(100) VALUE "play-s2c-10-commands-level0-integrated".
     05 FILLER PIC X(300) VALUE "28 0 17 10 14 0 3 1".
  01 CM-COMMANDS REDEFINES CM-COMMANDS-TABLE.
-    05 CM-CO                  OCCURS 5 TIMES.
+    05 CM-CO                  OCCURS 7 TIMES.
        10 CM-CO-NAME          PIC X(100).
        10 CM-CO-FIELDS        PIC X(300).
  01 CM-REQUEST-TABLE.
@@ -535,7 +539,7 @@
          MOVE LV-RS-FIELDS(WS-I) TO WS-STATED-LONG
          PERFORM RESPAWN-CASE
      END-PERFORM
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 7
          MOVE CM-CO-NAME(WS-I) TO WS-NAME
          MOVE CM-CO-FIELDS(WS-I) TO WS-STATED-LONG
          PERFORM COMMANDS-CASE
