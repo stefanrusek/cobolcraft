@@ -209,6 +209,13 @@
 *>     --- 002-lane-itemcomp3: the enchantment seed of the enchanting table (core/src/menu-enchant.cob; 40-4 section 2.3); not saved, drawn at the first use ---
        10 PL-ENCH-INIT       PIC 9.              *> 1 once PL-ENCH-SEED holds a drawn seed
        10 PL-ENCH-SEED       BINARY-LONG.        *> the player's getEnchantmentSeed, an int
+*>     --- 002-lane-p46i: the spawn info of Login and Respawn (57-client-closures-3 section 11); in this run only, not saved ---
+       10 PL-PREV-MODE1      PIC 9.              *> the previous game mode as the wire writes it: 0 none, else mode + 1 (set by a game mode change)
+       10 PL-DEATH-HAS       PIC 9.              *> 1 once the player has died: the last death location
+       10 PL-DEATH-DIM       BINARY-LONG.        *> the dimension row of the death
+       10 PL-DEATH-X         BINARY-LONG.
+       10 PL-DEATH-Y         BINARY-LONG.
+       10 PL-DEATH-Z         BINARY-LONG.
 *>     --- end 002-lane-mobs2 ---
 
 *> Chunk cache (data-model §2, §3): one row per loaded chunk of any dimension. CK-ADDR points to

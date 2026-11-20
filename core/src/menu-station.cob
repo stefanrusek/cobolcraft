@@ -622,11 +622,74 @@
  END PROGRAM MENU-STATION-UPDATE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STATION-SOUND.
+*> USING dimension row, block x, y, z (BINARY-LONG), sound key (PIC X(112), with namespace): Level.playSound(null, pos, event, BLOCKS, 1.0, 1.0) of a workstation take (57-client-closures-2 section 3.2):
+*> one Clientbound Sound (0x77: the registry id + 1, source blocks, the block centre in eighths, volume 1.0, pitch 1.0, seed 0) to every player of the dimension whose own position is
+*> closer than 16 blocks (a 3D sphere, strict) to the block centre, the taker included.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-REGISTRY            PIC X(48) VALUE "minecraft:sound_event".
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 119.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-HOLDER              BINARY-LONG.
+ 01 WS-SOURCE              BINARY-LONG VALUE 4.
+ 01 WS-FX                  BINARY-LONG.
+ 01 WS-FY                  BINARY-LONG.
+ 01 WS-FZ                  BINARY-LONG.
+ 01 WS-VOLUME              FLOAT-SHORT VALUE 1.0.
+ 01 WS-PITCH               FLOAT-SHORT VALUE 1.0.
+ 01 WS-SEED                BINARY-DOUBLE VALUE 0.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-KEY                  PIC X(112).
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-KEY.
+     CALL "CONTENT-STATIC-ID" USING WS-REGISTRY L-KEY WS-ID WS-STATUS
+     COMPUTE WS-HOLDER = WS-ID + 1
+     COMPUTE WS-FX = L-X * 8 + 4
+     COMPUTE WS-FY = L-Y * 8 + 4
+     COMPUTE WS-FZ = L-Z * 8 + 4
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-HOLDER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SOURCE
+     CALL "PB-PUT-INT" USING PB-BUFFER WS-FX
+     CALL "PB-PUT-INT" USING PB-BUFFER WS-FY
+     CALL "PB-PUT-INT" USING PB-BUFFER WS-FZ
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-VOLUME
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-PITCH
+     CALL "PB-PUT-LONG" USING PB-BUFFER WS-SEED
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
+         IF PL-USED(WS-P) = 1 AND PL-DIM(WS-P) = L-DIM
+             COMPUTE WS-DX = PL-X(WS-P) - L-X - 0.5
+             COMPUTE WS-DY = PL-Y(WS-P) - L-Y - 0.5
+             COMPUTE WS-DZ = PL-Z(WS-P) - L-Z - 0.5
+             IF WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ < 256
+                 CALL "CORE-SEND" USING PL-CONN(WS-P) PB-BUFFER
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM STATION-SOUND.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MENU-STATION-TAKEN.
 *> USING row: the result slot was emptied by a take. Stonecutter (40-4 section 4.6): one item of the input is used up; when the input is then empty the
 *> selection resets, else the result is assembled again from the remaining input.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  COPY CMENU.
  01 WS-NC                  BINARY-LONG.
  01 WS-NSEL                BINARY-LONG.
@@ -640,6 +703,11 @@
  01 WS-N1                  BINARY-LONG.
  01 WS-N2                  BINARY-LONG.
  01 WS-EVENT               BINARY-LONG.
+ 01 WS-PLAY                BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-STONE-SOUND         PIC X(112) VALUE "minecraft:ui.stonecutter.take_result".
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-NONE2               BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -664,6 +732,8 @@
          MOVE MN-WSLOT-COUNT(L-ROW, 2) TO WS-C1
          MOVE MN-WSLOT-COUNT(L-ROW, 3) TO WS-C2
          CALL "MN3-SMITH-TAKE" USING WS-C0 WS-C1 WS-C2 WS-N0 WS-N1 WS-N2 WS-EVENT
+         CALL "LEVEL-EVENT" USING MN-BENCH-DIM(L-ROW) WS-EVENT MN-BENCH-X(L-ROW) MN-BENCH-Y(L-ROW) MN-BENCH-Z(L-ROW)
+             WS-NONE WS-NONE2
          MOVE WS-N0 TO MN-WSLOT-COUNT(L-ROW, 1)
          MOVE WS-N1 TO MN-WSLOT-COUNT(L-ROW, 2)
          MOVE WS-N2 TO MN-WSLOT-COUNT(L-ROW, 3)
@@ -675,6 +745,12 @@
          CALL "MENU-STATION-UPDATE" USING L-ROW
      END-IF
      IF MN-CFAMILY(L-ROW) = 21
+*>       The take sound (57-client-closures-2 section 3.2): once per game tick per menu (40-4 section 1 rule 5).
+         CALL "MN4-SOUND" USING CW-TICKS MN-WSOUND(L-ROW) WS-PLAY WS-LAST
+         IF WS-PLAY = 1
+             MOVE WS-LAST TO MN-WSOUND(L-ROW)
+             CALL "STATION-SOUND" USING MN-BENCH-DIM(L-ROW) MN-BENCH-X(L-ROW) MN-BENCH-Y(L-ROW) MN-BENCH-Z(L-ROW) WS-STONE-SOUND
+         END-IF
          IF MN-WSLOT-COUNT(L-ROW, 1) > 0
              CALL "MENU-STONE-COUNT" USING MN-WSLOT-ITEM(L-ROW, 1) WS-SIZE
              CALL "MN4-STONE-TAKE" USING MN-WSLOT-COUNT(L-ROW, 1) MN-WSEL(L-ROW) WS-SIZE WS-NC WS-NSEL WS-RES

@@ -1,0 +1,555 @@
+*> The saved data of maps (docs/protocol/57-client-closures-2 section 4; 07 section 10.3): data/minecraft/maps/<id>.dat holds one map (MAPDATA.cpy) and data/minecraft/maps/last_id.dat the
+*> counter of the last map id handed out (the first map is 0). Both are gzip NBT files with the root {DataVersion: Int 5023, data: {...}}. The older names data/map_<id>.dat and
+*> data/idcounts.dat are renamed to the new ones when the files are read (the file fixer of 4.1).
+*>
+*>   MAP-CENTER USING coordinate (block x or z), scale (0 to 4), centre out: floor((v + 64) / size) x size + size / 2 - 64 with size 128 << scale (25-5 section 8.2)
+*>   MAP-FRESH USING dimension key (PIC X(64)), key length, x, z (block position of the creator), scale, MAP-DATA: a new map: the centres of that position, all-zero colours, tracking on
+*>   MAP-LEGACY-RENAME: moves map_<n>.dat and idcounts.dat of the data folder to data/minecraft/maps/<n>.dat and last_id.dat
+*>   MAP-LAST-ID-READ USING id out (-1 when the file or its `map` is absent), MAP-LAST-ID-WRITE USING id, MAP-NEXT-ID USING id out (the counter plus one, saved)
+*>   MAP-DATA-WRITE USING map id, MAP-DATA; MAP-DATA-READ USING map id, MAP-DATA out, found out (0 when there is no file for the id): scale clamped to 0 .. 4, colours of another length
+*>     read as zeros, tracking default 1, the other flags default 0, a banner colour that is no dye name read as white; a banner's name is kept when it is a plain string
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MAP-CENTER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SIZE                BINARY-LONG.
+ 01 WS-CELL                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-COORDINATE           BINARY-LONG.
+ 01 L-SCALE                BINARY-LONG.
+ 01 L-CENTER               BINARY-LONG.
+ PROCEDURE DIVISION USING L-COORDINATE L-SCALE L-CENTER.
+     COMPUTE WS-SIZE = 128 * 2 ** L-SCALE
+     COMPUTE WS-CELL = FUNCTION INTEGER((L-COORDINATE + 64) / WS-SIZE)
+     COMPUTE L-CENTER = WS-CELL * WS-SIZE + WS-SIZE / 2 - 64
+     GOBACK.
+ END PROGRAM MAP-CENTER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MAP-FRESH.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-DIM                  PIC X(64).
+ 01 L-DIM-LENGTH           BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-SCALE                BINARY-LONG.
+ COPY MAPDATA.
+ PROCEDURE DIVISION USING L-DIM L-DIM-LENGTH L-X L-Z L-SCALE MAP-DATA.
+     INITIALIZE MAP-DATA
+     MOVE L-DIM TO MD-DIM
+     MOVE L-DIM-LENGTH TO MD-DIM-LENGTH
+     MOVE L-SCALE TO MD-SCALE
+     CALL "MAP-CENTER" USING L-X L-SCALE MD-X-CENTER
+     CALL "MAP-CENTER" USING L-Z L-SCALE MD-Z-CENTER
+     MOVE LOW-VALUES TO MD-COLORS
+     MOVE 1 TO MD-TRACKING
+     GOBACK.
+ END PROGRAM MAP-FRESH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MAP-DIRS.
+*> No parameters: the folders data, data/minecraft and data/minecraft/maps of the world (an existing one is left alone).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-NAME                PIC X(1100).
+ PROCEDURE DIVISION.
+     MOVE LOW-VALUES TO WS-NAME
+     STRING CW-FOLDER(1:CW-FOLDER-LENGTH) "/data" DELIMITED BY SIZE INTO WS-NAME
+     CALL "CBL_CREATE_DIR" USING WS-NAME
+     MOVE LOW-VALUES TO WS-NAME
+     STRING CW-FOLDER(1:CW-FOLDER-LENGTH) "/data/minecraft" DELIMITED BY SIZE INTO WS-NAME
+     CALL "CBL_CREATE_DIR" USING WS-NAME
+     MOVE LOW-VALUES TO WS-NAME
+     STRING CW-FOLDER(1:CW-FOLDER-LENGTH) "/data/minecraft/maps" DELIMITED BY SIZE INTO WS-NAME
+     CALL "CBL_CREATE_DIR" USING WS-NAME
+     GOBACK.
+ END PROGRAM MAP-DIRS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MAP-LEGACY-RENAME.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-DIRZ                PIC X(1100).
+ 01 WS-LIST                PIC X(16384).
+ 01 WS-LIST-CAPACITY       BINARY-LONG VALUE 16384.
+ 01 WS-LIST-COUNT          BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-POINTER             BINARY-LONG.
+ 01 WS-LINE                PIC X(128).
+ 01 WS-LINE-LENGTH         BINARY-LONG.
+ 01 WS-OLD                 PIC X(1100).
+ 01 WS-NEW                 PIC X(1100).
+ 01 WS-DIGITS              PIC X(64).
+ 01 WS-DIGITS-LENGTH       BINARY-LONG.
+ 01 WS-LF                  PIC X VALUE X"0A".
+ PROCEDURE DIVISION.
+     CALL "MAP-DIRS"
+     MOVE LOW-VALUES TO WS-DIRZ
+     STRING CW-FOLDER(1:CW-FOLDER-LENGTH) "/data" DELIMITED BY SIZE INTO WS-DIRZ
+     MOVE 0 TO WS-LIST-COUNT
+     CALL STATIC "cc_fs_list" USING BY REFERENCE WS-DIRZ BY REFERENCE WS-LIST
+         BY VALUE WS-LIST-CAPACITY BY REFERENCE WS-LIST-COUNT RETURNING WS-RC
+     MOVE 1 TO WS-POINTER
+     PERFORM VARYING WS-LIST-COUNT FROM WS-LIST-COUNT BY -1 UNTIL WS-LIST-COUNT = 0
+         MOVE SPACES TO WS-LINE
+         UNSTRING WS-LIST DELIMITED BY WS-LF INTO WS-LINE WITH POINTER WS-POINTER
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-LINE TRAILING)) TO WS-LINE-LENGTH
+         MOVE LOW-VALUES TO WS-OLD WS-NEW
+         IF WS-LINE(1:1) = "F" AND WS-LINE(2:WS-LINE-LENGTH - 1) = "idcounts.dat"
+             STRING CW-FOLDER(1:CW-FOLDER-LENGTH) "/data/idcounts.dat" DELIMITED BY SIZE INTO WS-OLD
+             STRING CW-FOLDER(1:CW-FOLDER-LENGTH) "/data/minecraft/maps/last_id.dat" DELIMITED BY SIZE INTO WS-NEW
+             CALL "CBL_RENAME_FILE" USING WS-OLD WS-NEW
+         END-IF
+         IF WS-LINE(1:5) = "Fmap_" AND WS-LINE-LENGTH > 9 AND WS-LINE(WS-LINE-LENGTH - 3:4) = ".dat"
+             COMPUTE WS-DIGITS-LENGTH = WS-LINE-LENGTH - 9
+             MOVE WS-LINE(6:WS-DIGITS-LENGTH) TO WS-DIGITS
+             IF WS-DIGITS(1:WS-DIGITS-LENGTH) IS NUMERIC
+                 STRING CW-FOLDER(1:CW-FOLDER-LENGTH) "/data/" WS-LINE(2:WS-LINE-LENGTH - 1) DELIMITED BY SIZE INTO WS-OLD
+                 STRING CW-FOLDER(1:CW-FOLDER-LENGTH) "/data/minecraft/maps/" WS-DIGITS(1:WS-DIGITS-LENGTH) ".dat"
+                     DELIMITED BY SIZE INTO WS-NEW
+                 CALL "CBL_RENAME_FILE" USING WS-OLD WS-NEW
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM MAP-LEGACY-RENAME.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MAP-LAST-ID-WRITE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-DATA-VERSION        BINARY-LONG VALUE 5023.
+ 01 WS-SUFFIX              PIC X(128) VALUE "/data/minecraft/maps/last_id.dat".
+ 01 WS-PATH                PIC X(1100).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "MAP-DIRS"
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE SPACES TO WN
+     MOVE 0 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "DataVersion" TO WN MOVE 11 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-DATA-VERSION
+     MOVE "data" TO WN MOVE 4 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "map" TO WN MOVE 3 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL L-ID
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
+     CALL "PERSIST-WRITE-FILE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER
+     GOBACK.
+ END PROGRAM MAP-LAST-ID-WRITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MAP-LAST-ID-READ.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 32.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-INNER-TYPE          BINARY-LONG.
+ 01 WS-SUFFIX              PIC X(128) VALUE "/data/minecraft/maps/last_id.dat".
+ 01 WS-PATH                PIC X(1100).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-ZPATH               PIC X(1101).
+ 01 WS-INFO                PIC X(16).
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     MOVE -1 TO L-ID
+     CALL "MAP-LEGACY-RENAME"
+     CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
+     MOVE LOW-VALUES TO WS-ZPATH
+     MOVE WS-PATH(1:WS-PATH-LENGTH) TO WS-ZPATH
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-ZPATH WS-INFO
+     IF RETURN-CODE NOT = 0
+         GOBACK
+     END-IF
+     CALL "PERSIST-READ-FILE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WN
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-NAME-CAPACITY WL
+         IF WS-TYPE = 0
+             EXIT PERFORM
+         END-IF
+         IF WN = "data" AND WS-TYPE = 10
+             PERFORM UNTIL PB-ERROR = 1
+                 MOVE SPACES TO WN
+                 CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN WS-NAME-CAPACITY WL
+                 IF WS-INNER-TYPE = 0
+                     EXIT PERFORM
+                 END-IF
+                 IF WN = "map" AND WS-INNER-TYPE = 3
+                     CALL "PB-GET-INT" USING PB-BUFFER L-ID
+                 ELSE
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
+                 END-IF
+             END-PERFORM
+         ELSE
+             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM MAP-LAST-ID-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MAP-NEXT-ID.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID.
+     CALL "MAP-LAST-ID-READ" USING L-ID
+     ADD 1 TO L-ID
+     CALL "MAP-LAST-ID-WRITE" USING L-ID
+     GOBACK.
+ END PROGRAM MAP-NEXT-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MAP-DATA-WRITE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-DATA-VERSION        BINARY-LONG VALUE 5023.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ELEMENT-TYPE        BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-NO-NAME             BINARY-LONG VALUE -1.
+ 01 WS-COLORS-COUNT        BINARY-LONG VALUE 16384.
+ 01 WS-POS-INTS.
+    05 WS-POS-INT          BINARY-LONG OCCURS 3 TIMES.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-ID-TEXT             PIC Z(8)9.
+ 01 WS-SUFFIX              PIC X(128).
+ 01 WS-PATH                PIC X(1100).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ COPY MAPDATA.
+ PROCEDURE DIVISION USING L-ID MAP-DATA.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "MAP-DIRS"
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE SPACES TO WN
+     MOVE 0 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "DataVersion" TO WN MOVE 11 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-DATA-VERSION
+     MOVE "data" TO WN MOVE 4 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "dimension" TO WN MOVE 9 TO WL
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL MD-DIM MD-DIM-LENGTH
+     MOVE "xCenter" TO WN MOVE 7 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL MD-X-CENTER
+     MOVE "zCenter" TO WN
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL MD-Z-CENTER
+     MOVE "scale" TO WN MOVE 5 TO WL
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL MD-SCALE
+     MOVE "colors" TO WN MOVE 6 TO WL
+     CALL "NBT-WRITE-BYTE-ARRAY" USING PB-BUFFER WN WL WS-COLORS-COUNT MD-COLORS
+     MOVE "trackingPosition" TO WN MOVE 16 TO WL
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL MD-TRACKING
+     MOVE "unlimitedTracking" TO WN MOVE 17 TO WL
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL MD-UNLIMITED
+     MOVE "locked" TO WN MOVE 6 TO WL
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL MD-LOCKED
+     MOVE "banners" TO WN MOVE 7 TO WL
+     MOVE 10 TO WS-ELEMENT-TYPE
+     IF MD-BANNER-COUNT = 0
+         MOVE 0 TO WS-ELEMENT-TYPE
+     END-IF
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-ELEMENT-TYPE MD-BANNER-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > MD-BANNER-COUNT
+         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WS-NO-NAME
+         MOVE MD-B-X(WS-I) TO WS-POS-INT(1)
+         MOVE MD-B-Y(WS-I) TO WS-POS-INT(2)
+         MOVE MD-B-Z(WS-I) TO WS-POS-INT(3)
+         MOVE "pos" TO WN MOVE 3 TO WL
+         CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-THREE WS-POS-INTS
+         MOVE "color" TO WN MOVE 5 TO WL
+         CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL MD-B-COLOR(WS-I) MD-B-COLOR-LENGTH(WS-I)
+         IF MD-B-NAME-LENGTH(WS-I) > 0
+             MOVE "name" TO WN MOVE 4 TO WL
+             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL MD-B-NAME(WS-I) MD-B-NAME-LENGTH(WS-I)
+         END-IF
+         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     END-PERFORM
+     MOVE "frames" TO WN MOVE 6 TO WL
+     MOVE 10 TO WS-ELEMENT-TYPE
+     IF MD-FRAME-COUNT = 0
+         MOVE 0 TO WS-ELEMENT-TYPE
+     END-IF
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-ELEMENT-TYPE MD-FRAME-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > MD-FRAME-COUNT
+         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WS-NO-NAME
+         MOVE MD-F-X(WS-I) TO WS-POS-INT(1)
+         MOVE MD-F-Y(WS-I) TO WS-POS-INT(2)
+         MOVE MD-F-Z(WS-I) TO WS-POS-INT(3)
+         MOVE "pos" TO WN MOVE 3 TO WL
+         CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-THREE WS-POS-INTS
+         MOVE "rotation" TO WN MOVE 8 TO WL
+         CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL MD-F-ROTATION(WS-I)
+         MOVE "entity_id" TO WN MOVE 9 TO WL
+         CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL MD-F-ENTITY(WS-I)
+         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     END-PERFORM
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE L-ID TO WS-ID-TEXT
+     MOVE SPACES TO WS-SUFFIX
+     STRING "/data/minecraft/maps/" FUNCTION TRIM(WS-ID-TEXT) ".dat" DELIMITED BY SIZE INTO WS-SUFFIX
+     CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
+     CALL "PERSIST-WRITE-FILE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER
+     GOBACK.
+ END PROGRAM MAP-DATA-WRITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MAP-DATA-READ.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 32.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-INNER-TYPE          BINARY-LONG.
+ 01 WS-ELEMENT-TYPE        BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-TEXT-CAPACITY       BINARY-LONG VALUE 64.
+ 01 WS-DYE-CAPACITY        BINARY-LONG VALUE 16.
+ 01 WS-TEMP                PIC X(65536).
+ 01 WS-TEMP-CAPACITY       BINARY-LONG VALUE 65536.
+ 01 WS-INT-CAPACITY        BINARY-LONG VALUE 3.
+ 01 WS-INT-COUNT           BINARY-LONG.
+ 01 WS-POS-INTS.
+    05 WS-POS-INT          BINARY-LONG OCCURS 3 TIMES.
+ 01 WS-ID-TEXT             PIC Z(8)9.
+ 01 WS-SUFFIX              PIC X(128).
+ 01 WS-PATH                PIC X(1100).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-ZPATH               PIC X(1101).
+ 01 WS-INFO                PIC X(16).
+ 01 WS-DYE-TABLE.
+    05 FILLER              PIC X(12) VALUE "white".
+    05 FILLER              PIC X(12) VALUE "orange".
+    05 FILLER              PIC X(12) VALUE "magenta".
+    05 FILLER              PIC X(12) VALUE "light_blue".
+    05 FILLER              PIC X(12) VALUE "yellow".
+    05 FILLER              PIC X(12) VALUE "lime".
+    05 FILLER              PIC X(12) VALUE "pink".
+    05 FILLER              PIC X(12) VALUE "gray".
+    05 FILLER              PIC X(12) VALUE "light_gray".
+    05 FILLER              PIC X(12) VALUE "cyan".
+    05 FILLER              PIC X(12) VALUE "purple".
+    05 FILLER              PIC X(12) VALUE "blue".
+    05 FILLER              PIC X(12) VALUE "brown".
+    05 FILLER              PIC X(12) VALUE "green".
+    05 FILLER              PIC X(12) VALUE "red".
+    05 FILLER              PIC X(12) VALUE "black".
+ 01 WS-DYES REDEFINES WS-DYE-TABLE.
+    05 WS-DYE              PIC X(12) OCCURS 16 TIMES.
+ 01 WS-COLOR               PIC X(16).
+ 01 WS-COLOR-LENGTH        BINARY-LONG.
+ 01 WS-KNOWN               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ COPY MAPDATA.
+ 01 L-FOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID MAP-DATA L-FOUND.
+     GO TO MAIN-LINE.
+
+*> One banner compound of the list (a list element: its members, then the end tag). Beyond MD-MAX-MARKERS the element is read and dropped.
+ READ-BANNER.
+     MOVE 0 TO WS-K
+     IF MD-BANNER-COUNT < MD-MAX-MARKERS
+         ADD 1 TO MD-BANNER-COUNT
+         MOVE MD-BANNER-COUNT TO WS-K
+         MOVE "white" TO MD-B-COLOR(WS-K)
+         MOVE 5 TO MD-B-COLOR-LENGTH(WS-K)
+         MOVE 0 TO MD-B-NAME-LENGTH(WS-K)
+     END-IF
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WN
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-NAME-CAPACITY WL
+         IF WS-TYPE = 0
+             EXIT PERFORM
+         END-IF
+         EVALUATE TRUE
+             WHEN WN = "pos" AND WS-TYPE = 11 AND WS-K > 0
+                 CALL "NBT-READ-INT-ARRAY" USING PB-BUFFER WS-INT-CAPACITY WS-INT-COUNT WS-POS-INTS
+                 IF WS-INT-COUNT = 3
+                     MOVE WS-POS-INT(1) TO MD-B-X(WS-K)
+                     MOVE WS-POS-INT(2) TO MD-B-Y(WS-K)
+                     MOVE WS-POS-INT(3) TO MD-B-Z(WS-K)
+                 END-IF
+             WHEN WN = "color" AND WS-TYPE = 8 AND WS-K > 0
+                 MOVE SPACES TO WS-COLOR
+                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-COLOR WS-DYE-CAPACITY WS-COLOR-LENGTH
+                 MOVE 0 TO WS-KNOWN
+                 PERFORM VARYING WS-INT FROM 1 BY 1 UNTIL WS-INT > 16
+                     IF WS-COLOR = WS-DYE(WS-INT)
+                         MOVE 1 TO WS-KNOWN
+                     END-IF
+                 END-PERFORM
+                 IF WS-KNOWN = 1
+                     MOVE WS-COLOR TO MD-B-COLOR(WS-K)
+                     MOVE WS-COLOR-LENGTH TO MD-B-COLOR-LENGTH(WS-K)
+                 END-IF
+             WHEN WN = "name" AND WS-TYPE = 8 AND WS-K > 0
+                 MOVE SPACES TO MD-B-NAME(WS-K)
+                 CALL "NBT-READ-STRING" USING PB-BUFFER MD-B-NAME(WS-K) WS-TEXT-CAPACITY MD-B-NAME-LENGTH(WS-K)
+             WHEN OTHER
+                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-EVALUATE
+     END-PERFORM.
+
+*> One frame compound of the list: pos, rotation and entity_id.
+ READ-FRAME.
+     MOVE 0 TO WS-K
+     IF MD-FRAME-COUNT < MD-MAX-MARKERS
+         ADD 1 TO MD-FRAME-COUNT
+         MOVE MD-FRAME-COUNT TO WS-K
+     END-IF
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WN
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-NAME-CAPACITY WL
+         IF WS-TYPE = 0
+             EXIT PERFORM
+         END-IF
+         EVALUATE TRUE
+             WHEN WN = "pos" AND WS-TYPE = 11 AND WS-K > 0
+                 CALL "NBT-READ-INT-ARRAY" USING PB-BUFFER WS-INT-CAPACITY WS-INT-COUNT WS-POS-INTS
+                 IF WS-INT-COUNT = 3
+                     MOVE WS-POS-INT(1) TO MD-F-X(WS-K)
+                     MOVE WS-POS-INT(2) TO MD-F-Y(WS-K)
+                     MOVE WS-POS-INT(3) TO MD-F-Z(WS-K)
+                 END-IF
+             WHEN WN = "rotation" AND WS-TYPE = 3 AND WS-K > 0
+                 CALL "PB-GET-INT" USING PB-BUFFER MD-F-ROTATION(WS-K)
+             WHEN WN = "entity_id" AND WS-TYPE = 3 AND WS-K > 0
+                 CALL "PB-GET-INT" USING PB-BUFFER MD-F-ENTITY(WS-K)
+             WHEN OTHER
+                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-EVALUATE
+     END-PERFORM.
+
+ MAIN-LINE.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     MOVE 0 TO L-FOUND
+     CALL "MAP-LEGACY-RENAME"
+     MOVE L-ID TO WS-ID-TEXT
+     MOVE SPACES TO WS-SUFFIX
+     STRING "/data/minecraft/maps/" FUNCTION TRIM(WS-ID-TEXT) ".dat" DELIMITED BY SIZE INTO WS-SUFFIX
+     CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
+     MOVE LOW-VALUES TO WS-ZPATH
+     MOVE WS-PATH(1:WS-PATH-LENGTH) TO WS-ZPATH
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-ZPATH WS-INFO
+     IF RETURN-CODE NOT = 0
+         GOBACK
+     END-IF
+     MOVE 1 TO L-FOUND
+     INITIALIZE MAP-DATA
+     MOVE LOW-VALUES TO MD-COLORS
+     MOVE 1 TO MD-TRACKING
+     CALL "PERSIST-READ-FILE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WN
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-NAME-CAPACITY WL
+         IF WS-TYPE = 0
+             EXIT PERFORM
+         END-IF
+         IF WN = "data" AND WS-TYPE = 10
+             PERFORM UNTIL PB-ERROR = 1
+                 MOVE SPACES TO WN
+                 CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN WS-NAME-CAPACITY WL
+                 IF WS-INNER-TYPE = 0
+                     EXIT PERFORM
+                 END-IF
+                 EVALUATE TRUE
+                     WHEN WN = "dimension" AND WS-INNER-TYPE = 8
+                         MOVE SPACES TO MD-DIM
+                         CALL "NBT-READ-STRING" USING PB-BUFFER MD-DIM WS-TEXT-CAPACITY MD-DIM-LENGTH
+                     WHEN WN = "xCenter" AND WS-INNER-TYPE = 3
+                         CALL "PB-GET-INT" USING PB-BUFFER MD-X-CENTER
+                     WHEN WN = "zCenter" AND WS-INNER-TYPE = 3
+                         CALL "PB-GET-INT" USING PB-BUFFER MD-Z-CENTER
+                     WHEN WN = "scale" AND WS-INNER-TYPE = 1
+                         CALL "PB-GET-BYTE" USING PB-BUFFER MD-SCALE
+                         IF MD-SCALE < 0
+                             MOVE 0 TO MD-SCALE
+                         END-IF
+                         IF MD-SCALE > 4
+                             MOVE 4 TO MD-SCALE
+                         END-IF
+                     WHEN WN = "colors" AND WS-INNER-TYPE = 7
+                         CALL "NBT-READ-BYTE-ARRAY" USING PB-BUFFER WS-TEMP-CAPACITY WS-COUNT WS-TEMP
+                         IF WS-COUNT = 16384
+                             MOVE WS-TEMP(1:16384) TO MD-COLORS
+                         END-IF
+                     WHEN WN = "trackingPosition" AND WS-INNER-TYPE = 1
+                         CALL "PB-GET-BYTE" USING PB-BUFFER MD-TRACKING
+                     WHEN WN = "unlimitedTracking" AND WS-INNER-TYPE = 1
+                         CALL "PB-GET-BYTE" USING PB-BUFFER MD-UNLIMITED
+                     WHEN WN = "locked" AND WS-INNER-TYPE = 1
+                         CALL "PB-GET-BYTE" USING PB-BUFFER MD-LOCKED
+                     WHEN WN = "banners" AND WS-INNER-TYPE = 9
+                         CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
+                         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
+                             PERFORM READ-BANNER
+                         END-PERFORM
+                     WHEN WN = "frames" AND WS-INNER-TYPE = 9
+                         CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
+                         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
+                             PERFORM READ-FRAME
+                         END-PERFORM
+                     WHEN OTHER
+                         CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
+                 END-EVALUATE
+             END-PERFORM
+         ELSE
+             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM MAP-DATA-READ.

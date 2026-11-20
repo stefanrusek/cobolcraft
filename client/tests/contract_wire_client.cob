@@ -1213,6 +1213,20 @@
      MOVE "player:18>32,37 at:1>33 x:2>34 y:2>35 z:6>36 dimension:22 to:1>38 target:22 "
          & "supply:1>40" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-10-commands-level0-dedicated.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Commands (level 0, dedicated: 57-client-closures-4 section 10.1) decodes the "
+         & "26-node tree: the ten root literals in registration order" TO TL-CASE
+     PERFORM ROOT-TEXT
+     MOVE "26 root 0 me help list msg tell w random teammsg tm trigger" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract/fixtures/wire/play-s2c-10-commands-level0-integrated.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract wire client Commands (level 0, integrated: 57-client-closures-4 section 10.2) decodes the "
+         & "28-node tree: seed and version between random and teammsg" TO TL-CASE
+     PERFORM ROOT-TEXT
+     MOVE "28 root 0 me help list msg tell w random seed version teammsg tm trigger" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE 1 TO CS-TRANSACTION
      MOVE "contract/fixtures/wire/play-s2c-0f-command-suggestions.hex" TO WS-PATH

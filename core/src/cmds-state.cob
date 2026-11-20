@@ -58,6 +58,7 @@
              ADD 1 TO WS-CHANGED
              MOVE PL-MODE(WS-ROW) TO WS-OLD-MODE
              CALL "PLAYER-PREVIOUS-MODE" USING WS-ROW WS-OLD-MODE
+             COMPUTE PL-PREV-MODE1(WS-ROW) = PL-MODE(WS-ROW) + 1
              MOVE WS-MODE TO PL-MODE(WS-ROW)
              MOVE 0 TO PL-FLYING(WS-ROW)
              IF WS-MODE = 3
@@ -815,6 +816,8 @@
  01 WS-PATH                PIC X(256).
  PROCEDURE DIVISION.
      MOVE CW-SETTINGS TO CORE-SETTINGS
+*>   WORKING-STORAGE stays between calls: the tree is built again for every world, so the level is set each time
+     MOVE 2 TO WS-LEVEL
      IF CS-HOST-KIND > 0
          MOVE 0 TO WS-LEVEL
      END-IF
@@ -903,6 +906,8 @@
  01 WS-PATH                PIC X(256).
  PROCEDURE DIVISION.
      MOVE CW-SETTINGS TO CORE-SETTINGS
+*>   WORKING-STORAGE stays between calls: the tree is built again for every world, so the level is set each time
+     MOVE 2 TO WS-LEVEL
      IF CS-HOST-KIND > 0
          MOVE 0 TO WS-LEVEL
      END-IF
@@ -1082,6 +1087,7 @@
          PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > 64
              IF PL-USED(WS-ROW) = 1 AND PL-STATE(WS-ROW) NOT = PS-JOINING AND PL-MODE(WS-ROW) NOT = CW-GAME-MODE
                  ADD 1 TO WS-MOVED
+                 COMPUTE PL-PREV-MODE1(WS-ROW) = PL-MODE(WS-ROW) + 1
                  MOVE CW-GAME-MODE TO PL-MODE(WS-ROW)
                  MOVE 0 TO PL-FLYING(WS-ROW)
                  MOVE CW-GAME-MODE TO WS-VALUE

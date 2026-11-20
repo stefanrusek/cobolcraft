@@ -202,7 +202,7 @@
  01 WS-N-APPEND            PIC X(32) VALUE "append".
  01 WS-N-FUNCTION          PIC X(32) VALUE "function".
  01 WS-N-TIME              PIC X(32) VALUE "time".
- 01 WS-N-ID                PIC X(32) VALUE "id".
+ 01 WS-N-ID                PIC X(32) VALUE "function".
  01 WS-CLEAR               BINARY-LONG.
  01 WS-APPEND              BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
@@ -319,7 +319,7 @@
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      MOVE "schedule function <function:function> <time:time> replace" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
-     MOVE "schedule clear <id:resloc>" TO WS-PATH
+     MOVE "schedule clear <function:resloc>" TO WS-PATH
      CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
      GOBACK.
  END PROGRAM CMDS-REG-SCHEDULE.
@@ -413,12 +413,12 @@
  01 WS-FORMS.
     05 FILLER PIC X(80) VALUE "function <name:function>".
     05 FILLER PIC X(80) VALUE "function <name:function> <arguments:nbt>".
-    05 FILLER PIC X(80) VALUE "function <name:function> with block <pos:pos>".
-    05 FILLER PIC X(80) VALUE "function <name:function> with block <pos:pos> <path:nbtpath>".
-    05 FILLER PIC X(80) VALUE "function <name:function> with entity <target:entities>".
-    05 FILLER PIC X(80) VALUE "function <name:function> with entity <target:entities> <path:nbtpath>".
-    05 FILLER PIC X(80) VALUE "function <name:function> with storage <storage:resloc>".
-    05 FILLER PIC X(80) VALUE "function <name:function> with storage <storage:resloc> <path:nbtpath>".
+    05 FILLER PIC X(80) VALUE "function <name:function> with block <source:pos>".
+    05 FILLER PIC X(80) VALUE "function <name:function> with block <source:pos> <path:nbtpath>".
+    05 FILLER PIC X(80) VALUE "function <name:function> with entity <source:entities>".
+    05 FILLER PIC X(80) VALUE "function <name:function> with entity <source:entities> <path:nbtpath>".
+    05 FILLER PIC X(80) VALUE "function <name:function> with storage <source:resloc>".
+    05 FILLER PIC X(80) VALUE "function <name:function> with storage <source:resloc> <path:nbtpath>".
  01 WS-FORM-TABLE REDEFINES WS-FORMS.
     05 WS-FORM              PIC X(80) OCCURS 8 TIMES.
  PROCEDURE DIVISION.

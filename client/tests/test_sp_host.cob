@@ -215,8 +215,8 @@
          INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   The shutdown command in a hosted world is the host quitting (standin-content §16 row 29): the
-*>   host holds operator status, so it runs; the next frame quits the world.
+*>   `stop` is a dedicated-server command (16 section 2, 57-client-closures-4 section 3.4): in a hosted world the line is an unknown command, the world keeps running and
+*>   the chat shows the error; the host quits through the pause menu (SP-QUIT).
      CALL "SP-OPEN" USING CLIENT-STATE WS-FOLDER WS-FOLDER-LENGTH WS-NAME WS-NAME-LENGTH WS-MODE
      CALL "TEST-SP-JOIN" USING CLIENT-STATE WS-JOINED
      MOVE 0 TO CH-COUNT
@@ -231,9 +231,9 @@
          CALL "TEST-STEP" USING CLIENT-STATE
      END-PERFORM
      CALL "CORE-STATUS-GET" USING CORE-STATUS
-     MOVE "sp host the host's /stop command (operator status as host) quits the world: saved "
-         & "(run state 2), title screen" TO TL-CASE
-     MOVE "joined 1 active 0 run 2 screen 1" TO TL-EXPECTED
+     MOVE "sp host the host's /stop is no command of a hosted world (57-4 section 3.4): the world keeps "
+         & "running (run state 0), the world screen stays" TO TL-CASE
+     MOVE "joined 1 active 1 run 0 screen 5" TO TL-EXPECTED
      MOVE WS-JOINED TO WS-E1
      MOVE SP-ACTIVE TO WS-E2
      MOVE CST-RUN-STATE TO WS-E3
@@ -242,13 +242,13 @@
      STRING "joined " FUNCTION TRIM(WS-E1) " active " FUNCTION TRIM(WS-E2) " run "
          FUNCTION TRIM(WS-E3) " screen " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "sp host the stop confirmation (sent before stopping) is chat of the world being quit: "
-         & "quitting ends the session, so the title screen shows no chat line (CLIENT-SESSION-RESET)" TO TL-CASE
-     MOVE "chat 0" TO TL-EXPECTED
+     MOVE "sp host the unknown command error of /stop is chat of the world (two lines: the message and the line with the mark)" TO TL-CASE
+     MOVE "chat 2" TO TL-EXPECTED
      MOVE CH-COUNT TO WS-E1
      MOVE SPACES TO TL-OBSERVED
      STRING "chat " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "SP-QUIT" USING CLIENT-STATE
 
 *>   A connection the core ends: CORE-STOP called past the host sends Disconnect and hands the
 *>   memory connection back (close flag; the host itself cannot be ejected); the client shows

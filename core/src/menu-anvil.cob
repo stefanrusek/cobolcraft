@@ -132,8 +132,85 @@
      MOVE 0 TO MN-WDATA(L-ROW, 1)
      MOVE 0 TO MN-WSLOT-ITEM(L-ROW, 1) MN-WSLOT-COUNT(L-ROW, 1) MN-WSLOT-VAR(L-ROW, 1)
      CALL "MENU-STATION-UPDATE" USING L-ROW
+*>   The take sound and the damage of the block (40-3 section 3 step 6; 57-client-closures-2 section 3.2): a survival player rolls 12 percent when the block is an anvil.
+     CALL "ANVIL-USED" USING L-ROW
      GOBACK.
  END PROGRAM MENU-ANVIL-TAKEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ANVIL-USED.
+*> USING player row: onTake of the anvil result at the menu's block: with infinite materials (creative) or a block outside the tag anvil nothing is drawn and Level Event 1030 is sent;
+*> else one draw (nextFloat < 0.12): the anvil becomes chipped_anvil, chipped_anvil damaged_anvil (the facing kept, event 1030), and a damaged_anvil is removed (event 1029).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CMENU.
+ COPY CBLOCKS.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-BARE                PIC X(48).
+ 01 WS-STAGE               BINARY-LONG.
+ 01 WS-OFFSET              BINARY-LONG.
+ 01 WS-CREATIVE            BINARY-LONG.
+ 01 WS-TAG                 BINARY-LONG.
+ 01 WS-ROLL                FLOAT-LONG.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-SALT                BINARY-LONG VALUE 9300.
+ 01 WS-THOUSAND            BINARY-LONG VALUE 1000.
+ 01 WS-DRAWN               BINARY-LONG.
+ 01 WS-NEW                 BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG.
+ 01 WS-NEXT-KEY            PIC X(48).
+ 01 WS-NEW-STATE           BINARY-LONG.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-NONE2               BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "WORLD-GET-BLOCK" USING MN-BENCH-DIM(L-ROW) MN-BENCH-X(L-ROW) MN-BENCH-Y(L-ROW) MN-BENCH-Z(L-ROW) WS-STATE
+     CALL "MENU-STATION-KIND" USING WS-STATE WS-KIND
+     MOVE 0 TO WS-TAG WS-STAGE WS-OFFSET
+     IF WS-KIND = 4
+         MOVE 1 TO WS-TAG
+         MOVE CB-KEY(CB-S-BLOCK(WS-STATE + 1) + 1) TO WS-KEY
+         CALL "KEY-BARE" USING WS-KEY WS-BARE
+         EVALUATE WS-BARE
+             WHEN "chipped_anvil"
+                 MOVE 1 TO WS-STAGE
+             WHEN "damaged_anvil"
+                 MOVE 2 TO WS-STAGE
+         END-EVALUATE
+         COMPUTE WS-OFFSET = WS-STATE - CB-DEFAULT-STATE(CB-S-BLOCK(WS-STATE + 1) + 1)
+     END-IF
+     MOVE 0 TO WS-CREATIVE WS-ROLL
+     IF PL-MODE(L-ROW) = 1
+         MOVE 1 TO WS-CREATIVE
+     END-IF
+     IF WS-CREATIVE = 0 AND WS-TAG = 1
+         CALL "XP-RANDOM" USING WS-SALT WS-THOUSAND WS-DRAW
+         COMPUTE WS-ROLL = WS-DRAW / 1000
+     END-IF
+     CALL "MN3-ANVIL-DAMAGE" USING WS-CREATIVE WS-TAG WS-ROLL WS-STAGE WS-DRAWN WS-NEW WS-EVENT
+     EVALUATE WS-NEW
+         WHEN 1
+             MOVE "minecraft:chipped_anvil" TO WS-NEXT-KEY
+         WHEN 2
+             MOVE "minecraft:damaged_anvil" TO WS-NEXT-KEY
+     END-EVALUATE
+     IF WS-NEW = 1 OR WS-NEW = 2
+         CALL "GEN-BLOCK-STATE" USING WS-NEXT-KEY WS-NEW-STATE
+         COMPUTE WS-NEW-STATE = WS-NEW-STATE + WS-OFFSET
+         CALL "WORLD-SET-BLOCK" USING MN-BENCH-DIM(L-ROW) MN-BENCH-X(L-ROW) MN-BENCH-Y(L-ROW) MN-BENCH-Z(L-ROW) WS-NEW-STATE
+     END-IF
+     IF WS-NEW = 3
+         MOVE 0 TO WS-NEW-STATE
+         CALL "WORLD-SET-BLOCK" USING MN-BENCH-DIM(L-ROW) MN-BENCH-X(L-ROW) MN-BENCH-Y(L-ROW) MN-BENCH-Z(L-ROW) WS-NEW-STATE
+     END-IF
+     CALL "LEVEL-EVENT" USING MN-BENCH-DIM(L-ROW) WS-EVENT MN-BENCH-X(L-ROW) MN-BENCH-Y(L-ROW) MN-BENCH-Z(L-ROW)
+         WS-NONE WS-NONE2
+     GOBACK.
+ END PROGRAM ANVIL-USED.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ANVIL-RENAME.

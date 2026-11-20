@@ -47,6 +47,8 @@
          CORE-KNOWN CORE-KNOWN-EXTRA CORE-ACCESS CORE-EXTRA PORTAL-POI PORTAL-PLAYERS CORE-MAPS
      MOVE "Y" TO CW-OPEN
      MOVE CORE-SETTINGS TO CW-SETTINGS
+*>   The command tree depends on the host kind (dedicated or hosted: 57-client-closures-4 section 3.4): built again for this world.
+     CALL "BR-TREE-RESET"
      MOVE CS-NEW-WORLD-NAME TO CW-NAME
      MOVE CS-DEFAULT-MODE TO CW-GAME-MODE
      SET ADDRESS OF B-PATH TO ADDRESS OF L-PATH

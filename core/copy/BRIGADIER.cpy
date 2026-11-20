@@ -133,6 +133,7 @@
     05 BR-SG-ENTRY          OCCURS 1000 TIMES.
        10 BR-SG-TEXT-LENGTH  BINARY-LONG.
        10 BR-SG-TEXT         PIC X(64).
+       10 BR-SG-TIP          BINARY-LONG.   *> the tooltip: 0 none, 1 to 6 the selector heads @p @a @r @s @e @n (57-client-closures-4 section 8.3)
 *> The value of the argument just parsed (BR-ARG-EXT fills it, BR-STEP copies it to the trail entry): BR-V-AUX flags,
 *> a second integer and double, and up to three coordinate components (kind 0 absolute, 1 relative, 2 local).
  01 BR-VAL EXTERNAL.

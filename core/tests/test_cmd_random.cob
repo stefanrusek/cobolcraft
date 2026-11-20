@@ -1,7 +1,7 @@
 *> Acceptance test of docs/protocol/16-commands-catalog.md §10.8 `random value` and `random roll` (permission level 0; `random reset` and the sequence store are BLOCKED): a number from min to
 *> max inclusive; the max must be above the min (range_too_small) and the span below 2147483647 (range_too_large); value tells the source
 *> commands.random.sample.success [value] (Q), roll tells every player commands.random.roll [name, value, min, max]; the result is the number; a missing bound is the int
-*> minimum or maximum; a sequence name is accepted. Opal holds operator status; Alice does not (the commands are level 0).
+*> minimum or maximum; a sequence name is accepted for an operator and refused for the others (its node needs level 2). Opal holds operator status; Alice does not.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-CMD-RANDOM.
  DATA DIVISION.
@@ -56,6 +56,12 @@
      MOVE WS-LOW TO WS-NUM
      MOVE 1 TO WS-EXPECTED-N
      CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
+     MOVE "random value 1..6 cobolcraft:dice" TO WS-LINE
+     CALL "TEST-RUN-RESULT" USING WS-ID-ALICE WS-LINE WS-ONE-RESULT
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
+     MOVE "acceptance US13 /random a player without operator status may not name a sequence: the command is refused" TO TL-CASE
+     MOVE 0 TO WS-EXPECTED-N
+     CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-ONE-RESULT
      MOVE "acceptance US13 /random 200 draws of 1..6 reach 6 and never " & "go above it" TO TL-CASE
      MOVE WS-HIGH TO WS-NUM
      MOVE 6 TO WS-EXPECTED-N
@@ -101,9 +107,9 @@
      MOVE 1 TO WS-EXPECTED-N
      CALL "TEST-EXPECT-NUMBER" USING TL-CASE WS-EXPECTED-N WS-NUM
      MOVE "random value 1..6 cobolcraft:dice" TO WS-LINE
-     CALL "TEST-RUN-RESULT" USING WS-ID-ALICE WS-LINE WS-ONE-RESULT
-     CALL "TEST-DRAIN-CHAT" USING WS-ID-ALICE WS-DISCARD
-     MOVE "acceptance US13 /random a sequence name is accepted: the num" & "ber is from 1 to 6" TO TL-CASE
+     CALL "TEST-RUN-RESULT" USING WS-ID-OPAL WS-LINE WS-ONE-RESULT
+     CALL "TEST-DRAIN-CHAT" USING WS-ID-OPAL WS-DISCARD
+     MOVE "acceptance US13 /random an operator may name a sequence (the sequence node needs level 2, 57-client-closures-4 section 3.3): the num" & "ber is from 1 to 6" TO TL-CASE
      MOVE 0 TO WS-NUM
      IF WS-ONE-RESULT >= 1 AND WS-ONE-RESULT <= 6
          MOVE 1 TO WS-NUM

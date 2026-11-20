@@ -72,16 +72,38 @@
 *> (15 §3.3, §3.4): a filtered copy of the tree, depth first, a child copied only when its
 *> requirement level is held, its redirect kept only when the target was copied before it; the
 *> nodes numbered breadth first from the root (0; children in order, then the redirect target);
-*> flags: type, 0x04 executable, 0x08 redirect, 0x10 custom suggestions (ask_server), 0x20 restricted
-*> (the node's own requirement fails for a source with no permission, so level above 0); then the
-*> root index 0.
+*> flags: type, 0x04 executable, 0x08 redirect, 0x10 custom suggestions (the Identifier of BR-N-SUGGEST: 1 ask_server,
+*> 2 available_sounds, 3 summonable_entities, 4 post_effects), 0x20 restricted (the node's own requirement fails for a
+*> source with no permission, so level above 0); then the root index 0. Equal nodes share one index and one entry (57-client-closures-4
+*> section 2.2): same kind and name, no command, a literal or an unbounded number argument of the same parser, and the same
+*> children (the set of name and child pairs, each child compared in the same way); the first node met supplies the flags,
+*> redirect and provider of the entry.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRIGADIER.
  COPY PROTO REPLACING LEADING ==PB-== BY ==WK-==.
  01 WS-PACKET-ID           BINARY-LONG VALUE 16.
  01 WS-ROOT-INDEX          BINARY-LONG VALUE 0.
- 01 WS-SUGGEST             PIC X(20) VALUE "minecraft:ask_server".
+ 01 WS-SUGGEST             PIC X(64).
+ 01 WS-SUGGEST-LENGTH      BINARY-LONG.
+ 01 WS-M                   BINARY-DOUBLE VALUE 2147483647.
+ 01 WS-T                   BINARY-DOUBLE.
+ 01 WS-A1                  BINARY-DOUBLE.
+ 01 WS-A2                  BINARY-DOUBLE.
+ 01 WS-S1                  BINARY-DOUBLE.
+ 01 WS-S2                  BINARY-DOUBLE.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-NK                  BINARY-LONG.
+ 01 WS-EQ                  BINARY-LONG.
+ 01 WS-BUCKET-INDEX        BINARY-LONG.
+ 01 WS-HASHES.
+    05 WS-H1                BINARY-LONG OCCURS 4096 TIMES.
+    05 WS-H2                BINARY-LONG OCCURS 4096 TIMES.
+    05 WS-MERGEABLE         BINARY-LONG OCCURS 4096 TIMES.
+    05 WS-KIDS              BINARY-LONG OCCURS 4096 TIMES.
+    05 WS-CHAIN             BINARY-LONG OCCURS 4096 TIMES.
+    05 WS-BUCKET            BINARY-LONG OCCURS 4099 TIMES.
  01 WS-COPY.
     05 WS-INCLUDED          BINARY-LONG OCCURS 4096 TIMES.
     05 WS-KEEP-REDIRECT     BINARY-LONG OCCURS 4096 TIMES.
@@ -129,6 +151,68 @@
          END-IF
      END-PERFORM.
 
+ HASH-NODES.
+*>   A hash pair of every included node (children before parents: a child is created after its parent), for the equality of 2.2.
+     PERFORM VARYING WS-N FROM BR-NODE-COUNT BY -1 UNTIL WS-N < 2
+         IF WS-INCLUDED(WS-N) = 1
+             MOVE 0 TO WS-MERGEABLE(WS-N)
+             IF BR-N-COMMAND(WS-N) = 0 AND (BR-N-KIND(WS-N) = BR-LITERAL
+                     OR (BR-N-KIND(WS-N) = BR-ARGUMENT AND BR-N-TYPE(WS-N) >= BR-P-FLOAT AND BR-N-TYPE(WS-N) <= BR-P-LONG
+                         AND BR-N-HAS-MIN(WS-N) = 0 AND BR-N-HAS-MAX(WS-N) = 0))
+                 MOVE 1 TO WS-MERGEABLE(WS-N)
+             END-IF
+             COMPUTE WS-A1 = BR-N-KIND(WS-N) * 31 + BR-N-TYPE(WS-N)
+             COMPUTE WS-A2 = BR-N-KIND(WS-N) * 37 + BR-N-TYPE(WS-N) + 5
+             PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > BR-N-NAME-LENGTH(WS-N)
+                 COMPUTE WS-K = FUNCTION ORD(BR-N-NAME(WS-N)(WS-C:1))
+                 COMPUTE WS-T = WS-A1 * 257 + WS-K
+                 COMPUTE WS-A1 = FUNCTION MOD(WS-T, WS-M)
+                 COMPUTE WS-T = WS-A2 * 263 + WS-K
+                 COMPUTE WS-A2 = FUNCTION MOD(WS-T, WS-M)
+             END-PERFORM
+             MOVE 0 TO WS-S1 WS-S2 WS-KIDS(WS-N)
+             MOVE BR-N-FIRST(WS-N) TO WS-CHILD
+             PERFORM UNTIL WS-CHILD = 0
+                 IF WS-INCLUDED(WS-CHILD) = 1
+                     ADD 1 TO WS-KIDS(WS-N)
+                     COMPUTE WS-T = WS-H1(WS-CHILD) * 7919 + 17
+                     COMPUTE WS-S1 = FUNCTION MOD(WS-S1 + FUNCTION MOD(WS-T, WS-M), WS-M)
+                     COMPUTE WS-T = WS-H2(WS-CHILD) * 7927 + 19
+                     COMPUTE WS-S2 = FUNCTION MOD(WS-S2 + FUNCTION MOD(WS-T, WS-M), WS-M)
+                 END-IF
+                 MOVE BR-N-NEXT(WS-CHILD) TO WS-CHILD
+             END-PERFORM
+             IF WS-MERGEABLE(WS-N) = 1
+                 COMPUTE WS-T = WS-A1 * 65599 + WS-S1 + WS-KIDS(WS-N)
+                 COMPUTE WS-H1(WS-N) = FUNCTION MOD(WS-T, WS-M)
+                 COMPUTE WS-T = WS-A2 * 65587 + WS-S2 + WS-KIDS(WS-N) * 3
+                 COMPUTE WS-H2(WS-N) = FUNCTION MOD(WS-T, WS-M)
+             ELSE
+*>               a node that cannot be equal to another makes its parents unique too
+                 COMPUTE WS-H1(WS-N) = WS-N * 2 + 1000003
+                 COMPUTE WS-H2(WS-N) = WS-N * 3 + 2000003
+             END-IF
+         END-IF
+     END-PERFORM.
+
+ FIND-EQUAL.
+*>   The numbered node equal to WS-N (0 none): the same hash pair, kind, name, parser and number of children.
+     MOVE 0 TO WS-EQ
+     IF WS-MERGEABLE(WS-N) = 1
+         COMPUTE WS-BUCKET-INDEX = FUNCTION MOD(WS-H1(WS-N), 4099) + 1
+         MOVE WS-BUCKET(WS-BUCKET-INDEX) TO WS-NK
+         PERFORM UNTIL WS-NK = 0 OR WS-EQ > 0
+             IF WS-H1(WS-NK) = WS-H1(WS-N) AND WS-H2(WS-NK) = WS-H2(WS-N)
+                     AND BR-N-KIND(WS-NK) = BR-N-KIND(WS-N) AND BR-N-TYPE(WS-NK) = BR-N-TYPE(WS-N)
+                     AND BR-N-NAME-LENGTH(WS-NK) = BR-N-NAME-LENGTH(WS-N) AND WS-KIDS(WS-NK) = WS-KIDS(WS-N)
+                     AND BR-N-NAME(WS-NK) = BR-N-NAME(WS-N)
+                 MOVE WS-NK TO WS-EQ
+             ELSE
+                 MOVE WS-CHAIN(WS-NK) TO WS-NK
+             END-IF
+         END-PERFORM
+     END-IF.
+
  NUMBER-NODES.
      MOVE 1 TO WS-HEAD WS-TAIL
      MOVE 1 TO WS-Q(1)
@@ -137,20 +221,30 @@
          MOVE WS-Q(WS-HEAD) TO WS-N
          ADD 1 TO WS-HEAD
          IF WS-INDEX(WS-N) = 0
-             ADD 1 TO WS-COUNT
-             MOVE WS-COUNT TO WS-INDEX(WS-N)
-             MOVE WS-N TO WS-ORDER(WS-COUNT)
-             MOVE BR-N-FIRST(WS-N) TO WS-CHILD
-             PERFORM UNTIL WS-CHILD = 0
-                 IF WS-INCLUDED(WS-CHILD) = 1
-                     ADD 1 TO WS-TAIL
-                     MOVE WS-CHILD TO WS-Q(WS-TAIL)
+             PERFORM FIND-EQUAL
+             IF WS-EQ > 0
+                 MOVE WS-INDEX(WS-EQ) TO WS-INDEX(WS-N)
+             ELSE
+                 ADD 1 TO WS-COUNT
+                 MOVE WS-COUNT TO WS-INDEX(WS-N)
+                 MOVE WS-N TO WS-ORDER(WS-COUNT)
+                 IF WS-MERGEABLE(WS-N) = 1
+                     COMPUTE WS-BUCKET-INDEX = FUNCTION MOD(WS-H1(WS-N), 4099) + 1
+                     MOVE WS-BUCKET(WS-BUCKET-INDEX) TO WS-CHAIN(WS-N)
+                     MOVE WS-N TO WS-BUCKET(WS-BUCKET-INDEX)
                  END-IF
-                 MOVE BR-N-NEXT(WS-CHILD) TO WS-CHILD
-             END-PERFORM
-             IF WS-KEEP-REDIRECT(WS-N) = 1
-                 ADD 1 TO WS-TAIL
-                 MOVE BR-N-REDIRECT(WS-N) TO WS-Q(WS-TAIL)
+                 MOVE BR-N-FIRST(WS-N) TO WS-CHILD
+                 PERFORM UNTIL WS-CHILD = 0
+                     IF WS-INCLUDED(WS-CHILD) = 1
+                         ADD 1 TO WS-TAIL
+                         MOVE WS-CHILD TO WS-Q(WS-TAIL)
+                     END-IF
+                     MOVE BR-N-NEXT(WS-CHILD) TO WS-CHILD
+                 END-PERFORM
+                 IF WS-KEEP-REDIRECT(WS-N) = 1
+                     ADD 1 TO WS-TAIL
+                     MOVE BR-N-REDIRECT(WS-N) TO WS-Q(WS-TAIL)
+                 END-IF
              END-IF
          END-IF
      END-PERFORM.
@@ -168,8 +262,22 @@
      END-IF
      IF BR-N-SUGGEST(WS-N) > 0 AND BR-N-KIND(WS-N) = BR-ARGUMENT
          ADD WK-NODE-HAS-SUGGEST TO WK-CX-FLAGS
+         EVALUATE BR-N-SUGGEST(WS-N)
+             WHEN 2
+                 MOVE "minecraft:available_sounds" TO WS-SUGGEST
+                 MOVE 26 TO WS-SUGGEST-LENGTH
+             WHEN 3
+                 MOVE "minecraft:summonable_entities" TO WS-SUGGEST
+                 MOVE 29 TO WS-SUGGEST-LENGTH
+             WHEN 4
+                 MOVE "minecraft:post_effects" TO WS-SUGGEST
+                 MOVE 22 TO WS-SUGGEST-LENGTH
+             WHEN OTHER
+                 MOVE "minecraft:ask_server" TO WS-SUGGEST
+                 MOVE 20 TO WS-SUGGEST-LENGTH
+         END-EVALUATE
          MOVE WS-SUGGEST TO WK-CX-SUGGEST
-         MOVE 20 TO WK-CX-SUGGEST-LENGTH
+         MOVE WS-SUGGEST-LENGTH TO WK-CX-SUGGEST-LENGTH
      END-IF
      IF WS-N > 1 AND BR-N-LEVEL(WS-N) > 0
          ADD WK-NODE-RESTRICTED TO WK-CX-FLAGS
@@ -198,6 +306,17 @@
      IF BR-N-TYPE(WS-N) = BR-P-STRING
          MOVE BR-N-STRING-KIND(WS-N) TO WK-CX-STRING-KIND
      END-IF
+*>   The flags byte of an entity (1 single, 2 players only) and of a score holder (1 several), the minimum of a time and the registry of a resource parser (2.1).
+     IF BR-N-TYPE(WS-N) = BR-P-ENTITY OR BR-N-TYPE(WS-N) = BR-P-SCORE-HOLDER
+         MOVE BR-N-FLAGS(WS-N) TO WK-CX-FLAGS-BYTE
+     END-IF
+     IF BR-N-TYPE(WS-N) = BR-P-TIME
+         MOVE BR-N-IMIN(WS-N) TO WK-CX-TIME-MIN
+     END-IF
+     IF BR-N-TYPE(WS-N) >= BR-P-RES-OR-TAG AND BR-N-TYPE(WS-N) <= BR-P-RES-SELECTOR AND BR-N-REG-LENGTH(WS-N) > 0
+         MOVE BR-N-REG-LENGTH(WS-N) TO WK-CX-REGISTRY-LENGTH
+         MOVE BR-N-REG(WS-N) TO WK-CX-REGISTRY
+     END-IF
      IF BR-N-TYPE(WS-N) >= BR-P-FLOAT AND BR-N-TYPE(WS-N) <= BR-P-LONG
          COMPUTE WK-CX-RANGE-FLAGS = BR-N-HAS-MIN(WS-N) + 2 * BR-N-HAS-MAX(WS-N)
          EVALUATE BR-N-TYPE(WS-N)
@@ -220,6 +339,8 @@
      INITIALIZE WS-COPY
      MOVE 1 TO WS-INCLUDED(1)
      PERFORM COPY-TREE
+     INITIALIZE WS-HASHES
+     PERFORM HASH-NODES
      PERFORM NUMBER-NODES
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-COUNT
