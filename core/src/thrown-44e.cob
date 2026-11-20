@@ -232,7 +232,6 @@
          CALL "LIGHTNING-FIRST" USING L-ROW
 *>   LightningBolt.tick posts lightning_strike on the tick where its life counter equals 2 (the first), the bolt as the source (30-8 14.3.10)
          CALL "GAME-EVENT-AT" USING WS-EV-LIGHTNING L-ROW
-         CALL "RL-ROD-STRIKE" USING L-ROW
      END-IF
      SUBTRACT 1 FROM PJ-I1(WS-SLOT)
      IF PJ-I1(WS-SLOT) < 0

@@ -1,8 +1,9 @@
 *> Live redstone, dispensers, droppers and hoppers (docs/protocol/30-redstone-4 sections 1, 2 and 5.1): the trigger of a dispenser or dropper on a neighbour change (power at the block or at the
 *> block above, one dispense per rising edge, 4 ticks later), the dispense of the scheduled tick (a random non-empty slot; the dropper puts one item into the container in front or drops it,
 *> the dispenser drops it or, for TNT, primes it; level events 1000, 1001 and 2000), and the hopper's `enabled` property follows its signal.
-*> Deviations: the slot is drawn as nextInt(n) is, with the level's double (the same distribution, not the same sequence); the registered behaviours of 30-4 section 4 other than TNT are in
-*> redstone-live-j.cob (flint and steel, bone meal, buckets, spawn eggs, minecarts); the others are not wired: such an item is dropped like any other; the container in front of a dropper is a block entity container (a minecart or a horse is not looked for); the
+*> Deviations: the slot is drawn as nextInt(n) is, with the level's double (the same distribution, not the same sequence); the registered behaviours of 30-4 section 4 other than TNT (projectiles,
+*> armour stand, chest, boats, buckets, flint and steel, bone meal, wither skull and carved pumpkin, shulker boxes, bottles, glowstone, shears, brush, honeycomb, potion, minecarts and the
+*> equipment behaviour) are not wired: such an item is dropped like any other; the container in front of a dropper is a block entity container (a minecart or a horse is not looked for); the
 *> game event block_activate of an empty dispenser is not sent. The hopper's transfer of items (31-2 section 5) is not part of this core: only its enabled state is.
 *> Entry points:
 *>   RL-DISP-HOOK USING kind, dimension row, x, y, z, state    kinds 3 neighborChanged and 7 scheduled tick of a dispenser (class 29) or a dropper (class 30)
@@ -113,12 +114,6 @@
  01 LS-WRITE               BINARY-LONG.
  01 LS-SIZE                BINARY-LONG.
  01 LS-DROPPER             BINARY-LONG.
- 01 LS-DEC                 BINARY-LONG.
- 01 LS-REMAIN              BINARY-LONG.
- 01 LS-HANDLED             BINARY-LONG.
- 01 LS-CONSUMED            BINARY-LONG.
- 01 LS-RITEM               BINARY-LONG.
- 01 LS-RVAR                BINARY-LONG.
  LINKAGE SECTION.
  01 L-KIND                 BINARY-LONG.
  01 L-DIM                  BINARY-LONG.
@@ -186,45 +181,15 @@
                  MOVE IT-KEY(LS-ITEM + 1) TO LS-KEY
                  CALL "KEY-BARE" USING LS-KEY LS-BARE
                  MOVE 1 TO LS-OK
-                 MOVE 1 TO LS-DEC
-                 MOVE 0 TO LS-REMAIN
                  IF LS-BARE = "tnt"
                      CALL "TNT-DISPENSE" USING L-DIM LS-FX LS-FY LS-FZ LS-OK
                  ELSE
-*>                   the registered behaviours of 4 (redstone-live-j.cob); an item without one is dropped
-                     CALL "RL-DISP-BEHAVE" USING L-DIM LS-FX LS-FY LS-FZ LS-F LS-ITEM LS-VAR LS-HANDLED LS-CONSUMED LS-REMAIN
-                     IF LS-HANDLED = 0
-                         CALL "GI-DISPENSE" USING L-DIM L-X L-Y L-Z LS-F LS-ITEM LS-ROW
-                     ELSE
-                         MOVE 0 TO LS-OK
-                         IF LS-CONSUMED > 0
-                             MOVE 1 TO LS-OK
-                         END-IF
-                         IF LS-CONSUMED = 2
-                             MOVE 0 TO LS-DEC
-                         END-IF
-                     END-IF
+                     CALL "GI-DISPENSE" USING L-DIM L-X L-Y L-Z LS-F LS-ITEM LS-ROW
                  END-IF
-                 IF LS-OK = 1 AND LS-DEC = 1
+                 IF LS-OK = 1
                      SUBTRACT 1 FROM BE-SLOT-COUNT(LS-INDEX, LS-CHOICE)
                      IF BE-SLOT-COUNT(LS-INDEX, LS-CHOICE) = 0
                          MOVE 0 TO BE-SLOT-ITEM(LS-INDEX, LS-CHOICE)
-                     END-IF
-                     CALL "BE-MARK-CHUNK" USING LS-INDEX
-                 END-IF
-*>               consumeWithRemainder (2): the remainder takes the emptied slot, else goes into the dispenser, else is dropped
-                 IF LS-REMAIN > 0
-                     COMPUTE LS-RITEM = LS-REMAIN - 1
-                     IF BE-SLOT-COUNT(LS-INDEX, LS-CHOICE) = 0
-                         MOVE LS-RITEM TO BE-SLOT-ITEM(LS-INDEX, LS-CHOICE)
-                         MOVE 0 TO BE-SLOT-VAR(LS-INDEX, LS-CHOICE)
-                         MOVE 1 TO BE-SLOT-COUNT(LS-INDEX, LS-CHOICE)
-                     ELSE
-                         MOVE 0 TO LS-RVAR
-                         CALL "RL-INSERT-ONE" USING LS-INDEX LS-RITEM LS-RVAR LS-LEFT
-                         IF LS-LEFT = 1
-                             CALL "GI-DISPENSE" USING L-DIM L-X L-Y L-Z LS-F LS-RITEM LS-ROW
-                         END-IF
                      END-IF
                      CALL "BE-MARK-CHUNK" USING LS-INDEX
                  END-IF

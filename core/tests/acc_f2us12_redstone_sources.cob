@@ -346,10 +346,7 @@
      MOVE 20 TO WS-Z
      MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "detector_rail" TO WS-K PERFORM MAKE-DEF
      MOVE "powered" TO WS-PN MOVE "true" TO WS-PV PERFORM SET-P
-*>   (flag 512 skips onPlace: a placed detector rail checks for a minecart and, finding none, would unpress itself, 30-6 6.3)
-     MOVE 515 TO WS-FLAGS
      PERFORM PUT-ST
-     MOVE 3 TO WS-FLAGS
      MOVE 100 TO WS-Y
      PERFORM READ-SIGNAL
      MOVE "acceptance US12-4 live redstone 30-6 4.1 a powered detector rail strongly powers the block it lies on: 15" TO WS-CASE

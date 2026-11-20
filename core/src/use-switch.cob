@@ -68,23 +68,19 @@
              MOVE 6 TO L-KIND
          WHEN WS-BARE = "comparator"
              MOVE 7 TO L-KIND
-         WHEN WS-BARE = "daylight_detector"
-             MOVE 8 TO L-KIND
      END-EVALUATE
      GOBACK.
  END PROGRAM SW-BLOCK-KIND.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. SW-SET-PROP-L.
-*> USING state, property name (PIC X(32)), value (PIC X(16): "keep" and "toggle" as in SW-SET-PROP), the new state out, the old value out (spaces when the state has no such property).
-*> Every property name of the state text is kept whole (the sculk sensors' sculk_sensor_phase has 18 characters).
+ PROGRAM-ID. SW-SET-PROP.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
  01 WS-TEXT                PIC X(160).
  01 WS-OUT                 PIC X(160).
  01 WS-PAIR                PIC X(160).
- 01 WS-NAME                PIC X(32).
+ 01 WS-NAME                PIC X(16).
  01 WS-VALUE               PIC X(16).
  01 WS-KEY                 PIC X(112).
  01 WS-POS                 BINARY-LONG.
@@ -92,7 +88,7 @@
  01 WS-STATE               BINARY-LONG.
  LINKAGE SECTION.
  01 L-STATE                BINARY-LONG.
- 01 L-NAME                 PIC X(32).
+ 01 L-NAME                 PIC X(16).
  01 L-VALUE                PIC X(16).
  01 L-RESULT               BINARY-LONG.
  01 L-OLD                  PIC X(16).
@@ -128,24 +124,6 @@
          CALL "BLOCKS-STATE-OF" USING WS-KEY WS-OUT L-RESULT
      END-IF
      GOBACK.
- END PROGRAM SW-SET-PROP-L.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. SW-SET-PROP.
-*> USING state, property name (PIC X(16)), value, the new state out, the old value out: SW-SET-PROP-L for a name of up to 16 bytes.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- 01 WS-NAME                PIC X(32).
- LINKAGE SECTION.
- 01 L-STATE                BINARY-LONG.
- 01 L-NAME                 PIC X(16).
- 01 L-VALUE                PIC X(16).
- 01 L-RESULT               BINARY-LONG.
- 01 L-OLD                  PIC X(16).
- PROCEDURE DIVISION USING L-STATE L-NAME L-VALUE L-RESULT L-OLD.
-     MOVE L-NAME TO WS-NAME
-     CALL "SW-SET-PROP-L" USING L-STATE WS-NAME L-VALUE L-RESULT L-OLD
-     GOBACK.
  END PROGRAM SW-SET-PROP.
 
  IDENTIFICATION DIVISION.
@@ -166,11 +144,6 @@
  01 WS-NAME-MODE           PIC X(16) VALUE "mode".
  01 WS-DIGIT               PIC 9.
  01 WS-NAME-OPEN           PIC X(16) VALUE "open".
- 01 WS-NAME-INVERTED       PIC X(16) VALUE "inverted".
- 01 WS-NAME-WATERLOGGED    PIC X(16) VALUE "waterlogged".
- 01 WS-FX-CLASS            BINARY-LONG.
- 01 WS-FX-WATER            BINARY-LONG.
- 01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-NAME-HALF           PIC X(16) VALUE "half".
  01 WS-TOGGLE              PIC X(16) VALUE "toggle".
  01 WS-TRUE                PIC X(16) VALUE "true".
@@ -226,9 +199,6 @@
                  MOVE "compare" TO WS-VALUE
              END-IF
              CALL "SW-SET-PROP" USING WS-STATE WS-NAME-MODE WS-VALUE WS-NEW WS-OLD
-         WHEN 8
-*>           the daylight detector's inverted property flips (30-5 5 use)
-             CALL "SW-SET-PROP" USING WS-STATE WS-NAME-INVERTED WS-TOGGLE WS-NEW WS-OLD
          WHEN OTHER
              CALL "SW-SET-PROP" USING WS-STATE WS-NAME-OPEN WS-VALUE WS-NEW WS-OLD
      END-EVALUATE
@@ -236,21 +206,6 @@
          GOBACK
      END-IF
      CALL "BLOCK-CHANGE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-NEW
-     IF WS-KIND = 8
-         CALL "RL-DAYLIGHT-UPDATE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-NEW
-     END-IF
-*>   a door, trapdoor or fence gate clicks, and a waterlogged trapdoor schedules its water tick (30-7 section 1 and 4.2 toggle)
-     IF WS-KIND = 3 OR WS-KIND = 4 OR WS-KIND = 5
-         MOVE 9 TO WS-FX-CLASS
-         IF WS-KIND = 3
-             MOVE 12 TO WS-FX-CLASS
-         END-IF
-         IF WS-KIND = 5
-             MOVE 13 TO WS-FX-CLASS
-         END-IF
-         CALL "RL-GET-BOOL" USING WS-NEW WS-NAME-WATERLOGGED WS-FX-WATER
-         CALL "RL-OPEN-EFFECTS" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-NEW WS-FX-CLASS WS-ONE WS-FX-WATER
-     END-IF
      IF WS-KIND = 1 OR WS-KIND = 2
          CALL "REDSTONE-SWITCH-NOTIFY" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-NEW
      END-IF

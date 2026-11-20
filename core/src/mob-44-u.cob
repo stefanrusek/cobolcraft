@@ -26,6 +26,9 @@
  01 WS-PLAYED              BINARY-LONG.
  01 WS-STAT                BINARY-LONG.
  01 WS-NEW                 BINARY-LONG.
+ 01 WS-Y1                  BINARY-LONG.
+ 01 WS-ABOVE               BINARY-LONG.
+ 01 WS-HEARD               BINARY-LONG.
  LINKAGE SECTION.
  01 L-PLAYER               BINARY-LONG.
  01 L-STATE                BINARY-LONG.
@@ -52,7 +55,11 @@
              MOVE WS-NEW-NOTE TO WS-TEXT
              CALL "BLOCK-STATE-PROP" USING WS-MODE-SET L-STATE WS-PROP WS-TEXT WS-NEW
              CALL "BLOCK-CHANGE" USING PL-DIM(L-PLAYER) L-X L-Y L-Z WS-NEW
-             CALL "RL-NOTE-PLAY" USING PL-DIM(L-PLAYER) L-X L-Y L-Z WS-NEW
+             COMPUTE WS-Y1 = L-Y + 1
+             CALL "WORLD-GET-BLOCK" USING PL-DIM(L-PLAYER) L-X WS-Y1 L-Z WS-ABOVE
+             IF WS-ABOVE = 0
+                 CALL "ALLAY-NOTE-EVENT" USING PL-DIM(L-PLAYER) L-X L-Y L-Z WS-HEARD
+             END-IF
          END-IF
      END-IF
      GOBACK.

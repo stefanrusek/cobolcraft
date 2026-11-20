@@ -292,7 +292,6 @@
  01 LS-UPDATED             BINARY-LONG.
  01 LS-DIRTY               BINARY-LONG.
  01 LS-SOUND               BINARY-LONG.
- 01 LS-SOUND-EVENT         BINARY-LONG.
  01 LS-EVENT               BINARY-LONG.
  01 LS-REARM               BINARY-LONG.
  01 LS-STATE               BINARY-LONG.
@@ -341,10 +340,6 @@
              CALL "RL-SET-BOOL" USING L-STATE WS-POWERED LS-ON LS-STATE
          END-IF
          CALL "LEVEL-SET-BLOCK" USING L-DIM L-X L-Y L-Z LS-STATE LS-FLAGS LS-BUDGET LS-RESULT
-         IF LS-SOUND > 0
-             COMPUTE LS-SOUND-EVENT = LS-SOUND + 4
-             CALL "RL-BLOCK-SOUND" USING L-DIM L-X L-Y L-Z LS-BARE LS-SOUND-EVENT
-         END-IF
          IF LS-UPDATED = 1
              COMPUTE LS-BELOW = L-Y - 1
              CALL "BU-NEIGHBORS-AT" USING L-DIM L-X L-Y L-Z LS-BLOCK
@@ -411,9 +406,7 @@
  COPY CBLOCKS.
  COPY RSLIVE.
  01 WS-SERVER              BINARY-LONG VALUE 1.
- 01 WS-POWERED-NAME        PIC X(16) VALUE "powered".
  LOCAL-STORAGE SECTION.
- 01 LS-PRESSED             BINARY-LONG.
  01 LS-I                   BINARY-LONG.
  01 LS-X                   FLOAT-LONG.
  01 LS-Y                   FLOAT-LONG.
@@ -474,13 +467,6 @@
                      MOVE RL-CLASS(CB-S-BLOCK(LS-STATE + 1) + 1) TO LS-CLASS
                      IF LS-CLASS = 25 AND RL-S-ON(LS-STATE + 1) = 0
                          CALL "RL-TRIP-ENTITY" USING EN-DIM(LS-I) LS-CX LS-CY LS-CZ LS-STATE
-                     END-IF
-*>                   entityInside of a detector rail that is not pressed yet checks (30-6 6.3)
-                     IF LS-CLASS = 23
-                         CALL "RL-GET-BOOL" USING LS-STATE WS-POWERED-NAME LS-PRESSED
-                         IF LS-PRESSED = 0
-                             CALL "RL-DETECTOR-CHECK" USING EN-DIM(LS-I) LS-CX LS-CY LS-CZ LS-STATE
-                         END-IF
                      END-IF
                      IF LS-CLASS = 18 OR LS-CLASS = 19
                          MOVE RL-S-POWER(LS-STATE + 1) TO LS-OLD

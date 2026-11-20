@@ -80,12 +80,6 @@
  01 WS-CHARGES             PIC X(16) VALUE "charges".
  01 WS-LIT                 PIC X(16) VALUE "lit".
  01 WS-HAS-BOOK            PIC X(16) VALUE "has_book".
- 01 WS-PHASE-NAME          PIC X(32) VALUE "sculk_sensor_phase".
- 01 WS-POSE-NAME           PIC X(32) VALUE "copper_golem_pose".
- 01 WS-HEART-NAME          PIC X(32) VALUE "creaking_heart_state".
- 01 WS-KEEP                PIC X(16) VALUE "keep".
- 01 WS-NEW-STATE           BINARY-LONG.
- 01 WS-OLD-TEXT            PIC X(16).
  01 WS-FAM                 BINARY-LONG.
  01 WS-CDIR                BINARY-LONG.
  01 WS-CTYPE               BINARY-LONG.
@@ -224,67 +218,6 @@
              CALL "RL-PROP-NUM" USING WS-STATE WS-LIT WS-A
              MOVE 4 TO WS-F
              CALL "RS1-ANALOG-VALUE" USING WS-F WS-A WS-B WS-C L-VALUE
-         WHEN 22
-*>           the jukebox (30-5 9): the comparator output of the stored disc's song (BE4-JUKEBOX-SET-ITEM keeps it)
-             CALL "BE-FIND" USING L-DIM L-X L-Y L-Z WS-INDEX
-             IF WS-INDEX > 0
-                 MOVE BE-XI(WS-INDEX, 5) TO L-VALUE
-             END-IF
-         WHEN 23
-*>           the command blocks (30-2 5.3): the success count of the entity
-             CALL "BE-FIND" USING L-DIM L-X L-Y L-Z WS-INDEX
-             IF WS-INDEX > 0
-                 MOVE BE-XI(WS-INDEX, 4) TO L-VALUE
-             END-IF
-         WHEN 24
-*>           the sculk sensors (4.7): the last vibration frequency while the phase is active
-             CALL "SW-SET-PROP-L" USING WS-STATE WS-PHASE-NAME WS-KEEP WS-NEW-STATE WS-OLD-TEXT
-             CALL "BE-FIND" USING L-DIM L-X L-Y L-Z WS-INDEX
-             IF WS-INDEX > 0 AND WS-OLD-TEXT = "active"
-                 MOVE BE-XI(WS-INDEX, 1) TO L-VALUE
-             END-IF
-         WHEN 25
-*>           the copper golem statue: ordinal(pose) + 1 (standing, sitting, running, star)
-             CALL "SW-SET-PROP-L" USING WS-STATE WS-POSE-NAME WS-KEEP WS-NEW-STATE WS-OLD-TEXT
-             EVALUATE WS-OLD-TEXT
-                 WHEN "sitting"
-                     MOVE 2 TO L-VALUE
-                 WHEN "running"
-                     MOVE 3 TO L-VALUE
-                 WHEN "star"
-                     MOVE 4 TO L-VALUE
-                 WHEN OTHER
-                     MOVE 1 TO L-VALUE
-             END-EVALUATE
-         WHEN 26
-*>           the creaking heart: 0 uprooted, else the entity's output signal
-             CALL "SW-SET-PROP-L" USING WS-STATE WS-HEART-NAME WS-KEEP WS-NEW-STATE WS-OLD-TEXT
-             CALL "BE-FIND" USING L-DIM L-X L-Y L-Z WS-INDEX
-             IF WS-INDEX > 0 AND WS-OLD-TEXT NOT = "uprooted"
-                 MOVE BE-XI(WS-INDEX, 5) TO L-VALUE
-             END-IF
-         WHEN 27
-*>           the shelf: only read from the side opposite its facing, the occupancy of its three slots as bits
-             CALL "PST-FACING-OF" USING WS-STATE WS-F
-             COMPUTE WS-N = WS-F + 1 - 2 * FUNCTION MOD(WS-F, 2)
-             IF L-DIR = WS-N
-                 CALL "BE-FIND" USING L-DIM L-X L-Y L-Z WS-INDEX
-                 IF WS-INDEX > 0
-                     IF BE-SLOT-COUNT(WS-INDEX, 1) > 0
-                         ADD 1 TO L-VALUE
-                     END-IF
-                     IF BE-SLOT-COUNT(WS-INDEX, 2) > 0
-                         ADD 2 TO L-VALUE
-                     END-IF
-                     IF BE-SLOT-COUNT(WS-INDEX, 3) > 0
-                         ADD 4 TO L-VALUE
-                     END-IF
-                 END-IF
-             END-IF
-         WHEN 28
-*>           the detector rail (6.4): 0 unpowered; powered: the success count of a command block cart or the fullness of a container cart,
-*>           neither of which this core keeps in a readable container, so 0
-             MOVE 0 TO L-VALUE
      END-EVALUATE
      GOBACK.
  END PROGRAM RL-ANALOG-AT.

@@ -420,15 +420,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GAME-EVENT-SENSORS.
-*> The shared hook (see the head of the file). USING dim, x, y, z (FLOAT-LONG), event name, frequency, source entity row, block state: the sculk sensors and the shrieker hear the event through
-*> VIB-POST (redstone-live-l.cob, lane p46h; 30-8 section 3): the event position as the block cell that holds it, the name as the 24 characters VIB-POST reads. The validity checks of GAME-EVENT have
-*> passed; VIB-POST applies the listeners' own rules (radius 8 or 16, frequency, cooldown phases, the calibrated sensor's back input).
+*> The shared hook (see the head of the file). USING dim, x, y, z (FLOAT-LONG), event name, frequency, source entity row, block state: no sculk listener exists in this lane, so nothing is told here.
  DATA DIVISION.
- WORKING-STORAGE SECTION.
- 01 WS-NAME                PIC X(24).
- 01 WS-BX                  BINARY-LONG.
- 01 WS-BY                  BINARY-LONG.
- 01 WS-BZ                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -439,11 +432,6 @@
  01 L-SOURCE               BINARY-LONG.
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-EVENT L-FREQUENCY L-SOURCE L-STATE.
-     MOVE L-EVENT TO WS-NAME
-     COMPUTE WS-BX = FUNCTION INTEGER(L-X)
-     COMPUTE WS-BY = FUNCTION INTEGER(L-Y)
-     COMPUTE WS-BZ = FUNCTION INTEGER(L-Z)
-     CALL "VIB-POST" USING L-DIM WS-BX WS-BY WS-BZ WS-NAME
      GOBACK.
  END PROGRAM GAME-EVENT-SENSORS.
 
