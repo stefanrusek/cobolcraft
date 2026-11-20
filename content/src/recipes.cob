@@ -656,6 +656,9 @@
  01 WS-J                   BINARY-LONG.
  01 WS-SERIALIZER          BINARY-LONG.
  01 WS-NODE                BINARY-LONG.
+ 01 WS-NODE2               BINARY-LONG.
+ 01 WS-BREW-IN             PIC X(200).
+ 01 WS-BREW-OUT            PIC X(200).
  01 WS-VALUE               FLOAT-LONG.
  01 WS-STATUS              BINARY-LONG.
  LINKAGE SECTION.
@@ -747,6 +750,27 @@
          MOVE "pattern" TO WS-NAME
          CALL "RECIPE-GET-TEXT" USING JSON-DOC WS-ROOT WS-NAME WS-TEXT WS-FOUND
          MOVE WS-TEXT TO RR-EXTRA(L-ROW)
+     END-IF
+*>   A brewing recipe's potion conditions (31-2 section 4.4, 48 section 7.2): the potion of input.potion_contents.potions and of
+*>   output.components."minecraft:potion_contents".potion, "<in> <out>" in RR-EXTRA (the first part empty when the input has no condition).
+     IF WS-SERIALIZER = 20
+         MOVE SPACES TO WS-BREW-IN WS-BREW-OUT
+         MOVE "input" TO WS-NAME
+         CALL "RECIPE-MEMBER" USING JSON-DOC WS-ROOT WS-NAME WS-NODE
+         MOVE "potion_contents" TO WS-NAME
+         CALL "RECIPE-MEMBER" USING JSON-DOC WS-NODE WS-NAME WS-NODE2
+         MOVE "potions" TO WS-NAME
+         CALL "RECIPE-GET-TEXT" USING JSON-DOC WS-NODE2 WS-NAME WS-BREW-IN WS-FOUND
+         MOVE "output" TO WS-NAME
+         CALL "RECIPE-MEMBER" USING JSON-DOC WS-ROOT WS-NAME WS-NODE
+         MOVE "components" TO WS-NAME
+         CALL "RECIPE-MEMBER" USING JSON-DOC WS-NODE WS-NAME WS-NODE2
+         MOVE "minecraft:potion_contents" TO WS-NAME
+         CALL "RECIPE-MEMBER" USING JSON-DOC WS-NODE2 WS-NAME WS-NODE
+         MOVE "potion" TO WS-NAME
+         CALL "RECIPE-GET-TEXT" USING JSON-DOC WS-NODE WS-NAME WS-BREW-OUT WS-FOUND
+         MOVE SPACES TO RR-EXTRA(L-ROW)
+         STRING WS-BREW-IN DELIMITED BY SPACE " " DELIMITED BY SIZE WS-BREW-OUT DELIMITED BY SPACE INTO RR-EXTRA(L-ROW)
      END-IF
 *>   The result template.
      MOVE "result" TO WS-NAME

@@ -315,5 +315,9 @@
      IF MN-WINDOW(L-ROW) > 0 AND MN-CFAMILY(L-ROW) = 27 AND L-SLOT = 0
          MOVE 1 TO L-MAX
      END-IF
+*>   The brewing stand's bottle slots take one item each (40-2 section 4.3).
+     IF MN-WINDOW(L-ROW) > 0 AND MN-CFAMILY(L-ROW) = 9 AND L-SLOT < 3
+         MOVE 1 TO L-MAX
+     END-IF
      GOBACK.
  END PROGRAM MENU-SLOT-MAX.

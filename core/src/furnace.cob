@@ -659,6 +659,9 @@
          IF BE-USED(WS-I) = 1 AND BE-DIM(WS-I) > 0 AND BE-TYPE(WS-I) = 10
              CALL "HEART-RUN" USING WS-I
          END-IF
+         IF BE-USED(WS-I) = 1 AND BE-DIM(WS-I) > 0 AND BE-TYPE(WS-I) = 12
+             CALL "BREW-TICK-LIVE" USING WS-I BE-DIM(WS-I)
+         END-IF
      END-PERFORM
      CALL "HEART-SWEEP"
      GOBACK.
@@ -840,8 +843,9 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MENU-DATA-SYNC.
-*> USING player row: Container Set Data (05a 0x13, id 19) for every data slot of the player's open furnace menu whose value differs from the one
-*> last sent (MN-CDATA): 0 lit_time_remaining, 1 lit_total_time, 2 cooking_time_spent, 3 cooking_total_time (40-2 section 2.6).
+*> USING player row: Container Set Data (05a 0x13, id 19) for every data slot of the player's open furnace or brewing stand menu whose value differs from the one
+*> last sent (MN-CDATA): furnace 0 lit_time_remaining, 1 lit_total_time, 2 cooking_time_spent, 3 cooking_total_time (40-2 section 2.6); brewing stand 0 brewTime, 1 fuel,
+*> 2 totalBrewTime, 3 totalFuel (40-2 section 4.5).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -862,16 +866,29 @@
          MOVE 1 TO WS-READY
      END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
-         EVALUATE WS-I
-             WHEN 1
-                 MOVE BE-F-LIT(MN-CBE1(L-ROW)) TO WS-VALUE
-             WHEN 2
-                 MOVE BE-F-LIT-TOTAL(MN-CBE1(L-ROW)) TO WS-VALUE
-             WHEN 3
-                 MOVE BE-F-COOK(MN-CBE1(L-ROW)) TO WS-VALUE
-             WHEN OTHER
-                 MOVE BE-F-COOK-TOTAL(MN-CBE1(L-ROW)) TO WS-VALUE
-         END-EVALUATE
+         IF MN-CFAMILY(L-ROW) = 9
+             EVALUATE WS-I
+                 WHEN 1
+                     MOVE BE-XI(MN-CBE1(L-ROW), 1) TO WS-VALUE
+                 WHEN 2
+                     MOVE BE-XI(MN-CBE1(L-ROW), 3) TO WS-VALUE
+                 WHEN 3
+                     MOVE BE-XI(MN-CBE1(L-ROW), 2) TO WS-VALUE
+                 WHEN OTHER
+                     MOVE BE-XI(MN-CBE1(L-ROW), 4) TO WS-VALUE
+             END-EVALUATE
+         ELSE
+             EVALUATE WS-I
+                 WHEN 1
+                     MOVE BE-F-LIT(MN-CBE1(L-ROW)) TO WS-VALUE
+                 WHEN 2
+                     MOVE BE-F-LIT-TOTAL(MN-CBE1(L-ROW)) TO WS-VALUE
+                 WHEN 3
+                     MOVE BE-F-COOK(MN-CBE1(L-ROW)) TO WS-VALUE
+                 WHEN OTHER
+                     MOVE BE-F-COOK-TOTAL(MN-CBE1(L-ROW)) TO WS-VALUE
+             END-EVALUATE
+         END-IF
          IF WS-VALUE NOT = MN-CDATA(L-ROW, WS-I)
              MOVE WS-VALUE TO MN-CDATA(L-ROW, WS-I)
              COMPUTE WS-PROPERTY = WS-I - 1
@@ -894,7 +911,7 @@
  01 WS-ROW                 BINARY-LONG.
  PROCEDURE DIVISION.
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > CORE-MAX-PLAYERS
-         IF PL-USED(WS-ROW) = 1 AND PL-CONN(WS-ROW) > 0 AND MN-WINDOW(WS-ROW) > 0 AND MN-CFAMILY(WS-ROW) = 8
+         IF PL-USED(WS-ROW) = 1 AND PL-CONN(WS-ROW) > 0 AND MN-WINDOW(WS-ROW) > 0 AND (MN-CFAMILY(WS-ROW) = 8 OR MN-CFAMILY(WS-ROW) = 9)
              CALL "MENU-DATA-SYNC" USING WS-ROW
          END-IF
      END-PERFORM

@@ -461,6 +461,11 @@
                  COMPUTE WS-START = WS-INDEX - 1
                  CALL "MENU-STATION-MAYPLACE" USING L-ROW WS-START L-ITEM L-HANDLE L-RESULT
              END-IF
+*>           The brewing stand's slots (40-2 section 4.3).
+             IF MN-CFAMILY(L-ROW) = 9
+                 COMPUTE WS-START = WS-INDEX - 1
+                 CALL "MENU-BREW-MAYPLACE" USING WS-START L-ITEM L-RESULT
+             END-IF
              IF MN-CFAMILY(L-ROW) = 4 AND L-ITEM > 0 AND L-ITEM < IT-COUNT
                  MOVE IT-KEY-LENGTH(L-ITEM + 1) TO WS-KL
                  IF WS-KL >= 11
@@ -666,6 +671,10 @@
      IF WS-KIND = 0
          GOBACK
      END-IF
+*>   A result taken onto an empty cursor is post-processed first (the cartography table's maps, 40-4 section 5.4).
+     IF WS-KIND = 4 AND PL-CARRIED-COUNT(L-ROW) = 0
+         CALL "MENU-RESULT-PRE" USING L-ROW
+     END-IF
      CALL "MENU-GET-X" USING L-ROW L-SLOT WS-SI WS-SC WS-SV
      MOVE 0 TO WS-MAY
      IF PL-CARRIED-COUNT(L-ROW) > 0
@@ -774,6 +783,9 @@
          GOBACK
      END-IF
      CALL "MENU-PLAYER-GET-X" USING L-ROW L-BUTTON WS-HI WS-HC WS-HV
+     IF WS-KIND = 4 AND WS-HC = 0
+         CALL "MENU-RESULT-PRE" USING L-ROW
+     END-IF
      CALL "MENU-GET-X" USING L-ROW L-SLOT WS-SI WS-SC WS-SV
      IF WS-HC = 0 AND WS-SC = 0
          GOBACK
@@ -832,6 +844,9 @@
      MOVE 0 TO WS-LOOPS
      PERFORM UNTIL WS-AGAIN = 0 OR WS-LOOPS > 64
          ADD 1 TO WS-LOOPS
+         IF WS-KIND = 4
+             CALL "MENU-RESULT-PRE" USING L-ROW
+         END-IF
          CALL "MENU-GET-X" USING L-ROW L-SLOT WS-ITEM WS-SC WS-VAR
          COMPUTE WS-TAKE = FUNCTION MIN(WS-COUNT, WS-SC)
          IF WS-KIND = 4

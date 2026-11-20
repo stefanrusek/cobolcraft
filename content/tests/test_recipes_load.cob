@@ -662,6 +662,10 @@
      MOVE "minecraft:potion" TO WS-WANT-T
      MOVE RR-RESULT-ID(WS-ROW) TO WS-GOT-T
      PERFORM EXPECT-T
+     MOVE "brewing potions: the input condition and the output potion" TO WS-LABEL
+     MOVE "minecraft:water minecraft:awkward" TO WS-WANT-T
+     MOVE RR-EXTRA(WS-ROW) TO WS-GOT-T
+     PERFORM EXPECT-T
 
 *>   Unlock conditions (27 5.9): the criteria of the recipe advancement other than recipe_unlocked.
      MOVE "minecraft:oak_planks" TO WS-KEY

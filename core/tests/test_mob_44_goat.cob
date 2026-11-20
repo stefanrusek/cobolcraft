@@ -14,6 +14,11 @@
  01 WS-FX                 FLOAT-LONG.
  01 WS-FY                 FLOAT-LONG.
  01 WS-FZ                 FLOAT-LONG.
+ 01 WS-X0                 BINARY-LONG.
+ 01 WS-Z0                 BINARY-LONG.
+ 01 WS-SIZE               BINARY-LONG VALUE 25.
+ 01 WS-FLOOR              BINARY-LONG.
+ 01 WS-ONE                BINARY-LONG VALUE 1.
  01 WS-YAW                FLOAT-SHORT VALUE 0.
  01 WS-EKEY               PIC X(112).
  01 WS-TYPE               BINARY-LONG.
@@ -119,31 +124,16 @@
      MOVE WS-KB TO WS-O
      MOVE 100 TO WS-E
      PERFORM CHECK-N
-*>   The ram: a target 4 to 7 blocks away starts a 20-tick preparation, then a charge at 3.0 x speed 0.2.
+*>   The charge (state 2) as the preparation leaves it: ram direction +z, ram point 5 blocks on, the goat's speed 0.2 x 3.0.
      MOVE 0 TO EN-RAM-CD(WS-ROW)
      MOVE 0 TO WS-DRAW
      MOVE 0 TO WS-DX
      MOVE 5 TO WS-DZ
-     CALL "M44-RAM-TICK" USING WS-ROW WS-DX WS-DZ WS-DRAW WS-HX WS-HZ WS-HIT
-     MOVE "acceptance US15 44§9 Goat ram: a target 5 blocks away starts the preparation (state 1), no walk" TO WS-CASE
-     COMPUTE WS-O = EN-RAM-STATE(WS-ROW) * 10 + WS-HIT
-     MOVE 10 TO WS-E
-     PERFORM CHECK-N
-     MOVE 9 TO WS-DZ
-     CALL "M44-RAM-TICK" USING WS-ROW WS-DX WS-DZ WS-DRAW WS-HX WS-HZ WS-HIT
-     MOVE "acceptance US15 44§9 Goat ram: a target that moved beyond 7 blocks cancels the preparation; the minimum cooldown 600 follows" TO WS-CASE
-     COMPUTE WS-O = EN-RAM-STATE(WS-ROW) * 10000 + EN-RAM-CD(WS-ROW)
-     MOVE 600 TO WS-E
-     PERFORM CHECK-N
-     MOVE 0 TO EN-RAM-CD(WS-ROW)
-     MOVE 5 TO WS-DZ
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 21
-         CALL "M44-RAM-TICK" USING WS-ROW WS-DX WS-DZ WS-DRAW WS-HX WS-HZ WS-HIT
-     END-PERFORM
-     MOVE "acceptance US15 44§9 Goat ram: after 20 ticks of preparation the goat rams (state 2)" TO WS-CASE
-     MOVE EN-RAM-STATE(WS-ROW) TO WS-O
-     MOVE 2 TO WS-E
-     PERFORM CHECK-N
+     MOVE 2 TO EN-RAM-STATE(WS-ROW)
+     MOVE 0 TO EN-RAM-T(WS-ROW) EN-RAM-DX(WS-ROW)
+     MOVE 1 TO EN-RAM-DZ(WS-ROW)
+     MOVE EN-X(WS-ROW) TO EN-RAM-PX(WS-ROW)
+     COMPUTE EN-RAM-PZ(WS-ROW) = EN-Z(WS-ROW) + 5
      CALL "M44-RAM-TICK" USING WS-ROW WS-DX WS-DZ WS-DRAW WS-HX WS-HZ WS-HIT
      MOVE "acceptance US15 44§9 Goat ram: the charge walks along the stored direction (+z) at 0.6 a tick" TO WS-CASE
      COMPUTE WS-O ROUNDED = WS-HZ * 1000
@@ -161,25 +151,23 @@
      COMPUTE WS-O = WS-HIT * 10000 + EN-RAM-STATE(WS-ROW) * 1000 + EN-RAM-CD(WS-ROW)
      MOVE 10600 TO WS-E
      PERFORM CHECK-N
-     CALL "M44-RAM-TICK" USING WS-ROW WS-DX WS-DZ WS-DRAW WS-HX WS-HZ WS-HIT
-     MOVE "acceptance US15 44§9 Goat ram: the cooldown runs down by 1 a tick and blocks a new ram" TO WS-CASE
-     COMPUTE WS-O = EN-RAM-STATE(WS-ROW) * 10000 + EN-RAM-CD(WS-ROW)
-     MOVE 599 TO WS-E
-     PERFORM CHECK-N
-*>   A charge that reaches the ram target without a hit ends (within 0.25 of the point, here the goat is moved onto it).
+*>   A charge that reaches the ram target without a hit ends (within 0.25 of the point, here the goat stands on it).
+     MOVE 2 TO EN-RAM-STATE(WS-ROW)
      MOVE 0 TO EN-RAM-CD(WS-ROW)
+     MOVE EN-Z(WS-ROW) TO EN-RAM-PZ(WS-ROW)
      MOVE 5 TO WS-DZ
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 21
-         CALL "M44-RAM-TICK" USING WS-ROW WS-DX WS-DZ WS-DRAW WS-HX WS-HZ WS-HIT
-     END-PERFORM
-     COMPUTE EN-Z(WS-ROW) = EN-Z(WS-ROW) + 5
      CALL "M44-RAM-TICK" USING WS-ROW WS-DX WS-DZ WS-DRAW WS-HX WS-HZ WS-HIT
      MOVE "acceptance US15 44§9 Goat ram: reaching the ram point ends it without a hit" TO WS-CASE
      COMPUTE WS-O = WS-HIT * 10000 + EN-RAM-STATE(WS-ROW) * 1000 + EN-RAM-CD(WS-ROW)
      MOVE 600 TO WS-E
      PERFORM CHECK-N
 
-*>   The tick: a goat 5 blocks from a survival player prepares (stands still), then charges at the player and hurts it.
+*>   The tick on open ground: a stone floor, the player at the origin, the goat 5 blocks north of it.
+     MOVE PL-Y(WS-PLAYER) TO WS-FY
+     COMPUTE WS-FLOOR = FUNCTION INTEGER(WS-FY) - 1
+     COMPUTE WS-X0 = FUNCTION INTEGER(WS-FX) - 12
+     COMPUTE WS-Z0 = FUNCTION INTEGER(WS-FZ) - 12
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-X0 WS-Z0 WS-SIZE WS-FLOOR WS-ONE
      COMPUTE WS-GZ = WS-FZ - 5
      MOVE "minecraft:goat" TO WS-EKEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-EKEY WS-TYPE WS-ENTITY-ROW WS-STATUS
@@ -188,18 +176,42 @@
      MOVE 0 TO EN-RAM-CD(WS-GOAT)
      CALL "TEST-DRAIN-ENTITIES" USING PL-CONN(WS-PLAYER) WS-TEXT
      CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     MOVE "acceptance US15 54§7.1 Goat ram: a player 5 blocks away: the first tick chooses the run-up (state 1): the cell 7 blocks north of the player" TO WS-CASE
+     COMPUTE WS-O = EN-RAM-STATE(WS-GOAT) * 1000000 + (EN-RAM-SZ(WS-GOAT) - FUNCTION INTEGER(WS-FZ) + 100) * 1000 + EN-RAM-SX(WS-GOAT) - FUNCTION INTEGER(WS-FX) + 500
+     MOVE 1093500 TO WS-E
+     PERFORM CHECK-N
+     CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     MOVE "acceptance US15 54§7.1 Goat ram: not on S yet: it walks (walk 1) north, toward S" TO WS-CASE
+     COMPUTE WS-O = WS-WALK2 * 10 + 0
+     IF WS-HZ < 0
+         ADD 1 TO WS-O
+     END-IF
+     MOVE 11 TO WS-E
+     PERFORM CHECK-N
+*>   On S the head is lowered every tick (Entity Event 58, packet 34) and the goat stands still; the 21st tick on S rams.
      CALL "TEST-DRAIN-ENTITIES" USING PL-CONN(WS-PLAYER) WS-TEXT
-     MOVE "acceptance US15 44§7.1 Goat ram: starting the run-up broadcasts one Entity Event (58, lower the head; packet 34)" TO WS-CASE
+     COMPUTE EN-Z(WS-GOAT) = EN-RAM-SZ(WS-GOAT) + 0.5
+     COMPUTE EN-X(WS-GOAT) = EN-RAM-SX(WS-GOAT) + 0.5
+     CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     CALL "TEST-DRAIN-ENTITIES" USING PL-CONN(WS-PLAYER) WS-TEXT
+     MOVE "acceptance US15 54§7.1 Goat ram: on S the goat lowers its head (one Entity Event, packet 34) and stands still (walk 2)" TO WS-CASE
      MOVE WS-TEXT(1:2) TO WS-O
-     MOVE 34 TO WS-E
+     COMPUTE WS-O = WS-O * 10 + WS-WALK2
+     MOVE 342 TO WS-E
      PERFORM CHECK-N
-     MOVE "acceptance US15 44§9 Goat ram tick: a player 5 blocks away: the goat prepares and stands still (walk 2)" TO WS-CASE
-     MOVE WS-WALK2 TO WS-O
-     MOVE 2 TO WS-E
-     PERFORM CHECK-N
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 20
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 19
          CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
      END-PERFORM
+     MOVE "acceptance US15 54§7.1 Goat ram: 20 ticks on S are not enough (state 1)" TO WS-CASE
+     MOVE EN-RAM-STATE(WS-GOAT) TO WS-O
+     MOVE 1 TO WS-E
+     PERFORM CHECK-N
+     CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     MOVE "acceptance US15 54§7.1 Goat ram: the 21st tick rams (state 2) at the far edge of the player's block: the ram point is 1.0 past T in z (the goat is north of it) and 0.5 in x" TO WS-CASE
+     COMPUTE WS-O ROUNDED = EN-RAM-STATE(WS-GOAT) * 1000000 + (EN-RAM-PZ(WS-GOAT) - FUNCTION INTEGER(WS-FZ)) * 1000
+         + (EN-RAM-PX(WS-GOAT) - FUNCTION INTEGER(WS-FX)) * 10
+     MOVE 2001005 TO WS-E
+     PERFORM CHECK-N
      CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
      MOVE "acceptance US15 44§9 Goat ram tick: the charge walks toward the player (walk 1, hz 0.6)" TO WS-CASE
      COMPUTE WS-O ROUNDED = WS-WALK2 * 10000 + WS-HZ * 1000
@@ -207,6 +219,7 @@
      PERFORM CHECK-N
      MOVE PL-HEALTH(WS-PLAYER) TO WS-HEALTH0
      COMPUTE EN-Z(WS-GOAT) = WS-FZ - 0.5
+     COMPUTE EN-X(WS-GOAT) = WS-FX
      CALL "TEST-DRAIN-ENTITIES" USING PL-CONN(WS-PLAYER) WS-TEXT
      CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
      CALL "TEST-DRAIN-ENTITIES" USING PL-CONN(WS-PLAYER) WS-TEXT
@@ -224,18 +237,74 @@
      END-IF
      MOVE 11 TO WS-E
      PERFORM CHECK-N
-     COMPUTE WS-GZ = WS-FZ + 30
-     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-FX WS-FY WS-GZ WS-YAW WS-ROW
-     MOVE 5 TO EN-RAM-CD(WS-ROW)
-     CALL "M44-GOAT-TICK" USING WS-ROW WS-HX WS-HZ WS-WALK2
-     MOVE "acceptance US15 44§9 Goat ram tick: with no player in range only the cooldown runs down" TO WS-CASE
-     COMPUTE WS-O = WS-WALK2 * 10 + EN-RAM-CD(WS-ROW)
+*>   The target moves off T during the run-up: the head rises (Entity Event 59) and a new run-up is chosen.
+     MOVE 1 TO EN-RAM-STATE(WS-GOAT)
+     MOVE 0 TO EN-RAM-CD(WS-GOAT) EN-RAM-AGE(WS-GOAT)
+     COMPUTE EN-X(WS-GOAT) = WS-FX + 0.5
+     COMPUTE EN-Z(WS-GOAT) = WS-FZ - 5
+     COMPUTE EN-RAM-TX(WS-GOAT) = FUNCTION INTEGER(WS-FX) + 1
+     MOVE FUNCTION INTEGER(WS-FY) TO EN-RAM-TY(WS-GOAT)
+     COMPUTE EN-RAM-TZ(WS-GOAT) = FUNCTION INTEGER(WS-FZ)
+     CALL "TEST-DRAIN-ENTITIES" USING PL-CONN(WS-PLAYER) WS-TEXT
+     CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     CALL "TEST-DRAIN-ENTITIES" USING PL-CONN(WS-PLAYER) WS-TEXT
+     MOVE "acceptance US15 54§7.1 Goat ram: the player left the block T was chosen for: Entity Event 59 and a new run-up for the new block (state 1 stays, T is the player's block)" TO WS-CASE
+     MOVE WS-TEXT(1:2) TO WS-O
+     COMPUTE WS-O = WS-O * 10 + EN-RAM-STATE(WS-GOAT)
+     COMPUTE WS-O = WS-O * 10 + EN-RAM-TX(WS-GOAT) - FUNCTION INTEGER(WS-FX)
+     MOVE 3410 TO WS-E
+     PERFORM CHECK-N
+*>   A cooldown runs down with the player near; a player standing in the air has no walkable block: no run-up, the cooldown 600, in state 0 and in state 1 (T moved).
+     MOVE 0 TO EN-RAM-STATE(WS-GOAT)
+     MOVE 5 TO EN-RAM-CD(WS-GOAT)
+     CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     MOVE "acceptance US15 54§7.1 Goat ram: a cooldown with a player near runs down by 1" TO WS-CASE
+     MOVE EN-RAM-CD(WS-GOAT) TO WS-O
      MOVE 4 TO WS-E
      PERFORM CHECK-N
-     MOVE 0 TO EN-RAM-CD(WS-ROW)
-     CALL "M44-GOAT-TICK" USING WS-ROW WS-HX WS-HZ WS-WALK2
+     COMPUTE PL-Y(WS-PLAYER) = WS-FY + 6
+     MOVE 0 TO EN-RAM-CD(WS-GOAT)
+     CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     MOVE "acceptance US15 54§7.1 Goat ram: a player in the air stands on no walkable block: no run-up, the cooldown 600" TO WS-CASE
+     COMPUTE WS-O = EN-RAM-STATE(WS-GOAT) * 10000 + EN-RAM-CD(WS-GOAT)
+     MOVE 600 TO WS-E
+     PERFORM CHECK-N
+     MOVE 1 TO EN-RAM-STATE(WS-GOAT)
+     MOVE 0 TO EN-RAM-CD(WS-GOAT) EN-RAM-AGE(WS-GOAT)
+     COMPUTE EN-RAM-TY(WS-GOAT) = FUNCTION INTEGER(WS-FY)
+     CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     MOVE "acceptance US15 54§7.1 Goat ram: the target moved off T into the air: no new run-up, the goal ends with the cooldown 600" TO WS-CASE
+     COMPUTE WS-O = EN-RAM-STATE(WS-GOAT) * 10000 + EN-RAM-CD(WS-GOAT)
+     MOVE 600 TO WS-E
+     PERFORM CHECK-N
+     MOVE WS-FY TO PL-Y(WS-PLAYER)
+*>   The goal ends after 160 ticks without a ram: Entity Event 59 and the cooldown 600.
+     MOVE 1 TO EN-RAM-STATE(WS-GOAT)
+     MOVE 160 TO EN-RAM-AGE(WS-GOAT)
+     CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     MOVE "acceptance US15 54§7.1 Goat ram: the run-up that took 161 ticks is dropped with the cooldown 600" TO WS-CASE
+     COMPUTE WS-O = EN-RAM-STATE(WS-GOAT) * 10000 + EN-RAM-CD(WS-GOAT)
+     MOVE 600 TO WS-E
+     PERFORM CHECK-N
+*>   With no player near, the run-up of a goat is dropped (the target is gone).
+     COMPUTE WS-GZ = WS-FZ + 30
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-FX WS-FY WS-GZ WS-YAW WS-GOAT
+     MOVE 1 TO EN-RAM-STATE(WS-GOAT)
+     CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     MOVE "acceptance US15 54§7.1 Goat ram: a run-up whose player is gone ends with the cooldown 600" TO WS-CASE
+     COMPUTE WS-O = EN-RAM-STATE(WS-GOAT) * 10000 + EN-RAM-CD(WS-GOAT)
+     MOVE 600 TO WS-E
+     PERFORM CHECK-N
+     MOVE 5 TO EN-RAM-CD(WS-GOAT)
+     CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
+     MOVE "acceptance US15 44§9 Goat ram tick: with no player in range only the cooldown runs down" TO WS-CASE
+     COMPUTE WS-O = WS-WALK2 * 10 + EN-RAM-CD(WS-GOAT)
+     MOVE 4 TO WS-E
+     PERFORM CHECK-N
+     MOVE 0 TO EN-RAM-CD(WS-GOAT)
+     CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK2
      MOVE "acceptance US15 44§9 Goat ram tick: cooldown 0 and no player: nothing happens" TO WS-CASE
-     COMPUTE WS-O = WS-WALK2 * 10 + EN-RAM-CD(WS-ROW) + EN-RAM-STATE(WS-ROW)
+     COMPUTE WS-O = WS-WALK2 * 10 + EN-RAM-CD(WS-GOAT) + EN-RAM-STATE(WS-GOAT)
      MOVE 0 TO WS-E
      PERFORM CHECK-N
      STOP RUN.

@@ -6,7 +6,8 @@
 *> and ENCH- programs of menu-40-2.cob to menu-enchanting.cob; this file reads the live state, calls them and applies what they decide.
 *>
 *> Station kinds: 1 stonecutter, 2 grindstone, 3 smithing table, 4 anvil, 5 loom, 6 cartography table, 7 enchanting table, 8 brewing stand. MENU-STATION-KIND
-*> names only the stations that are built (the stonecutter, the smithing table and the anvil): a block of another kind does not open a menu yet.
+*> names the stations that are built: the stonecutter, grindstone, smithing table, anvil, enchanting table, loom (menu-loom.cob) and cartography table (menu-cartography.cob);
+*> a block of another kind (the brewing stand) does not open a menu yet.
 *>
 *> Opening (Use Item On on the block, BLOCK-USE-ON, not sneaking with an item held): the menu already open is closed first, the container id is the next
 *> of the cycle, Open Screen carries the menu type and the translatable title (container.stonecutter ...), Container Set Content and the data slots follow.
@@ -53,6 +54,10 @@
              MOVE 7 TO L-KIND
          WHEN "grindstone"
              MOVE 2 TO L-KIND
+         WHEN "loom"
+             MOVE 5 TO L-KIND
+         WHEN "cartography_table"
+             MOVE 6 TO L-KIND
          WHEN "anvil"
              MOVE 4 TO L-KIND
          WHEN "chipped_anvil"
@@ -347,6 +352,14 @@
          CALL "GRIND-HAS-ENCH" USING L-HANDLE WS-ENCHANTED
          CALL "MN3-GRIND-MAYPLACE" USING WS-DAMAGEABLE WS-ENCHANTED L-RESULT
      END-IF
+*>   The cartography table's map and additional slots (40-4 section 5.2).
+     IF MN-CFAMILY(L-ROW) = 26
+         CALL "MENU-CARTO-MAYPLACE" USING L-SLOT L-ITEM L-HANDLE L-RESULT
+     END-IF
+*>   The loom's banner, dye and pattern slots (40-4 section 3.2).
+     IF MN-CFAMILY(L-ROW) = 25
+         CALL "MENU-LOOM-MAYPLACE" USING L-SLOT L-ITEM L-RESULT
+     END-IF
 *>   The enchanting table's lapis slot takes only lapis lazuli (40-4 section 2.2).
      IF MN-CFAMILY(L-ROW) = 27
          CALL "ENCH-IS-LAPIS" USING L-ITEM WS-LAPIS
@@ -573,6 +586,12 @@
      IF MN-CFAMILY(L-ROW) = 24
          CALL "MENU-ANVIL-UPDATE" USING L-ROW
      END-IF
+     IF MN-CFAMILY(L-ROW) = 25
+         CALL "MENU-LOOM-UPDATE" USING L-ROW
+     END-IF
+     IF MN-CFAMILY(L-ROW) = 26
+         CALL "MENU-CARTO-UPDATE" USING L-ROW
+     END-IF
      IF MN-CFAMILY(L-ROW) = 27
          CALL "MENU-ENCH-UPDATE" USING L-ROW
      END-IF
@@ -632,6 +651,12 @@
      END-IF
      IF MN-CFAMILY(L-ROW) = 22
          CALL "MENU-GRIND-TAKEN" USING L-ROW
+     END-IF
+     IF MN-CFAMILY(L-ROW) = 25
+         CALL "MENU-LOOM-TAKEN" USING L-ROW
+     END-IF
+     IF MN-CFAMILY(L-ROW) = 26
+         CALL "MENU-CARTO-TAKEN" USING L-ROW
      END-IF
 *>   The smithing table (40-3 section 5.4): one item of each of the three inputs is used up, then the result is made again.
      IF MN-CFAMILY(L-ROW) = 23
@@ -743,6 +768,16 @@
 *>   The grindstone's rules are 40-3 section 4.5.
      IF MN-CFAMILY(L-ROW) = 22
          CALL "MENU-GRIND-QUICK" USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT
+         GOBACK
+     END-IF
+*>   The cartography table's rules are 40-4 section 5.5.
+     IF MN-CFAMILY(L-ROW) = 26
+         CALL "MENU-CARTO-QUICK" USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT
+         GOBACK
+     END-IF
+*>   The loom's rules are 40-4 section 3.8.
+     IF MN-CFAMILY(L-ROW) = 25
+         CALL "MENU-LOOM-QUICK" USING L-ROW L-SLOT L-RET-ITEM L-RET-COUNT
          GOBACK
      END-IF
 *>   The enchanting table's rules are 40-4 section 2.7.
@@ -888,6 +923,9 @@
      MOVE 0 TO L-RETURNED
      IF MN-CFAMILY(L-ROW) = 27
          CALL "MENU-ENCH-BUTTON" USING L-ROW L-BUTTON L-RETURNED
+     END-IF
+     IF MN-CFAMILY(L-ROW) = 25
+         CALL "MENU-LOOM-BUTTON" USING L-ROW L-BUTTON L-RETURNED
      END-IF
      IF MN-CFAMILY(L-ROW) = 21
          MOVE 0 TO WS-SIZE

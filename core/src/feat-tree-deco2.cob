@@ -1,7 +1,7 @@
 *> The remaining tree decorators (docs/protocol/35-worldgen-features-4-decorators-and-vegetation.md section 3.3; the early exits and draws of 3.2): beehive (kind 5), alter_ground (6),
 *> place_on_ground (7), shelf_mushroom (8), attached_to_leaves (9), pale_moss (10) and creaking_heart (11), run by FR-DECORATE (feat-tree-deco.cob) over the work area of TREEWORK.cpy.
-*> Block states are looked up by name and property text (BLOCKS-STATE-OF over the open content set) when a decorator places them. Deviation (recorded on T8601): the beehive's bees are not
-*> stored (the generator writes no block entity), the occupant draws (2 + nextInt(2), then nextInt(599) each) are made so the random stream stays the game's.
+*> Block states are looked up by name and property text (BLOCKS-STATE-OF over the open content set) when a decorator places them. The beehive's occupants (2 + nextInt(2) of them, nextInt(599) ticks in the hive each) go to the nest's
+*> block entity through the worldgen channel (GBE-ADD kind 4, T23504).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. FR-DEC-STATE.
@@ -213,6 +213,10 @@
  01 WS-THREE               BINARY-LONG VALUE 3.
  01 WS-TWO                 BINARY-LONG VALUE 2.
  01 WS-TICKS               BINARY-LONG VALUE 599.
+ 01 WS-KIND-HIVE           BINARY-LONG VALUE 4.
+ 01 WS-LOOT                PIC X(48).
+ 01 WS-SEED                BINARY-DOUBLE.
+ 01 WS-TEXT                PIC X(32).
  01 WS-F                   FLOAT-LONG.
  01 WS-P                   FLOAT-LONG.
  LINKAGE SECTION.
@@ -283,9 +287,18 @@
              END-IF
              CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-TWO WS-N
              ADD 2 TO WS-N
+*>           The occupants go to the block entity through the worldgen channel (kind 4, GB-SEED = n x 10^9 + t1 x 10^6 + t2 x 10^3 + t3, 0 for the missing ones).
+             COMPUTE WS-SEED = WS-N * 1000000000
+             MOVE 1000000 TO WS-T
              PERFORM WS-N TIMES
                  CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-TICKS WS-D
+                 COMPUTE WS-SEED = WS-SEED + WS-D * WS-T
+                 COMPUTE WS-T = WS-T / 1000
              END-PERFORM
+             MOVE SPACES TO WS-LOOT WS-TEXT
+             IF WS-STATE > 0
+                 CALL "GBE-ADD" USING WS-PX WS-Y WS-PZ WS-KIND-HIVE WS-LOOT WS-SEED WS-TEXT
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.
