@@ -37,7 +37,7 @@ Rule functions X1-* in `core/src/q44-44-x1.cob`, proven by tests, not called by 
 - [x] T24304 [US15-core] Tests `test_q44_44_x1_5` (AdultSensorAnyType match, healable raider goal, witch cooldown) and `test_q44_44_x1_6` (phantom touch, vex move and yaw, patrol aim worked example, leader, removal, canUse; stroll aim) with X1-* functions for T2850 to T2853
 - [x] T24305 [US15-core] Test `test_q44_44_x1_8` (TargetingConditions range, MobEffectInstance.update merge table and its worked examples, BackUpIfTooClose, BecomePassive, BabyFollowAdult bands, look timer, fox goals, stroll, isAbove epsilon, goat unihorn, screaming and horn drop) with X1-* functions for T2854 to T2857 (section 10 is the closing table of section 8)
 - [ ] T24306 [US15-core] NO RULE (T2842/T2843 section 1, T2848/T2849 section 4): disposition tables and pointers to 20 section 4.1 only; no behaviour to test
-- [ ] T24307 [US15-core] CODE GAP (wiring and doc limits): the Vex facing uses a standard arctangent, Open question 6 of the doc (Mth.atan2 tables) is not defined in docs/protocol; the hidden effect chain of X1-EFFECT-UPDATE keeps no flags of hidden levels (doc Open question 4: downgradeToHiddenEffect not read)
+- [x] T24307 [US15-core] CODE GAP (wiring and doc limits): the Vex facing uses a standard arctangent, Open question 6 of the doc (Mth.atan2 tables) is not defined in docs/protocol; the hidden effect chain of X1-EFFECT-UPDATE keeps no flags of hidden levels (doc Open question 4: downgradeToHiddenEffect not read) [done, superseded: p49s T38580 MTH-ATAN2 (mth.cob, Mth.atan2 table) and T38560 hidden effects FX-MERGE (fx-hidden.cob) close both doc/wiring limits]
 
 ### Doc 44-x2 continuation (T2858 to T2883; ids T24400 to T24499)
 
