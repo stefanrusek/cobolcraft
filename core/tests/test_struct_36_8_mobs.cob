@@ -102,7 +102,7 @@
              EVALUATE TRUE
                  WHEN EN-TYPE(WS-I) = WS-BRUTE-TYPE
                      ADD 1 TO WS-BRUTES
-                     IF EN-HAND(WS-I) NOT = 10
+                     IF EN-HAND(WS-I) NOT = 16
                          ADD 1 TO WS-BAD-BRUTE
                      END-IF
                  WHEN EN-TYPE(WS-I) = WS-PIGLIN-TYPE
@@ -169,10 +169,10 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      DISPLAY "PROBE babies " WS-BABIES " dressed piglins " WS-DRESSED
 *>   Set Equipment: the brute's axe in the main hand (slot 0, no continuation bit)
-     MOVE 10 TO WS-K
+     MOVE 16 TO WS-K
      CALL "STDMOB-HAND-KEY" USING WS-K WS-HAND-KEY
      MOVE "T" TO TL-MODE
-     MOVE "acceptance US12 36-8§15.3 C. Entity data and finalizeSpawn: main-hand code 10 is the golden axe" TO TL-CASE
+     MOVE "acceptance US12 36-8§15.3 C. Entity data and finalizeSpawn: main-hand code 16 is the golden axe" TO TL-CASE
      MOVE "minecraft:golden_axe" TO TL-EXPECTED
      MOVE WS-HAND-KEY TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

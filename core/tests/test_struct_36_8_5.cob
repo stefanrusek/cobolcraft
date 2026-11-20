@@ -556,7 +556,7 @@
      MOVE "acceptance US12 36-8§5.7 A. CastleEntrance: the lava source's fluid tick is asked for once at the world cell of local (6, 5, 6)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF GBL-COUNT = 1 AND GBL-KIND(1) = 4 AND GBL-X(1) = WS-WX AND GBL-Y(1) = WS-WY AND GBL-Z(1) = WS-WZ
+     IF GBL-COUNT = 1 AND GBL-KIND(1) = 5 AND GBL-X(1) = WS-WX AND GBL-Y(1) = WS-WY AND GBL-Z(1) = WS-WZ
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
