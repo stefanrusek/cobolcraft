@@ -103,6 +103,12 @@ for m in re.finditer(r"^### 7\.(\d+) `([^`]+)` \(level (\d), (\d+) tree nodes?(?
     else:
         code = re.search(r"```\n(.*?)```", body, re.S)
         forest = parse_block(code.group(1))
+        if name == "locate":
+            # Deviation from the listing (lane buglocate3, operator report): /locate structure completes structure ids and tags through
+            # the ask_server provider, which the Commands packet marks on its argument node (the listing has no provider there).
+            arg = forest[0][1][0][1][0]
+            assert arg[0].startswith("<structure:") and "sug=" not in arg[0]
+            arg[0] += " sug=ask"
     order.append(name)
     sections[name] = (int(level), int(nodes), forest)
 

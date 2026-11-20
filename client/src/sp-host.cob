@@ -196,15 +196,11 @@
      END-IF
      CALL "GUESTS-FLUSH" USING CLIENT-STATE
      CALL "SP-CONSOLE"
-     CALL "CORE-STATUS-GET" USING CORE-STATUS
-     EVALUATE TRUE
-         WHEN CST-RUN-STATE = 1
-*>           What the core sent before stopping (the shutdown confirmation) is received first.
-             CALL "NET-PUMP" USING CLIENT-STATE WS-CONN
-             CALL "SP-QUIT" USING CLIENT-STATE
-         WHEN CN-PHASE(CONN-GAME) = PH-NONE
-             CALL "SP-STOP" USING CLIENT-STATE
-     END-EVALUATE
+*>   The run state 1 (the core is stopping by /stop) is not met any more: /stop is no command of a hosted world (57-client-closures-4 section 3.4, lane p46), so a world
+*>   ends only when its connection does.
+     IF CN-PHASE(CONN-GAME) = PH-NONE
+         CALL "SP-STOP" USING CLIENT-STATE
+     END-IF
      GOBACK.
  END PROGRAM SP-PUMP.
 

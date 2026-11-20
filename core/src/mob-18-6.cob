@@ -1050,7 +1050,7 @@
 *>       Piglin and hoglin (21 section 3.2): only the floor test of predicate 1, on Peaceful too.
          MOVE 1 TO WS-PRED
      END-IF
-     IF SM-SPAWN(L-ROW) = 12
+     IF SM-SPAWN(L-ROW) = 19
 *>       PatrollingMonster.checkPatrollingMonsterSpawnRules (36-9 section 11.3 item 2, the pillager of the outpost): a block light above 8 at the position returns false,
 *>       otherwise the any-light monster rule applies.
          MOVE 4 TO WS-PRED

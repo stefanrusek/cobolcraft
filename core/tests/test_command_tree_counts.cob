@@ -1,6 +1,6 @@
 *> Test of the Commands packet the core sends per permission level (docs/protocol/57-client-closures-4 sections 4, 5 and 10; T2014): the node count of a dedicated
 *> server's tree at levels 0 and 1 (26, with the totals of 5.2 by kind: literal and argument nodes, executable, redirect, executable and redirect, restricted and
-*> custom-suggestion nodes) and of the integrated host's (28), the byte-exact level 0 packets of 10.1 and 10.2, the byte-exact packets of the dedicated levels 2, 3 and 4 (wire fixtures made from the listings), and the sizes and totals by kind of the levels 2 to 4: dedicated
+*> custom-suggestion nodes; one more than the document's since lane buglocate3 gives /locate structure the ask_server provider, see gen_command_tree.py) and of the integrated host's (28), the byte-exact level 0 packets of 10.1 and 10.2, the byte-exact packets of the dedicated levels 2, 3 and 4 (wire fixtures made from the listings), and the sizes and totals by kind of the levels 2 to 4: dedicated
 *> 2333, 2385 and 2396 nodes (the integrated host's 2333, 2353 and 2360), equal to 5.1 and 5.2, and the 131 custom suggestion providers of 2.3 by Identifier (114, 13, 2, 2).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-COMMAND-TREE-COUNTS.
@@ -41,9 +41,9 @@
  01 WS-EXPECT-TABLE.
     05 FILLER              PIC X(60) VALUE "0 0 26 15 10 12 3 0 0 1".
     05 FILLER              PIC X(60) VALUE "0 1 26 15 10 12 3 0 0 1".
-    05 FILLER              PIC X(60) VALUE "0 2 2333 1116 1216 1371 78 44 66 121".
-    05 FILLER              PIC X(60) VALUE "0 3 2385 1148 1236 1406 78 44 80 131".
-    05 FILLER              PIC X(60) VALUE "0 4 2396 1157 1238 1414 78 44 86 131".
+    05 FILLER              PIC X(60) VALUE "0 2 2333 1116 1216 1371 78 44 66 122".
+    05 FILLER              PIC X(60) VALUE "0 3 2385 1148 1236 1406 78 44 80 132".
+    05 FILLER              PIC X(60) VALUE "0 4 2396 1157 1238 1414 78 44 86 132".
     05 FILLER              PIC X(60) VALUE "1 0 28 17 10 14 3 0 0 1".
     05 FILLER              PIC X(60) VALUE "1 1 28 17 10 14 3 0 0 1".
     05 FILLER              PIC X(60) VALUE "1 2 2333".
@@ -143,7 +143,7 @@
      MOVE SPACES TO TL-OBSERVED TL-EXPECTED
      STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) " " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
      MOVE "test command tree counts level 4 nodes by provider: ask_server, available_sounds, summonable_entities, post_effects" TO TL-CASE
-     MOVE "114 13 2 2" TO TL-EXPECTED
+     MOVE "115 13 2 2" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The packets of the dedicated levels 2, 3 and 4 byte for byte (the wire fixtures made from the listings of section 7 by core/tests/fixtures/gen_command_tree.py:
 *>   argument names, parser ids, registries, child order and executable marks of all 91 commands).

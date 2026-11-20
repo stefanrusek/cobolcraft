@@ -1524,7 +1524,7 @@
     05 FILLER              PIC X(84) VALUE " 1 uuids x".
     05 FILLER              PIC X(84) VALUE " 0 locate R2".
     05 FILLER              PIC X(84) VALUE " 1 structure".
-    05 FILLER              PIC X(84) VALUE " 2 <structure:resource_or_tag_key#45(minecraft:worldgen/structure)> x".
+    05 FILLER              PIC X(84) VALUE " 2 <structure:resource_or_tag_key#45(minecraft:worldgen/structure)> x sug=ask".
     05 FILLER              PIC X(84) VALUE " 1 biome".
     05 FILLER              PIC X(84) VALUE " 2 <biome:resource_or_tag#44(minecraft:worldgen/biome)> x".
     05 FILLER              PIC X(84) VALUE " 1 poi".

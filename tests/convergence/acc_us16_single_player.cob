@@ -208,16 +208,18 @@
      MOVE 11 TO WS-LENGTH
      MOVE "commands.kick.singleplayer.failed" TO TL-EXPECTED
      CALL "SP-COMMAND-EXPECT" USING CONVH WS-ALICE WS-TEXT WS-LENGTH TESTLIB-ASSERT
-     MOVE "acceptance US16-3 the ban command naming a valid offline name records the ban"
+*>   Since lane p46's command tree (57-client-closures-4 sections 4 and 7: the integrated host's tree has no ban, ban-ip, banlist, pardon, whitelist or op commands, which vanilla
+*>   registers on a dedicated server only) the host of a single-player world has no ban list commands at all: they are unknown commands there.
+     MOVE "acceptance US16-3 the ban command is not one of the integrated host's commands (dedicated servers only, 57-4)"
          TO TL-CASE
      MOVE "/ban Bobby" TO WS-TEXT
      MOVE 10 TO WS-LENGTH
-     MOVE "commands.ban.success" TO TL-EXPECTED
+     MOVE "command.unknown.command" TO TL-EXPECTED
      CALL "SP-COMMAND-EXPECT" USING CONVH WS-ALICE WS-TEXT WS-LENGTH TESTLIB-ASSERT
-     MOVE "acceptance US16-3 the ban list then holds the offline name" TO TL-CASE
+     MOVE "acceptance US16-3 nor is banlist" TO TL-CASE
      MOVE "/banlist" TO WS-TEXT
      MOVE 8 TO WS-LENGTH
-     MOVE "commands.banlist.entry" TO TL-EXPECTED
+     MOVE "command.unknown.command" TO TL-EXPECTED
      CALL "SP-COMMAND-EXPECT" USING CONVH WS-ALICE WS-TEXT WS-LENGTH TESTLIB-ASSERT
 
 *>   US16-4: the pause menu pauses the world (no core tick while it is open).

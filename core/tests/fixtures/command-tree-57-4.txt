@@ -1753,7 +1753,7 @@
 1 uuids x
 0 locate R2
 1 structure
-2 <structure:resource_or_tag_key#45(minecraft:worldgen/structure)> x
+2 <structure:resource_or_tag_key#45(minecraft:worldgen/structure)> x sug=ask
 1 biome
 2 <biome:resource_or_tag#44(minecraft:worldgen/biome)> x
 1 poi

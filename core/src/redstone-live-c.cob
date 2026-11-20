@@ -436,10 +436,20 @@
  01 LS-RUN                 BINARY-LONG.
  01 LS-ALL                 BINARY-LONG.
  01 LS-LIVE                BINARY-LONG.
+ 01 LS-ROW                 BINARY-LONG.
+ 01 LS-ECX                 BINARY-LONG.
+ 01 LS-ECZ                 BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "REDSTONE-IDS-ENSURE"
      PERFORM VARYING LS-I FROM 1 BY 1 UNTIL LS-I > EN-COUNT
+*>       an entity of a chunk that is not loaded is not processed (it must not load the chunk by reading its cells: WORLD-GET-BLOCK would)
+         MOVE 0 TO LS-ROW
          IF EN-USED(LS-I) = 1
+             COMPUTE LS-ECX = FUNCTION INTEGER(EN-X(LS-I) / 16)
+             COMPUTE LS-ECZ = FUNCTION INTEGER(EN-Z(LS-I) / 16)
+             CALL "WORLD-FIND" USING EN-DIM(LS-I) LS-ECX LS-ECZ LS-ROW
+         END-IF
+         IF EN-USED(LS-I) = 1 AND LS-ROW > 0
              CALL "RL-ENTITY-FACTS" USING LS-I LS-X LS-Y LS-Z LS-HALF LS-HEIGHT LS-COUNTED LS-LIVING
 *>           the cells the box covers in x and z, and the cell of its feet
              COMPUTE LS-V = LS-X - LS-HALF
@@ -453,7 +463,14 @@
              COMPUTE LS-CY = FUNCTION INTEGER(LS-Y)
              PERFORM VARYING LS-CX FROM LS-X0 BY 1 UNTIL LS-CX > LS-X1
                  PERFORM VARYING LS-CZ FROM LS-Z0 BY 1 UNTIL LS-CZ > LS-Z1
-                     CALL "WORLD-GET-BLOCK" USING EN-DIM(LS-I) LS-CX LS-CY LS-CZ LS-STATE
+*>                   a cell of a chunk that is not loaded reads as air (WORLD-GET-BLOCK would load the chunk)
+                     COMPUTE LS-ECX = FUNCTION INTEGER(LS-CX / 16)
+                     COMPUTE LS-ECZ = FUNCTION INTEGER(LS-CZ / 16)
+                     CALL "WORLD-FIND" USING EN-DIM(LS-I) LS-ECX LS-ECZ LS-ROW
+                     MOVE 0 TO LS-STATE
+                     IF LS-ROW > 0
+                         CALL "WORLD-GET-BLOCK" USING EN-DIM(LS-I) LS-CX LS-CY LS-CZ LS-STATE
+                     END-IF
                      MOVE RL-CLASS(CB-S-BLOCK(LS-STATE + 1) + 1) TO LS-CLASS
                      IF LS-CLASS = 25 AND RL-S-ON(LS-STATE + 1) = 0
                          CALL "RL-TRIP-ENTITY" USING EN-DIM(LS-I) LS-CX LS-CY LS-CZ LS-STATE
