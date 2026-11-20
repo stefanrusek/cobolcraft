@@ -150,7 +150,7 @@
 *> USING CLIENT-STATE, item id, sprite out (0 = draw no icon): the atlas sprite of the item's icon. With the
 *> standard set open it is found on the item's first use (assets/<namespace>/items/<path>.json of the top-most
 *> pack, its model chain: a flat item's layer0, a block item's up face, else the first face of its first
-*> element; the missing sprite 1 when the definition or model gives none) and kept in IS-SPRITE; otherwise
+*> element; the missing sprite 1 when the definition or model gives none) and kept in IS-SPRITE, with the quads of the model for the GUI (ITEM-GUI-BAKE); otherwise
 *> it is the stand-in table's IT-SPRITE (ITEMDEFS-LOAD) for the 18 items of standin-content.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -294,6 +294,8 @@
                                      WS-FACE-SPRITE(WS-D)
                              END-IF
                          END-PERFORM
+*>                       The GUI icon: the model's quads under its gui display transform (item-gui.cob), the isometric cube of a block item.
+                         CALL "ITEM-GUI-BAKE" USING CLIENT-STATE L-ITEM MODEL-RESOLVED
                      END-IF
                  END-IF
                  END-IF

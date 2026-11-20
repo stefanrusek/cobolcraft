@@ -225,6 +225,10 @@
                  MOVE WS-YAW TO EN-YAW(WS-ROW)
                  MOVE WS-PITCH TO EN-PITCH(WS-ROW)
                  MOVE WS-HEAD TO EN-HEAD-YAW(WS-ROW)
+*>               The rotation of the previous tick is this one (smooth.cob: no turn to lerp over).
+                 MOVE WS-YAW TO EN-OYAW(WS-ROW)
+                 MOVE WS-PITCH TO EN-OPITCH(WS-ROW)
+                 MOVE WS-HEAD TO EN-OHEAD(WS-ROW)
                  MOVE WS-VX TO EN-VX(WS-ROW)
                  MOVE WS-VY TO EN-VY(WS-ROW)
                  MOVE WS-VZ TO EN-VZ(WS-ROW)
@@ -458,6 +462,8 @@
                  MOVE WS-X TO EN-OX(WS-ROW)
                  MOVE WS-Y TO EN-OY(WS-ROW)
                  MOVE WS-Z TO EN-OZ(WS-ROW)
+                 MOVE WS-YAW TO EN-OYAW(WS-ROW)
+                 MOVE WS-PITCH TO EN-OPITCH(WS-ROW)
              END-IF
          WHEN 104
 *>           Set Equipment: entity id, then (slot byte, stack) pairs, every pair but the last with bit 0x80 on the byte (05b 0x68).

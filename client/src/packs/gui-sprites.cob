@@ -231,7 +231,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GUI-SPRITE-PATH-X.
-*> USING sprite row (26 to GSP-COUNT; the 20 hint icons, the shield and the furnace progress sprites are the last 23 rows), path (out, PIC X(256)): the rows of the status HUD and the heart variants (docs/protocol/49) and the experience bar (12 section 5): the 40 mob_effect
+*> USING sprite row (26 to GSP-COUNT; the 20 hint icons, the shield and the furnace progress sprites, then the 20 container sheets, then the 67 widget sprites of the container screens, are the last rows), path (out, PIC X(256)): the rows of the status HUD and the heart variants (docs/protocol/49) and the experience bar (12 section 5): the 40 mob_effect
 *> icons, the effect backgrounds, armour, air, the vehicle hearts, the heart containers and the 40 heart variants (type x hardcore x size x blinking),
 *> the hunger food sprites.
  DATA DIVISION.
@@ -244,7 +244,7 @@
  01 WS-HARDCORE            BINARY-LONG.
  01 WS-HALF                BINARY-LONG.
  01 WS-BLINK               BINARY-LONG.
- 01 WS-NAME                PIC X(48).
+ 01 WS-NAME                PIC X(56).
  01 WS-PTR                 BINARY-LONG.
  01 WS-CSLOT-NAMES.
     05 FILLER PIC X(40) VALUE "smithing_template_armor_trim".
@@ -269,6 +269,99 @@
     05 FILLER PIC X(40) VALUE "spear".
  01 WS-CSLOT-TABLE REDEFINES WS-CSLOT-NAMES.
     05 WS-CSLOT-NAME       PIC X(40) OCCURS 20 TIMES.
+ 01 WS-SHEET-NAMES.
+    05 FILLER PIC X(20) VALUE "generic_54".
+    05 FILLER PIC X(20) VALUE "shulker_box".
+    05 FILLER PIC X(20) VALUE "hopper".
+    05 FILLER PIC X(20) VALUE "dispenser".
+    05 FILLER PIC X(20) VALUE "furnace".
+    05 FILLER PIC X(20) VALUE "blast_furnace".
+    05 FILLER PIC X(20) VALUE "smoker".
+    05 FILLER PIC X(20) VALUE "brewing_stand".
+    05 FILLER PIC X(20) VALUE "crafter".
+    05 FILLER PIC X(20) VALUE "anvil".
+    05 FILLER PIC X(20) VALUE "grindstone".
+    05 FILLER PIC X(20) VALUE "smithing".
+    05 FILLER PIC X(20) VALUE "enchanting_table".
+    05 FILLER PIC X(20) VALUE "loom".
+    05 FILLER PIC X(20) VALUE "stonecutter".
+    05 FILLER PIC X(20) VALUE "cartography_table".
+    05 FILLER PIC X(20) VALUE "villager".
+    05 FILLER PIC X(20) VALUE "beacon".
+    05 FILLER PIC X(20) VALUE "horse".
+    05 FILLER PIC X(20) VALUE "nautilus".
+ 01 WS-SHEET-TABLE REDEFINES WS-SHEET-NAMES.
+    05 WS-SHEET-NAME       PIC X(20) OCCURS 20 TIMES.
+ 01 WS-WIDGET-NAMES.
+    05 FILLER PIC X(56) VALUE "container/blast_furnace/lit_progress".
+    05 FILLER PIC X(56) VALUE "container/blast_furnace/burn_progress".
+    05 FILLER PIC X(56) VALUE "container/smoker/lit_progress".
+    05 FILLER PIC X(56) VALUE "container/smoker/burn_progress".
+    05 FILLER PIC X(56) VALUE "container/brewing_stand/fuel_length".
+    05 FILLER PIC X(56) VALUE "container/brewing_stand/brew_progress".
+    05 FILLER PIC X(56) VALUE "container/brewing_stand/bubbles".
+    05 FILLER PIC X(56) VALUE "container/anvil/text_field".
+    05 FILLER PIC X(56) VALUE "container/anvil/text_field_disabled".
+    05 FILLER PIC X(56) VALUE "container/anvil/error".
+    05 FILLER PIC X(56) VALUE "container/enchanting_table/enchantment_slot".
+    05 FILLER PIC X(56) VALUE "container/enchanting_table/enchantment_slot_highlighted".
+    05 FILLER PIC X(56) VALUE "container/enchanting_table/enchantment_slot_disabled".
+    05 FILLER PIC X(56) VALUE "container/enchanting_table/level_1".
+    05 FILLER PIC X(56) VALUE "container/enchanting_table/level_2".
+    05 FILLER PIC X(56) VALUE "container/enchanting_table/level_3".
+    05 FILLER PIC X(56) VALUE "container/enchanting_table/level_1_disabled".
+    05 FILLER PIC X(56) VALUE "container/enchanting_table/level_2_disabled".
+    05 FILLER PIC X(56) VALUE "container/enchanting_table/level_3_disabled".
+    05 FILLER PIC X(56) VALUE "container/beacon/button".
+    05 FILLER PIC X(56) VALUE "container/beacon/button_disabled".
+    05 FILLER PIC X(56) VALUE "container/beacon/button_highlighted".
+    05 FILLER PIC X(56) VALUE "container/beacon/button_selected".
+    05 FILLER PIC X(56) VALUE "container/beacon/confirm".
+    05 FILLER PIC X(56) VALUE "container/beacon/cancel".
+    05 FILLER PIC X(56) VALUE "container/villager/trade_arrow".
+    05 FILLER PIC X(56) VALUE "container/villager/trade_arrow_out_of_stock".
+    05 FILLER PIC X(56) VALUE "container/villager/scroller".
+    05 FILLER PIC X(56) VALUE "container/villager/scroller_disabled".
+    05 FILLER PIC X(56) VALUE "container/villager/experience_bar_background".
+    05 FILLER PIC X(56) VALUE "container/villager/experience_bar_current".
+    05 FILLER PIC X(56) VALUE "container/villager/experience_bar_result".
+    05 FILLER PIC X(56) VALUE "container/villager/out_of_stock".
+    05 FILLER PIC X(56) VALUE "container/villager/discount_strikethrough".
+    05 FILLER PIC X(56) VALUE "container/loom/pattern".
+    05 FILLER PIC X(56) VALUE "container/loom/pattern_highlighted".
+    05 FILLER PIC X(56) VALUE "container/loom/pattern_selected".
+    05 FILLER PIC X(56) VALUE "container/loom/scroller".
+    05 FILLER PIC X(56) VALUE "container/loom/scroller_disabled".
+    05 FILLER PIC X(56) VALUE "container/loom/error".
+    05 FILLER PIC X(56) VALUE "container/stonecutter/recipe".
+    05 FILLER PIC X(56) VALUE "container/stonecutter/recipe_highlighted".
+    05 FILLER PIC X(56) VALUE "container/stonecutter/recipe_selected".
+    05 FILLER PIC X(56) VALUE "container/stonecutter/scroller".
+    05 FILLER PIC X(56) VALUE "container/stonecutter/scroller_disabled".
+    05 FILLER PIC X(56) VALUE "container/cartography_table/map".
+    05 FILLER PIC X(56) VALUE "container/cartography_table/scaled_map".
+    05 FILLER PIC X(56) VALUE "container/cartography_table/duplicated_map".
+    05 FILLER PIC X(56) VALUE "container/cartography_table/locked".
+    05 FILLER PIC X(56) VALUE "container/cartography_table/error".
+    05 FILLER PIC X(56) VALUE "container/crafter/disabled_slot".
+    05 FILLER PIC X(56) VALUE "container/crafter/powered_redstone".
+    05 FILLER PIC X(56) VALUE "container/crafter/unpowered_redstone".
+    05 FILLER PIC X(56) VALUE "container/grindstone/error".
+    05 FILLER PIC X(56) VALUE "container/smithing/error".
+    05 FILLER PIC X(56) VALUE "container/slot/potion".
+    05 FILLER PIC X(56) VALUE "container/slot/brewing_fuel".
+    05 FILLER PIC X(56) VALUE "container/slot/banner".
+    05 FILLER PIC X(56) VALUE "container/slot/banner_pattern".
+    05 FILLER PIC X(56) VALUE "container/slot/dye".
+    05 FILLER PIC X(56) VALUE "container/slot/saddle".
+    05 FILLER PIC X(56) VALUE "container/slot/horse_armor".
+    05 FILLER PIC X(56) VALUE "container/slot/llama_armor".
+    05 FILLER PIC X(56) VALUE "container/slot/nautilus_armor_inventory".
+    05 FILLER PIC X(56) VALUE "container/horse/chest_slots".
+    05 FILLER PIC X(56) VALUE "widget/button_highlighted".
+    05 FILLER PIC X(56) VALUE "widget/button_disabled".
+ 01 WS-WIDGET-TABLE REDEFINES WS-WIDGET-NAMES.
+    05 WS-WIDGET-NAME      PIC X(56) OCCURS 67 TIMES.
  01 WS-TYPE-NAMES.
     05 FILLER              PIC X(10) VALUE "          ".
     05 FILLER              PIC X(10) VALUE "poisoned_ ".
@@ -367,9 +460,20 @@
              MOVE "hud/experience_bar_background" TO WS-NAME
          WHEN L-ROW = GSP-XP-PROGRESS
              MOVE "hud/experience_bar_progress" TO WS-NAME
+         WHEN L-ROW >= GSP-SHEET-0 AND L-ROW <= GSP-SHEET-LAST
+             COMPUTE WS-N = L-ROW - GSP-SHEET-0 + 1
+         WHEN L-ROW > GSP-SHEET-LAST
+             COMPUTE WS-N = L-ROW - GSP-SHEET-LAST
+             MOVE WS-WIDGET-NAME(WS-N) TO WS-NAME
          WHEN OTHER
              MOVE "hud/food_full_hunger" TO WS-NAME
      END-EVALUATE
-     STRING FUNCTION TRIM(WS-SPRITES) FUNCTION TRIM(WS-NAME) ".png" DELIMITED BY SIZE INTO L-PATH
+*>   A container sheet is a whole image under textures/gui/container (08 section 10.7: not a sprite of the gui atlas).
+     IF L-ROW >= GSP-SHEET-0 AND L-ROW <= GSP-SHEET-LAST
+         STRING "assets/minecraft/textures/gui/container/" FUNCTION TRIM(WS-SHEET-NAME(WS-N)) ".png"
+             DELIMITED BY SIZE INTO L-PATH
+     ELSE
+         STRING FUNCTION TRIM(WS-SPRITES) FUNCTION TRIM(WS-NAME) ".png" DELIMITED BY SIZE INTO L-PATH
+     END-IF
      GOBACK.
  END PROGRAM GUI-SPRITE-PATH-X.

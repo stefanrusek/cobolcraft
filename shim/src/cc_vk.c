@@ -3,13 +3,19 @@
  * COBOL-built atlases and vertex buffers and submits draws of them in four fixed pipelines.
  *
  * Instance with VK_KHR_portability_enumeration (MoltenVK), surface on the cc_win window, device with
- * VK_KHR_swapchain (+ VK_KHR_portability_subset when reported), FIFO swapchain on the surface's first
- * format at framebuffer extent, D32_SFLOAT depth, one frame in flight. Resources replaced or freed
- * while the GPU may still use them are destroyed after the next frame's commands have completed. */
+ * VK_KHR_swapchain (+ VK_KHR_portability_subset when reported), swapchain (FIFO unless CC_VK_PRESENT asks
+ * for another mode the surface offers, at least 3 images) on the surface's first format at framebuffer
+ * extent, D32_SFLOAT depth, two frames in flight (CC_VK_INFLIGHT=1: one). A frame is submitted and
+ * presented without waiting for the GPU; the wait for a frame's fence comes when its slot is next used
+ * (cc_vk_frame_begin), so the CPU records frame n + 1 while the GPU draws frame n. Resources replaced or
+ * freed while the GPU may still use them are destroyed once the frame that could use them has completed.
+ * Batched texture updates are submitted without waiting; their staging buffers are freed likewise.
+ * CC_GPU_STATS=1 prints a line of counters to standard error once a second (see stats_report). */
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "cc_internal.h"
 #include "ccshim.h"
@@ -19,6 +25,95 @@ struct cc_vk_state cc_vk_state;
 
 static void check(VkResult result, const char *what) {
     if (result != VK_SUCCESS) cc_fatal(what);
+}
+
+/* ---- CC_GPU_STATS ----------------------------------------------------------------------------- */
+
+/* Counters of the current one-second window. CPU times are wall-clock milliseconds spent inside the shim call named, summed over
+ * the window and printed per frame: `app` is the time between a frame's presentation and the next cc_vk_frame_begin (everything the
+ * COBOL program does: simulation, meshing, building the render list, the uploads), `fence` the wait for the GPU to finish the frame
+ * that used the slot before, `acquire` vkAcquireNextImageKHR, `record` the cc_vk_draw calls and the other commands recorded
+ * between begin and end, `submit` vkQueueSubmit (MoltenVK encodes the Metal commands here, on the calling thread, and waits for a
+ * drawable here), `present` vkQueuePresentKHR, `idle` the waits for an idle queue (one-shot uploads, screenshots), `upload` the
+ * cc_vk_mesh and cc_vk_texture_update calls. `gpu` is the GPU time of the frame's render pass from two timestamp queries. */
+typedef struct {
+    uint64_t frames, draws, verts, tex_updates, tex_full, meshes, mesh_verts, idle_waits, gpu_n;
+    double app, fence, acquire, record, submit, present, idle, upload, gpu, gpu_max;
+    double phase_ms[CC_PHASES];
+    uint64_t phase_n[CC_PHASES];
+} stats_window_t;
+
+/* The names of the phases the program reports with cc_stat_phase (ccshim.h CC_PHASE_*), in order; index 0 is unused. */
+static const char *const phase_names[CC_PHASES] = {"", "input", "pump", "coretick", "clienttick", "controls", "net", "world", "ui", "rlist", "submit"};
+
+static struct {
+    int on;
+    double report_t, last_end, record_from, phase_from;
+    int phase; /* the phase running (0 none) */
+    int queried[CC_VK_FRAMES]; /* the slot's last frame wrote its timestamps */
+    stats_window_t w;
+} stats;
+
+static double monotonic_ms(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return (double)t.tv_sec * 1e3 + (double)t.tv_nsec / 1e6;
+}
+
+/* The clock while CC_GPU_STATS is set, else 0 (so that the hooks need no branch of their own). */
+static double stat_now(void) {
+    return stats.on ? monotonic_ms() : 0.0;
+}
+
+/* One line, once a second (cc_vk_frame_end) and at shutdown: frames per second and, per frame, the CPU time in each part of the frame
+ * loop, the GPU time of the render pass, the draw calls and vertices, the uploads and one-shot waits, then the swapchain's image count,
+ * present mode (VkPresentModeKHR: 0 immediate, 1 mailbox, 2 fifo) and the frames in flight. */
+void cc_vk_stats_flush(void) {
+    stats_window_t *w = &stats.w;
+    double now = stat_now(), secs = (now - stats.report_t) / 1e3, n = w->frames ? (double)w->frames : 1.0;
+    if (w->frames == 0 || secs <= 0) return;
+    double gpu_n = w->gpu_n ? (double)w->gpu_n : 1.0;
+    fprintf(stderr,
+            "cc_gpu: fps=%.1f frames=%llu | cpu ms/frame: app=%.2f fence=%.2f acquire=%.2f record=%.2f submit=%.2f present=%.2f idle=%.2f upload=%.2f"
+            " | gpu ms/frame=%.2f max=%.2f n=%llu | per frame: draws=%.0f verts=%.0f tex_updates=%.2f tex_full=%.2f meshes=%.2f mesh_verts=%.0f idle_waits=%.2f"
+            " | images=%u present_mode=%d in_flight=%u\n",
+            (double)w->frames / secs, (unsigned long long)w->frames, w->app / n, w->fence / n, w->acquire / n, w->record / n, w->submit / n,
+            w->present / n, w->idle / n, w->upload / n, w->gpu / gpu_n, w->gpu_max, (unsigned long long)w->gpu_n, (double)w->draws / n,
+            (double)w->verts / n, (double)w->tex_updates / n, (double)w->tex_full / n, (double)w->meshes / n, (double)w->mesh_verts / n,
+            (double)w->idle_waits / n, cc_vk_state.image_count, (int)cc_vk_state.present_mode, cc_vk_state.in_flight);
+    fflush(stderr);
+    char phases[512] = "";
+    size_t used = 0;
+    for (int p = 1; p < CC_PHASES; p++)
+        if (w->phase_n[p] > 0) used += (size_t)snprintf(phases + used, sizeof phases - used, " %s=%.2f(x%.1f)", phase_names[p], w->phase_ms[p] / n, (double)w->phase_n[p] / n);
+    if (used > 0) fprintf(stderr, "cc_gpu: phases ms/frame (entries/frame):%s\n", phases);
+    memset(w, 0, sizeof *w);
+    stats.report_t = now;
+}
+
+/* The program enters phase `phase` (CC_PHASE_*, 0 none): the time since the last call is charged to the phase that was running. */
+void cc_stat_phase(int32_t phase) {
+    if (!stats.on || phase < 0 || phase >= CC_PHASES) return;
+    double now = monotonic_ms();
+    if (stats.phase > 0) {
+        stats.w.phase_ms[stats.phase] += now - stats.phase_from;
+        stats.w.phase_n[stats.phase]++;
+    }
+    stats.phase = phase;
+    stats.phase_from = now;
+}
+
+/* The GPU time of the render pass of the frame that last used `slot`, once its fence has been seen signalled. */
+static void stats_gpu_time(uint32_t slot) {
+    uint64_t ticks[2];
+    if (!stats.on || cc_vk_state.queries == VK_NULL_HANDLE || !stats.queried[slot]) return;
+    stats.queried[slot] = 0;
+    VkResult got = vkGetQueryPoolResults(cc_vk_state.device, cc_vk_state.queries, slot * 2, 2, sizeof ticks, ticks, sizeof ticks[0], VK_QUERY_RESULT_64_BIT);
+    if (got != VK_SUCCESS || ticks[1] < ticks[0]) return;
+    double ms = (double)(ticks[1] - ticks[0]) * (double)cc_vk_state.timestamp_period / 1e6;
+    stats.w.gpu += ms;
+    stats.w.gpu_n++;
+    if (ms > stats.w.gpu_max) stats.w.gpu_max = ms;
 }
 
 /* ---- memory, buffers, images ------------------------------------------------------------------ */
@@ -106,20 +201,28 @@ static void discard(garbage_t item) {
         cc_vk_state.garbage = realloc(cc_vk_state.garbage, cc_vk_state.garbage_cap * sizeof *cc_vk_state.garbage);
         if (cc_vk_state.garbage == NULL) cc_fatal("cc_vk: out of memory");
     }
+    /* The frame being recorded (index frames_submitted) may draw with it, or the next one will, and a submission made after the last
+     * frame (a texture update) may touch it: the frame with that index completing covers all of them (the queue runs in order). */
+    item.stamp = cc_vk_state.frames_submitted + 1;
     cc_vk_state.garbage[cc_vk_state.garbage_count++] = item;
 }
 
-/* Destroys every discarded resource; the GPU must have finished every submitted command. */
-static void collect_garbage(void) {
+/* Destroys the discarded resources the GPU has finished with (every one with `all`: it has finished every submitted command). */
+static void collect_garbage(int all) {
+    size_t kept = 0;
     for (size_t i = 0; i < cc_vk_state.garbage_count; i++) {
         garbage_t *g = &cc_vk_state.garbage[i];
+        if (!all && g->stamp > cc_vk_state.frames_completed) {
+            cc_vk_state.garbage[kept++] = *g;
+            continue;
+        }
         vkDestroyBuffer(cc_vk_state.device, g->buffer, NULL);
         vkDestroyImageView(cc_vk_state.device, g->view, NULL);
         vkDestroyImage(cc_vk_state.device, g->image, NULL);
         vkFreeMemory(cc_vk_state.device, g->memory, NULL);
         if (g->set != VK_NULL_HANDLE) vkFreeDescriptorSets(cc_vk_state.device, cc_vk_state.pool, 1, &g->set);
     }
-    cc_vk_state.garbage_count = 0;
+    cc_vk_state.garbage_count = kept;
 }
 
 /* ---- one-shot commands ------------------------------------------------------------------------ */
@@ -280,11 +383,14 @@ static void create_render_pass(void) {
         .pColorAttachments = &colour,
         .pDepthStencilAttachment = &depth,
     };
+    /* The one depth image is shared by the frames in flight: this frame's depth clear and writes wait for the previous frame's
+     * (late fragment tests included) and the colour attachment for the previous use of the swapchain image. */
     VkSubpassDependency dependency = {
         .srcSubpass = VK_SUBPASS_EXTERNAL,
         .dstSubpass = 0,
-        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
         .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+        .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
         .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
     };
     VkRenderPassCreateInfo info = {
@@ -310,7 +416,24 @@ static void destroy_swapchain_images(void) {
     vkFreeMemory(cc_vk_state.device, cc_vk_state.depth_memory, NULL);
 }
 
-/* (Re)creates the FIFO swapchain at the framebuffer's current extent, its views, the depth buffer and
+/* The present mode: FIFO (vsync, always offered) unless CC_VK_PRESENT is "mailbox" or "immediate" and the surface offers it (MoltenVK
+ * offers FIFO and IMMEDIATE: IMMEDIATE turns the layer's display sync off, so a frame is shown without waiting for the display and
+ * the drawable of the next frame is rarely waited for, at the price of tearing). */
+static VkPresentModeKHR choose_present_mode(void) {
+    const char *want = getenv("CC_VK_PRESENT");
+    VkPresentModeKHR mode = VK_PRESENT_MODE_FIFO_KHR;
+    if (want != NULL && strcmp(want, "mailbox") == 0) mode = VK_PRESENT_MODE_MAILBOX_KHR;
+    if (want != NULL && strcmp(want, "immediate") == 0) mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+    uint32_t count = 16;
+    VkPresentModeKHR modes[16];
+    VkResult listed = vkGetPhysicalDeviceSurfacePresentModesKHR(cc_vk_state.gpu, cc_vk_state.surface, &count, modes);
+    if (listed != VK_SUCCESS && listed != VK_INCOMPLETE) cc_fatal("cc_vk: present mode query failed");
+    int offered = 0;
+    for (uint32_t i = 0; i < count; i++) offered |= modes[i] == mode;
+    return offered ? mode : VK_PRESENT_MODE_FIFO_KHR;
+}
+
+/* (Re)creates the swapchain at the framebuffer's current extent, its views, the depth buffer and
  * the framebuffers. Images allow transfer reads so a rendered frame can be copied out. */
 static void create_swapchain(void) {
     VkSurfaceCapabilitiesKHR caps;
@@ -319,8 +442,10 @@ static void create_swapchain(void) {
     VkExtent2D extent = caps.currentExtent;
     if (extent.width == UINT32_MAX) extent = (VkExtent2D){(uint32_t)cc_vk_state.fb_w, (uint32_t)cc_vk_state.fb_h};
     uint32_t images = caps.minImageCount + 1;
+    if (images < 3) images = 3; /* with two frames in flight and one image on the display, a third is free to acquire */
     if (caps.maxImageCount != 0 && images > caps.maxImageCount) images = caps.maxImageCount;
     VkSwapchainKHR old = cc_vk_state.swapchain;
+    cc_vk_state.present_mode = choose_present_mode();
     VkSwapchainCreateInfoKHR info = {
         .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         .surface = cc_vk_state.surface,
@@ -333,7 +458,7 @@ static void create_swapchain(void) {
         .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .preTransform = caps.currentTransform,
         .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-        .presentMode = VK_PRESENT_MODE_FIFO_KHR,
+        .presentMode = cc_vk_state.present_mode,
         .clipped = VK_TRUE,
         .oldSwapchain = old,
     };
@@ -363,8 +488,11 @@ static void create_swapchain(void) {
     cc_vk_state.stale = 0;
 }
 
+static void all_complete(void);
+
 static void recreate_swapchain(void) {
     check(vkDeviceWaitIdle(cc_vk_state.device), "cc_vk: vkDeviceWaitIdle failed");
+    all_complete();
     destroy_swapchain_images();
     create_swapchain();
 }
@@ -550,11 +678,23 @@ static void create_frame_objects(void) {
         .queueFamilyIndex = cc_vk_state.family,
     };
     check(vkCreateCommandPool(cc_vk_state.device, &pool, NULL, &cc_vk_state.commands), "cc_vk_init: vkCreateCommandPool failed");
-    cc_vk_state.cmd = command_buffer();
     VkSemaphoreCreateInfo semaphore = {.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-    check(vkCreateSemaphore(cc_vk_state.device, &semaphore, NULL, &cc_vk_state.acquired), "cc_vk_init: vkCreateSemaphore failed");
-    VkFenceCreateInfo fence = {.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
-    check(vkCreateFence(cc_vk_state.device, &fence, NULL, &cc_vk_state.done), "cc_vk_init: vkCreateFence failed");
+    VkFenceCreateInfo fence = {.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = VK_FENCE_CREATE_SIGNALED_BIT};
+    for (uint32_t i = 0; i < CC_VK_FRAMES; i++) {
+        cc_vk_state.cmd[i] = command_buffer();
+        check(vkCreateSemaphore(cc_vk_state.device, &semaphore, NULL, &cc_vk_state.acquired[i]), "cc_vk_init: vkCreateSemaphore failed");
+        check(vkCreateFence(cc_vk_state.device, &fence, NULL, &cc_vk_state.done[i]), "cc_vk_init: vkCreateFence failed");
+    }
+    /* CC_GPU_STATS: two timestamps (render pass start and end) per slot, when the queue family can write them. */
+    VkPhysicalDeviceProperties properties;
+    VkQueueFamilyProperties families[16];
+    uint32_t family_count = 16;
+    vkGetPhysicalDeviceProperties(cc_vk_state.gpu, &properties);
+    vkGetPhysicalDeviceQueueFamilyProperties(cc_vk_state.gpu, &family_count, families);
+    cc_vk_state.timestamp_period = properties.limits.timestampPeriod;
+    VkQueryPoolCreateInfo queries = {.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, .queryType = VK_QUERY_TYPE_TIMESTAMP, .queryCount = 2 * CC_VK_FRAMES};
+    int timestamps = stats.on && families[cc_vk_state.family].timestampValidBits > 0 && properties.limits.timestampPeriod > 0;
+    if (timestamps && vkCreateQueryPool(cc_vk_state.device, &queries, NULL, &cc_vk_state.queries) != VK_SUCCESS) cc_vk_state.queries = VK_NULL_HANDLE;
 }
 
 int32_t cc_vk_init(void) {
@@ -567,6 +707,11 @@ int32_t cc_vk_init(void) {
     cc_vk_state.fog[4] = 1e9f;
     cc_vk_state.fog[5] = 2e9f;
     cc_vk_state.glint_uv[0] = cc_vk_state.glint_uv[1] = 0.0f;
+    const char *stats_env = getenv("CC_GPU_STATS"), *inflight_env = getenv("CC_VK_INFLIGHT");
+    memset(&stats, 0, sizeof stats);
+    stats.on = stats_env != NULL && strcmp(stats_env, "1") == 0;
+    stats.report_t = stat_now();
+    cc_vk_state.in_flight = inflight_env != NULL && strcmp(inflight_env, "1") == 0 ? 1 : CC_VK_FRAMES;
     create_instance();
     create_device();
     create_render_pass();
@@ -580,8 +725,51 @@ int32_t cc_vk_init(void) {
 
 /* ---- textures and meshes ---------------------------------------------------------------------- */
 
+/* Batched texture updates are submitted without waiting for the queue (cc_vk_texture_update_end): each submission keeps its command
+ * buffer and staging buffers here, with a fence, until the frame after it has completed (the stamp, as for garbage) or the ring slot
+ * is needed again. */
+#define CC_UPDATE_BATCH_MAX 256
+typedef struct {
+    VkFence fence;
+    VkCommandBuffer cmd;
+    int pending;
+    uint64_t stamp;
+    int count;
+    VkBuffer buffer[CC_UPDATE_BATCH_MAX];
+    VkDeviceMemory memory[CC_UPDATE_BATCH_MAX];
+} upload_t;
+#define CC_VK_UPLOADS 8
+static upload_t uploads[CC_VK_UPLOADS];
+static uint32_t upload_next;
+
+/* Waits for the upload's fence, then frees what it held. */
+static void upload_retire(upload_t *u) {
+    if (!u->pending) return;
+    check(vkWaitForFences(cc_vk_state.device, 1, &u->fence, VK_TRUE, UINT64_MAX), "cc_vk_texture_update_end: vkWaitForFences failed");
+    check(vkResetFences(cc_vk_state.device, 1, &u->fence), "cc_vk_texture_update_end: vkResetFences failed");
+    for (int i = 0; i < u->count; i++) {
+        vkDestroyBuffer(cc_vk_state.device, u->buffer[i], NULL);
+        vkFreeMemory(cc_vk_state.device, u->memory[i], NULL);
+    }
+    vkFreeCommandBuffers(cc_vk_state.device, cc_vk_state.commands, 1, &u->cmd);
+    u->pending = 0;
+}
+
+/* Every submitted command has finished (the queue or the device was waited for idle): the frames and the uploads are complete. */
+static void all_complete(void) {
+    cc_vk_state.frames_completed = cc_vk_state.frames_submitted;
+    for (int i = 0; i < CC_VK_UPLOADS; i++) upload_retire(&uploads[i]);
+}
+
+int cc_vk_uploads_pending(void) {
+    int pending = 0;
+    for (int i = 0; i < CC_VK_UPLOADS; i++) pending += uploads[i].pending;
+    return pending;
+}
+
 /* Submits and waits for a one-shot command buffer, then frees it. */
 static void submit_wait(VkCommandBuffer cmd, const char *what) {
+    double t = stat_now();
     char message[64];
     snprintf(message, sizeof message, "%s: vkEndCommandBuffer failed", what);
     check(vkEndCommandBuffer(cmd), message);
@@ -591,6 +779,9 @@ static void submit_wait(VkCommandBuffer cmd, const char *what) {
     snprintf(message, sizeof message, "%s: vkQueueWaitIdle failed", what);
     check(vkQueueWaitIdle(cc_vk_state.queue), message);
     vkFreeCommandBuffers(cc_vk_state.device, cc_vk_state.commands, 1, &cmd);
+    all_complete();
+    stats.w.idle += stat_now() - t;
+    stats.w.idle_waits++;
 }
 
 /* sRGB transfer function of 12 §2.3 (ARGB.meanLinear): 8-bit sRGB channel to linear light and back. */
@@ -680,6 +871,7 @@ int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rg
     int32_t longest = w > h ? w : h, most = 1;
     while ((longest >> most) > 0) most++;
     if (mip_levels < 1 || mip_levels > most) cc_fatal("cc_vk_texture_ex: invalid mip level count");
+    stats.w.tex_full++;
     uint32_t mips = (uint32_t)mip_levels;
     VkDeviceSize size;
     uint8_t *chain = build_chain(rgba, w, h, mips, &size);
@@ -725,7 +917,7 @@ int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rg
 
     texture_t *old = &cc_vk_state.textures[tex_id];
     free(old->pixels);
-    discard((garbage_t){VK_NULL_HANDLE, old->image, old->view, old->memory, old->set});
+    discard((garbage_t){VK_NULL_HANDLE, old->image, old->view, old->memory, old->set, 0});
     *old = t;
     return 0;
 }
@@ -735,22 +927,32 @@ int32_t cc_vk_texture_ex(int32_t tex_id, int32_t w, int32_t h, const uint8_t *rg
  * only those rectangles are uploaded; the result equals a rebuild of the whole chain. */
 /* A batch of texture updates (cc_vk_texture_update_begin / _end): the updates between them are recorded into one command buffer and
  * submitted, and waited for, once at the end instead of once each. */
-#define CC_UPDATE_BATCH_MAX 256
 static VkCommandBuffer update_batch_cmd = VK_NULL_HANDLE;
 static int update_batching = 0;
 static int update_batch_count = 0;
 static VkBuffer update_batch_buffer[CC_UPDATE_BATCH_MAX];
 static VkDeviceMemory update_batch_memory[CC_UPDATE_BATCH_MAX];
 
+/* Submits the batch's command buffer without waiting: the queue runs it in order, before the next frame, and the staging buffers go
+ * to an upload ring slot (waiting for the slot's older submission only when all CC_VK_UPLOADS slots are busy). */
 static void update_batch_flush(void) {
-    if (update_batch_cmd != VK_NULL_HANDLE) {
-        submit_wait(update_batch_cmd, "cc_vk_texture_update_end");
-        update_batch_cmd = VK_NULL_HANDLE;
+    if (update_batch_cmd == VK_NULL_HANDLE) return;
+    upload_t *u = &uploads[upload_next++ % CC_VK_UPLOADS];
+    upload_retire(u);
+    if (u->fence == VK_NULL_HANDLE) {
+        VkFenceCreateInfo fence = {.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+        check(vkCreateFence(cc_vk_state.device, &fence, NULL, &u->fence), "cc_vk_texture_update_end: vkCreateFence failed");
     }
-    for (int i = 0; i < update_batch_count; i++) {
-        vkDestroyBuffer(cc_vk_state.device, update_batch_buffer[i], NULL);
-        vkFreeMemory(cc_vk_state.device, update_batch_memory[i], NULL);
-    }
+    check(vkEndCommandBuffer(update_batch_cmd), "cc_vk_texture_update_end: vkEndCommandBuffer failed");
+    VkSubmitInfo submit = {.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO, .commandBufferCount = 1, .pCommandBuffers = &update_batch_cmd};
+    check(vkQueueSubmit(cc_vk_state.queue, 1, &submit, u->fence), "cc_vk_texture_update_end: vkQueueSubmit failed");
+    u->cmd = update_batch_cmd;
+    u->pending = 1;
+    u->stamp = cc_vk_state.frames_submitted + 1;
+    u->count = update_batch_count;
+    memcpy(u->buffer, update_batch_buffer, (size_t)update_batch_count * sizeof *u->buffer);
+    memcpy(u->memory, update_batch_memory, (size_t)update_batch_count * sizeof *u->memory);
+    update_batch_cmd = VK_NULL_HANDLE;
     update_batch_count = 0;
 }
 
@@ -759,14 +961,18 @@ void cc_vk_texture_update_begin(void) {
 }
 
 void cc_vk_texture_update_end(void) {
+    double started = stat_now();
     update_batching = 0;
     update_batch_flush();
+    stats.w.upload += stat_now() - started;
 }
 
 int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, int32_t h, const uint8_t *rgba) {
     if (tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_GLINT_ARMOR || cc_vk_state.textures[tex_id].set == VK_NULL_HANDLE) cc_fatal("cc_vk_texture_update: invalid texture");
     texture_t *t = &cc_vk_state.textures[tex_id];
     if (x < 0 || y < 0 || w <= 0 || h <= 0 || x + w > t->width || y + h > t->height) cc_fatal("cc_vk_texture_update: invalid rectangle");
+    double started = stat_now();
+    stats.w.tex_updates++;
     init_lut();
     for (int32_t row = 0; row < h; row++) memcpy(t->pixels + ((size_t)(y + row) * (size_t)t->width + (size_t)x) * 4, rgba + (size_t)row * (size_t)w * 4, (size_t)w * 4);
     int32_t lw[32], lh[32], x0[32], y0[32], x1[32], y1[32]; /* level size and the inclusive changed rectangle */
@@ -825,6 +1031,7 @@ int32_t cc_vk_texture_update(int32_t tex_id, int32_t x, int32_t y, int32_t w, in
         update_batch_buffer[update_batch_count] = staging;
         update_batch_memory[update_batch_count] = staging_memory;
         update_batch_count++;
+        stats.w.upload += stat_now() - started;
         return 0;
     }
     submit_wait(cmd, "cc_vk_texture_update");
@@ -842,25 +1049,59 @@ int32_t cc_vk_texture_wrap(int32_t tex_id, int32_t wrap) {
 
 int32_t cc_vk_mesh(int32_t slot, const float *verts, int32_t vertex_count) {
     if (slot < CC_MESH_SLOT_MIN || slot > CC_MESH_SLOT_MAX || vertex_count < 0) cc_fatal("cc_vk_mesh: invalid slot or count");
+    double started = stat_now();
     mesh_t *m = &cc_vk_state.meshes[slot];
-    discard((garbage_t){m->buffer, VK_NULL_HANDLE, VK_NULL_HANDLE, m->memory, VK_NULL_HANDLE});
+    discard((garbage_t){m->buffer, VK_NULL_HANDLE, VK_NULL_HANDLE, m->memory, VK_NULL_HANDLE, 0});
     *m = (mesh_t){VK_NULL_HANDLE, VK_NULL_HANDLE, (uint32_t)vertex_count};
     if (vertex_count > 0) m->buffer = host_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, verts, (VkDeviceSize)vertex_count * sizeof(cc_vertex), &m->memory);
+    stats.w.meshes++;
+    stats.w.mesh_verts += (uint64_t)vertex_count;
+    stats.w.upload += stat_now() - started;
     return 0;
 }
 
 /* ---- frames ----------------------------------------------------------------------------------- */
 
+/* The command buffer of the frame being recorded: slot (frames_submitted mod frames in flight). */
+#define FRAME_SLOT (cc_vk_state.frames_submitted % cc_vk_state.in_flight)
+#define FRAME_CMD (cc_vk_state.cmd[FRAME_SLOT])
+
+/* What is bound in the frame being recorded (reset by cc_vk_frame_begin): a draw rebinds only what changed. */
+static int bound_pipeline;
+static VkDescriptorSet bound_set;
+
 int32_t cc_vk_frame_begin(const float clear_rgba[4]) {
+    cc_stat_phase(0);
+    double t0 = stat_now();
     int w, h;
     glfwGetFramebufferSize(cc_win_window, &w, &h);
     if (w == 0 || h == 0 || glfwGetWindowAttrib(cc_win_window, GLFW_ICONIFIED)) return CC_AGAIN;
+    if (stats.last_end > 0) stats.w.app += t0 - stats.last_end;
     if (cc_vk_state.stale || w != cc_vk_state.fb_w || h != cc_vk_state.fb_h) recreate_swapchain();
-    VkResult acquired = vkAcquireNextImageKHR(cc_vk_state.device, cc_vk_state.swapchain, UINT64_MAX, cc_vk_state.acquired, VK_NULL_HANDLE, &cc_vk_state.image_index);
+    uint32_t slot = (uint32_t)FRAME_SLOT;
+    /* The frame that used this slot before (frames_submitted - in_flight) must have finished: its command buffer is reused, and its
+     * semaphore and fence. This is the one place the CPU waits for the GPU, and only when the GPU is that far behind. */
+    check(vkWaitForFences(cc_vk_state.device, 1, &cc_vk_state.done[slot], VK_TRUE, UINT64_MAX), "cc_vk_frame_begin: vkWaitForFences failed");
+    double t1 = stat_now();
+    stats.w.fence += t1 - t0;
+    uint64_t finished = cc_vk_state.frames_submitted + 1 > cc_vk_state.in_flight ? cc_vk_state.frames_submitted + 1 - cc_vk_state.in_flight : 0;
+    if (cc_vk_state.frames_completed < finished) cc_vk_state.frames_completed = finished;
+    stats_gpu_time(slot);
+    collect_garbage(0);
+    for (int i = 0; i < CC_VK_UPLOADS; i++)
+        if (uploads[i].pending && uploads[i].stamp <= cc_vk_state.frames_completed) upload_retire(&uploads[i]);
+    double t2 = stat_now();
+    VkResult acquired = vkAcquireNextImageKHR(cc_vk_state.device, cc_vk_state.swapchain, UINT64_MAX, cc_vk_state.acquired[slot], VK_NULL_HANDLE, &cc_vk_state.image_index);
+    stats.w.acquire += stat_now() - t2;
     if (acquired == VK_ERROR_OUT_OF_DATE_KHR) return cc_vk_state.stale = 1, CC_AGAIN;
     if (acquired != VK_SUBOPTIMAL_KHR) check(acquired, "cc_vk_frame_begin: vkAcquireNextImageKHR failed");
-    check(vkResetCommandBuffer(cc_vk_state.cmd, 0), "cc_vk_frame_begin: vkResetCommandBuffer failed");
-    begin(cc_vk_state.cmd);
+    VkCommandBuffer cmd = cc_vk_state.cmd[slot];
+    check(vkResetCommandBuffer(cmd, 0), "cc_vk_frame_begin: vkResetCommandBuffer failed");
+    begin(cmd);
+    if (stats.on && cc_vk_state.queries != VK_NULL_HANDLE) {
+        vkCmdResetQueryPool(cmd, cc_vk_state.queries, slot * 2, 2);
+        vkCmdWriteTimestamp(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, cc_vk_state.queries, slot * 2);
+    }
     VkClearValue clear[2];
     memcpy(clear[0].color.float32, clear_rgba, 4 * sizeof(float));
     clear[1].depthStencil = (VkClearDepthStencilValue){1.0f, 0};
@@ -872,11 +1113,14 @@ int32_t cc_vk_frame_begin(const float clear_rgba[4]) {
         .clearValueCount = 2,
         .pClearValues = clear,
     };
-    vkCmdBeginRenderPass(cc_vk_state.cmd, &pass, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(cmd, &pass, VK_SUBPASS_CONTENTS_INLINE);
     VkViewport viewport = {0, 0, (float)cc_vk_state.extent.width, (float)cc_vk_state.extent.height, 0, 1};
     VkRect2D scissor = {{0, 0}, cc_vk_state.extent};
-    vkCmdSetViewport(cc_vk_state.cmd, 0, 1, &viewport);
-    vkCmdSetScissor(cc_vk_state.cmd, 0, 1, &scissor);
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+    bound_pipeline = -1;
+    bound_set = VK_NULL_HANDLE;
+    stats.record_from = stat_now();
     return 0;
 }
 
@@ -885,17 +1129,24 @@ void cc_vk_draw(int32_t slot, int32_t pipeline, int32_t tex_id, const float matr
         tex_id < CC_TEX_BLOCKS || tex_id > CC_TEX_GLINT_ARMOR || cc_vk_state.textures[tex_id].set == VK_NULL_HANDLE) cc_fatal("cc_vk_draw: invalid slot, pipeline or texture");
     mesh_t *m = &cc_vk_state.meshes[slot];
     if (m->count == 0) return;
+    stats.w.draws++;
+    stats.w.verts += m->count;
+    VkCommandBuffer cmd = FRAME_CMD;
     VkDeviceSize offset = 0;
-    vkCmdBindPipeline(cc_vk_state.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, cc_vk_state.pipelines[pipeline]);
-    vkCmdBindDescriptorSets(cc_vk_state.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, cc_vk_state.layout, 0, 1, &cc_vk_state.textures[tex_id].set, 0, NULL);
-    vkCmdBindVertexBuffers(cc_vk_state.cmd, 0, 1, &m->buffer, &offset);
-    const VkShaderStageFlags stages = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-    vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, stages, 0, 16 * sizeof(float), matrix);
-    vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, stages, 16 * sizeof(float), sizeof(float), &cc_vk_state.daylight);
-    vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, stages, 17 * sizeof(float), 13 * sizeof(float), cc_vk_state.fog);
-    static const float no_offset[2] = {0, 0};
-    vkCmdPushConstants(cc_vk_state.cmd, cc_vk_state.layout, stages, 30 * sizeof(float), 2 * sizeof(float), pipeline == CC_PIPE_GLINT ? cc_vk_state.glint_uv : no_offset);
-    vkCmdDraw(cc_vk_state.cmd, m->count, 1, 0, 0);
+    if (bound_pipeline != pipeline) vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, cc_vk_state.pipelines[pipeline]);
+    bound_pipeline = pipeline;
+    if (bound_set != cc_vk_state.textures[tex_id].set) vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, cc_vk_state.layout, 0, 1, &cc_vk_state.textures[tex_id].set, 0, NULL);
+    bound_set = cc_vk_state.textures[tex_id].set;
+    vkCmdBindVertexBuffers(cmd, 0, 1, &m->buffer, &offset);
+    /* The whole push constant block in one command: matrix (16 floats), daylight, the 13 fog floats, the glint offset (0 for the other pipelines). */
+    float push[32];
+    memcpy(push, matrix, 16 * sizeof(float));
+    push[16] = cc_vk_state.daylight;
+    memcpy(push + 17, cc_vk_state.fog, 13 * sizeof(float));
+    push[30] = pipeline == CC_PIPE_GLINT ? cc_vk_state.glint_uv[0] : 0.0f;
+    push[31] = pipeline == CC_PIPE_GLINT ? cc_vk_state.glint_uv[1] : 0.0f;
+    vkCmdPushConstants(cmd, cc_vk_state.layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof push, push);
+    vkCmdDraw(cmd, m->count, 1, 0, 0);
 }
 
 /* The daylight factor of the draws that follow (shim-abi §9). */
@@ -921,27 +1172,43 @@ void cc_vk_clear_depth(void) {
         .clearValue.depthStencil = {1.0f, 0},
     };
     VkClearRect area = {.rect = {{0, 0}, cc_vk_state.extent}, .baseArrayLayer = 0, .layerCount = 1};
-    vkCmdClearAttachments(cc_vk_state.cmd, 1, &depth, 1, &area);
+    vkCmdClearAttachments(FRAME_CMD, 1, &depth, 1, &area);
 }
 
-void cc_vk_submit(void) {
-    vkCmdEndRenderPass(cc_vk_state.cmd);
-    check(vkEndCommandBuffer(cc_vk_state.cmd), "cc_vk_frame_end: vkEndCommandBuffer failed");
+/* Ends the frame's recording and hands it to the queue (signalling the slot's fence); the next frame goes to the other slot. */
+static void record_submit(void) {
+    double t0 = stat_now();
+    uint32_t slot = (uint32_t)FRAME_SLOT;
+    VkCommandBuffer cmd = cc_vk_state.cmd[slot];
+    stats.w.record += t0 - stats.record_from;
+    vkCmdEndRenderPass(cmd);
+    if (stats.on && cc_vk_state.queries != VK_NULL_HANDLE) {
+        vkCmdWriteTimestamp(cmd, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, cc_vk_state.queries, slot * 2 + 1);
+        stats.queried[slot] = 1;
+    }
+    check(vkEndCommandBuffer(cmd), "cc_vk_frame_end: vkEndCommandBuffer failed");
     VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     VkSubmitInfo submit = {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &cc_vk_state.acquired,
+        .pWaitSemaphores = &cc_vk_state.acquired[slot],
         .pWaitDstStageMask = &wait_stage,
         .commandBufferCount = 1,
-        .pCommandBuffers = &cc_vk_state.cmd,
+        .pCommandBuffers = &cmd,
         .signalSemaphoreCount = 1,
         .pSignalSemaphores = &cc_vk_state.rendered[cc_vk_state.image_index],
     };
-    check(vkQueueSubmit(cc_vk_state.queue, 1, &submit, cc_vk_state.done), "cc_vk_frame_end: vkQueueSubmit failed");
-    check(vkWaitForFences(cc_vk_state.device, 1, &cc_vk_state.done, VK_TRUE, UINT64_MAX), "cc_vk_frame_end: vkWaitForFences failed");
-    check(vkResetFences(cc_vk_state.device, 1, &cc_vk_state.done), "cc_vk_frame_end: vkResetFences failed");
-    collect_garbage();
+    check(vkResetFences(cc_vk_state.device, 1, &cc_vk_state.done[slot]), "cc_vk_frame_end: vkResetFences failed");
+    check(vkQueueSubmit(cc_vk_state.queue, 1, &submit, cc_vk_state.done[slot]), "cc_vk_frame_end: vkQueueSubmit failed");
+    cc_vk_state.frames_submitted++;
+    stats.w.submit += stat_now() - t0;
+}
+
+/* The shim's tests read the rendered image between the two halves: this one also waits for the GPU to finish the frame. */
+void cc_vk_submit(void) {
+    record_submit();
+    check(vkWaitForFences(cc_vk_state.device, 1, &cc_vk_state.done[(cc_vk_state.frames_submitted - 1) % cc_vk_state.in_flight], VK_TRUE, UINT64_MAX), "cc_vk_frame_end: vkWaitForFences failed");
+    cc_vk_state.frames_completed = cc_vk_state.frames_submitted;
 }
 
 /* ---- screenshot (shim-delta §14) ---------------------------------------------------------------- */
@@ -1001,6 +1268,7 @@ static void capture_frame(void) {
 
 void cc_vk_present(void) {
     if (shot_state == 1) capture_frame();
+    double t0 = stat_now();
     VkPresentInfoKHR present = {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = 1,
@@ -1012,23 +1280,36 @@ void cc_vk_present(void) {
     VkResult presented = vkQueuePresentKHR(cc_vk_state.queue, &present);
     if (presented == VK_ERROR_OUT_OF_DATE_KHR || presented == VK_SUBOPTIMAL_KHR) cc_vk_state.stale = 1;
     else check(presented, "cc_vk_frame_end: vkQueuePresentKHR failed");
+    stats.w.present += stat_now() - t0;
 }
 
+/* Submits and presents without waiting for the GPU (the frame's fence is waited for when its slot is used again). */
 void cc_vk_frame_end(void) {
-    cc_vk_submit();
+    record_submit();
     cc_vk_present();
+    double t = stat_now();
+    stats.w.frames++;
+    stats.last_end = t;
+    if (t - stats.report_t >= 1000.0) cc_vk_stats_flush();
 }
 
 void cc_vk_shutdown(void) {
     check(vkDeviceWaitIdle(cc_vk_state.device), "cc_vk_shutdown: vkDeviceWaitIdle failed");
+    cc_vk_stats_flush();
+    all_complete();
+    for (int i = 0; i < CC_VK_UPLOADS; i++) {
+        vkDestroyFence(cc_vk_state.device, uploads[i].fence, NULL);
+        uploads[i].fence = VK_NULL_HANDLE;
+    }
+    upload_next = 0;
     for (int32_t slot = CC_MESH_SLOT_MIN; slot <= CC_MESH_SLOT_MAX; slot++) cc_vk_mesh(slot, NULL, 0);
     for (int i = CC_TEX_BLOCKS; i <= CC_TEX_GLINT_ARMOR; i++) {
         texture_t *t = &cc_vk_state.textures[i];
-        discard((garbage_t){VK_NULL_HANDLE, t->image, t->view, t->memory, t->set});
+        discard((garbage_t){VK_NULL_HANDLE, t->image, t->view, t->memory, t->set, 0});
         free(t->pixels);
         t->pixels = NULL;
     }
-    collect_garbage();
+    collect_garbage(1);
     free(cc_vk_state.garbage);
     destroy_swapchain_images();
     vkDestroySwapchainKHR(cc_vk_state.device, cc_vk_state.swapchain, NULL);
@@ -1040,8 +1321,11 @@ void cc_vk_shutdown(void) {
     vkDestroySampler(cc_vk_state.device, cc_vk_state.repeat_sampler, NULL);
     vkDestroySampler(cc_vk_state.device, cc_vk_state.mip_sampler, NULL);
     vkDestroySampler(cc_vk_state.device, cc_vk_state.mip_repeat_sampler, NULL);
-    vkDestroySemaphore(cc_vk_state.device, cc_vk_state.acquired, NULL);
-    vkDestroyFence(cc_vk_state.device, cc_vk_state.done, NULL);
+    for (uint32_t i = 0; i < CC_VK_FRAMES; i++) {
+        vkDestroySemaphore(cc_vk_state.device, cc_vk_state.acquired[i], NULL);
+        vkDestroyFence(cc_vk_state.device, cc_vk_state.done[i], NULL);
+    }
+    vkDestroyQueryPool(cc_vk_state.device, cc_vk_state.queries, NULL);
     vkDestroyCommandPool(cc_vk_state.device, cc_vk_state.commands, NULL);
     vkDestroyRenderPass(cc_vk_state.device, cc_vk_state.render_pass, NULL);
     vkDestroyDevice(cc_vk_state.device, NULL);

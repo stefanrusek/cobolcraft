@@ -98,13 +98,52 @@
  END PROGRAM SCREEN-OPEN.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. SCREEN-WORLD-BEHIND.
+*> USING CLIENT-STATE, behind (BINARY-LONG out): 1 when the world is drawn for the current screen (RENDER-LIST-BUILD): the world screen and the pause
+*> menu always, and in play (the game connection in the play phase) every screen laid over the world: the inventory, the crafting table, the
+*> containers, chat, the editors of signs, books, command blocks and forms, the options and the open-to-others screens (12 section 5.6: a screen
+*> of the game is drawn over the world, with the dimmed gradient of UI-DIM-QUADS; the title, list, create-world and pack screens, the connecting
+*> screen and the death screen have their own background and keep none of the world).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-BEHIND               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-BEHIND.
+     MOVE 0 TO L-BEHIND
+     EVALUATE SM-SCREEN
+         WHEN SCR-WORLD
+         WHEN SCR-PAUSE
+             MOVE 1 TO L-BEHIND
+         WHEN SCR-INVENTORY
+         WHEN SCR-BENCH
+         WHEN SCR-CONTAINER
+         WHEN SCR-CHAT
+         WHEN SCR-SIGN
+         WHEN SCR-BOOK
+         WHEN SCR-CREATIVE
+         WHEN SCR-CMDBLOCK
+         WHEN SCR-FORM
+         WHEN SCR-OPTIONS
+         WHEN SCR-OPEN-TO-OTHERS
+             IF CN-PHASE(CONN-GAME) = PH-PLAY
+                 MOVE 1 TO L-BEHIND
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM SCREEN-WORLD-BEHIND.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. SCREEN-BUILD.
-*> USING CLIENT-STATE: the widgets of the current screen.
+*> USING CLIENT-STATE: the widgets of the current screen. A screen over the world (SCREEN-WORLD-BEHIND) starts with the F3 overlay's lines when it
+*> is on, so the overlay shows over the dimmed world and under the screen's own widgets (DEBUG-OVERLAY-ADD; the world screen's HUD adds it itself).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  01 WS-GW                  BINARY-LONG.
  01 WS-GH                  BINARY-LONG.
+ 01 WS-BEHIND              BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -119,6 +158,12 @@
      END-IF
      COMPUTE WS-GW = FUNCTION MAX(IN-WIN-W / CL-GUI-SCALE, CL-MIN-GUI-W)
      COMPUTE WS-GH = FUNCTION MAX(IN-WIN-H / CL-GUI-SCALE, CL-MIN-GUI-H)
+     IF SM-SCREEN NOT = SCR-WORLD AND CL-DEBUG = 1
+         CALL "SCREEN-WORLD-BEHIND" USING CLIENT-STATE WS-BEHIND
+         IF WS-BEHIND = 1
+             CALL "DEBUG-OVERLAY-ADD" USING CLIENT-STATE WS-GW WS-GH
+         END-IF
+     END-IF
      EVALUATE SM-SCREEN
          WHEN SCR-TITLE
              CALL "TITLE-BUILD" USING CLIENT-STATE WS-GW WS-GH

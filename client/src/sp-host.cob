@@ -159,6 +159,7 @@
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  COPY COREAPI.
+ COPY CCSHIM.
  01 WS-SLOT                BINARY-LONG.
  01 WS-RAN                 BINARY-LONG.
  01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
@@ -183,7 +184,9 @@
 *>   frames, unless they are more than CL-PUMP-DEBT-MS (a long tick or a stalled frame): those are dropped.
      MOVE 0 TO WS-RAN
      PERFORM UNTIL CL-NOW-MS < SP-NEXT-TICK OR WS-RAN >= CL-MAX-PUMP-TICKS
+         CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-CORE-TICK
          CALL "CORE-TICK"
+         CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-PUMP
          ADD 1 TO SP-TICKS
          ADD 1 TO WS-RAN
          ADD CL-TICK-MS TO SP-NEXT-TICK

@@ -1,6 +1,7 @@
 *> The render list (data-model §13; research R4; shim-abi.md §9): RENDER-LIST-BUILD writes the
 *> frame's clear colour (the sky), projection and view matrices, the draws and the uploads. The
-*> world is drawn on the world screen and behind the pause menu: the camera is the local player's
+*> world is drawn on the world screen and behind every screen of the game (SCREEN-WORLD-BEHIND: the pause
+*> menu, the inventory, the containers, chat...; UI-RENDER dims it with the gradient of 12 section 5.6): the camera is the local player's
 *> eye (1.6 above the feet, standin-content §3) turned by yaw (0 faces +Z, 90 faces -X) and pitch
 *> (positive looks down); the projection is a 70 degree vertical perspective into Vulkan clip space
 *> (y down, depth 0 to 1, near 0.05, far 512). The draws start with the sun, the moon and the stars of a
@@ -49,6 +50,8 @@
  01 WS-TEX                 BINARY-LONG.
  01 WS-WORLD               BINARY-LONG.
  01 WS-F                   FLOAT-LONG.
+ 01 WS-FOV-MOD             FLOAT-LONG.
+ 01 WS-SMOOTH-MODE         BINARY-LONG.
  01 WS-FOV-GROUP.
     05 WS-FOV              FLOAT-LONG.
  01 WS-ASPECT              FLOAT-LONG.
@@ -174,8 +177,9 @@
      CALL "CAMERA-PLACE" USING CLIENT-STATE WS-VIEW-YAW WS-VIEW-PITCH WS-EYE-TABLE
 *>   Projection (column-major).
      MOVE CL-FOV-DEG TO WS-FOV
-     IF PL-FOV-MOD > 0
-         COMPUTE WS-FOV = CL-FOV-DEG * PL-FOV-MOD
+     CALL "SMOOTH-FOV" USING CLIENT-STATE WS-FOV-MOD
+     IF WS-FOV-MOD > 0
+         COMPUTE WS-FOV = CL-FOV-DEG * WS-FOV-MOD
      END-IF
      IF WS-FOV-HAVE = 0 OR WS-FOV-GROUP NOT = WS-FOV-DONE-GROUP
          COMPUTE WS-F-DONE = 1 / FUNCTION TAN(WS-FOV / 2 * FUNCTION PI / 180)
@@ -268,10 +272,8 @@
              MOVE WS-SUM TO WS-PV(WS-C * 4 + WS-R + 1)
          END-PERFORM
      END-PERFORM
-     MOVE 0 TO WS-WORLD
-     IF SM-SCREEN = SCR-WORLD OR SM-SCREEN = SCR-PAUSE
-         MOVE 1 TO WS-WORLD
-     END-IF
+*>   The world is drawn on the world screen and behind every screen of the game (SCREEN-WORLD-BEHIND).
+     CALL "SCREEN-WORLD-BEHIND" USING CLIENT-STATE WS-WORLD
 *>   The sky bodies first, before any terrain (12 section 3.4c; sky-render.cob): the sun, the moon and the stars, on the UI pipeline (no depth test).
      IF WS-WORLD = 1
          CALL "SKY-RENDER-BEHIND" USING CLIENT-STATE WS-PV-TABLE
@@ -405,6 +407,9 @@
 *>   sections; the slot is uploaded while it has vertices and once more when it no longer has
 *>   (freed).
      MOVE 0 TO RL-EN-COUNT RL-GL-COUNT
+*>   The replica rows are at the partial tick from here to the end of the ground items (smooth.cob; put back below).
+     MOVE 1 TO WS-SMOOTH-MODE
+     CALL "SMOOTH-ENTITIES" USING CLIENT-STATE WS-SMOOTH-MODE
      IF WS-WORLD = 1
          CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      END-IF
@@ -476,6 +481,8 @@
      IF WS-WORLD = 1
          CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
      END-IF
+     MOVE 0 TO WS-SMOOTH-MODE
+     CALL "SMOOTH-ENTITIES" USING CLIENT-STATE WS-SMOOTH-MODE
      MOVE MESH-SLOT-GROUND-ITEMS TO WS-SLOT
      MOVE CC-PIPE-TRANSLUCENT TO WS-PIPE
      MOVE CC-TEX-BLOCKS TO WS-TEX
@@ -518,6 +525,16 @@
      MOVE CC-PIPE-TRANSLUCENT TO WS-PIPE
      MOVE CC-TEX-UI TO WS-TEX
      CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-HL-VERTEX(1) RL-HL-COUNT RL-HL-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
+*>   The entity hitboxes (F3+B, 34-1 section 7.5), after the highlight.
+     MOVE 0 TO RL-HB-COUNT
+     IF SM-SCREEN = SCR-WORLD AND CL-HITBOXES = 1
+         CALL "HITBOX-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     END-IF
+     MOVE MESH-SLOT-HITBOX TO WS-SLOT
+     MOVE CC-PIPE-TRANSLUCENT TO WS-PIPE
+     MOVE CC-TEX-UI TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-HB-VERTEX(1) RL-HB-COUNT RL-HB-UPLOADED
          WS-PIPE WS-TEX WS-PV-TABLE
 *>   The UI: uploaded every frame, drawn last with x' = 2x / w - 1, y' = 2y / h - 1.
 *>   The hand (first person, world screen): a depth clear, then the held item in view space with the projection alone.

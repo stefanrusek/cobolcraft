@@ -34,11 +34,17 @@
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-SPRITE-ROW          BINARY-LONG.
  01 WS-RGB                 BINARY-LONG.
+ 01 WS-BEHIND              BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      MOVE 0 TO RL-UI-COUNT RL-IC-COUNT RL-GC-COUNT RL-UT-COUNT RL-UI-LAYER RL-UI-FADE RL-UI-TINT
      CALL "HB-RNG-SEED" USING CLIENT-STATE
+*>   A screen laid over the world (not the world screen itself) first dims the whole window with the gradient of 12 section 5.6.
+     CALL "SCREEN-WORLD-BEHIND" USING CLIENT-STATE WS-BEHIND
+     IF WS-BEHIND = 1 AND SM-SCREEN NOT = SCR-WORLD
+         CALL "UI-DIM-QUADS" USING CLIENT-STATE
+     END-IF
      PERFORM VARYING WS-W FROM 1 BY 1 UNTIL WS-W > SM-WIDGET-COUNT
          MOVE SM-W-TEXT(WS-W) TO WS-TEXT
          MOVE SM-W-LENGTH(WS-W) TO WS-LENGTH
@@ -90,7 +96,7 @@
                  IF WS-SPRITE-ROW >= 1 AND WS-SPRITE-ROW <= GSP-COUNT
                      IF GS-W(WS-SPRITE-ROW) > 0
                          CALL "UI-CLIP-QUAD" USING CLIENT-STATE WS-SPRITE-ROW SM-W-X(WS-W)
-                             SM-W-Y(WS-W) SM-W-W(WS-W) SM-W-H(WS-W)
+                             SM-W-Y(WS-W) SM-W-W(WS-W) SM-W-H(WS-W) SM-W-STATE(WS-W) SM-W-SPRITE(WS-W)
                      END-IF
                  END-IF
 *>               Without the sprite the progress is the white swatch tinted #80ff20 (the colour of the level number).
@@ -163,8 +169,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-SHEET-QUAD.
 *> USING CLIENT-STATE, widget (a sheet region): one quad over the widget's rectangle on the region of the sheet from its origin
-*> (state 1: from (1, 1), the vanilla recipe-book panel) of the widget's size, in logical units of the 256 x 256 sheet (a sheet
-*> of a larger size scales them by its width / 256).
+*> (state 1: from (1, 1), the vanilla recipe-book panel; SM-W-SPRITE rows further down, the lower blit of the chest sheet) of the widget's size, in logical units of the
+*> sheet, 256 rows high whatever its width (the merchant's is 512 x 256): a sheet of a larger size scales them by its height / 256.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -183,17 +189,17 @@
  01 L-W                    BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-W.
      MOVE SM-W-ARG(L-W) TO WS-ROW
-     IF WS-ROW >= GSP-SHEET-INVENTORY AND WS-ROW <= GSP-SHEET-BOOK
+     IF (WS-ROW >= GSP-SHEET-INVENTORY AND WS-ROW <= GSP-SHEET-BOOK) OR (WS-ROW >= GSP-SHEET-0 AND WS-ROW <= GSP-SHEET-LAST)
          IF GS-W(WS-ROW) > 0
-             COMPUTE WS-F = GS-W(WS-ROW) / 256
+             COMPUTE WS-F = GS-H(WS-ROW) / 256
              COMPUTE WS-X0 = SM-W-X(L-W) * CL-GUI-SCALE
              COMPUTE WS-Y0 = SM-W-Y(L-W) * CL-GUI-SCALE
              COMPUTE WS-X1 = (SM-W-X(L-W) + SM-W-W(L-W)) * CL-GUI-SCALE
              COMPUTE WS-Y1 = (SM-W-Y(L-W) + SM-W-H(L-W)) * CL-GUI-SCALE
              COMPUTE WS-U0 = (GS-X(WS-ROW) + SM-W-STATE(L-W) * WS-F) / UA-W
-             COMPUTE WS-V0 = (GS-Y(WS-ROW) + SM-W-STATE(L-W) * WS-F) / UA-H
+             COMPUTE WS-V0 = (GS-Y(WS-ROW) + (SM-W-STATE(L-W) + SM-W-SPRITE(L-W)) * WS-F) / UA-H
              COMPUTE WS-U1 = (GS-X(WS-ROW) + (SM-W-STATE(L-W) + SM-W-W(L-W)) * WS-F) / UA-W
-             COMPUTE WS-V1 = (GS-Y(WS-ROW) + (SM-W-STATE(L-W) + SM-W-H(L-W)) * WS-F) / UA-H
+             COMPUTE WS-V1 = (GS-Y(WS-ROW) + (SM-W-STATE(L-W) + SM-W-SPRITE(L-W) + SM-W-H(L-W)) * WS-F) / UA-H
              CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
          END-IF
      END-IF
@@ -284,6 +290,7 @@
  01 WS-BARSW               BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-TWO                 BINARY-LONG VALUE 2.
+ 01 WS-NINE                BINARY-LONG VALUE 9.
  01 WS-THIRTEEN            BINARY-LONG VALUE 13.
  01 WS-SPRITE              BINARY-LONG.
  01 WS-FOIL                BINARY-LONG.
@@ -322,7 +329,7 @@
      IF SM-W-ARG(L-W) NOT = 36
          MOVE SW-PANEL TO WS-SWATCH
 *>       State 3 is a bare slot: the screen's own art (the hotbar sprite) carries the well.
-         IF SM-W-STATE(L-W) = 3
+         IF SM-W-STATE(L-W) = 3 OR SM-W-STATE(L-W) = 4
              CONTINUE
          ELSE
              IF GS-W(GSP-SLOT) > 0
@@ -351,7 +358,14 @@
          MOVE 2 TO RL-UI-LAYER
          CALL "SPECIAL-ITEM-KIND" USING CLIENT-STATE WS-ITEM WS-SKIND WS-SID1 WS-SL1 WS-SID2 WS-SL2 WS-SDYE
          IF WS-SKIND = 0
-             CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+*>           A block item is its model under the model's gui display transform (item-gui.cob): the isometric cube, a half-height slab; a flat item (or one whose quads do not
+*>           fit the icon layer) is the flat icon of its sprite.
+             COMPUTE WS-GX = SM-W-X(L-W) + WS-INSET
+             COMPUTE WS-GY = SM-W-Y(L-W) + WS-INSET
+             CALL "ITEM-GUI-ICON" USING CLIENT-STATE WS-ITEM WS-GX WS-GY WS-SDRAWN
+             IF WS-SDRAWN = 0
+                 CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+             END-IF
          ELSE
 *>           A code-drawn model (a chest, a shulker box, a banner: item-special.cob) is drawn as its model, not as the icon of its particle texture.
              COMPUTE WS-GX = SM-W-X(L-W) + WS-INSET
@@ -403,6 +417,15 @@
                  MOVE 0 TO RL-UI-LAYER
              END-IF
          END-IF
+     END-IF
+*>   State 4 is a bare slot whose count is crossed out (a merchant row's first cost at a discount, 40-5 section 2.10): the strike-through 9 x 2 at (7, 12) of
+*>   the item, opaque red, on the layer over the icons and the count.
+     IF SM-W-STATE(L-W) = 4 AND WS-COUNT > 0
+         COMPUTE WS-X = SM-W-X(L-W) + 7
+         COMPUTE WS-Y = SM-W-Y(L-W) + 12
+         MOVE 1 TO RL-UI-LAYER
+         CALL "UI-SWATCH-QUAD" USING CLIENT-STATE WS-X WS-Y WS-NINE WS-TWO SW-BAR-0
+         MOVE 0 TO RL-UI-LAYER
      END-IF
      GOBACK.
  END PROGRAM UI-SLOT.
@@ -600,12 +623,16 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-CLIP-QUAD.
-*> USING CLIENT-STATE, sprite row (GSP-*), x, y, width, height (GUI pixels): the left width pixels of the sprite (at most its own width) and
-*> its top height pixels, not stretched: one quad over (x, y) to (x + width, y + height) on that part of the sprite.
+*> USING CLIENT-STATE, sprite row (GSP-*), x, y, width, height (GUI pixels), state, source column: the left width pixels of the sprite (at most its own width) and
+*> its top height pixels, not stretched: one quad over (x, y) to (x + width, y + height) on that part of the sprite. State 1 takes the bottom height rows of the sprite instead
+*> (the furnace flame and the brewing bubbles, anchored at the bottom: 40-2 3.2, 5); the source column is where the part starts (0 the sprite's left edge; the merchant's
+*> experience preview starts at the filled width, 40-5 2.10).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-CW                  BINARY-LONG.
  01 WS-CH                  BINARY-LONG.
+ 01 WS-SX                  BINARY-LONG.
+ 01 WS-SY                  BINARY-LONG.
  01 WS-X0                  FLOAT-SHORT.
  01 WS-Y0                  FLOAT-SHORT.
  01 WS-X1                  FLOAT-SHORT.
@@ -621,17 +648,24 @@
  01 L-Y                    BINARY-LONG.
  01 L-W                    BINARY-LONG.
  01 L-H                    BINARY-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-X L-Y L-W L-H.
-     COMPUTE WS-CW = FUNCTION MIN(L-W, GS-W(L-ROW))
+ 01 L-STATE                BINARY-LONG.
+ 01 L-SRC-X                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-X L-Y L-W L-H L-STATE L-SRC-X.
+     COMPUTE WS-CW = FUNCTION MIN(L-W, GS-W(L-ROW) - L-SRC-X)
      COMPUTE WS-CH = FUNCTION MIN(L-H, GS-H(L-ROW))
+     MOVE 0 TO WS-SY
+     IF L-STATE = 1
+         COMPUTE WS-SY = GS-H(L-ROW) - WS-CH
+     END-IF
+     MOVE L-SRC-X TO WS-SX
      COMPUTE WS-X0 = L-X * CL-GUI-SCALE
      COMPUTE WS-Y0 = L-Y * CL-GUI-SCALE
      COMPUTE WS-X1 = (L-X + WS-CW) * CL-GUI-SCALE
      COMPUTE WS-Y1 = (L-Y + WS-CH) * CL-GUI-SCALE
-     COMPUTE WS-U0 = GS-X(L-ROW) / UA-W
-     COMPUTE WS-V0 = GS-Y(L-ROW) / UA-H
-     COMPUTE WS-U1 = (GS-X(L-ROW) + WS-CW) / UA-W
-     COMPUTE WS-V1 = (GS-Y(L-ROW) + WS-CH) / UA-H
+     COMPUTE WS-U0 = (GS-X(L-ROW) + WS-SX) / UA-W
+     COMPUTE WS-V0 = (GS-Y(L-ROW) + WS-SY) / UA-H
+     COMPUTE WS-U1 = (GS-X(L-ROW) + WS-SX + WS-CW) / UA-W
+     COMPUTE WS-V1 = (GS-Y(L-ROW) + WS-SY + WS-CH) / UA-H
      CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
      GOBACK.
  END PROGRAM UI-CLIP-QUAD.
@@ -821,6 +855,46 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM UI-QUAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. UI-DIM-QUADS.
+*> USING CLIENT-STATE: the background of a screen laid over the world (12 section 5.6, 40-9 section 7A.1: the in-game screens' transparent background): a
+*> vertical gradient over the whole window from #c0101010 at the top to #d0101010 at the bottom, as 16 stacked bands of the white swatch tinted
+*> #101010 (a UI quad has one alpha), each band's alpha that of the gradient at the band's middle; the bands tile the window height exactly.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-BANDS               BINARY-LONG VALUE 16.
+ 01 WS-X1                  FLOAT-SHORT.
+ 01 WS-Y0                  FLOAT-SHORT.
+ 01 WS-Y1                  FLOAT-SHORT.
+ 01 WS-ZERO                FLOAT-SHORT VALUE 0.
+ 01 WS-U                   FLOAT-SHORT.
+ 01 WS-V                   FLOAT-SHORT.
+ 01 WS-U2                  FLOAT-SHORT.
+ 01 WS-V2                  FLOAT-SHORT.
+ 01 WS-ALPHA               FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     COMPUTE WS-X1 = IN-WIN-W
+     COMPUTE WS-U = (SW-WHITE * 8 + 4) / UA-W
+     COMPUTE WS-V = (UA-H - 4) / UA-H
+     MOVE WS-U TO WS-U2
+     MOVE WS-V TO WS-V2
+     MOVE 1052688 TO RL-UI-TINT
+     MOVE 0 TO RL-UI-LAYER
+     PERFORM VARYING WS-K FROM 0 BY 1 UNTIL WS-K >= WS-BANDS
+         COMPUTE WS-ALPHA = (192 + 16 * (WS-K + 0.5) / WS-BANDS) / 255
+         COMPUTE RL-UI-FADE = 1 - WS-ALPHA
+         COMPUTE WS-Y0 = IN-WIN-H * WS-K / WS-BANDS
+         COMPUTE WS-Y1 = IN-WIN-H * (WS-K + 1) / WS-BANDS
+         CALL "UI-QUAD" USING CLIENT-STATE WS-ZERO WS-Y0 WS-X1 WS-Y1 WS-U WS-V WS-U2 WS-V2
+     END-PERFORM
+     MOVE 0 TO RL-UI-TINT RL-UI-FADE
+     GOBACK.
+ END PROGRAM UI-DIM-QUADS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. UI-ICON-QUAD.

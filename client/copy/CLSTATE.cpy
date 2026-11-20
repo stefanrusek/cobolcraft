@@ -31,6 +31,9 @@
     05 CL-HAND-TICK-MS       BINARY-DOUBLE.   *> the clock of the last equip tick (0 = not started)
     05 CL-CAMERA             BINARY-LONG.     *> F5 camera: 0 first person, 1 behind, 2 in front (camera.cob)
     05 CL-DEBUG              PIC 9.           *> 1 = the F3 overlay is shown (debug-overlay.cob)
+    05 CL-HITBOXES           PIC 9.           *> 1 = the entity hitboxes are drawn (F3+B, 13 section 5.1; hitbox-mesh.cob)
+    05 CL-F3-HELD            PIC 9.           *> 1 = F3 went down and has not been released yet (13 section 5.1: the release toggles the overlay)
+    05 CL-F3-USED            PIC 9.           *> 1 = a combination key was used while F3 was held (the release then does not toggle the overlay)
     05 CL-FPS                BINARY-LONG.     *> frames in the last whole second
     05 CL-FPS-AT             BINARY-DOUBLE.   *> the clock when CL-FPS was last measured
     05 CL-FPS-FRAMES         BINARY-DOUBLE.   *> CL-FRAMES then
@@ -56,6 +59,8 @@
     05 CL-QUIT               PIC 9.          *> 1 = the run ends (quit control or close request)
     05 CL-NOW-MS             BINARY-DOUBLE.  *> the frame's clock (CL-STEP argument)
     05 CL-NEXT-TICK          BINARY-DOUBLE.  *> clock of the next client tick (Client Tick End)
+    05 CL-INTERP             PIC 9.          *> 1 = frames between client ticks show positions interpolated by the partial tick (smooth.cob; CL-RUN sets it, tests leave 0)
+    05 CL-PARTIAL            FLOAT-LONG.     *> the part of the client tick the frame is in, 0 to 1 (SMOOTH-PARTIAL; 1 = the tick's own state, CL-INIT)
     05 CL-FRAMES             BINARY-DOUBLE.
 *>  ---- screenshot (screenshot.cob; --screenshot-after-frames N, --screenshot-then-exit, CC_SCREENSHOT_AT_FRAME, CC_SCREENSHOT_THEN_EXIT) ----
     05 CL-CMD-AT             BINARY-DOUBLE.   *> the frame from which CL-CMD-TEXT (console commands separated by ;, CC_COMMANDS) runs once (0 = none)
@@ -540,6 +545,14 @@
        10 PL-SENT-FLAGS      BINARY-LONG.
        10 PL-POSE            BINARY-LONG.    *> the Pose enum id (docs/protocol/53 section 1): 0 standing, 3 swimming (also crawling), 5 crouching
        10 PL-EYE             FLOAT-LONG.     *> the camera's eye height above the feet (53 section 7: half the gap to the pose's eye height a tick; 0 = not set)
+*>     The state one client tick ago (SMOOTH-STORE, smooth.cob): position, eye height and field of view modifier, lerped by CL-PARTIAL for the frame's
+*>     view (53 section 7, 12 section 7.2: lerp(partialTick, old, current)). PL-OSET 0 = no old state (a join, respawn or teleport): the frame uses the current one.
+       10 PL-OSET            PIC 9.
+       10 PL-OX              FLOAT-LONG.
+       10 PL-OY              FLOAT-LONG.
+       10 PL-OZ              FLOAT-LONG.
+       10 PL-OEYE            FLOAT-LONG.
+       10 PL-OFOV            FLOAT-LONG.
        10 PL-SNEAK-SENT      PIC 9.          *> the shift state the server last got in Player Input
        10 PL-SWIM-AMOUNT     FLOAT-LONG.     *> the own model's swim amount (53 section 12)
        10 PL-ANIM-INIT       PIC 9.          *> the own figure's walk animation (54 section 1): set once the previous position is known
@@ -724,6 +737,10 @@
           15 EN-OX           FLOAT-LONG.
           15 EN-OY           FLOAT-LONG.
           15 EN-OZ           FLOAT-LONG.
+*>        The yaw, pitch and head yaw at the previous client tick (the rendered values lerp from them to the current ones by CL-PARTIAL, smooth.cob).
+          15 EN-OYAW         FLOAT-SHORT.
+          15 EN-OPITCH       FLOAT-SHORT.
+          15 EN-OHEAD        FLOAT-SHORT.
           15 EN-MOB-FLAGS    BINARY-LONG.
           15 EN-BABY         PIC 9.
           15 EN-SW-ACTIVE    PIC 9.
@@ -1082,7 +1099,7 @@
 *>     left, top, right, bottom.
        10 GS-TOTAL-H         BINARY-LONG.
        10 GS-MAX-W           BINARY-LONG.
-       10 GS-ROW OCCURS 153 TIMES.
+       10 GS-ROW OCCURS 240 TIMES.
           15 GS-X            BINARY-LONG.
           15 GS-Y            BINARY-LONG.
           15 GS-W            BINARY-LONG.
@@ -1163,6 +1180,20 @@
        10 IS-FP-VAL          FLOAT-SHORT OCCURS 18432 TIMES.
        10 IS-FACE-DONE       PIC 9 OCCURS 2048 TIMES.
        10 IS-FACE-SPRITE     BINARY-LONG OCCURS 12288 TIMES.
+*>     The GUI icon of a block item whose model has elements (ITEM-GUI-BAKE, item-gui.cob; 12 section 8.1): the quads of its model after the gui display transform that face the viewer,
+*>     far to near, in a pool shared by the items: item i has IS-GUI-COUNT(i + 1) quads from IG-QUAD number IS-GUI-FIRST(i + 1) (0 = none: the flat icon of the item's sprite is
+*>     drawn). IG-USED quads of the pool are taken. A corner is in GUI pixels of the 16 pixel icon cell (x right, y down), u and v are sprite units 0 to 16.
+       10 IS-GUI-FIRST       BINARY-LONG OCCURS 2048 TIMES.
+       10 IS-GUI-COUNT       BINARY-LONG OCCURS 2048 TIMES.
+       10 IG-USED            BINARY-LONG.
+       10 IG-QUAD OCCURS 8192 TIMES.
+          15 IG-SPRITE       BINARY-LONG.
+          15 IG-BRIGHT       FLOAT-SHORT.
+          15 IG-CORNER OCCURS 4 TIMES.
+             20 IG-X         FLOAT-SHORT.
+             20 IG-Y         FLOAT-SHORT.
+             20 IG-U         FLOAT-SHORT.
+             20 IG-V         FLOAT-SHORT.
 *>  ---- per-state tables (client/src/state-tables.cob): built once at load from the content set ----
     05 ST-STATE.
        10 ST-READY           PIC 9.          *> 1 = built (0 after CL-INIT; the mesher builds on demand)
@@ -1417,6 +1448,21 @@
           15 RL-HL-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
           15 RL-HL-G         FLOAT-SHORT.
           15 RL-HL-BLUE      FLOAT-SHORT.
+*>     The entity hitboxes of the frame (F3+B; eye-relative, texture 2 white swatch; hitbox-mesh.cob): 64 boxes of 144 vertices.
+       10 RL-HB-COUNT        BINARY-LONG.
+       10 RL-HB-UPLOADED     BINARY-LONG.
+       10 RL-HB-VERTEX OCCURS 9216 TIMES.
+          15 RL-HB-X         FLOAT-SHORT.
+          15 RL-HB-Y         FLOAT-SHORT.
+          15 RL-HB-Z         FLOAT-SHORT.
+          15 RL-HB-U         FLOAT-SHORT.
+          15 RL-HB-V         FLOAT-SHORT.
+          15 RL-HB-B         FLOAT-SHORT.
+          15 RL-HB-A         FLOAT-SHORT.
+          15 RL-HB-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-HB-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-HB-G         FLOAT-SHORT.
+          15 RL-HB-BLUE      FLOAT-SHORT.
 *>     The crack overlay of the frame (eye-relative, texture 0, alpha-blended; break-overlay.cob).
        10 RL-BO-COUNT        BINARY-LONG.
        10 RL-BO-UPLOADED     BINARY-LONG.

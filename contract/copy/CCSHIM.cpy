@@ -40,6 +40,16 @@
  78 CC-WRAP-REPEAT          VALUE 1.   *> repeat
 
 *> Vertex buffer slots of cc_vk_mesh (§9).
+ 78 CC-PHASE-INPUT          VALUE 1.   *> cc_stat_phase: events, screens, camera
+ 78 CC-PHASE-PUMP           VALUE 2.   *> hosted world pump outside the core tick
+ 78 CC-PHASE-CORE-TICK      VALUE 3.   *> one core tick
+ 78 CC-PHASE-CLIENT-TICK    VALUE 4.   *> sprint, sneak, the client tick
+ 78 CC-PHASE-CONTROLS       VALUE 5.   *> target ray, block controls, hand
+ 78 CC-PHASE-NET            VALUE 6.   *> connections, pack downloads
+ 78 CC-PHASE-WORLD          VALUE 7.   *> sky, environment, animation, meshing
+ 78 CC-PHASE-UI             VALUE 8.   *> screen model and UI quads
+ 78 CC-PHASE-RENDER-LIST    VALUE 9.   *> the render list
+ 78 CC-PHASE-SUBMIT         VALUE 10.  *> uploads before the frame
  78 CC-MESH-SLOT-MIN        VALUE 1.
  78 CC-MESH-SLOT-MAX        VALUE 65535.
 
@@ -165,11 +175,12 @@
 *>     CALL STATIC "cc_vk_texture_ex" USING BY VALUE TEX-ID W H BY REFERENCE RGBA BY VALUE MIP-LEVELS
 *>         RETURNING RC
 *>     CALL STATIC "cc_vk_texture_update" USING BY VALUE TEX-ID X Y W H BY REFERENCE RGBA RETURNING RC
-*>     CALL STATIC "cc_vk_texture_update_begin"  and  CALL STATIC "cc_vk_texture_update_end"   (updates between them wait for the GPU once)
+*>     CALL STATIC "cc_vk_texture_update_begin"  and  CALL STATIC "cc_vk_texture_update_end"   (updates between them are submitted once, without waiting for the GPU)
 *>   Daylight:       CALL STATIC "cc_vk_daylight" USING BY REFERENCE factor (FLOAT-SHORT, 0 to 1)
 *>   Fog:            CALL STATIC "cc_vk_fog" USING BY REFERENCE fog (13 FLOAT-SHORT: r g b strength start end p00 p11 up-x up-y up-z render-distance-start render-distance-end; strength 0 = none)
 *>   Glint offset:   CALL STATIC "cc_vk_glint_offset" USING BY REFERENCE uv (2 FLOAT-SHORT: u v added to the texture coordinates of CC-PIPE-GLINT draws)
 *>   Depth clear:    CALL STATIC "cc_vk_clear_depth"
+*>   Diagnostics:    CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-xxx   (CC_GPU_STATS=1: the frame phase being entered; 0 ends the phase)
 *>   Screenshot:     CALL STATIC "cc_vk_screenshot" USING BY REFERENCE PATH-Z RETURNING RC   (CC-AGAIN: one still waiting)
 *>                   CALL STATIC "cc_vk_screenshot_result" RETURNING RC   (CC-AGAIN waiting, 0 written, CC-FAILED)
 *>                   CALL STATIC "cc_png_write" USING BY REFERENCE PATH-Z BY VALUE W H BY REFERENCE RGBA RETURNING RC

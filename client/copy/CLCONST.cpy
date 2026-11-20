@@ -52,7 +52,7 @@
  78 WK-CLIP                 VALUE 13.  *> the left w pixels of a GUI sprite (GSP-* row in the argument) at x, y, h tall, w at most the sprite's own width, not stretched
                                        *> (the experience bar's progress); never clicked
  78 WK-SHEET                VALUE 10.  *> a region of a 256 x 256 sheet (GSP-SHEET-* row in the argument), x, y on the
-                                       *> screen, w x h the region size from the sheet's origin (state 1: origin (1, 1))
+                                       *> screen, w x h the region size from the sheet's origin (state 1: origin (1, 1); SM-W-SPRITE adds rows to the origin's v)
  78 WK-METER                VALUE 9.   *> hearts (argument 1) or food (argument 2): state the value in half icons,
                                        *> action the maximum in half icons; hearts grow right from x, y (the bottom
                                        *> row), food grows left (x the first icon), rows of 10 going up 10 pixels
@@ -219,6 +219,8 @@
  78 MESH-SLOT-MOON          VALUE 65012.
  78 MESH-SLOT-STARS         VALUE 65013.
  78 MESH-SLOT-CLOUDS        VALUE 65014.
+ 78 MESH-SLOT-HITBOX        VALUE 65015.    *> the entity hitboxes of F3+B (hitbox-mesh.cob)
+ 78 CL-MAX-HB-VERTICES      VALUE 9216.     *> 64 boxes of 144 vertices
  78 SKY-STAR-COUNT          VALUE 1500.     *> 12 section 3.4c: at most 1500 quads
  78 SKY-CLOUD-VERTICES      VALUE 120000.   *> the cloud mesh's capacity in vertices
  78 SKY-CLOUD-RADIUS-MAX    VALUE 32.       *> cells meshed at most (cloudRange 128 asks 171: see sky-render.cob)
@@ -426,7 +428,76 @@
  78 GSP-FURNACE-BURN         VALUE 151.
  78 GSP-XP-BACK             VALUE 152.  *> hud/experience_bar_background and experience_bar_progress, 182 x 5 (12 section 5)
  78 GSP-XP-PROGRESS         VALUE 153.
- 78 GSP-COUNT               VALUE 153.
+ 78 GSP-SHEET-0             VALUE 154.  *> the 20 container background sheets textures/gui/container/<name>.png (40-menus, one per screen family; CONTAINER-SHEET names them)
+ 78 GSP-SHEET-LAST          VALUE 173.
+ 78 GSP-BLAST-LIT           VALUE 174.  *> blast_furnace/lit_progress and burn_progress, smoker/lit_progress and burn_progress (40-2 3.3; the furnace's own are GSP-FURNACE-*)
+ 78 GSP-BLAST-BURN          VALUE 175.
+ 78 GSP-SMOKER-LIT          VALUE 176.
+ 78 GSP-SMOKER-BURN         VALUE 177.
+ 78 GSP-BREW-FUEL           VALUE 178.  *> container/brewing_stand/fuel_length, brew_progress, bubbles (40-2 5)
+ 78 GSP-BREW-ARROW          VALUE 179.
+ 78 GSP-BREW-BUBBLES        VALUE 180.
+ 78 GSP-ANVIL-FIELD         VALUE 181.  *> container/anvil/text_field, text_field_disabled, error (40-3 3.8)
+ 78 GSP-ANVIL-FIELD-OFF     VALUE 182.
+ 78 GSP-ANVIL-ERROR         VALUE 183.
+ 78 GSP-ENCH-SLOT           VALUE 184.  *> container/enchanting_table/enchantment_slot, _highlighted, _disabled (40-4 2.9)
+ 78 GSP-ENCH-SLOT-HI        VALUE 185.
+ 78 GSP-ENCH-SLOT-OFF       VALUE 186.
+ 78 GSP-ENCH-LEVEL-1        VALUE 187.  *> container/enchanting_table/level_1 to level_3, then level_1_disabled to level_3_disabled
+ 78 GSP-ENCH-LEVEL-2        VALUE 188.
+ 78 GSP-ENCH-LEVEL-3        VALUE 189.
+ 78 GSP-ENCH-LEVEL-OFF-1    VALUE 190.
+ 78 GSP-ENCH-LEVEL-OFF-2    VALUE 191.
+ 78 GSP-ENCH-LEVEL-OFF-3    VALUE 192.
+ 78 GSP-BEACON-BUTTON       VALUE 193.  *> container/beacon/button, button_disabled, button_highlighted, button_selected, confirm, cancel (40-5 3.7)
+ 78 GSP-BEACON-OFF          VALUE 194.
+ 78 GSP-BEACON-HI           VALUE 195.
+ 78 GSP-BEACON-SEL          VALUE 196.
+ 78 GSP-BEACON-CONFIRM      VALUE 197.
+ 78 GSP-BEACON-CANCEL       VALUE 198.
+ 78 GSP-VIL-ARROW           VALUE 199.  *> container/villager/trade_arrow, trade_arrow_out_of_stock, scroller, scroller_disabled, experience_bar_background, _current, _result, out_of_stock, discount_strikethrough (40-5 2.10)
+ 78 GSP-VIL-ARROW-OFF       VALUE 200.
+ 78 GSP-VIL-SCROLLER        VALUE 201.
+ 78 GSP-VIL-SCROLLER-OFF    VALUE 202.
+ 78 GSP-VIL-XP-BACK         VALUE 203.
+ 78 GSP-VIL-XP-CURRENT      VALUE 204.
+ 78 GSP-VIL-XP-RESULT       VALUE 205.
+ 78 GSP-VIL-OUT             VALUE 206.
+ 78 GSP-VIL-STRIKE          VALUE 207.
+ 78 GSP-LOOM-PATTERN        VALUE 208.  *> container/loom/pattern, pattern_highlighted, pattern_selected, scroller, scroller_disabled, error (40-4 3.10)
+ 78 GSP-LOOM-PATTERN-HI     VALUE 209.
+ 78 GSP-LOOM-PATTERN-SEL    VALUE 210.
+ 78 GSP-LOOM-SCROLLER       VALUE 211.
+ 78 GSP-LOOM-SCROLLER-OFF   VALUE 212.
+ 78 GSP-LOOM-ERROR          VALUE 213.
+ 78 GSP-STONE-RECIPE        VALUE 214.  *> container/stonecutter/recipe, recipe_highlighted, recipe_selected, scroller, scroller_disabled (40-4 4.9)
+ 78 GSP-STONE-RECIPE-HI     VALUE 215.
+ 78 GSP-STONE-RECIPE-SEL    VALUE 216.
+ 78 GSP-STONE-SCROLLER      VALUE 217.
+ 78 GSP-STONE-SCROLLER-OFF  VALUE 218.
+ 78 GSP-CART-MAP            VALUE 219.  *> container/cartography_table/map, scaled_map, duplicated_map, locked, error (40-4 5.7)
+ 78 GSP-CART-SCALED         VALUE 220.
+ 78 GSP-CART-DUPLICATED     VALUE 221.
+ 78 GSP-CART-LOCKED         VALUE 222.
+ 78 GSP-CART-ERROR          VALUE 223.
+ 78 GSP-CRAFTER-DISABLED    VALUE 224.  *> container/crafter/disabled_slot, powered_redstone, unpowered_redstone (40-2 7.3)
+ 78 GSP-CRAFTER-POWERED     VALUE 225.
+ 78 GSP-CRAFTER-UNPOWERED   VALUE 226.
+ 78 GSP-GRIND-ERROR         VALUE 227.  *> container/grindstone/error and container/smithing/error (40-3 4.7, 5.5)
+ 78 GSP-SMITH-ERROR         VALUE 228.
+ 78 GSP-SLOT-POTION         VALUE 229.  *> container/slot/potion, brewing_fuel, banner, banner_pattern, dye, saddle, horse_armor, llama_armor, nautilus_armor_inventory: the empty-slot icons (40-2 4.2, 40-4 3.10, 40-6 2.4)
+ 78 GSP-SLOT-BREW-FUEL      VALUE 230.
+ 78 GSP-SLOT-BANNER         VALUE 231.
+ 78 GSP-SLOT-BANNER-PATTERN VALUE 232.
+ 78 GSP-SLOT-DYE            VALUE 233.
+ 78 GSP-SLOT-SADDLE         VALUE 234.
+ 78 GSP-SLOT-HORSE-ARMOR    VALUE 235.
+ 78 GSP-SLOT-LLAMA-ARMOR    VALUE 236.
+ 78 GSP-SLOT-NAUTILUS-ARMOR VALUE 237.
+ 78 GSP-HORSE-CHEST         VALUE 238.  *> container/horse/chest_slots (40-6 6.2)
+ 78 GSP-BUTTON-HI           VALUE 239.  *> widget/button_highlighted and widget/button_disabled (12 5.9)
+ 78 GSP-BUTTON-OFF          VALUE 240.
+ 78 GSP-COUNT               VALUE 240.
  78 CL-FREEZE-TICKS         VALUE 140.  *> ticks frozen of a fully frozen player (49 open question 7: the threshold was not read; 140 assumed)
  78 CL-RK-MAX               VALUE 2048. *> recipes the book keeps (the rest are dropped)
 

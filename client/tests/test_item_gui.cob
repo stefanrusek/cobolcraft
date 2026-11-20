@@ -1,0 +1,354 @@
+*> Lane bugguiitems (T59700 and on; operator try17: block items were flat squares of one texture in the inventory and hotbar slots): a block item is drawn in a slot as its model under the
+*> model's gui display transform (12 sections 8.1, 8.2, 1.9; item-gui.cob). The expected quads (item, texture, brightness, the four corners' x, y, u, v) come from
+*> client/tests/fixtures/gen_item_gui.py, an independent bake of the generated vanilla pack's JSON (CC_GENERATED_DIR), times 1000 (brightness times 10000). The pooled quads (IG-QUAD) and the
+*> vertices of a UI-RENDER slot are compared to them; a flat item stays one quad, a slot without room for the quads keeps the flat icon, the stand-in set and out-of-range items draw nothing.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ITEM-GUI.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY CLMODEL.
+ COPY TESTLIB.
+ 01 WS-ROW-DATA.
+    05 FILLER PIC X(157) VALUE "minecraft:block/oak_planks              10000+015071+008000+000929+008000+003670+007205+003670+000134+000000+016000+016000+000000+000000+000000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/oak_planks              07459+000929+008000+008000+000929+003670+007205+015866+012330+000000+016000+016000+000000+000000+000000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/oak_planks              06797+008000+015071+015071+008000+007205+003670+012330+015866+000000+016000+016000+000000+000000+000000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/oak_planks              10000+015071+008000+000929+008000+008000+011536+008000+004464+000000+016000+016000+000000+000000+000000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/oak_planks              07459+000929+008000+008000+000929+008000+011536+015866+012330+000000+016000+016000+000000+008000+008000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/oak_planks              06797+008000+015071+015071+008000+011536+008000+012330+015866+000000+016000+016000+000000+008000+008000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/oak_log_top             10000+015071+008000+000929+008000+003670+007205+003670+000134+000000+016000+016000+000000+000000+000000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/oak_log                 07459+000929+008000+008000+000929+003670+007205+015866+012330+000000+016000+016000+000000+000000+000000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/oak_log                 06797+008000+015071+015071+008000+007205+003670+012330+015866+000000+016000+016000+000000+000000+000000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/cobblestone             10000+015071+008000+000929+008000+003670+007205+003670+000134+000000+016000+016000+000000+000000+000000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/cobblestone             07459+000929+008000+008000+000929+003670+007205+015866+012330+000000+016000+016000+000000+000000+000000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/cobblestone             06797+008000+015071+015071+008000+007205+003670+012330+015866+000000+016000+016000+000000+000000+000000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/oak_planks              10000+008000+000929+008000+015071+011536+008000+004464+008000+000000+016000+016000+000000+000000+000000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/oak_planks              10000+004464+000929+008000+011536+005438+003670+000134+001902+008000+016000+016000+008000+000000+000000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/oak_planks              06797+004464+011536+011536+004464+005438+001902+006232+009768+000000+016000+016000+000000+000000+000000+008000+008000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/oak_planks              07459+000929+008000+008000+000929+008000+011536+015866+012330+000000+016000+016000+000000+008000+008000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/oak_planks              06797+008000+015071+015071+008000+011536+008000+012330+015866+000000+016000+016000+000000+008000+008000+016000+016000".
+    05 FILLER PIC X(157) VALUE "minecraft:block/oak_planks              07459+000929+004464+004464+000929+003670+005438+009768+008000+000000+008000+008000+000000+000000+000000+008000+008000".
+ 01 WS-ROWS REDEFINES WS-ROW-DATA.
+    05 WS-RW OCCURS 18 TIMES.
+       10 WS-RW-TEX          PIC X(40).
+       10 WS-RW-B            PIC 9(5).
+       10 WS-RW-V            PIC S9(6) SIGN LEADING SEPARATE OCCURS 16 TIMES.
+ 01 WS-ITEM-DATA.
+    05 FILLER PIC X(20) VALUE "oak_planks      0103".
+    05 FILLER PIC X(20) VALUE "oak_slab        0403".
+    05 FILLER PIC X(20) VALUE "oak_log         0703".
+    05 FILLER PIC X(20) VALUE "cobblestone     1003".
+    05 FILLER PIC X(20) VALUE "oak_stairs      1306".
+ 01 WS-ITEMS REDEFINES WS-ITEM-DATA.
+    05 WS-IT OCCURS 5 TIMES.
+       10 WS-IT-KEY         PIC X(16).
+       10 WS-IT-FIRST       PIC 99.
+       10 WS-IT-COUNT       PIC 99.
+ 01 WS-GEN                 PIC X(256).
+ 01 WS-ROOT                PIC X(256).
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-SPRITE              BINARY-LONG.
+ 01 WS-TEXID               PIC X(80).
+ 01 WS-TEXLEN              BINARY-LONG.
+ 01 WS-TEXSPR              BINARY-LONG.
+ 01 WS-T                   BINARY-LONG.
+ 01 WS-Q                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-ROWN                BINARY-LONG.
+ 01 WS-QN                  BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-GOT                 BINARY-LONG.
+ 01 WS-EXP                 BINARY-LONG.
+ 01 WS-DIRT                BINARY-LONG.
+ 01 WS-APPLE               BINARY-LONG.
+ 01 WS-SENSOR              BINARY-LONG.
+ 01 WS-DRAWN               BINARY-LONG.
+ 01 WS-X                   BINARY-LONG VALUE 11.
+ 01 WS-Y                   BINARY-LONG VALUE 11.
+ 01 WS-ID                  PIC X(80).
+ 01 WS-ID-LEN              BINARY-LONG.
+ 01 WS-BIG                 BINARY-LONG VALUE 5000.
+ 01 WS-NEG                 BINARY-LONG VALUE -1.
+ 01 WS-SAVE-USED           BINARY-LONG.
+ 01 WS-SAVE-TYPE           BINARY-LONG.
+ 01 WS-SAVE-COUNT          BINARY-LONG.
+ 01 WS-QD                  PIC 99.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-MISS                BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE SPACES TO WS-GEN
+     ACCEPT WS-GEN FROM ENVIRONMENT "CC_GENERATED_DIR"
+     IF WS-GEN = SPACES
+         MOVE "/tmp/cc-test/generated" TO WS-GEN
+     END-IF
+     MOVE SPACES TO WS-ROOT
+     STRING FUNCTION TRIM(WS-GEN) "/vanilla-resources" DELIMITED BY SIZE INTO WS-ROOT
+     CALL "CL-INIT" USING CLIENT-STATE
+     CALL "PACK-STACK-INIT" USING CLIENT-STATE
+     ADD 1 TO PK-COUNT
+     INITIALIZE PK-PACK(PK-COUNT)
+     MOVE 1 TO PK-KIND(PK-COUNT)
+     MOVE 3 TO PK-LEVEL(PK-COUNT)
+     MOVE "generated/vanilla" TO PK-ID(PK-COUNT)
+     MOVE 17 TO PK-ID-LENGTH(PK-COUNT)
+     MOVE WS-ROOT TO PK-ROOT(PK-COUNT)
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-ROOT)) TO PK-ROOT-LENGTH(PK-COUNT)
+     CALL "PACK-STACK-OPEN" USING CLIENT-STATE
+     CALL "PACK-SOURCE-FILES" USING CLIENT-STATE PK-COUNT
+     CALL "ATLAS-BUILD" USING CLIENT-STATE
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     CALL "CONTENT-SET-COUNTS"
+     MOVE 1 TO CT-OPEN
+     MOVE 1 TO CL-GUI-SCALE
+     PERFORM VARYING WS-T FROM 1 BY 1 UNTIL WS-T > 5
+         MOVE SPACES TO WS-KEY
+         MOVE WS-IT-KEY(WS-T) TO WS-KEY
+         CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+         CALL "ITEM-SPRITE-OF" USING CLIENT-STATE WS-ITEM WS-SPRITE
+         MOVE "N" TO TL-MODE
+         MOVE SPACES TO TL-CASE
+         STRING "bugguiitems " FUNCTION TRIM(WS-IT-KEY(WS-T)) ": the quads that face the viewer" DELIMITED BY SIZE INTO TL-CASE
+         MOVE WS-IT-COUNT(WS-T) TO TL-EXPECTED-N
+         MOVE IS-GUI-COUNT(WS-ITEM + 1) TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > WS-IT-COUNT(WS-T)
+             COMPUTE WS-QN = IS-GUI-FIRST(WS-ITEM + 1) + WS-Q - 1
+             MOVE WS-Q TO WS-QD
+             MOVE 0 TO WS-FOUND
+*>           Quads of equal depth (the two side faces of a cube) may come in either order: the pooled quad must equal one of the item's expected quads.
+             PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > WS-IT-COUNT(WS-T)
+                 COMPUTE WS-ROWN = WS-IT-FIRST(WS-T) + WS-C - 1
+                 PERFORM QUAD-DIFF
+                 IF WS-BAD = 0
+                     ADD 1 TO WS-FOUND
+                 END-IF
+             END-PERFORM
+             MOVE SPACES TO TL-CASE
+             STRING "bugguiitems " FUNCTION TRIM(WS-IT-KEY(WS-T)) " quad " WS-QD ": sprite, brightness, corners and uv match a quad of the model" DELIMITED BY SIZE INTO TL-CASE
+             MOVE 1 TO TL-EXPECTED-N
+             MOVE WS-FOUND TO TL-OBSERVED-N
+             CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         END-PERFORM
+     END-PERFORM
+*>   A slot (18 x 18 at 10, 10, GUI scale 1) holding the slab: three quads of the cube's pooled data, in the icon cell at (11, 11).
+     MOVE 1 TO SM-WIDGET-COUNT
+     MOVE WK-SLOT TO SM-W-KIND(1)
+     MOVE 0 TO SM-W-ARG(1) SM-W-STATE(1)
+     MOVE 10 TO SM-W-X(1) SM-W-Y(1)
+     MOVE 18 TO SM-W-W(1) SM-W-H(1)
+     MOVE 1 TO PL-SLOT-COUNT(1)
+     MOVE SPACES TO WS-KEY
+     MOVE "oak_slab" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO PL-SLOT-ITEM(1)
+     MOVE 0 TO RL-IC-COUNT
+     CALL "UI-RENDER" USING CLIENT-STATE
+     MOVE "bugguiitems an oak slab in a slot: 3 quads (18 vertices), not one flat square" TO TL-CASE
+     MOVE 18 TO TL-EXPECTED-N
+     MOVE RL-IC-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > 3
+         MOVE 0 TO WS-FOUND
+         PERFORM VARYING WS-C FROM 4 BY 1 UNTIL WS-C > 6
+             MOVE 0 TO WS-MISS
+             COMPUTE WS-GOT ROUNDED = (RL-IC-X((WS-Q - 1) * 6 + 1) - 11) * 1000
+             MOVE WS-RW-V(WS-C, 1) TO WS-EXP
+             IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+                 ADD 1 TO WS-MISS
+             END-IF
+             COMPUTE WS-GOT ROUNDED = (RL-IC-Y((WS-Q - 1) * 6 + 1) - 11) * 1000
+             MOVE WS-RW-V(WS-C, 5) TO WS-EXP
+             IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+                 ADD 1 TO WS-MISS
+             END-IF
+             COMPUTE WS-GOT ROUNDED = (RL-IC-X((WS-Q - 1) * 6 + 3) - 11) * 1000
+             MOVE WS-RW-V(WS-C, 3) TO WS-EXP
+             IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+                 ADD 1 TO WS-MISS
+             END-IF
+             COMPUTE WS-GOT ROUNDED = RL-IC-B((WS-Q - 1) * 6 + 1) * 10000
+             MOVE WS-RW-B(WS-C) TO WS-EXP
+             IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+                 ADD 1 TO WS-MISS
+             END-IF
+             IF WS-MISS = 0
+                 ADD 1 TO WS-FOUND
+             END-IF
+         END-PERFORM
+         IF WS-FOUND = 0
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE "bugguiitems an oak slab in a slot: the vertices are the model's corners in the icon cell, shaded" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BAD TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Dirt (a cube) is three quads too; an apple (a flat item) is still one quad with no pooled quads.
+     MOVE SPACES TO WS-KEY
+     MOVE "dirt" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-DIRT WS-ITEM-ROW WS-STATUS
+     MOVE WS-DIRT TO PL-SLOT-ITEM(1)
+     MOVE 0 TO RL-IC-COUNT
+     CALL "UI-RENDER" USING CLIENT-STATE
+     MOVE "bugguiitems dirt in a slot: 3 quads" TO TL-CASE
+     MOVE 18 TO TL-EXPECTED-N
+     MOVE RL-IC-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO WS-KEY
+     MOVE "apple" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-APPLE WS-ITEM-ROW WS-STATUS
+     MOVE WS-APPLE TO PL-SLOT-ITEM(1)
+     MOVE 0 TO RL-IC-COUNT
+     CALL "UI-RENDER" USING CLIENT-STATE
+     MOVE "bugguiitems an apple in a slot: one flat quad" TO TL-CASE
+     MOVE 6 TO TL-EXPECTED-N
+     MOVE RL-IC-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "bugguiitems an apple has no pooled quads" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE IS-GUI-COUNT(WS-APPLE + 1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A model whose gui_light is front is lit fully (the calibrated sculk sensor: elements and gui_light front).
+     MOVE SPACES TO WS-KEY
+     MOVE "calibrated_sculk_sensor" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-SENSOR WS-ITEM-ROW WS-STATUS
+     CALL "ITEM-SPRITE-OF" USING CLIENT-STATE WS-SENSOR WS-SPRITE
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > IS-GUI-COUNT(WS-SENSOR + 1)
+         COMPUTE WS-QN = IS-GUI-FIRST(WS-SENSOR + 1) + WS-Q - 1
+         IF IG-BRIGHT(WS-QN) < 0.9999
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE "bugguiitems a gui_light front model: its quads are at full brightness" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BAD TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "bugguiitems a gui_light front model has quads" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF IS-GUI-COUNT(WS-SENSOR + 1) > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The model's display data: block/dirt names gui (30, 225, 0) scale 0.625 and gui_light side, item/shield gui_light front.
+     MOVE SPACES TO WS-ID
+     MOVE "minecraft:block/dirt" TO WS-ID
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-ID)) TO WS-ID-LEN
+     CALL "MODEL-RESOLVE" USING CLIENT-STATE WS-ID WS-ID-LEN MODEL-RESOLVED
+     MOVE "bugguiitems block/dirt: display.gui rotation y 225, scale 0.625, light side" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF MR-GUI-PRESENT = 1 AND MR-GUI(1) = 30 AND MR-GUI(2) = 225 AND MR-GUI(7) = 0.625 AND MR-GUI-LIGHT = 2
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO WS-ID
+     MOVE "minecraft:item/shield" TO WS-ID
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-ID)) TO WS-ID-LEN
+     CALL "MODEL-RESOLVE" USING CLIENT-STATE WS-ID WS-ID-LEN MODEL-RESOLVED
+     MOVE "bugguiitems item/shield: gui_light front" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE MR-GUI-LIGHT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Not drawn: an out-of-range item, no room in the icon layer, a flat item, the stand-in set; a full pool bakes nothing.
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO WS-DRAWN
+     CALL "ITEM-GUI-ICON" USING CLIENT-STATE WS-BIG WS-X WS-Y WS-DRAWN
+     MOVE "bugguiitems ITEM-GUI-ICON of an item id out of range draws nothing" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-DRAWN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ITEM-GUI-BAKE" USING CLIENT-STATE WS-BIG MODEL-RESOLVED
+     CALL "ITEM-GUI-BAKE" USING CLIENT-STATE WS-NEG MODEL-RESOLVED
+     MOVE 1 TO WS-DRAWN
+     CALL "ITEM-GUI-ICON" USING CLIENT-STATE WS-APPLE WS-X WS-Y WS-DRAWN
+     MOVE "bugguiitems ITEM-GUI-ICON of a flat item draws nothing" TO TL-CASE
+     MOVE WS-DRAWN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE RL-IC-COUNT = CL-MAX-ICON-VERTICES - 5
+     MOVE 1 TO WS-DRAWN
+     CALL "ITEM-GUI-ICON" USING CLIENT-STATE WS-ITEM WS-X WS-Y WS-DRAWN
+     MOVE "bugguiitems ITEM-GUI-ICON without room for all the quads draws none" TO TL-CASE
+     MOVE WS-DRAWN TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "bugguiitems ITEM-GUI-ICON without room adds no vertex" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = CL-MAX-ICON-VERTICES - 5
+     MOVE RL-IC-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE CT-SET-TYPE TO WS-SAVE-TYPE
+     MOVE CT-TYPE-COBOLCRAFT TO CT-SET-TYPE
+     MOVE 0 TO RL-IC-COUNT
+     MOVE 1 TO WS-DRAWN
+     CALL "ITEM-GUI-ICON" USING CLIENT-STATE WS-ITEM WS-X WS-Y WS-DRAWN
+     MOVE WS-SAVE-TYPE TO CT-SET-TYPE
+     MOVE "bugguiitems ITEM-GUI-ICON in a stand-in set draws nothing" TO TL-CASE
+     MOVE WS-DRAWN TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO WS-ID
+     MOVE "minecraft:block/oak_stairs" TO WS-ID
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-ID)) TO WS-ID-LEN
+     CALL "MODEL-RESOLVE" USING CLIENT-STATE WS-ID WS-ID-LEN MODEL-RESOLVED
+     MOVE IG-USED TO WS-SAVE-USED
+     MOVE 8190 TO IG-USED
+     CALL "ITEM-GUI-BAKE" USING CLIENT-STATE WS-SENSOR MODEL-RESOLVED
+     MOVE IS-GUI-COUNT(WS-SENSOR + 1) TO WS-SAVE-COUNT
+     MOVE "bugguiitems a full pool: the item keeps no pooled quads (the flat icon)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-SAVE-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "bugguiitems a full pool is not overrun" TO TL-CASE
+     MOVE 8190 TO TL-EXPECTED-N
+     MOVE IG-USED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE WS-SAVE-USED TO IG-USED
+     STOP RUN.
+
+*> WS-BAD: how many of the pooled quad WS-QN's sprite, brightness and 16 numbers differ from the expected row WS-ROWN.
+ QUAD-DIFF.
+     MOVE 0 TO WS-BAD
+     MOVE SPACES TO WS-TEXID
+     MOVE WS-RW-TEX(WS-ROWN) TO WS-TEXID
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TEXID)) TO WS-TEXLEN
+     CALL "ATLAS-FIND" USING CLIENT-STATE WS-TEXID WS-TEXLEN WS-TEXSPR
+     IF IG-SPRITE(WS-QN) NOT = WS-TEXSPR
+         ADD 1 TO WS-BAD
+     END-IF
+     COMPUTE WS-GOT ROUNDED = IG-BRIGHT(WS-QN) * 10000
+     MOVE WS-RW-B(WS-ROWN) TO WS-EXP
+     IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+         ADD 1 TO WS-BAD
+     END-IF
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+         COMPUTE WS-GOT ROUNDED = IG-X(WS-QN, WS-K) * 1000
+         MOVE WS-RW-V(WS-ROWN, WS-K) TO WS-EXP
+         IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+             ADD 1 TO WS-BAD
+         END-IF
+         COMPUTE WS-GOT ROUNDED = IG-Y(WS-QN, WS-K) * 1000
+         MOVE WS-RW-V(WS-ROWN, WS-K + 4) TO WS-EXP
+         IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+             ADD 1 TO WS-BAD
+         END-IF
+         COMPUTE WS-GOT ROUNDED = IG-U(WS-QN, WS-K) * 1000
+         MOVE WS-RW-V(WS-ROWN, WS-K + 8) TO WS-EXP
+         IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+             ADD 1 TO WS-BAD
+         END-IF
+         COMPUTE WS-GOT ROUNDED = IG-V(WS-QN, WS-K) * 1000
+         MOVE WS-RW-V(WS-ROWN, WS-K + 12) TO WS-EXP
+         IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     .
+ END PROGRAM TEST-ITEM-GUI.
+ COPY CLTEST.

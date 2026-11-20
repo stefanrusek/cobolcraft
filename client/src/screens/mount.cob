@@ -154,9 +154,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOUNT-DECOR.
-*> USING CLIENT-STATE, left, top: 6.2: the chest area (a swatch for the sprite container/horse/chest_slots, 18 x columns by 54 at (79, 17), only with columns above 0), the
-*> saddle frame (18 x 18 at (7, 17)) and the body frame (7, 35) of the active slots, then the empty-slot icon (16 x 16 at the slot's item cell, a swatch for the sprite) of each
-*> active slot with no item. The entity preview (6.4) is not drawn.
+*> USING CLIENT-STATE, left, top: 6.2: the chest area (the sprite container/horse/chest_slots, not stretched: its left 18 x columns by 54 at (79, 17), only with columns above 0), the
+*> saddle frame (the container/slot sprite, 18 x 18 at (7, 17)) and the body frame (7, 35) of the active slots; the built-in pack has the container/slot sprite, so no fallback. The empty-slot icons are MOUNT-ICONS, after the slot widgets. The entity preview (6.4) is not drawn (a separate feature).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -171,6 +170,10 @@
  01 WS-TEXT                PIC X(512).
  01 WS-LENGTH              BINARY-LONG VALUE 0.
  01 WS-STATE               BINARY-LONG VALUE 0.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-DRAWN               BINARY-LONG.
+ 01 WS-BOTTOM              BINARY-LONG VALUE 0.
+ 01 WS-SRC                 BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-LEFT                 BINARY-LONG.
@@ -186,30 +189,77 @@
          COMPUTE WS-Y = L-TOP + 17
          COMPUTE WS-W = 18 * WS-COLUMNS
          MOVE 54 TO WS-H
-         MOVE SW-BUTTON TO WS-SWATCH
-         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+         MOVE GSP-HORSE-CHEST TO WS-ROW
+         CALL "DECOR-CLIP" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-BOTTOM WS-SRC WS-DRAWN
+         IF WS-DRAWN = 0
+             MOVE SW-BUTTON TO WS-SWATCH
+             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+         END-IF
      END-IF
      MOVE 18 TO WS-W WS-H
      COMPUTE WS-X = L-LEFT + 7
-     MOVE SW-BUTTON TO WS-SWATCH
+     MOVE GSP-SLOT TO WS-ROW
      IF MT-SADDLE = 1
          COMPUTE WS-Y = L-TOP + 17
-         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+         CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
      END-IF
      IF MT-BODY = 1
          COMPUTE WS-Y = L-TOP + 35
-         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
-     END-IF
-     MOVE 16 TO WS-W WS-H
-     COMPUTE WS-X = L-LEFT + 8
-     MOVE SW-PANEL TO WS-SWATCH
-     IF MT-SADDLE = 1 AND BX-COUNT(1) = 0
-         COMPUTE WS-Y = L-TOP + 18
-         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
-     END-IF
-     IF MT-BODY = 1 AND BX-COUNT(2) = 0
-         COMPUTE WS-Y = L-TOP + 36
-         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+         CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
      END-IF
      GOBACK.
  END PROGRAM MOUNT-DECOR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOUNT-ICONS.
+*> USING CLIENT-STATE, left, top: 6.2 the empty-slot icon (16 x 16 at the slot's item cell: saddle, then horse_armor, llama_armor or nautilus_armor_inventory by the body icon of
+*> 2.4) of each active slot with no item, drawn over the slot widgets (a slot widget's well would hide it); a pack without the sprites gets a swatch of the same size each.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-W                   BINARY-LONG.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-SWATCH              BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG VALUE WK-OVERLAY.
+ 01 WS-ACTION              BINARY-LONG VALUE ACT-NONE.
+ 01 WS-TEXT                PIC X(512).
+ 01 WS-LENGTH              BINARY-LONG VALUE 0.
+ 01 WS-STATE               BINARY-LONG VALUE 0.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-DRAWN               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-LEFT                 BINARY-LONG.
+ 01 L-TOP                  BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-LEFT L-TOP.
+     MOVE SPACES TO WS-TEXT
+     MOVE 16 TO WS-W WS-H
+     COMPUTE WS-X = L-LEFT + 8
+     IF MT-SADDLE = 1 AND BX-COUNT(1) = 0
+         COMPUTE WS-Y = L-TOP + 18
+         MOVE GSP-SLOT-SADDLE TO WS-ROW
+         CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
+         IF WS-DRAWN = 0
+             MOVE SW-PANEL TO WS-SWATCH
+             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+         END-IF
+     END-IF
+     IF MT-BODY = 1 AND BX-COUNT(2) = 0
+         COMPUTE WS-Y = L-TOP + 36
+         MOVE GSP-SLOT-HORSE-ARMOR TO WS-ROW
+         IF MT-ICON = 2
+             MOVE GSP-SLOT-LLAMA-ARMOR TO WS-ROW
+         END-IF
+         IF MT-ICON = 3
+             MOVE GSP-SLOT-NAUTILUS-ARMOR TO WS-ROW
+         END-IF
+         CALL "DECOR-SPRITE" USING CLIENT-STATE WS-ROW WS-X WS-Y WS-W WS-H WS-DRAWN
+         IF WS-DRAWN = 0
+             MOVE SW-PANEL TO WS-SWATCH
+             CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-SWATCH WS-X WS-Y WS-W WS-H WS-TEXT WS-LENGTH WS-STATE
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM MOUNT-ICONS.

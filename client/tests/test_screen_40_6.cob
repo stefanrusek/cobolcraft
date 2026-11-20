@@ -375,13 +375,14 @@
      END-PERFORM
      .
 
-*> Every overlay after the panel as "x:y:wxh " (the highlight sprites are not overlays).
+*> Every overlay after the panel as "x:y:wxh " (the highlight sprites are not overlays), and the slot frames: a pack with the container/slot sprite (the built-in pack has it) draws a
+*> frame as that sprite (lane screenwidgets), not as a swatch.
  OVERLAYS.
      CALL "SCREEN-BUILD" USING CLIENT-STATE
      MOVE SPACES TO TL-OBSERVED
      MOVE 1 TO WS-PTR
      PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
-         IF SM-W-KIND(WS-I) = WK-OVERLAY
+         IF SM-W-KIND(WS-I) = WK-OVERLAY OR (SM-W-KIND(WS-I) = WK-SPRITE AND SM-W-ARG(WS-I) = GSP-SLOT)
              MOVE SM-W-X(WS-I) TO WS-E1
              MOVE SM-W-Y(WS-I) TO WS-E2
              MOVE SM-W-W(WS-I) TO WS-E3

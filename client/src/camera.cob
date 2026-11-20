@@ -81,7 +81,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CAMERA-PLACE.
-*> USING CLIENT-STATE, view yaw out, view pitch out (degrees, FLOAT-LONG), eye (3 FLOAT-LONG) out. With --camera (CL-CAM-SET 1) the view is that
+*> USING CLIENT-STATE, view yaw out, view pitch out (degrees, FLOAT-LONG), eye (3 FLOAT-LONG) out. The eye is at the partial tick (SMOOTH-PLAYER); the yaw and
+*> pitch are the current ones (the mouse turns them every frame). With --camera (CL-CAM-SET 1) the view is that
 *> eye, yaw and pitch in every perspective, whatever the player does.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -91,6 +92,10 @@
     05 WS-FWD              FLOAT-LONG OCCURS 3 TIMES.
  01 WS-DISTANCE            FLOAT-LONG.
  01 WS-A                   BINARY-LONG.
+ 01 WS-FEET-X              FLOAT-LONG.
+ 01 WS-FEET-Y              FLOAT-LONG.
+ 01 WS-FEET-Z              FLOAT-LONG.
+ 01 WS-EYE-H               FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-YAW                  FLOAT-LONG.
@@ -98,12 +103,12 @@
  01 L-EYE-TABLE.
     05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
  PROCEDURE DIVISION USING CLIENT-STATE L-YAW L-PITCH L-EYE-TABLE.
-     MOVE PL-X TO L-EYE(1)
-     COMPUTE L-EYE(2) = PL-Y + 1.6
-     IF PL-EYE > 0
-         COMPUTE L-EYE(2) = PL-Y + PL-EYE
-     END-IF
-     MOVE PL-Z TO L-EYE(3)
+*>   The eye at the partial tick (smooth.cob: lerp of the position and the smoothed eye height of the previous and this tick; the tick's own while the state of
+*>   the previous tick is not known or CL-PARTIAL is 1).
+     CALL "SMOOTH-PLAYER" USING CLIENT-STATE WS-FEET-X WS-FEET-Y WS-FEET-Z WS-EYE-H
+     MOVE WS-FEET-X TO L-EYE(1)
+     COMPUTE L-EYE(2) = WS-FEET-Y + WS-EYE-H
+     MOVE WS-FEET-Z TO L-EYE(3)
      MOVE PL-YAW TO L-YAW
      MOVE PL-PITCH TO L-PITCH
      IF CL-CAM-SET = 1
