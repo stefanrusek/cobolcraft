@@ -7,8 +7,8 @@
 *> here) and shades the rest by the LEVEL lights of 12 section 6.10 (normals in world orientation, HAND-VIEW-ROT) and the light at the eye. HAND-PROJECT is the hand's own
 *> projection (fixed 70 degrees, 6.9). RENDER-LIST-BUILD draws the mesh with that projection alone, after a depth clear (a draw record with slot -1; SUBMIT-FRAME calls
 *> cc_vk_clear_depth), so it is never inside a block; the shim's solid pipeline tests less-or-equal with writes, the conventional form of the document's
-*> greater-or-equal on a depth cleared to 0. Not done: the arm of an empty hand (6.5), the left hand and off hand, the use poses (6.6), view bobbing, sway and the hurt
-*> tilt (6.1), the cooldown dip (6.2), the glint, the level light map (the light at the eye is a brightness factor) and the death fov.
+*> greater-or-equal on a depth cleared to 0. Not done: the arm of an empty hand (6.5), the left hand and off hand, the use poses (6.6), sway (the view
+*> bobbing and the hurt tilt are VIEW-POSE, view-pose.cob), the cooldown dip (6.2), the glint, the level light map (the light at the eye is a brightness factor) and the death fov.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HAND-INPUT.
@@ -451,6 +451,10 @@
  01 WS-CELL                FLOAT-LONG.
  01 WS-PREV-COUNT          BINARY-LONG.
  01 WS-STILL               BINARY-LONG.
+ 01 WS-POSE-SAME           BINARY-LONG.
+ 01 WS-POSE-I              BINARY-LONG.
+ 01 WS-POSE.
+    05 WS-POSEV            FLOAT-LONG OCCURS 12 TIMES.
  01 WS-VYAW                FLOAT-LONG.
  01 WS-VPITCH              FLOAT-LONG.
  01 WS-EYE-TABLE.
@@ -498,6 +502,14 @@
 *>   The view angles: held items are lit in world orientation (12 section 6.10), so the shade follows the camera.
      CALL "CAMERA-PLACE" USING CLIENT-STATE WS-VYAW WS-VPITCH WS-EYE-TABLE
      CALL "HAND-VIEW-ROT" USING WS-VYAW WS-VPITCH WS-VQ
+*>   The view effects of 12 section 6.1 (the hurt and death tilt, view bobbing: view-pose.cob) are the first frame of the pose stack.
+     CALL "VIEW-POSE" USING CLIENT-STATE CL-PARTIAL WS-POSE
+     MOVE 1 TO WS-POSE-SAME
+     PERFORM VARYING WS-POSE-I FROM 1 BY 1 UNTIL WS-POSE-I > 12
+         IF CL-HAND-KEY-POSE(WS-POSE-I) NOT = WS-POSEV(WS-POSE-I)
+             MOVE 0 TO WS-POSE-SAME
+         END-IF
+     END-PERFORM
 *>   A block item is the unit cube when its model has faces (a standard set) or it is a stand-in block; any other item is an extruded icon.
      MOVE 0 TO WS-STD
      IF CT-OPEN = 1 AND CT-STATE-COUNT > 0 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
@@ -522,7 +534,7 @@
      END-IF
      IF WS-STILL = 1 AND WS-PREV-COUNT > 0 AND CL-HAND-KEY-ITEM = WS-ITEM AND CL-HAND-KEY-SPRITE = WS-SPRITE
              AND CL-HAND-KEY-E = WS-E AND CL-HAND-KEY-LIGHT = WS-LIGHT
-             AND CL-HAND-KEY-YAW = WS-VYAW AND CL-HAND-KEY-PITCH = WS-VPITCH
+             AND CL-HAND-KEY-YAW = WS-VYAW AND CL-HAND-KEY-PITCH = WS-VPITCH AND WS-POSE-SAME = 1
          MOVE WS-PREV-COUNT TO RL-HAND-COUNT CL-HAND-KEY-COUNT
          MOVE 1 TO RL-HAND-SAME
          GOBACK
@@ -534,6 +546,9 @@
          MOVE WS-LIGHT TO CL-HAND-KEY-LIGHT
          MOVE WS-VYAW TO CL-HAND-KEY-YAW
          MOVE WS-VPITCH TO CL-HAND-KEY-PITCH
+         PERFORM VARYING WS-POSE-I FROM 1 BY 1 UNTIL WS-POSE-I > 12
+             MOVE WS-POSEV(WS-POSE-I) TO CL-HAND-KEY-POSE(WS-POSE-I)
+         END-PERFORM
      END-IF
      IF WS-HAVE = 0
          IF WS-CUBE = 1
@@ -550,7 +565,7 @@
          END-IF
      END-IF
 *>   The arm transform, then the swing of progress p = (now - start) / 300 ms (whack).
-     CALL "HAND-M-IDENT" USING WS-M
+     MOVE WS-POSE TO WS-M
      MOVE 0.56 TO WS-AX
      COMPUTE WS-AY = -0.52 + WS-E * -0.6
      MOVE -0.72 TO WS-AZ

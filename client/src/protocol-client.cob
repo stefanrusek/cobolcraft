@@ -370,6 +370,11 @@
              END-IF
              IF WS-ID = PL-ENTITY-ID
                  COMPUTE PL-HURT-UNTIL = CL-NOW-MS + CL-HURT-MS
+*>               Hurt Animation carries the yaw the tilt of 12 section 6.1 turns about (the direction of the hit); a Damage Event keeps the last one.
+                 IF L-ID = 43
+                     CALL "PB-GET-FLOAT" USING L-PACKET WS-FLOAT
+                     MOVE WS-FLOAT TO PL-HURT-DIR
+                 END-IF
                  IF L-ID = 25
                      MOVE 20 TO HB-COOLDOWN
                  END-IF

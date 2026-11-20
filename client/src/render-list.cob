@@ -123,6 +123,10 @@
  01 WS-HAND-PROJ-TABLE.
     05 WS-HAND-PROJ        FLOAT-LONG OCCURS 16 TIMES.
  01 WS-VIEW-YAW            FLOAT-LONG.
+ 01 WS-VM.
+    05 WS-VMV              FLOAT-LONG OCCURS 12 TIMES.
+ 01 WS-NV-TABLE.
+    05 WS-NV               FLOAT-LONG OCCURS 16 TIMES.
  01 WS-VIEW-PITCH          FLOAT-LONG.
  01 WS-SWAP-SLOT           BINARY-LONG.
  01 WS-SWAP-ROW            BINARY-LONG.
@@ -261,6 +265,28 @@
      MOVE RL-VIEW(5) TO RL-FOG(9)
      MOVE RL-VIEW(6) TO RL-FOG(10)
      MOVE RL-VIEW(7) TO RL-FOG(11)
+*>   The camera effects of 12 section 6.1 (53 section 15.2: on the world in third person too): the hurt and death tilt, then view bobbing (VIEW-POSE) multiply in
+*>   before the view (projection x tilt x bob x view). The axes the frustum planes are made from are the rows of the result.
+     IF CN-PHASE(CONN-GAME) = PH-PLAY
+         CALL "VIEW-POSE" USING CLIENT-STATE CL-PARTIAL WS-VM
+         PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 3
+             PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 2
+                 COMPUTE WS-NV(WS-C * 4 + WS-R + 1) = WS-VMV(WS-R * 3 + 1) * RL-VIEW(WS-C * 4 + 1)
+                     + WS-VMV(WS-R * 3 + 2) * RL-VIEW(WS-C * 4 + 2) + WS-VMV(WS-R * 3 + 3) * RL-VIEW(WS-C * 4 + 3)
+                     + WS-VMV(10 + WS-R) * RL-VIEW(WS-C * 4 + 4)
+             END-PERFORM
+             MOVE RL-VIEW(WS-C * 4 + 4) TO WS-NV(WS-C * 4 + 4)
+         END-PERFORM
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+             MOVE WS-NV(WS-I) TO RL-VIEW(WS-I)
+         END-PERFORM
+         PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 3
+             COMPUTE WS-I = (WS-C - 1) * 4 + 1
+             MOVE RL-VIEW(WS-I) TO WS-RIGHT(WS-C)
+             MOVE RL-VIEW(WS-I + 1) TO WS-UP(WS-C)
+             COMPUTE WS-FWD(WS-C) = 0 - RL-VIEW(WS-I + 2)
+         END-PERFORM
+     END-IF
 *>   Projection x view.
      PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 3
          PERFORM VARYING WS-R FROM 0 BY 1 UNTIL WS-R > 3
