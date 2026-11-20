@@ -3,7 +3,7 @@
 *> shim-abi §9: x y z u v brightness alpha sky r g b; positions relative to the section's lowest
 *> corner): every baked quad of every block (BM-STATE) whose cull direction is not hidden by its
 *> neighbour. A neighbour hides a face when its face toward it covers the whole face of the quad's state
-*> (state-faces.cob: a full block covers every face, a bottom slab the lower half of a side only), or when it is the same block that fills the cube without occluding (ST-LIKE: lucite against lucite; a door, a trapdoor or a fence
+*> (state-faces.cob: a full block covers every face, a bottom slab the lower half of a side only), or when it is the same block that fills the cube without occluding (ST-LIKE: lucite against lucite; leaves hide against any leaves block only while the cutoutLeaves option is off, CL-LEAVES-CULL and ST-LEAF; a door, a trapdoor or a fence
 *> beside its like hides nothing). The face's light is its direction's factor (up 1.0, north and south 0.8,
 *> east and west 0.6, down 0.5) times the light of the cell it looks into: the vertex's brightness is
 *> factor x block light / 15, at least 0.1, and its sky term factor x sky light / 15; the shader draws
@@ -496,6 +496,10 @@
                          END-IF
                          IF ST-BLOCK(WS-NSTATE + 1) = ST-BLOCK(WS-ROW-STATE)
                                  AND ST-LIKE(WS-ROW-STATE) = 1
+                             MOVE 1 TO WS-CULL
+                         END-IF
+*>                       Leaves hide a face against any leaves block only with the cutoutLeaves option off (a flag test, ST-LEAF).
+                         IF CL-LEAVES-CULL = 1 AND ST-LEAF(WS-ROW-STATE) = 1 AND ST-LEAF(WS-NSTATE + 1) = 1
                              MOVE 1 TO WS-CULL
                          END-IF
                      END-IF

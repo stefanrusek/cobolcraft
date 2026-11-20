@@ -651,6 +651,7 @@
  01 WS-LENGTH              BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-S                   FLOAT-LONG.
+ 01 WS-CULL                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -675,5 +676,16 @@
      MOVE "guiScale" TO WS-KEY
      CALL "OPTIONS-GET" USING CLIENT-STATE WS-KEY WS-VALUE WS-LENGTH WS-FOUND
      COMPUTE CL-GUI-OPTION = FUNCTION NUMVAL(WS-VALUE(1:WS-LENGTH))
+*>   cutoutLeaves (13 section 7.5): off hides the leaf faces between two leaves blocks; a change meshes every loaded section again.
+     MOVE "cutoutLeaves" TO WS-KEY
+     CALL "OPTIONS-GET" USING CLIENT-STATE WS-KEY WS-VALUE WS-LENGTH WS-FOUND
+     MOVE 0 TO WS-CULL
+     IF WS-VALUE(1:5) = "false"
+         MOVE 1 TO WS-CULL
+     END-IF
+     IF WS-CULL NOT = CL-LEAVES-CULL
+         MOVE WS-CULL TO CL-LEAVES-CULL
+         CALL "WORLD-DIRTY-ALL" USING CLIENT-STATE
+     END-IF
      GOBACK.
  END PROGRAM OPTIONS-APPLY.

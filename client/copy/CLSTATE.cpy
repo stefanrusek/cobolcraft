@@ -41,6 +41,7 @@
     05 CL-GUI-OPTION         BINARY-LONG.     *> the guiScale option (0 = automatic), applied by SCREEN-BUILD
     05 CL-FOV-DEG            FLOAT-SHORT.     *> the vertical field of view in degrees (fov option; 70 by default)
     05 CL-FOV-EFFECT         FLOAT-LONG.      *> the fovEffectScale option squared (53 section 8.1): 1 by default, 0 no effect
+    05 CL-LEAVES-CULL        BINARY-LONG.     *> the cutoutLeaves option off (OPTIONS-APPLY): 1 = a leaf face against any leaves block is skipped (13 section 7.5); 0 = every leaf face is drawn (the default, Fancy)
     05 CL-TURN               FLOAT-SHORT.     *> degrees of turn per mouse pixel (mouseSensitivity; 0.15 by default)
     05 CL-KEYS.                                *> the GLFW key code of each key binding, KB-* of CLCONST.cpy (OPTIONS-APPLY)
        10 KB-CODE            BINARY-LONG OCCURS 25 TIMES.
@@ -1211,6 +1212,7 @@
 *>     ST-COVER((nb - 1) * ST-CMAX + own) = 1 when the face class nb hides the face class own. The face classes are the distinct 16 x 16 masks.
        10 ST-SHAPED          PIC 9 OCCURS 65536 TIMES.
        10 ST-LIKE            PIC 9 OCCURS 65536 TIMES.        *> state id + 1: 1 = no occluder with a full cube outline (glass, leaves, ice): its faces are hidden by the same block
+       10 ST-LEAF            PIC 9 OCCURS 65536 TIMES.        *> state id + 1: 1 = a leaves block (LeavesBlock.skipRendering: hidden by any leaves block while CL-LEAVES-CULL is 1; hides nothing otherwise)
        10 ST-OWN             BINARY-SHORT UNSIGNED OCCURS 393222 TIMES.
        10 ST-NB              BINARY-SHORT UNSIGNED OCCURS 393222 TIMES.
        10 ST-COVER           PIC 9 OCCURS 90000 TIMES.

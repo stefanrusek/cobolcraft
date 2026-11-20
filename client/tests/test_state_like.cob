@@ -1,6 +1,7 @@
 *> T10401 (bug-sweep: ice drew its hidden faces): the blocks that fill the cube without occluding (ice, frosted ice, glass, stained glass, tinted glass,
-*> slime, honey, leaves) hide their faces against the same block (ST-LIKE, mesher.cob), and do not occlude (ST-OPAQUE 0); a block of the same class
-*> that is a full opaque cube (packed ice, blue ice, stone) occludes instead.
+*> slime, honey) hide their faces against the same block (ST-LIKE, mesher.cob), and do not occlude (ST-OPAQUE 0); a block of the same class
+*> that is a full opaque cube (packed ice, blue ice, stone) occludes instead. Leaves do not occlude either but are no ST-LIKE block (T62100): they are
+*> flagged ST-LEAF, which hides their faces against any leaves block only while the cutoutLeaves option is off (test_mesher_leaves).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-STATE-LIKE.
  DATA DIVISION.
@@ -43,12 +44,16 @@
          MOVE "T" TO TL-MODE
          MOVE SPACES TO TL-CASE TL-EXPECTED TL-OBSERVED
          STRING "state like " FUNCTION TRIM(WS-NAME(WS-N)) " opaque and like" DELIMITED BY SIZE INTO TL-CASE
-         IF WS-N <= 8
-             MOVE "opaque 0 like 1" TO TL-EXPECTED
-         ELSE
-             MOVE "opaque 1 like 0" TO TL-EXPECTED
-         END-IF
-         STRING "opaque " ST-OPAQUE(WS-STATE + 1) " like " ST-LIKE(WS-STATE + 1) DELIMITED BY SIZE INTO TL-OBSERVED
+         EVALUATE TRUE
+             WHEN WS-N < 8
+                 MOVE "opaque 0 like 1 leaf 0" TO TL-EXPECTED
+             WHEN WS-N = 8
+                 MOVE "opaque 0 like 0 leaf 1" TO TL-EXPECTED
+             WHEN OTHER
+                 MOVE "opaque 1 like 0 leaf 0" TO TL-EXPECTED
+         END-EVALUATE
+         STRING "opaque " ST-OPAQUE(WS-STATE + 1) " like " ST-LIKE(WS-STATE + 1) " leaf " ST-LEAF(WS-STATE + 1)
+             DELIMITED BY SIZE INTO TL-OBSERVED
          CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      END-PERFORM
      STOP RUN.

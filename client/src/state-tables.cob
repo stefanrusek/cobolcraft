@@ -89,6 +89,7 @@
  01 WS-M-OPAQUE            PIC 9.
  01 WS-M-HONEY             PIC 9.
  01 WS-M-OVL               PIC 9.
+ 01 WS-M-LEAF              PIC 9.
  01 WS-M-WL                PIC 9.
  01 WS-M-FLUID             PIC 9.
  LINKAGE SECTION.
@@ -98,7 +99,7 @@
      CALL "STATE-LIMIT" USING WS-LIMIT
      MOVE FUNCTION MIN(WS-LIMIT, CL-MAX-STATES) TO ST-COUNT
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-STATES
-         MOVE 0 TO ST-OPAQUE(WS-S) ST-BLOCK(WS-S) ST-FLUID(WS-S) ST-LEVEL(WS-S) ST-OVERLAY(WS-S) ST-SHAPED(WS-S) ST-LIKE(WS-S)
+         MOVE 0 TO ST-OPAQUE(WS-S) ST-BLOCK(WS-S) ST-FLUID(WS-S) ST-LEVEL(WS-S) ST-OVERLAY(WS-S) ST-SHAPED(WS-S) ST-LIKE(WS-S) ST-LEAF(WS-S)
      END-PERFORM
 *>   A state that does not occlude: its faces need the whole neighbour face to hide them (class 1) and hide nothing (class 2).
      PERFORM VARYING WS-AT FROM 1 BY 1 UNTIL WS-AT > 393222
@@ -144,6 +145,12 @@
                  IF WS-HITS > 0
                      MOVE 1 TO WS-M-OVL
                  END-IF
+                 MOVE 0 TO WS-HITS
+                 INSPECT CT-BR-CLASS TALLYING WS-HITS FOR ALL "Leaves"
+                 MOVE 0 TO WS-M-LEAF
+                 IF WS-HITS > 0
+                     MOVE 1 TO WS-M-LEAF
+                 END-IF
              END-IF
              MOVE WS-M-OPAQUE TO WS-OPAQUE
 *>           A state that occludes by its shape (the class rule below: not an open or see-through class; slabs, stairs, carpets, snow layers and trapdoors are in) hides what its faces cover
@@ -162,6 +169,12 @@
 *>           A state that does not occlude but fills the cube (glass, ice, leaves) hides its faces against the same block.
              IF WS-OPAQUE = 0 AND BSH-READY = 1 AND BSH-OUT(WS-S) = 1
                  MOVE 1 TO ST-LIKE(WS-S)
+             END-IF
+*>           A leaves block hides a face only against another leaves block and only with the cutoutLeaves option off (LeavesBlock.skipRendering, 24 part 1
+*>           section 9.1; the mesher reads CL-LEAVES-CULL): ST-LEAF replaces ST-LIKE for it, so the Fancy default draws every leaf face.
+             IF WS-M-LEAF = 1
+                 MOVE 0 TO ST-LIKE(WS-S)
+                 MOVE 1 TO ST-LEAF(WS-S)
              END-IF
 *>           HalfTransparentBlock.skipRendering hides a face against the same block whatever the outline (honey's is smaller than the cube).
              IF WS-OPAQUE = 0 AND BSH-READY = 1 AND WS-M-HONEY = 1
