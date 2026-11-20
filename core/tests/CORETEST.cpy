@@ -201,10 +201,16 @@
  01 WS-PATH                PIC X(64) VALUE Z"build/core-test-world".
  01 WS-COMMAND             PIC X(64) VALUE "rm -rf build/core-test-world".
  01 WS-CREATED             BINARY-LONG.
+ COPY GENQUEUE.
  LINKAGE SECTION.
  COPY COREAPI.
  PROCEDURE DIVISION USING CORE-SETTINGS.
      CALL "SYSTEM" USING WS-COMMAND
+*>   The tests build around the origin, so the spawn search of a standard world stays centred on chunk (0, 0) as before lane p45i (the noise finder's origin chunk is far from it);
+*>   a test of the origin search itself sets GQ-SP-PIN to 2 first.
+     IF GQ-SP-PIN = 0
+         MOVE 1 TO GQ-SP-PIN
+     END-IF
      CALL "CORE-WORLD-OPEN" USING WS-PATH CORE-SETTINGS WS-CREATED
      GOBACK.
  END PROGRAM TEST-OPEN-WORLD.

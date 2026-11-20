@@ -65,3 +65,5 @@
 *>   the origin chunk of the noise spawn finder (36-1 section 4.9), the centre of the spiral of the search
     05 GQ-SP-OX             BINARY-LONG.
     05 GQ-SP-OZ             BINARY-LONG.
+*>   1 keeps the spiral of the search centred on chunk (0, 0) (the tests of the core build their circuits and floors around the origin; TEST-OPEN-WORLD sets it), 0 or 2 centres it on the origin chunk
+    05 GQ-SP-PIN            BINARY-LONG.

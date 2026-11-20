@@ -189,7 +189,11 @@
  01 WS-HEIGHT              BINARY-LONG VALUE 64.
  PROCEDURE DIVISION.
 *>   the origin chunk of the noise generator: the spiral of the search is centred on it (GQ-SP-OX, GQ-SP-OZ)
-     CALL "SPAWN-ORIGIN" USING GQ-SP-OX GQ-SP-OZ
+     IF GQ-SP-PIN = 1
+         MOVE 0 TO GQ-SP-OX GQ-SP-OZ
+     ELSE
+         CALL "SPAWN-ORIGIN" USING GQ-SP-OX GQ-SP-OZ
+     END-IF
      CALL "WP-PROVISIONAL" USING GQ-SP-OX GQ-SP-OZ WS-HEIGHT WS-X WS-Y WS-Z
      MOVE WS-X TO CW-SPAWN-X
      MOVE WS-Y TO CW-SPAWN-Y
