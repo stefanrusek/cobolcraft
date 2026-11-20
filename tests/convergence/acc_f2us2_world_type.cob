@@ -42,6 +42,8 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION.
+*>   A folder another program left under this name (acc_f2us1_start_check makes f2-* folders in it) is not the tool's to replace (CCX-051): start from nothing.
+     CALL "SYSTEM" USING "rm -rf build/generated-test"
      MOVE SPACES TO WS-COMMAND
      STRING "build/bin/cobolcraft-extract --jar tmp/minecraft-26.3-client.jar "
          "--generated-dir build/generated-test --force --quiet" DELIMITED BY SIZE INTO WS-COMMAND
