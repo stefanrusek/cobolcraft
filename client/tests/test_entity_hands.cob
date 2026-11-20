@@ -286,8 +286,6 @@
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   A full vertex budget: the held item is skipped when its 12 vertices no longer fit, and drawn when they just fit.
-*>   (the row's arm frames are dropped: with them ENTITY-HELD-EMIT hands the item to ENTITY-HELD-POSED)
-     MOVE 0 TO EN-HAND-FOK(1, 1) EN-HAND-FOK(1, 2)
      COMPUTE RL-GI-COUNT = CL-MAX-GI-VERTICES - 11
      MOVE 1 TO WS-ROW-N
      MOVE 1 TO WS-HAND-N
@@ -300,6 +298,20 @@
      COMPUTE RL-GI-COUNT = CL-MAX-GI-VERTICES - 12
      CALL "ENTITY-HELD-EMIT" USING CLIENT-STATE WS-ROW-N WS-HAND-N WS-ITEM-N WS-EYE-TABLE
      MOVE "acceptance hands an item that just fits the vertex budget is drawn" TO TL-CASE
+     MOVE CL-MAX-GI-VERTICES TO TL-EXPECTED-N
+     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The same without the arm's frame (EN-HAND-FOK 0: the item is placed by the hand's centre, ENTITY-HELD-EMIT's own path; with a frame it goes to ENTITY-HELD-POSED above).
+     MOVE 0 TO EN-HAND-FOK(1, 1) EN-HAND-FOK(1, 2)
+     COMPUTE RL-GI-COUNT = CL-MAX-GI-VERTICES - 11
+     CALL "ENTITY-HELD-EMIT" USING CLIENT-STATE WS-ROW-N WS-HAND-N WS-ITEM-N WS-EYE-TABLE
+     MOVE "acceptance hands an item without an arm frame that does not fit the vertex budget is skipped" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = CL-MAX-GI-VERTICES - 11
+     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE RL-GI-COUNT = CL-MAX-GI-VERTICES - 12
+     CALL "ENTITY-HELD-EMIT" USING CLIENT-STATE WS-ROW-N WS-HAND-N WS-ITEM-N WS-EYE-TABLE
+     MOVE "acceptance hands an item without an arm frame that just fits is drawn" TO TL-CASE
      MOVE CL-MAX-GI-VERTICES TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
