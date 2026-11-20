@@ -486,8 +486,8 @@ Registered in `BlockEntityRenderers` (read) and not described here. Block ids co
 
 | Block entity type | Blocks | Renderer class |
 |---|---|---|
-| `sign` | the 26 standing and wall signs of 13 woods | `StandingSignRenderer` / `AbstractSignRenderer` |
-| `hanging_sign` | the 26 hanging and wall hanging signs | `HangingSignRenderer` |
+| `sign` | the 26 standing and wall signs of 13 woods | `StandingSignRenderer` / `AbstractSignRenderer`; specified in [52-block-entity-models-2-signs.md](52-block-entity-models-2-signs.md) (text only; the boards are block models) |
+| `hanging_sign` | the 26 hanging and wall hanging signs | `HangingSignRenderer`; specified in [52-block-entity-models-2-signs.md](52-block-entity-models-2-signs.md) |
 | `mob_spawner` | `spawner` | `SpawnerRenderer` |
 | `piston` | `moving_piston` | `PistonHeadRenderer` |
 | `enchanting_table` | `enchanting_table` | `EnchantTableRenderer` |

@@ -191,6 +191,9 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CBLOCKS.
+ 01 WS-BI                  BINARY-LONG.
+ 01 WS-HANGING             BINARY-LONG.
  01 WS-NAME                PIC X(24).
  01 WS-TEXT                PIC X(32).
  01 WS-FOUND               BINARY-LONG.
@@ -238,6 +241,13 @@
                  WHEN OTHER
                      MOVE 0.0625 TO WS-CZ
              END-EVALUATE
+*>           A wall hanging sign has no plate: the centre of its cell.
+             COMPUTE WS-BI = CB-S-BLOCK(L-STATE + 1) + 1
+             MOVE 0 TO WS-HANGING
+             INSPECT CB-KEY(WS-BI) TALLYING WS-HANGING FOR ALL "hanging"
+             IF WS-HANGING > 0
+                 MOVE 0.5 TO WS-CX WS-CZ
+             END-IF
          END-IF
      END-IF
      MOVE PL-X(CN-PLAYER(L-ID)) TO WS-PX

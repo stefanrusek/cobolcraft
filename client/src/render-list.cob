@@ -29,6 +29,13 @@
  COPY CLCONST.
  COPY CLTINT.
  COPY CCSHIM.
+ COPY CLSIGN.
+*> The sign text mesh (sign-mesh.cob): its vertices (44 bytes each) and the count last uploaded, kept between frames.
+ 01 WS-SG-COUNT            BINARY-LONG.
+ 01 WS-SG-UPLOADED         BINARY-LONG.
+ 01 WS-SG-CAPACITY         BINARY-LONG VALUE SGR-MAX-VERTICES.
+ 01 WS-SG-AREA.
+    05 WS-SG-VERTEX        PIC X(44) OCCURS SGR-MAX-VERTICES TIMES.
  01 WS-ATTRIBUTE           PIC X(64).
  01 WS-FOG                 BINARY-DOUBLE.
  01 WS-FOG-Q               BINARY-DOUBLE.
@@ -455,6 +462,16 @@
              MOVE WS-PV(WS-I) TO RL-D-MATRIX(RL-DRAW-COUNT, WS-I)
          END-PERFORM
      END-IF
+*>   The text of the signs (52 part 2; sign-mesh.cob): the glyph quads of the UI atlas, eye-relative, opaque (the font's transparent texels are dropped).
+     MOVE 0 TO WS-SG-COUNT
+     IF WS-WORLD = 1
+         CALL "SGR-MESH" USING CLIENT-STATE WS-EYE-TABLE WS-SG-VERTEX(1) WS-SG-CAPACITY WS-SG-COUNT
+     END-IF
+     MOVE MESH-SLOT-SIGNS TO WS-SLOT
+     MOVE CC-PIPE-OPAQUE TO WS-PIPE
+     MOVE CC-TEX-UI TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT WS-SG-VERTEX(1) WS-SG-COUNT WS-SG-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
 *>   The armour glint over them (54 section 19.3): the glint layers of ENTITIES-MESH, additive, eye-relative, with the armour glint texture; with no such texture
 *>   in the pack stack nothing is drawn.
      IF GT-ARMOR-W = 0
