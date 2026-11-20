@@ -56,10 +56,11 @@
          GOBACK
      END-IF
      IF DM-GENERATOR(WS-DIM) = DIM-GEN-NETHER
-*>       the Nether's chunk is the dimension's own generator's (T6300), made over empty memory as WORLD-CHUNK-LOAD gives it; it has no overflow and no block entities
+*>       the Nether's chunk is the dimension's own generator's (T6300), made over empty memory as WORLD-CHUNK-LOAD gives it; it has no overflow, and its block entity and entity requests
+*>       (the fortress's chests, spawner and spawn boxes) are the ones NETHER-DIM-CHUNK published
          MOVE LOW-VALUES TO WS-CHUNK
-         CALL "WORLDGEN-DIM-CHUNK" USING WS-DIM WS-CX WS-CZ WS-CHUNK WS-MARKER
          MOVE 0 TO GO-COUNT GB-COUNT GE-COUNT GE-LOST GE-BOX-COUNT GE-BOX-LOST
+         CALL "WORLDGEN-DIM-CHUNK" USING WS-DIM WS-CX WS-CZ WS-CHUNK WS-MARKER
      ELSE
          CALL "GEN-JOB-RUN-ALL" USING WS-DIM WS-CX WS-CZ WS-CHUNK WS-MARKER
      END-IF

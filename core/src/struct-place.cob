@@ -468,6 +468,10 @@
  01 WS-STRONG-ID           BINARY-LONG.
  01 WS-MANSION-NAME        PIC X(40) VALUE "woodland_mansion".
  01 WS-MANSION-ID          BINARY-LONG.
+ 01 WS-FORTRESS-NAME       PIC X(40) VALUE "fortress".
+ 01 WS-FORTRESS-ID         BINARY-LONG.
+ 01 WS-ENDCITY-NAME        PIC X(40) VALUE "end_city".
+ 01 WS-ENDCITY-ID          BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
  01 WS-SEA                 BINARY-LONG VALUE 63.
  01 WS-MIN-Y               BINARY-LONG VALUE -64.
@@ -508,6 +512,16 @@
          IF SDT-TYPE(L-STRUCT) = WS-MANSION-ID
              MOVE 1 TO WS-DONE
              CALL "MAN-FIND-POINT" USING L-SEED L-CX L-CZ L-X L-Y L-Z L-VALID
+         END-IF
+         CALL "STRUCT-ENUM-ID" USING WS-KIND WS-FORTRESS-NAME WS-FORTRESS-ID
+         IF SDT-TYPE(L-STRUCT) = WS-FORTRESS-ID
+             MOVE 1 TO WS-DONE
+             CALL "FORT-FIND-POINT" USING L-SEED L-CX L-CZ L-X L-Y L-Z L-VALID
+         END-IF
+         CALL "STRUCT-ENUM-ID" USING WS-KIND WS-ENDCITY-NAME WS-ENDCITY-ID
+         IF SDT-TYPE(L-STRUCT) = WS-ENDCITY-ID
+             MOVE 1 TO WS-DONE
+             CALL "ENDCITY-FIND-POINT" USING L-SEED L-CX L-CZ L-X L-Y L-Z L-VALID
          END-IF
          CALL "STRUCT-ENUM-ID" USING WS-KIND WS-PORTAL-NAME WS-PORTAL-ID
          IF SDT-TYPE(L-STRUCT) = WS-PORTAL-ID
@@ -586,6 +600,8 @@
                      CALL "SCP-POST" USING WS-I
                  WHEN SP-TYPE(WS-I) >= 19 AND SP-TYPE(WS-I) <= 31
                      CALL "SH-POST" USING WS-I
+                 WHEN SP-TYPE(WS-I) >= 4 AND SP-TYPE(WS-I) <= 18
+                     CALL "FORT-POST" USING WS-I
                  WHEN OTHER
                      CALL "MS-POST" USING WS-I
              END-EVALUATE
