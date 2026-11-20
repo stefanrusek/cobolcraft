@@ -628,10 +628,11 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-HP-SYNC.
-*> USING tracker row: a standard mob whose health differs from the last one sent sends the new one to its viewers (the synced health slot, 18 section 9.3).
+*> USING tracker row: a standard mob (or the ender dragon, which has no table row but the same health slot) whose health differs from the last one sent sends the new one to its viewers (the synced health slot, 18 section 9.3).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY DRAGSTATE.
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-M                   BINARY-LONG.
@@ -640,7 +641,7 @@
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
-     IF WS-M = 0
+     IF WS-M = 0 AND (DG-ENT = 0 OR EN-ID(L-ROW) NOT = DG-ENT)
          GOBACK
      END-IF
      COMPUTE WS-MILLI = EN-HEALTH(L-ROW) * 1000 - EN-HEALTH-MILLI(L-ROW)
@@ -659,10 +660,11 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-HP-PAIR.
-*> USING tracker row: the pairing of a standard mob sends its health (metadata 9, a value that differs from the default) to the viewers and remembers it as sent.
+*> USING tracker row: the pairing of a standard mob (or the ender dragon) sends its health (metadata 9, a value that differs from the default) to the viewers and remembers it as sent.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY DRAGSTATE.
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
  01 WS-M                   BINARY-LONG.
@@ -670,7 +672,7 @@
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
-     IF WS-M = 0
+     IF WS-M = 0 AND (DG-ENT = 0 OR EN-ID(L-ROW) NOT = DG-ENT)
          GOBACK
      END-IF
      COMPUTE EN-HP-SENT(L-ROW) = EN-HEALTH(L-ROW) * 1000 - EN-HEALTH-MILLI(L-ROW)

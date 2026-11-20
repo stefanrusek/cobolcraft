@@ -195,6 +195,11 @@
  01 WS-CELL-TOP            FLOAT-LONG.
  01 WS-BOX.
     05 WS-B                FLOAT-LONG OCCURS 6 TIMES.
+ 01 WS-SBOX.
+    05 WS-SB               FLOAT-LONG OCCURS 6 TIMES.
+ 01 WS-OX                  FLOAT-LONG.
+ 01 WS-OY                  FLOAT-LONG.
+ 01 WS-OZ                  FLOAT-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
@@ -206,6 +211,7 @@
  01 L-TOP-Y                FLOAT-LONG.
  PROCEDURE DIVISION USING L-DIM L-TYPE L-X L-Y L-Z L-HIT L-TOP L-TOP-Y.
      MOVE 0 TO L-HIT
+     MOVE 0 TO L-TOP
      COMPUTE WS-HALF = ET-WIDTH-MILLI(L-TYPE + 1) / 2000
      COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(L-TYPE + 1) / 1000
 *>   First cell floor(low edge + e), last cell ceil(high edge - e) - 1 (as MOVE-COLLIDES).
@@ -240,7 +246,18 @@
                          IF WS-STATE NOT = 0
                              CALL "BSH-COLL-ID" USING WS-STATE WS-SHAPE
                              IF WS-SHAPE > 1
-                                 CALL "BSH-TOP-OVER" USING WS-SHAPE WS-BX WS-BY WS-BZ WS-BOX WS-CELL-TOP
+*>                               The shape of an offset block is moved by its model offset (51 section 1.4): the box moves the other way (lane p70).
+                                 CALL "BSH-OFFSET" USING WS-STATE WS-BX WS-BY WS-BZ WS-OX WS-OY WS-OZ
+                                 COMPUTE WS-SB(1) = WS-B(1) - WS-OX
+                                 COMPUTE WS-SB(2) = WS-B(2) - WS-OY
+                                 COMPUTE WS-SB(3) = WS-B(3) - WS-OZ
+                                 COMPUTE WS-SB(4) = WS-B(4) - WS-OX
+                                 COMPUTE WS-SB(5) = WS-B(5) - WS-OY
+                                 COMPUTE WS-SB(6) = WS-B(6) - WS-OZ
+                                 CALL "BSH-TOP-OVER" USING WS-SHAPE WS-BX WS-BY WS-BZ WS-SBOX WS-CELL-TOP
+                                 IF WS-CELL-TOP > -999999
+                                     COMPUTE WS-CELL-TOP = WS-CELL-TOP + WS-OY
+                                 END-IF
                              END-IF
                          END-IF
                      END-IF
@@ -277,6 +294,30 @@
      CALL "ENTITY-BOX-HITS-Y" USING L-DIM L-TYPE L-X L-Y L-Z L-HIT L-TOP WS-TOP-Y
      GOBACK.
  END PROGRAM ENTITY-BOX-HITS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ENTITY-BOX-SURFACE.
+*> USING dimension row, entity type (BINARY-LONG), x, y, z (FLOAT-LONG entity position), hit out (BINARY-LONG), top out (FLOAT-LONG): the height of the highest overlapped top face, the
+*> surface a body comes to rest on (lane p70e's name for ENTITY-BOX-HITS-Y without the top cell): a bottom slab 0.5 above its cell, a carpet 1/16, a bed 0.5625, an offset block moved by its model
+*> offset (51 section 1.4). Ground items, mobs, carts and boats move with it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CELL                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-HIT                  BINARY-LONG.
+ 01 L-TOP                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-DIM L-TYPE L-X L-Y L-Z L-HIT L-TOP.
+     CALL "ENTITY-BOX-HITS-Y" USING L-DIM L-TYPE L-X L-Y L-Z L-HIT WS-CELL L-TOP
+     IF L-HIT = 0
+         MOVE 0 TO L-TOP
+     END-IF
+     GOBACK.
+ END PROGRAM ENTITY-BOX-SURFACE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GI-SPAWN.

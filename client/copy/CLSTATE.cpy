@@ -30,6 +30,25 @@
     05 CL-HAND-NOCULL        BINARY-LONG.     *> 1 keeps the quads that face away from the eye (tests and diagnostics only; 0 = back faces are dropped, 12 section 6.9)
     05 CL-HAND-KEY-COUNT     BINARY-LONG.     *> vertex count of that mesh, 0 = none to reuse
     05 CL-HAND-TICK-MS       BINARY-DOUBLE.   *> the clock of the last equip tick (0 = not started)
+    05 CL-OHAND-ITEM         BINARY-LONG.     *> the off hand's shown stack (item id + 1, 0 none), equip height and previous height (hand.cob)
+    05 CL-OHAND-H            FLOAT-LONG.
+    05 CL-OHAND-OH           FLOAT-LONG.
+    05 CL-ATK-TICKER         BINARY-LONG.     *> attackStrengthTicker (17 section 4.1): +1 per client tick, 0 on an attack or a change of the held stack
+    05 CL-ATK-LAST           BINARY-LONG.     *> the held stack (item id + 1) of the last tick
+    05 CL-BOB-INIT           BINARY-LONG.     *> 1 once the last position below is known
+    05 CL-BOB-X              FLOAT-LONG.      *> the position of the last hand tick (walk distance, 53 section 15.2)
+    05 CL-BOB-Z              FLOAT-LONG.
+    05 CL-BOB-WALK           FLOAT-LONG.      *> walkDist and walkDistO, bob and bobO (53 section 15.2)
+    05 CL-BOB-WALK-O         FLOAT-LONG.
+    05 CL-BOB                FLOAT-LONG.
+    05 CL-BOB-O              FLOAT-LONG.
+    05 CL-XBOB               FLOAT-LONG.      *> the smoothed pitch and yaw that lag the view (53 section 15.3), and their values one tick earlier
+    05 CL-XBOB-O             FLOAT-LONG.
+    05 CL-YBOB               FLOAT-LONG.
+    05 CL-YBOB-O             FLOAT-LONG.
+    05 CL-HAND-KEY-GCOUNT    BINARY-LONG.     *> vertex count of the cached hand glint mesh (RL-HG-VERTEX)
+    05 CL-DEATH-TIME         BINARY-LONG.     *> deathTime of the local player: client ticks since the health fell to 0 (at most 20), 0 while alive (hand-pose.cob HAND-DEATH-TICK; 12 section 6.1 step 2)
+    05 CL-HAND-KEY-P         FLOAT-LONG.      *> a digest of the view pose (bob and sway) and of the off hand the cached mesh was built for
     05 CL-CAMERA             BINARY-LONG.     *> F5 camera: 0 first person, 1 behind, 2 in front (camera.cob)
     05 CL-DEBUG              PIC 9.           *> 1 = the F3 overlay is shown (debug-overlay.cob)
     05 CL-HITBOXES           PIC 9.           *> 1 = the entity hitboxes are drawn (F3+B, 13 section 5.1; hitbox-mesh.cob)
@@ -250,6 +269,21 @@
        10 PL-STACK-FOIL      BINARY-LONG.
        10 PL-OFFHAND-FOIL    BINARY-LONG.
        10 PL-SLOT-FOIL       BINARY-LONG OCCURS 36 TIMES.
+       10 PL-STACK-CHARGED   BINARY-LONG.    *> 1 when the item stack last decoded has charged_projectiles (51) that are not empty (a loaded crossbow), taken over by the slot it is set into like the foil
+       10 PL-OFFHAND-CHARGED BINARY-LONG.
+       10 PL-SLOT-CHARGED    BINARY-LONG OCCURS 36 TIMES.
+*>     banner_patterns 74 of the last item stack decoded (STACK-BANNER) and of each slot (1 to 36 the slots, 37 the off hand), taken over like the foil: the number of layers kept
+*>     (at most 16), each layer's pattern holder (the registry position + 1, 0 an inline pattern) and dye id (hand-banner.cob; 54 section 22).
+       10 PL-STACK-BN.
+          15 PL-STACK-BN-COUNT BINARY-LONG.
+          15 PL-STACK-BN-PAT   BINARY-LONG OCCURS 16 TIMES.
+          15 PL-STACK-BN-DYE   BINARY-LONG OCCURS 16 TIMES.
+          15 PL-STACK-BN-BASE  BINARY-LONG.    *> base_color 75 of the stack as the dye id + 1 (a shield's base colour, 54 section 22.1), 0 = absent
+       10 PL-SLOT-BN OCCURS 37 TIMES.
+          15 PL-SLOT-BN-COUNT  BINARY-LONG.
+          15 PL-SLOT-BN-PAT    BINARY-LONG OCCURS 16 TIMES.
+          15 PL-SLOT-BN-DYE    BINARY-LONG OCCURS 16 TIMES.
+          15 PL-SLOT-BN-BASE   BINARY-LONG.
        10 PL-SLOT-DAMAGE     BINARY-LONG OCCURS 36 TIMES.  *> damage component (3) of each slot's stack, 0 = none
        10 PL-OFFHAND-DAMAGE  BINARY-LONG.
 *>     Menu slots outside the player's 36 (12 section 5.6a, b; 13 section 3.5): the inventory menu's armour (IX 1 to 4: head,
@@ -503,12 +537,21 @@
        10 PL-FOOD            BINARY-LONG.
        10 PL-SATURATION      FLOAT-SHORT.
        10 PL-HURT-UNTIL      BINARY-DOUBLE.
+       10 PL-HURT-DIR        FLOAT-LONG.    *> the yaw of the last Hurt Animation of the local player (the direction the hit came from, degrees)
 *>     Hunger (US8; standin-content §11; controls.cob): sprinting as last told to the server
 *>     (Player Command), and eating: 1 from the Use Item of a food item until the button is
 *>     released or Entity Event 9 (eating finished) for the local player; the clock of that Use Item.
        10 PL-SPRINTING       PIC 9.
        10 PL-EATING          PIC 9.
        10 PL-EAT-START       BINARY-DOUBLE.
+*>     The use of a bow, crossbow, trident or shield (use-item.cob; 12 section 6.6, 17 sections 3.6, 3.9, 3.10): PL-USE-KIND the HAND-ARM pose kind (0 none, 2 bow, 3 crossbow
+*>     charging, 4 trident, 8 shield), PL-USE-HAND the hand (0 main, 1 off), PL-USE-START the clock of the Use Item, PL-USE-DURATION the milliseconds the charge lasts (a crossbow),
+*>     PL-USE-SLOT the held slot it began in.
+       10 PL-USE-KIND         BINARY-LONG.
+       10 PL-USE-HAND         BINARY-LONG.
+       10 PL-USE-START        BINARY-DOUBLE.
+       10 PL-USE-DURATION     BINARY-LONG.
+       10 PL-USE-SLOT         BINARY-LONG.
 *>     Weather (US11; standin-content §14): the rain and thunder levels of the last Game Events 7
 *>     and 8 (2 sets both to 0), and the kind they map to (WX-*).
        10 PL-RAIN            FLOAT-SHORT.
@@ -735,6 +778,7 @@
 *>        the Pose id (entry 6: 0 standing, 3 swimming, 5 crouching).
           15 EN-FLAGS        BINARY-LONG.
           15 EN-POSE         BINARY-LONG.
+          15 EN-LIVING       BINARY-LONG.   *> the living entity flags byte (entry 8: bit 0 uses an item, bit 1 with the off hand), 12 section 7.5
           15 EN-SWIM         FLOAT-LONG.    *> the swim amount 0 to 1 (53 section 12: 0.09 a tick toward 1 while the pose is swimming)
 *>        The walk animation of a living entity (docs/protocol/54 section 1.1): the speed one tick ago, the speed, the position, the position scale (3 for a
 *>        baby, else 1) and the position at the previous client tick (ENTITIES-ANIM-TICK). EN-MOB-FLAGS is the mob flags byte (Set Entity Data entry 15: 1 no AI,
@@ -754,6 +798,8 @@
           15 EN-OHEAD        FLOAT-SHORT.
           15 EN-MOB-FLAGS    BINARY-LONG.
           15 EN-BABY         PIC 9.
+          15 EN-DARK         BINARY-LONG.   *> a glow squid's dark ticks remaining (entry 18, INT) when it was set at the clock EN-DARK-MS: the counter falls 1 a tick (34-8 section 2.2)
+          15 EN-DARK-MS      BINARY-DOUBLE.
           15 EN-SW-ACTIVE    PIC 9.
           15 EN-SW-TICKS     BINARY-LONG.
           15 EN-SW-DUR       BINARY-LONG.
@@ -782,6 +828,31 @@
 *>        Guardian (34-6 11.4, ENTITIES-ANIM-TICK; the squid fields are reused: EN-TS tail speed, EN-TM tail animation, EN-TA spikes animation, EN-RS attack time; EN-X1 the
 *>        moving flag, entry 16): the active attack target's entity id (entry 17, 0 none).
           15 EN-TGT          BINARY-LONG.
+*>        Axolotl (34-8 4.5, ENTITY-AXOLOTL-TICK): playing dead (entry 19, BOOLEAN), the ticks of the four BinaryAnimators (1 playing dead, 2 in water, 3 on the ground, 4 moving; 0 to 10)
+*>        and their value one tick earlier, and the rotation at the previous tick (the moving flag reads a change of it).
+          15 EN-AX-PD        BINARY-LONG.
+          15 EN-AX-T         BINARY-LONG OCCURS 4 TIMES.
+          15 EN-AX-O         BINARY-LONG OCCURS 4 TIMES.
+          15 EN-AX-XR        FLOAT-LONG.
+          15 EN-AX-YR        FLOAT-LONG.
+*>        A baby axolotl's animation state (4.5): 0 none (an adult), 1 swim, 2 walk, 3 walk underwater, 4 idle underwater, 5 idle underwater on the ground, 6 idle on the ground, 7 play dead,
+*>        and the tick count at which it started (AnimationState.startIfStopped).
+          15 EN-AX-BS        BINARY-LONG.
+          15 EN-AX-BT        BINARY-LONG.
+*>        The ender dragon and the end crystal (34-7 sections 7.3 and 8): EN-HP the health of entry 9 (FLOAT; 1 until told), EN-DD the death time dragonDeathTime (ticks while the health is 0 or less,
+*>        at most 200), EN-NCI the entity id of the nearest healing crystal (0 none, ENTITY-DRAGON-CRYSTAL); a crystal's beam target (entry 8, OPTIONAL_BLOCK_POS): EN-BP 1 when set, the block EN-BX, EN-BY, EN-BZ.
+          15 EN-HP           FLOAT-LONG.
+          15 EN-DD           BINARY-LONG.
+          15 EN-NCI          BINARY-LONG.
+          15 EN-BP           BINARY-LONG.
+          15 EN-BX           BINARY-LONG.
+          15 EN-BY           BINARY-LONG.
+          15 EN-BZ           BINARY-LONG.
+*>        An item frame (34-9 section 10): the direction (entry 8, DIRECTION: 0 down, 1 up, 2 north, 3 south, 4 west, 5 east; north until told) and the rotation of the item (entry 10, 0 to 7).
+*>        The block state id of the data field of Add Entity (a falling block, 34-9 13.1; entry 9 of a tnt is not kept).
+          15 EN-BSTATE       BINARY-LONG.
+          15 EN-FDIR         BINARY-LONG.
+          15 EN-FROT         BINARY-LONG.
 *>        Boat (34-8 7.3, ENTITY-BOAT-SET and ENTITIES-ANIM-TICK): hurt time (entry 8), hurt direction (9), damage (10, FLOAT), bubble time (13), the bubble multiplier
 *>        and angle in degrees, and 1 when the boat is under water.
           15 EN-BHT          FLOAT-LONG.
@@ -827,6 +898,11 @@
           15 EN-HAND OCCURS 2 TIMES.
              20 EN-HAND-OK    BINARY-LONG.
              20 EN-HAND-V     FLOAT-LONG OCCURS 6 TIMES.
+*>           The frame of the arm part (ENTITY-HAND-FRAME; 1 in EN-HAND-FOK when found): its origin (the pivot of the part) and the images of its three axes, a block long,
+*>           in the entity-relative world: 12 values, origin then x, y and z axis. The held item of 34-1 section 8.3 is placed in it (ENTITY-HELD-POSED).
+             20 EN-HAND-FOK   BINARY-LONG.
+             20 EN-HAND-FG.
+                25 EN-HAND-F  FLOAT-LONG OCCURS 12 TIMES.
 *>        The item components of the equipment that the models draw (54 sections 17 to 19 and 22; ENTITY-EQ-COMPONENTS, per slot like EN-EQ): EN-EQ-DYE the
 *>        dyed_color RGB (low 24 bits, -1 none), EN-EQ-TRIM-MAT and -PAT the trim's material and pattern holders (registry position + 1, 0 none or an inline holder),
 *>        EN-EQ-FOIL 1 when the stack has the glint (the override, else a non-empty enchantments component). EN-HB, per hand (1 main, 2 off): the base_color dye
@@ -862,6 +938,25 @@
           15 BL-SHAKING      BINARY-LONG.
           15 BL-TICKS        BINARY-LONG.
           15 BL-DIR          BINARY-LONG.
+*>  ---- shulker boxes (52 section 4, 31-1 section 13; shulker-box.cob): SB-IS(block id + 1) 1 for a shulker box block and SB-DYE its colour (0 to 15, 16 undyed), built from the names of the
+*>       state tables (SB-READY); SB-BOX the boxes of the loaded chunks: SB-SID the state, SB-COLOUR, SB-FACE (the facing in the Direction order: 0 down, 1 up, 2 north, 3 south, 4 west,
+*>       5 east), SB-STATUS (0 closed, 1 opening, 2 opened, 3 closing) and the lid in tenths: SB-T ticks 0 to 10 and SB-TOLD a tick earlier; SB-COUNT the boxes in use ----
+    05 SB-DATA.
+       10 SB-READY           BINARY-LONG.
+       10 SB-IS              PIC 9 OCCURS 2048 TIMES.
+       10 SB-DYE             BINARY-LONG OCCURS 2048 TIMES.
+       10 SB-COUNT           BINARY-LONG.
+       10 SB-BOX OCCURS 64 TIMES.
+          15 SB-USED         BINARY-LONG.
+          15 SB-X            BINARY-LONG.
+          15 SB-Y            BINARY-LONG.
+          15 SB-Z            BINARY-LONG.
+          15 SB-SID          BINARY-LONG.
+          15 SB-COLOUR       BINARY-LONG.
+          15 SB-FACE         BINARY-LONG.
+          15 SB-STATUS       BINARY-LONG.
+          15 SB-T            BINARY-LONG.
+          15 SB-TOLD         BINARY-LONG.
 *>  ---- chat (US6; client-surface §4; screens/chat.cob, screens/hud.cob): the line being typed
 *>       (UTF-8), the messages scrolled back while chat is open, and the messages received this
 *>       session, oldest first (the clock when each arrived, its rendered text) ----
@@ -1189,6 +1284,9 @@
 *>     names `display.firstperson_righthand`, IS-FP-VAL(i * 9 + n) the rotation x y z, translation x y z (sixteenths) and scale x y z.
        10 IS-FP-STATE        PIC 9 OCCURS 2048 TIMES.
        10 IS-FP-VAL          FLOAT-SHORT OCCURS 18432 TIMES.
+*>     The same for the contexts thirdperson_righthand (1), thirdperson_lefthand (2) and fixed (3) (ITEM-DISPLAY): IS-DX-STATE(i * 3 + c) = 1 when named, IS-DX-VAL(i * 27 + (c - 1) * 9 + n).
+       10 IS-DX-STATE        PIC 9 OCCURS 6144 TIMES.
+       10 IS-DX-VAL          FLOAT-SHORT OCCURS 55296 TIMES.
        10 IS-FACE-DONE       PIC 9 OCCURS 2048 TIMES.
        10 IS-FACE-SPRITE     BINARY-LONG OCCURS 12288 TIMES.
 *>     The GUI icon of a block item whose model has elements (ITEM-GUI-BAKE, item-gui.cob; 12 section 8.1): the quads of its model after the gui display transform that face the viewer,
@@ -1420,6 +1518,22 @@
           15 RL-GL-R         FLOAT-SHORT.
           15 RL-GL-G         FLOAT-SHORT.
           15 RL-GL-BLUE      FLOAT-SHORT.
+*>     The glint of the item in the hand (hand.cob; 54 section 19.3, texture 5, glint pipeline, the hand's projection): the quads of the hand mesh over the opaque
+*>     texels (a flat item: one quad per opaque texel on each face and the edge quads; a block: its faces) with the glint coordinates of the item scale 8.
+       10 RL-HG-COUNT        BINARY-LONG.
+       10 RL-HG-UPLOADED     BINARY-LONG.
+       10 RL-HG-VERTEX OCCURS 4096 TIMES.
+          15 RL-HG-X         FLOAT-SHORT.
+          15 RL-HG-Y         FLOAT-SHORT.
+          15 RL-HG-Z         FLOAT-SHORT.
+          15 RL-HG-U         FLOAT-SHORT.
+          15 RL-HG-V         FLOAT-SHORT.
+          15 RL-HG-B         FLOAT-SHORT.
+          15 RL-HG-A         FLOAT-SHORT.
+          15 RL-HG-SKY       FLOAT-SHORT.
+          15 RL-HG-R         FLOAT-SHORT.
+          15 RL-HG-G         FLOAT-SHORT.
+          15 RL-HG-BLUE      FLOAT-SHORT.
 *>     The glint of the item icons (glint.cob GLINT-ICON; UI-SLOT; texture 5, glint pipeline, the UI's matrix): quads over the opaque texels of the icon of each slot whose
 *>     stack has the foil, vertices as RL-IC-VERTEX with the glint coordinates of the item scale 8. PL-STACK-FOIL is the foil decision of the item stack last decoded
 *>     (STACK-FOIL), taken over by the slot the stack is set into; PL-SLOT-FOIL and PL-OFFHAND-FOIL the foil of the player slots 0 to 35 and the off hand.
@@ -1575,6 +1689,22 @@
           15 RL-HAND-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
           15 RL-HAND-G         FLOAT-SHORT.
           15 RL-HAND-BLUE      FLOAT-SHORT.
+*>     The empty hand's arm (view space, entity atlas texture 1, the hand's projection; hand-arm.cob; 12 section 6.5): the arm and sleeve cuboids of the player model, drawn
+*>     after the hand mesh (and its depth clear) when the main hand shows no item.
+       10 RL-HA-COUNT        BINARY-LONG.
+       10 RL-HA-UPLOADED     BINARY-LONG.
+       10 RL-HA-VERTEX OCCURS 1024 TIMES.
+          15 RL-HA-X         FLOAT-SHORT.
+          15 RL-HA-Y         FLOAT-SHORT.
+          15 RL-HA-Z         FLOAT-SHORT.
+          15 RL-HA-U         FLOAT-SHORT.
+          15 RL-HA-V         FLOAT-SHORT.
+          15 RL-HA-B         FLOAT-SHORT.
+          15 RL-HA-A         FLOAT-SHORT.
+          15 RL-HA-SKY       FLOAT-SHORT.
+          15 RL-HA-R         FLOAT-SHORT.
+          15 RL-HA-G         FLOAT-SHORT.
+          15 RL-HA-BLUE      FLOAT-SHORT.
 *>     The weather quads (eye-relative, texture 3; weather-render.cob).
        10 RL-WX-COUNT        BINARY-LONG.
        10 RL-WX-UPLOADED     BINARY-LONG.

@@ -233,7 +233,7 @@
      END-IF
      MOVE 1 TO WS-SPRITE
      MOVE 0 TO WS-FACES
-     MOVE 0 TO MR-FP-PRESENT WS-SPECIAL
+     MOVE 0 TO MR-FP-PRESENT WS-SPECIAL MR-DX-PRESENT(1) MR-DX-PRESENT(2) MR-DX-PRESENT(3)
      CALL "CL-ITEM-INFO" USING CLIENT-STATE L-ITEM WS-NS WS-NAME WS-MAX WS-BLOCK WS-TOOL WS-FOOD
          WS-KNOWN
      IF WS-KNOWN = 1
@@ -313,6 +313,16 @@
              MOVE MR-FP(WS-D) TO IS-FP-VAL(WS-SLOT)
          END-PERFORM
      END-IF
+     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 3
+         IF MR-DX-PRESENT(WS-D) = 1 AND WS-SPECIAL = 0
+             COMPUTE WS-SLOT = L-ITEM * 3 + WS-D
+             MOVE 1 TO IS-DX-STATE(WS-SLOT)
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 9
+                 COMPUTE WS-SLOT = L-ITEM * 27 + (WS-D - 1) * 9 + WS-K
+                 MOVE MR-DX((WS-D - 1) * 9 + WS-K) TO IS-DX-VAL(WS-SLOT)
+             END-PERFORM
+         END-IF
+     END-PERFORM
      IF WS-FACES = 1
          MOVE 1 TO IS-FACE-DONE(L-ITEM + 1)
          PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 6
@@ -384,3 +394,36 @@
      END-IF
      GOBACK.
  END PROGRAM ITEM-HAND-DISPLAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ITEM-DISPLAY.
+*> USING CLIENT-STATE, item id, context (1 thirdperson_righthand, 2 thirdperson_lefthand, 3 fixed), present out (1 when the item's model chain names that context, else 0),
+*> values out (9 FLOAT-LONG: rotation x y z in degrees, translation x y z in sixteenths, scale x y z). Read on the item's first use (ITEM-SPRITE-OF); a stand-in item, an item whose
+*> models name none and a code-drawn "special" model have present 0 (the caller uses the defaults of 12 section 8.2).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ICON                BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-CONTEXT              BINARY-LONG.
+ 01 L-PRESENT              BINARY-LONG.
+ 01 L-VALUES.
+    05 L-VALUE             FLOAT-LONG OCCURS 9 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ITEM L-CONTEXT L-PRESENT L-VALUES.
+     MOVE 0 TO L-PRESENT
+     IF L-ITEM >= 0 AND L-ITEM < 2048 AND L-CONTEXT >= 1 AND L-CONTEXT <= 3
+         CALL "ITEM-SPRITE-OF" USING CLIENT-STATE L-ITEM WS-ICON
+         COMPUTE WS-SLOT = L-ITEM * 3 + L-CONTEXT
+         IF IS-DX-STATE(WS-SLOT) = 1
+             MOVE 1 TO L-PRESENT
+             PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 9
+                 COMPUTE WS-SLOT = L-ITEM * 27 + (L-CONTEXT - 1) * 9 + WS-D
+                 MOVE IS-DX-VAL(WS-SLOT) TO L-VALUE(WS-D)
+             END-PERFORM
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM ITEM-DISPLAY.

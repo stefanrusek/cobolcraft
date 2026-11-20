@@ -23,6 +23,7 @@
  01 WS-KEY                 PIC X(112).
  01 WS-ID                  BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
+ 01 WS-CONTEXT             BINARY-LONG.
  01 WS-ITEM-ROW            PIC X(270).
  01 WS-SPRITE-FOUND        BINARY-LONG.
  01 WS-SPRITE-ID           PIC X(80).
@@ -312,6 +313,39 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The other contexts of the stick's chain (T28400): thirdperson_righthand and fixed come from item/generated, thirdperson_lefthand from the stick's own model (the nearest
+*>   model of the chain wins); the thirdperson_lefthand of a model that names none is absent (the caller mirrors the right hand's, 12 section 8.2).
+     MOVE 1 TO WS-CONTEXT
+     CALL "ITEM-DISPLAY" USING CLIENT-STATE WS-ITEM WS-CONTEXT WS-HAVE WS-VAL
+     MOVE "standard models the stick's thirdperson_righthand is item/generated's (translation 0 3 1, scale 0.55)" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-HAVE = 1 AND WS-DV(1) = 0 AND WS-DV(5) = 3 AND WS-DV(6) = 1 AND WS-DV(7) > 0.549 AND WS-DV(7) < 0.551
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO WS-CONTEXT
+     CALL "ITEM-DISPLAY" USING CLIENT-STATE WS-ITEM WS-CONTEXT WS-HAVE WS-VAL
+     MOVE "standard models the stick's thirdperson_lefthand is its own (rotation 0 90 -55, translation y 4, scale 0.85)" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-HAVE = 1 AND WS-DV(2) = 90 AND WS-DV(3) = -55 AND WS-DV(5) = 4 AND WS-DV(7) > 0.849 AND WS-DV(7) < 0.851
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO WS-CONTEXT
+     CALL "ITEM-DISPLAY" USING CLIENT-STATE WS-ITEM WS-CONTEXT WS-HAVE WS-VAL
+     MOVE "standard models the stick's fixed is item/generated's (rotation y 180, scale defaults to 1)" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-HAVE = 1 AND WS-DV(2) = 180 AND WS-DV(7) = 1 AND WS-DV(8) = 1 AND WS-DV(4) = 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 4 TO WS-CONTEXT
+     CALL "ITEM-DISPLAY" USING CLIENT-STATE WS-ITEM WS-CONTEXT WS-HAVE WS-VAL
+     MOVE "standard models display context 4 is none" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HAVE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO TL-EXPECTED-N
 *>   A block item: block/cube's display (rotation y 45, scale 0.4), drawn as the cube; a code-drawn chest: nothing; an item with no definition: no display.
      MOVE "stone" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
@@ -325,11 +359,41 @@
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-CONTEXT
+     CALL "ITEM-DISPLAY" USING CLIENT-STATE WS-ITEM WS-CONTEXT WS-HAVE WS-VAL
+     MOVE "standard models the stone's thirdperson_righthand is block/cube's (rotation 75 45 0, translation y 2.5, scale 0.375)" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-HAVE = 1 AND WS-DV(1) = 75 AND WS-DV(2) = 45 AND WS-DV(5) = 2.5 AND WS-DV(7) > 0.374 AND WS-DV(7) < 0.376
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO WS-CONTEXT
+     CALL "ITEM-DISPLAY" USING CLIENT-STATE WS-ITEM WS-CONTEXT WS-HAVE WS-VAL
+     MOVE "standard models the stone names no thirdperson_lefthand" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HAVE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 3 TO WS-CONTEXT
+     CALL "ITEM-DISPLAY" USING CLIENT-STATE WS-ITEM WS-CONTEXT WS-HAVE WS-VAL
+     MOVE "standard models the stone's fixed is block/cube's (scale 0.5, no rotation)" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-HAVE = 1 AND WS-DV(2) = 0 AND WS-DV(7) > 0.499 AND WS-DV(7) < 0.501
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "chest" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
      MOVE WS-ITEM TO PL-SLOT-ITEM(1)
      COMPUTE CL-HAND-ITEM = WS-ITEM + 1
      CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE 1 TO WS-CONTEXT
+     CALL "ITEM-DISPLAY" USING CLIENT-STATE WS-ITEM WS-CONTEXT WS-HAVE WS-VAL
+     MOVE "standard models a code-drawn (special) model names no context for the held-item and frame drawing" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HAVE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO TL-EXPECTED-N
      CALL "ITEM-HAND-DISPLAY" USING CLIENT-STATE WS-ITEM WS-HAVE WS-VAL
 *>   Lane bugbeitems (T42400 and on): a code-drawn model has no display of the item definition (the answer stays 2), and the hand now draws the quads of the model's own
 *>   rows (item-special.cob, HAND-SPECIAL-MESH) where the generic path drew nothing; the old expectation of no vertices is invalid because of that intended change.

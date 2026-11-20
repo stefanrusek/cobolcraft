@@ -231,6 +231,10 @@
  78 SKY-STAR-COUNT          VALUE 1500.     *> 12 section 3.4c: at most 1500 quads
  78 SKY-CLOUD-VERTICES      VALUE 120000.   *> the cloud mesh's capacity in vertices
  78 SKY-CLOUD-RADIUS-MAX    VALUE 32.       *> cells meshed at most (cloudRange 128 asks 171: see sky-render.cob)
+*> The glint of the item in the hand (one mesh, view space, texture 5, glint pipeline; hand.cob).
+ 78 MESH-SLOT-HAND-GLINT    VALUE 65015.
+*> The arm of an empty main hand (one mesh, view space, texture 1; hand-arm.cob).
+ 78 MESH-SLOT-HAND-ARM      VALUE 65016.
  78 CL-SWING-MS             VALUE 300.  *> the hand's swing, milliseconds
 
 *> Weather kinds (standin-content §14.1), from the Game Event pair (rain level, thunder level).
@@ -332,6 +336,7 @@
 *> A survival Player sprints only with food above 6 (17 section 4.9).
  78 CL-SPRINT-FOOD          VALUE 6.
  78 CL-EAT-MS               VALUE 1500.
+ 78 CL-CROSSBOW-MS          VALUE 1250.  *> the charge time of a crossbow with no Quick Charge: floor(20 x 1.25) = 25 ticks (17 section 3.9)
  78 CL-BREAK-COOLDOWN-MS    VALUE 250.
 
 *> Entity types (standin-content §3).

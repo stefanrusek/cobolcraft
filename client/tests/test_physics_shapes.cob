@@ -10,6 +10,7 @@
  COPY CLCONST.
  COPY CCSHIM.
  COPY CONTENT.
+ COPY CTBSHAPE.
  COPY TESTLIB.
  01 WS-SERVER              BINARY-LONG.
  01 WS-KEY                 BINARY-LONG.
@@ -20,6 +21,16 @@
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
+ 01 WS-BX                  FLOAT-LONG.
+ 01 WS-BY                  FLOAT-LONG.
+ 01 WS-BZ                  FLOAT-LONG.
+ 01 WS-BH                  FLOAT-LONG.
+ 01 WS-BHT                 FLOAT-LONG.
+ 01 WS-BHIT                BINARY-LONG.
+ 01 WS-ITEM-KEY            PIC X(112).
+ 01 WS-ITEM-ID             BINARY-LONG.
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-ITEM-STATUS         BINARY-LONG.
  01 WS-AIR                 BINARY-LONG VALUE 0.
  01 WS-BLOCK               PIC X(40).
  01 WS-P1                  PIC X(80).
@@ -183,6 +194,88 @@
      PERFORM ASSERT-N
      MOVE 0.5 TO PL-X
 
+*>   An offset plant (51 section 1.4): a dandelion at (3, 11, 3) is moved by (-0.25, 0, 0.0167) (the hash of the cell), so its outline spans x 3.0625 to 3.4375:
+*>   the ray down the column x 3.5 misses it, and a ray at x 3.3 hits it.
+     MOVE 3 TO WS-X
+     MOVE "dandelion" TO WS-BLOCK
+     MOVE SPACES TO WS-P1
+     PERFORM FIND-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 3.5 TO PL-X
+     CALL "RAYCAST" USING CLIENT-STATE
+     MOVE "raycast the ray through the middle of an offset flower's cell misses it" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE TG-HIT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE 3.3 TO PL-X
+     CALL "RAYCAST" USING CLIENT-STATE
+     MOVE "raycast a ray at x 3.3 hits the offset flower" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE TG-HIT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE 0 TO WS-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 0 TO WS-X
+     MOVE 0.5 TO PL-X
+*>   Collision: bamboo at (6, 11, 8) is moved by (+0.25, 0, -0.1167): a box 0.04 wide at x 7.0 (6.98 to 7.02) sits in the moved stalk's x 6.656 to 6.844? no: at x 6.75 it
+*>   overlaps the moved stalk but at x 6.5 (6.48 to 6.52, over the unmoved stalk 6.406 to 6.594) it does not.
+     MOVE "bamboo" TO WS-BLOCK
+     MOVE SPACES TO WS-P1
+     MOVE "age=0,leaves=none,stage=0" TO WS-P1
+     PERFORM FIND-STATE
+     MOVE 6 TO WS-X
+     MOVE 11 TO WS-Y
+     MOVE 8 TO WS-Z
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 6.5 TO WS-BX
+     MOVE 11.2 TO WS-BY
+     MOVE 8.4 TO WS-BZ
+     MOVE 0.02 TO WS-BH
+     MOVE 0.5 TO WS-BHT
+     CALL "PHYS-COLLIDES-BOX" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-BH WS-BHT WS-BHIT
+     MOVE "physics a thin box over the unmoved bamboo does not collide: the stalk is moved by its offset" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BHIT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE 6.75 TO WS-BX
+     CALL "PHYS-COLLIDES-BOX" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-BH WS-BHT WS-BHIT
+     MOVE "physics a thin box at the moved bamboo collides" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-BHIT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE 0 TO WS-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 0 TO WS-X
+     MOVE 11 TO WS-Y
+     MOVE 3 TO WS-Z
+*>   The light block (51 section 1.5): no outline of its own; it is targeted as a full cube while the held item is the light item.
+     MOVE "light" TO WS-BLOCK
+     MOVE SPACES TO WS-P1
+     MOVE "level=15,waterlogged=false" TO WS-P1
+     PERFORM FIND-STATE
+     MOVE 3 TO WS-X
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 3.5 TO PL-X
+     MOVE 0 TO PL-SLOT-COUNT(PL-HELD + 1)
+     CALL "RAYCAST" USING CLIENT-STATE
+     MOVE "raycast a light block is not a target with an empty hand" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE TG-HIT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "light" TO WS-ITEM-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-ITEM-KEY WS-ITEM-ID WS-ITEM-ROW WS-ITEM-STATUS
+     MOVE WS-ITEM-ID TO PL-SLOT-ITEM(PL-HELD + 1)
+     MOVE 1 TO PL-SLOT-COUNT(PL-HELD + 1)
+     CALL "RAYCAST" USING CLIENT-STATE
+     MOVE "raycast a light block is a target while a light item is held" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE TG-HIT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE 0 TO PL-SLOT-COUNT(PL-HELD + 1)
+     MOVE 0 TO WS-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 0 TO WS-X
+     MOVE 0.5 TO PL-X
 *>   A cell with no outline (technical air) is not a target.
      MOVE "void_air" TO WS-BLOCK
      MOVE SPACES TO WS-P1
@@ -258,6 +351,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CONTENT.
+ COPY CTBSHAPE.
  01 CT-PROPS.
     05 CTP-COUNT            BINARY-LONG.
     05 CTP-ENTRY OCCURS 16 TIMES.

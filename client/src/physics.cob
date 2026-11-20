@@ -454,6 +454,10 @@
  01 WS-DIST                FLOAT-LONG.
  01 WS-BOX.
     05 WS-B                FLOAT-LONG OCCURS 6 TIMES.
+ 01 WS-SBOX.
+    05 WS-SB               FLOAT-LONG OCCURS 6 TIMES.
+ 01 WS-OFFS.
+    05 WS-OFF              FLOAT-LONG OCCURS 3 TIMES.
  01 WS-LOW                 FLOAT-LONG.
  01 WS-HIGH                FLOAT-LONG.
  01 WS-LO-CELL             BINARY-LONG OCCURS 3 TIMES.
@@ -496,7 +500,12 @@
              PERFORM VARYING WS-X FROM WS-LO-CELL(1) BY 1 UNTIL WS-X > WS-HI-CELL(1)
                  CALL "PHYS-CELL-SHAPE" USING CLIENT-STATE WS-X WS-Y WS-Z WS-SHAPE
                  IF WS-SHAPE NOT = 0
-                     CALL "BSH-CLIP" USING WS-SHAPE WS-X WS-Y WS-Z WS-BOX L-AXIS WS-DIST
+                     CALL "PHYS-CELL-OFFSET" USING CLIENT-STATE WS-X WS-Y WS-Z WS-OFFS
+                     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+                         COMPUTE WS-SB(WS-A) = WS-B(WS-A) - WS-OFF(WS-A)
+                         COMPUTE WS-SB(WS-A + 3) = WS-B(WS-A + 3) - WS-OFF(WS-A)
+                     END-PERFORM
+                     CALL "BSH-CLIP" USING WS-SHAPE WS-X WS-Y WS-Z WS-SBOX L-AXIS WS-DIST
                  END-IF
              END-PERFORM
          END-PERFORM
@@ -728,6 +737,11 @@
  01 WS-SHAPE               BINARY-LONG.
  01 WS-BOX.
     05 WS-B                FLOAT-LONG OCCURS 6 TIMES.
+ 01 WS-SBOX.
+    05 WS-SB               FLOAT-LONG OCCURS 6 TIMES.
+ 01 WS-OFFS.
+    05 WS-OFF              FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-A                   BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-X                    FLOAT-LONG.
@@ -755,7 +769,12 @@
              PERFORM VARYING WS-X FROM WS-X0 BY 1 UNTIL WS-X > WS-X1 OR L-HIT = 1
                  CALL "PHYS-CELL-SHAPE" USING CLIENT-STATE WS-X WS-Y WS-Z WS-SHAPE
                  IF WS-SHAPE NOT = 0
-                     CALL "BSH-OVERLAPS" USING WS-SHAPE WS-X WS-Y WS-Z WS-BOX L-HIT
+                     CALL "PHYS-CELL-OFFSET" USING CLIENT-STATE WS-X WS-Y WS-Z WS-OFFS
+                     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+                         COMPUTE WS-SB(WS-A) = WS-B(WS-A) - WS-OFF(WS-A)
+                         COMPUTE WS-SB(WS-A + 3) = WS-B(WS-A + 3) - WS-OFF(WS-A)
+                     END-PERFORM
+                     CALL "BSH-OVERLAPS" USING WS-SHAPE WS-X WS-Y WS-Z WS-SBOX L-HIT
                  END-IF
              END-PERFORM
          END-PERFORM
@@ -992,6 +1011,34 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM PHYS-CELL-SHAPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PHYS-CELL-OFFSET.
+*> USING CLIENT-STATE, block x, y, z, offset out (3 FLOAT-LONG, blocks): the model offset of the block in the cell (BSH-OFFSET, 51 section 1.4) that moves its collision
+*> shape; 0 for a cell with no offset block or none in the replica.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-OX                  FLOAT-LONG.
+ 01 WS-OY                  FLOAT-LONG.
+ 01 WS-OZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-OFFS.
+    05 L-OFF               FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z L-OFFS.
+     CALL "WORLD-CELL" USING CLIENT-STATE L-X L-Y L-Z WS-STATE WS-SKY WS-BLOCK
+     CALL "BSH-OFFSET" USING WS-STATE L-X L-Y L-Z WS-OX WS-OY WS-OZ
+     MOVE WS-OX TO L-OFF(1)
+     MOVE WS-OY TO L-OFF(2)
+     MOVE WS-OZ TO L-OFF(3)
+     GOBACK.
+ END PROGRAM PHYS-CELL-OFFSET.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PHYS-SOLID.

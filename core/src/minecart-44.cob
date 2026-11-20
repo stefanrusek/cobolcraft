@@ -319,7 +319,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MC-MOVE.
-*> USING row, dx, dy, dz (FLOAT-LONG), horizontal hit out: the cart moves along y, then x, then z, each stopped by solid cells (ENTITY-BOX-HITS of its type); a downward block sets
+*> USING row, dx, dy, dz (FLOAT-LONG), horizontal hit out: the cart moves along y, then x, then z, each stopped by solid cells (ENTITY-BOX-SURFACE of its type); a downward block sets
 *> EN-ON-GROUND and zeroes vy, a block in x or z zeroes that velocity and reports the horizontal hit.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -328,7 +328,7 @@
  01 WS-NY                  FLOAT-LONG.
  01 WS-NZ                  FLOAT-LONG.
  01 WS-HIT                 BINARY-LONG.
- 01 WS-TOP                 BINARY-LONG.
+ 01 WS-TOP                 FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-DX                   FLOAT-LONG.
@@ -338,7 +338,7 @@
  PROCEDURE DIVISION USING L-ROW L-DX L-DY L-DZ L-HHIT.
      MOVE 0 TO L-HHIT
      COMPUTE WS-NY = EN-Y(L-ROW) + L-DY
-     CALL "ENTITY-BOX-HITS" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) EN-X(L-ROW) WS-NY EN-Z(L-ROW) WS-HIT WS-TOP
+     CALL "ENTITY-BOX-SURFACE" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) EN-X(L-ROW) WS-NY EN-Z(L-ROW) WS-HIT WS-TOP
      IF WS-HIT = 1
          IF L-DY < 0
              MOVE 1 TO EN-ON-GROUND(L-ROW)
@@ -349,7 +349,7 @@
          MOVE 0 TO EN-ON-GROUND(L-ROW)
      END-IF
      COMPUTE WS-NX = EN-X(L-ROW) + L-DX
-     CALL "ENTITY-BOX-HITS" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) WS-NX EN-Y(L-ROW) EN-Z(L-ROW) WS-HIT WS-TOP
+     CALL "ENTITY-BOX-SURFACE" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) WS-NX EN-Y(L-ROW) EN-Z(L-ROW) WS-HIT WS-TOP
      IF WS-HIT = 1
          MOVE 0 TO EN-VX(L-ROW)
          MOVE 1 TO L-HHIT
@@ -357,7 +357,7 @@
          MOVE WS-NX TO EN-X(L-ROW)
      END-IF
      COMPUTE WS-NZ = EN-Z(L-ROW) + L-DZ
-     CALL "ENTITY-BOX-HITS" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) WS-NZ WS-HIT WS-TOP
+     CALL "ENTITY-BOX-SURFACE" USING EN-DIM(L-ROW) EN-TYPE(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) WS-NZ WS-HIT WS-TOP
      IF WS-HIT = 1
          MOVE 0 TO EN-VZ(L-ROW)
          MOVE 1 TO L-HHIT

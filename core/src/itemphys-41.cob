@@ -1340,7 +1340,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. IP-AXIS-MOVE.
 *> USING dimension row, x, y, z (FLOAT-LONG, in and out), axis (1 x, 2 y, 3 z), delta (FLOAT-LONG), hit out (BINARY-LONG 1 or 0):
-*> moves the item box along one axis in steps of at most 0.5 block; a step into solid cells (ENTITY-BOX-HITS) ends the move flush
+*> moves the item box along one axis in steps of at most 0.5 block; a step into solid cells (ENTITY-BOX-SURFACE) ends the move flush
 *> against the cells: the box face touches the cell face.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -1438,7 +1438,7 @@
  01 WS-MID                 FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-HIT                 BINARY-LONG.
- 01 WS-TOP                 BINARY-LONG.
+ 01 WS-TOP                 FLOAT-LONG.
  01 WS-NO-PHYSICS          BINARY-LONG.
  01 WS-AXIS-X              BINARY-LONG VALUE 1.
  01 WS-AXIS-Y              BINARY-LONG VALUE 2.
@@ -1485,7 +1485,7 @@
              SUBTRACT 0.04 FROM WS-VY
      END-EVALUATE
 *>   6. Inside blocks: the push out of 3.4 and no collisions for the move.
-     CALL "ENTITY-BOX-HITS" USING EN-DIM(L-ROW) CR-LOOSE-ITEM WS-X WS-Y WS-Z WS-HIT WS-TOP
+     CALL "ENTITY-BOX-SURFACE" USING EN-DIM(L-ROW) CR-LOOSE-ITEM WS-X WS-Y WS-Z WS-HIT WS-TOP
      MOVE WS-HIT TO WS-NO-PHYSICS
      IF WS-NO-PHYSICS = 1
          COMPUTE WS-MID = WS-Y + WS-HEIGHT / 2

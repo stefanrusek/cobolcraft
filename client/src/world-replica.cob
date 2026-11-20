@@ -39,6 +39,7 @@
          MOVE 0 TO SN-USED(WS-R)
      END-PERFORM
      MOVE 0 TO EP-COUNT
+     CALL "SHULKER-CLEAR" USING CLIENT-STATE
      GOBACK.
  END PROGRAM WORLD-CLEAR.
 
@@ -58,6 +59,7 @@
  01 L-CZ                   BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-CX L-CZ.
      CALL "BELL-FORGET" USING CLIENT-STATE L-CX L-CZ
+     CALL "SHULKER-FORGET" USING CLIENT-STATE L-CX L-CZ
      CALL "WORLD-ROW" USING CLIENT-STATE L-CX L-CZ WS-ROW
      IF WS-ROW > 0
          MOVE 0 TO WR-USED(WS-ROW)
@@ -405,6 +407,7 @@
      END-PERFORM
      CALL "BELL-SCAN" USING CLIENT-STATE WS-CX WS-CZ
      CALL "SIGN-TEXT-CHUNK" USING CLIENT-STATE WS-CX WS-CZ WS-BE-COUNT WS-BE-HEADS WS-BE-DATA
+     CALL "SHULKER-SCAN" USING CLIENT-STATE WS-CX WS-CZ
      CALL "WORLD-DIRTY" USING CLIENT-STATE WS-CX WS-CZ
      COMPUTE WS-NX = WS-CX - 1
      CALL "WORLD-DIRTY" USING CLIENT-STATE WS-NX WS-CZ
@@ -612,6 +615,8 @@
 *>       A bell (31-4 section 4) is noted for its renderer (bell.cob).
          MOVE CE-STATE(WS-CELL) TO WS-NOTE
          CALL "BELL-NOTE" USING CLIENT-STATE L-X L-Y L-Z WS-NOTE
+*>       A shulker box (52 section 4) is noted for the block entity renderer.
+         CALL "SHULKER-NOTE" USING CLIENT-STATE L-X L-Y L-Z WS-NOTE
 *>       A cell that becomes an end portal or end gateway gets its block entity (52 section 8.1 point 2), one that stops being one loses it.
          MOVE CE-STATE(WS-CELL) TO WS-SET
          CALL "PORTAL-BE-BLOCK" USING CLIENT-STATE L-X L-Y L-Z WS-SET

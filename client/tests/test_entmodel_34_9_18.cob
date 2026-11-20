@@ -1,0 +1,427 @@
+*> Acceptance test of docs/protocol/34-entity-models-9-non-living-entities.md section 18 (worn equipment, cross-reference): the elytra model (both wings, deformation 1.0, the right wing mirrored), the baby elytra (the same scaled by 0.5),
+*> the elytra setupAnim (crouching raises the left wing to y 3; the right wing mirrors yaw and roll) and the shield model (plate and handle).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTMODEL-34-9-18.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLEMM.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-PFX                 PIC X(100).
+ 01 WS-E                   FLOAT-LONG.
+ 01 WS-O                   FLOAT-LONG.
+ 01 WS-IN.
+    05 WS-IV                FLOAT-LONG OCCURS 32 TIMES.
+ 01 WS-OUT.
+    05 WS-OV                FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-LAYER              PIC X(32).
+ 01 WS-OK                 BINARY-LONG.
+ 01 WS-PARTS              BINARY-LONG.
+ 01 WS-CUBES              BINARY-LONG.
+ 01 WS-P                  BINARY-LONG.
+ 01 WS-PN                 PIC X(24).
+ COPY EMCHKW.
+
+ 01 WS-X32               PIC X(32).
+ 01 WS-X32B              PIC X(32).
+ 01 WS-X120              PIC X(120).
+ 01 WS-X24               PIC X(24).
+ 01 WS-X40               PIC X(40).
+ 01 WS-FL                BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "acceptance US15 34-9§18 worn equipment" TO WS-PFX
+     MOVE "ELYTRA" TO WS-LAYER
+     CALL "EF9-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer ELYTRA is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-9§18 worn equipment 18 ELYTRA" TO CK-PREFIX
+     MOVE "P left_wing root 5 0 0 0.2617994 0 -0.2617994" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_wing 22 0 -10 0 0 10 20 2 1.0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_wing root -5 0 0 0.2617994 0 0.2617994" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_wing 22 0 0 0 0 10 20 2 1.0 1" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "18 ELYTRA: parts below the root" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "18 ELYTRA: cuboids" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "18 ELYTRA: texture width" TO WS-NAME
+     MOVE 64.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "18 ELYTRA: texture height" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "ELYTRA_BABY" TO WS-LAYER
+     CALL "EF9-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer ELYTRA_BABY is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-9§18 worn equipment 18 baby (MeshTransformer.scaling 0.5) ELYTRA_BABY" TO CK-PREFIX
+     MOVE "P left_wing root 2.5 12.008 0.0 0.2617994 0 -0.2617994 0.5 0.5 0.5" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_wing 22 0 -10 0 0 10 20 2 1.0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_wing root -2.5 12.008 0.0 0.2617994 0 0.2617994 0.5 0.5 0.5" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_wing 22 0 0 0 0 10 20 2 1.0 1" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "18 baby (MeshTransformer.scaling 0.5) ELYTRA_BABY: parts below the root" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "18 baby (MeshTransformer.scaling 0.5) ELYTRA_BABY: cuboids" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "18 baby (MeshTransformer.scaling 0.5) ELYTRA_BABY: texture width" TO WS-NAME
+     MOVE 64.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "18 baby (MeshTransformer.scaling 0.5) ELYTRA_BABY: texture height" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "ELYTRA" TO WS-LAYER
+     CALL "EF9-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0 TO WS-IV(1)
+     MOVE 0.2617994 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE -0.2617994 TO WS-IV(4)
+     CALL "EF9-ELYTRA-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.y" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.xrot" TO WS-NAME
+     MOVE 0.2617994 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.zrot" TO WS-NAME
+     MOVE -0.2617994 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.y" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.xrot" TO WS-NAME
+     MOVE 0.2617994 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.zrot" TO WS-NAME
+     MOVE 0.2617994 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "ELYTRA" TO WS-LAYER
+     CALL "EF9-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 1 TO WS-IV(1)
+     MOVE 0.2617994 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE -0.2617994 TO WS-IV(4)
+     CALL "EF9-ELYTRA-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.y" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.xrot" TO WS-NAME
+     MOVE 0.2617994 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.zrot" TO WS-NAME
+     MOVE -0.2617994 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.y" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.xrot" TO WS-NAME
+     MOVE 0.2617994 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.zrot" TO WS-NAME
+     MOVE 0.2617994 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "ELYTRA" TO WS-LAYER
+     CALL "EF9-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0 TO WS-IV(1)
+     MOVE 0.9 TO WS-IV(2)
+     MOVE 0.1 TO WS-IV(3)
+     MOVE -0.5 TO WS-IV(4)
+     CALL "EF9-ELYTRA-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.y" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.xrot" TO WS-NAME
+     MOVE 0.9 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.yrot" TO WS-NAME
+     MOVE 0.1 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.zrot" TO WS-NAME
+     MOVE -0.5 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.y" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.xrot" TO WS-NAME
+     MOVE 0.9 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.yrot" TO WS-NAME
+     MOVE -0.1 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.zrot" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "ELYTRA" TO WS-LAYER
+     CALL "EF9-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 1 TO WS-IV(1)
+     MOVE 1.2 TO WS-IV(2)
+     MOVE -0.3 TO WS-IV(3)
+     MOVE -1.1 TO WS-IV(4)
+     CALL "EF9-ELYTRA-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.y" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.xrot" TO WS-NAME
+     MOVE 1.2 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.yrot" TO WS-NAME
+     MOVE -0.3 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.zrot" TO WS-NAME
+     MOVE -1.1 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.y" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.xrot" TO WS-NAME
+     MOVE 1.2 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.yrot" TO WS-NAME
+     MOVE 0.3 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.zrot" TO WS-NAME
+     MOVE 1.1 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "ELYTRA" TO WS-LAYER
+     CALL "EF9-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     CALL "EF9-ELYTRA-ANIM" USING EMM-MODEL WS-IN
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.y" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.xrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_wing.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.y" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.xrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_wing" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_wing.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SHIELD" TO WS-LAYER
+     CALL "EF9-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer SHIELD is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-9§18 worn equipment 18 SHIELD" TO CK-PREFIX
+     MOVE "P plate root 0 0 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C plate 0 0 -6 -11 -2 12 22 1 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P handle root 0 0 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C handle 26 0 -1 -3 -1 2 6 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "18 SHIELD: parts below the root" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "18 SHIELD: cuboids" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "18 SHIELD: texture width" TO WS-NAME
+     MOVE 64.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "18 SHIELD: texture height" TO WS-NAME
+     MOVE 64.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     STOP RUN.
+
+ COPY EMCHKP.
+
+ CHECK-NUM.
+     MOVE SPACES TO TL-CASE
+     STRING FUNCTION TRIM(WS-PFX) ": " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     IF FUNCTION ABS(WS-O - WS-E) <= 0.00002
+         MOVE WS-E TO WS-O
+     END-IF
+     COMPUTE TL-EXPECTED-N ROUNDED = WS-E * 100000
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O * 100000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK-TEXT.
+     MOVE SPACES TO TL-CASE
+     STRING FUNCTION TRIM(WS-PFX) ": " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-ENTMODEL-34-9-18.

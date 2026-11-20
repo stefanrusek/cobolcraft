@@ -31,6 +31,9 @@
     05 MR-GUI-PRESENT        PIC 9.
     05 MR-GUI                FLOAT-SHORT OCCURS 9 TIMES.
     05 MR-GUI-LIGHT          BINARY-LONG.
+*>  The same for thirdperson_righthand (1), thirdperson_lefthand (2) and fixed (3): MR-DX-PRESENT(c), MR-DX((c - 1) * 9 + n).
+    05 MR-DX-PRESENT         PIC 9 OCCURS 3 TIMES.
+    05 MR-DX                 FLOAT-SHORT OCCURS 27 TIMES.
     05 MR-SLOT-COUNT         BINARY-LONG.
     05 MR-SLOT OCCURS 16 TIMES.
        10 MS-NAME            PIC X(32).

@@ -609,7 +609,7 @@
  PROGRAM-ID. MOB-PHYSICS.
 *> USING tracker row (BINARY-LONG) of a mob, hx, hz (FLOAT-LONG), yaw (FLOAT-SHORT): §12.2 for one
 *> tick (a standard mob: the move by the velocity it has comes first, then vy <- (vy - 0.08) x 0.98, 18 section 3.2). vy <- (vy - 0.05) x 0.96; the move along Y by vy is blocked when the mob's box
-*> (ENTITY-BOX-HITS) would overlap a solid cell: y then rests on top of the highest overlapped cell,
+*> (ENTITY-BOX-SURFACE) would overlap a collision shape: y then rests on top of the highest overlapped shape box (a slab's half cell, a carpet's pixel),
 *> vy 0, on the ground (vy is never positive: mobs do not jump, so a blocked move is downward);
 *> otherwise y moves and the mob is not on the ground. Then the moves along X by hx and along Z by
 *> hz: a blocked one is retried, for a mob on the ground, 1 block higher (step-up), else that
@@ -737,7 +737,7 @@
          MOVE WS-TOP-Y TO WS-UP
      END-IF
      IF WS-HIT = 1 AND WS-GROUND = 1
-         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-NEW WS-UP WS-Z WS-HIT WS-TOP
+         CALL "ENTITY-BOX-SURFACE" USING WS-DIM WS-TYPE WS-NEW WS-UP WS-Z WS-HIT WS-TOP
          IF WS-HIT = 0
              MOVE WS-UP TO WS-Y
          END-IF
@@ -756,7 +756,7 @@
          MOVE WS-TOP-Y TO WS-UP
      END-IF
      IF WS-HIT = 1 AND WS-GROUND = 1
-         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-UP WS-NEW WS-HIT WS-TOP
+         CALL "ENTITY-BOX-SURFACE" USING WS-DIM WS-TYPE WS-X WS-UP WS-NEW WS-HIT WS-TOP
          IF WS-HIT = 0
              MOVE WS-UP TO WS-Y
          END-IF

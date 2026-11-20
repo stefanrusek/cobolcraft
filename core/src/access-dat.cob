@@ -1,0 +1,244 @@
+*> access.dat of the world folder (operators, allow list, bans; split from the old persistence.cob).
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACCESS-DAT-WRITE.
+*> No parameters: writes <world>/access.dat (07 §9.2): DataVersion; Operators, Bans and AllowList,
+*> each a list of {Name, UUID: Int Array of 4}; AllowListEnforced.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-ELEMENT             BINARY-LONG VALUE -1.
+ 01 WS-DATA-VERSION        BINARY-LONG VALUE 5023.
+ 01 WS-T-COMPOUND          BINARY-LONG VALUE 10.
+ 01 WS-TO-INTS             BINARY-LONG VALUE 0.
+ 01 WS-FOUR                BINARY-LONG VALUE 4.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-INTS.
+    05 WS-INT-ITEM         BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-LIST-NAMES.
+    05 FILLER              PIC X(16) VALUE "Operators".
+    05 FILLER              BINARY-LONG VALUE 9.
+    05 FILLER              PIC X(16) VALUE "Bans".
+    05 FILLER              BINARY-LONG VALUE 4.
+    05 FILLER              PIC X(16) VALUE "AllowList".
+    05 FILLER              BINARY-LONG VALUE 9.
+    05 FILLER              PIC X(16) VALUE "IpBans".
+    05 FILLER              BINARY-LONG VALUE 6.
+ 01 WS-LIST-TABLE REDEFINES WS-LIST-NAMES.
+    05 WS-LIST-ENTRY OCCURS 4 TIMES.
+       10 WS-LIST-NAME     PIC X(16).
+       10 WS-LIST-LENGTH   BINARY-LONG.
+ 01 WS-L                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-SUFFIX              PIC X(128) VALUE "/access.dat".
+ 01 WS-PATH                PIC X(1100).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> The ban of row WS-ROW of list WS-L: Created, Source and Expires as Strings and Reason when it has one (07 §9.2).
+ WRITE-BAN-FIELDS.
+     MOVE "Created" TO WN MOVE 7 TO WL
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL AC-CREATED(WS-L, WS-ROW) AC-CREATED-LENGTH(WS-L, WS-ROW)
+     MOVE "Source" TO WN MOVE 6 TO WL
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL AC-SOURCE(WS-L, WS-ROW) AC-SOURCE-LENGTH(WS-L, WS-ROW)
+     MOVE "Expires" TO WN MOVE 7 TO WL
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL AC-EXPIRES(WS-L, WS-ROW) AC-EXPIRES-LENGTH(WS-L, WS-ROW)
+     IF AC-REASON-LENGTH(WS-L, WS-ROW) > 0
+         MOVE "Reason" TO WN MOVE 6 TO WL
+         CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL AC-REASON(WS-L, WS-ROW) AC-REASON-LENGTH(WS-L, WS-ROW)
+     END-IF.
+
+ MAIN-LINE.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE SPACES TO WN
+     MOVE 0 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "DataVersion" TO WN MOVE 11 TO WL
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-DATA-VERSION
+     PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > 4
+         CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-LIST-NAME(WS-L) WS-LIST-LENGTH(WS-L)
+             WS-T-COMPOUND AC-COUNT(WS-L)
+         PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > AC-COUNT(WS-L)
+             CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WS-ELEMENT
+             MOVE "Name" TO WN MOVE 4 TO WL
+             CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL AC-NAME(WS-L, WS-ROW)
+                 AC-NAME-LENGTH(WS-L, WS-ROW)
+             MOVE "UUID" TO WN
+             CALL "PERSIST-UUID-INTS" USING WS-TO-INTS AC-UUID(WS-L, WS-ROW) WS-INTS
+             CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-FOUR WS-INTS
+             IF WS-L = ACCESS-OPERATORS
+                 MOVE "Level" TO WN MOVE 5 TO WL
+                 CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL AC-LEVEL(WS-L, WS-ROW)
+             END-IF
+             IF WS-L = ACCESS-BANS OR WS-L = ACCESS-IPBANS
+                 PERFORM WRITE-BAN-FIELDS
+             END-IF
+             CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+         END-PERFORM
+         CALL "NBT-WRITE-LIST-END" USING PB-BUFFER
+     END-PERFORM
+     MOVE "AllowListEnforced" TO WN MOVE 17 TO WL
+     MOVE AC-ENFORCED TO WS-INT
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-INT
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
+     CALL "PERSIST-WRITE-FILE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER
+     GOBACK.
+ END PROGRAM ACCESS-DAT-WRITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACCESS-DAT-READ.
+*> No parameters: reads <world>/access.dat into the access lists (every list emptied first; entries
+*> past CORE-MAX-ACCESS are dropped by ACCESS-ADD) and the enforcement flag.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 32.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-INNER-TYPE          BINARY-LONG.
+ 01 WS-ELEMENT-TYPE        BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LIST                BINARY-LONG.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-INT-CAPACITY        BINARY-LONG VALUE 4.
+ 01 WS-INT-COUNT           BINARY-LONG.
+ 01 WS-INTS.
+    05 WS-INT-ITEM         BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-TO-UUID             BINARY-LONG VALUE 1.
+ 01 WS-NAME                PIC X(16).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-NAME-SIZE           BINARY-LONG VALUE 16.
+ 01 WS-UUID                PIC X(16).
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-STORED              BINARY-LONG.
+ 01 WS-CREATED             PIC X(32).
+ 01 WS-CREATED-LENGTH      BINARY-LONG.
+ 01 WS-SOURCE              PIC X(32).
+ 01 WS-SOURCE-LENGTH       BINARY-LONG.
+ 01 WS-EXPIRES             PIC X(32).
+ 01 WS-EXPIRES-LENGTH      BINARY-LONG.
+ 01 WS-REASON              PIC X(128).
+ 01 WS-REASON-LENGTH       BINARY-LONG.
+ 01 WS-FIELD-SIZE          BINARY-LONG VALUE 32.
+ 01 WS-REASON-SIZE         BINARY-LONG VALUE 128.
+ 01 WS-SUFFIX              PIC X(128) VALUE "/access.dat".
+ 01 WS-PATH                PIC X(1100).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> The entry just added to list WS-LIST keeps what the file said: the level (clamped to 0 to 4, 07 §9.2), or the ban's fields.
+ KEEP-ENTRY.
+     IF WS-LIST = ACCESS-OPERATORS
+         CALL "BR-CLAMP-LEVEL" USING WS-LEVEL WS-STORED
+         MOVE WS-STORED TO AC-LEVEL(WS-LIST, AC-COUNT(WS-LIST))
+     END-IF
+     IF WS-LIST = ACCESS-BANS OR WS-LIST = ACCESS-IPBANS
+         MOVE WS-CREATED TO AC-CREATED(WS-LIST, AC-COUNT(WS-LIST))
+         MOVE WS-CREATED-LENGTH TO AC-CREATED-LENGTH(WS-LIST, AC-COUNT(WS-LIST))
+         MOVE WS-SOURCE TO AC-SOURCE(WS-LIST, AC-COUNT(WS-LIST))
+         MOVE WS-SOURCE-LENGTH TO AC-SOURCE-LENGTH(WS-LIST, AC-COUNT(WS-LIST))
+         MOVE WS-EXPIRES TO AC-EXPIRES(WS-LIST, AC-COUNT(WS-LIST))
+         MOVE WS-EXPIRES-LENGTH TO AC-EXPIRES-LENGTH(WS-LIST, AC-COUNT(WS-LIST))
+         MOVE WS-REASON TO AC-REASON(WS-LIST, AC-COUNT(WS-LIST))
+         MOVE WS-REASON-LENGTH TO AC-REASON-LENGTH(WS-LIST, AC-COUNT(WS-LIST))
+     END-IF.
+
+ MAIN-LINE.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     INITIALIZE CORE-ACCESS
+     CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
+     CALL "PERSIST-READ-FILE" USING WS-PATH WS-PATH-LENGTH PB-BUFFER
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WN
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-NAME-CAPACITY WL
+         IF WS-TYPE = 0
+             EXIT PERFORM
+         END-IF
+         EVALUATE TRUE
+             WHEN WN = "Operators"
+                 MOVE ACCESS-OPERATORS TO WS-LIST
+             WHEN WN = "Bans"
+                 MOVE ACCESS-BANS TO WS-LIST
+             WHEN WN = "AllowList"
+                 MOVE ACCESS-ALLOW TO WS-LIST
+             WHEN WN = "IpBans"
+                 MOVE ACCESS-IPBANS TO WS-LIST
+             WHEN OTHER
+                 MOVE 0 TO WS-LIST
+         END-EVALUATE
+         EVALUATE TRUE
+             WHEN WS-LIST > 0 AND WS-TYPE = 9
+                 CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
+                     MOVE SPACES TO WS-NAME
+                     MOVE LOW-VALUES TO WS-UUID
+                     MOVE 0 TO WS-NAME-LENGTH
+                     MOVE 4 TO WS-LEVEL
+                     MOVE SPACES TO WS-CREATED WS-SOURCE WS-REASON
+                     MOVE 0 TO WS-CREATED-LENGTH WS-SOURCE-LENGTH WS-REASON-LENGTH
+                     MOVE "forever" TO WS-EXPIRES
+                     MOVE 7 TO WS-EXPIRES-LENGTH
+                     PERFORM UNTIL PB-ERROR = 1
+                         MOVE SPACES TO WN
+                         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN
+                             WS-NAME-CAPACITY WL
+                         IF WS-INNER-TYPE = 0
+                             EXIT PERFORM
+                         END-IF
+                         EVALUATE TRUE
+                             WHEN WN = "Name" AND WS-INNER-TYPE = 8
+                                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-NAME WS-NAME-SIZE
+                                     WS-NAME-LENGTH
+                             WHEN WN = "UUID" AND WS-INNER-TYPE = 11
+                                 CALL "NBT-READ-INT-ARRAY" USING PB-BUFFER WS-INT-CAPACITY
+                                     WS-INT-COUNT WS-INTS
+                                 CALL "PERSIST-UUID-INTS" USING WS-TO-UUID WS-UUID WS-INTS
+                             WHEN WN = "Level" AND WS-INNER-TYPE = 3
+                                 CALL "PB-GET-INT" USING PB-BUFFER WS-LEVEL
+                             WHEN WN = "Created" AND WS-INNER-TYPE = 8
+                                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-CREATED WS-FIELD-SIZE WS-CREATED-LENGTH
+                             WHEN WN = "Source" AND WS-INNER-TYPE = 8
+                                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-SOURCE WS-FIELD-SIZE WS-SOURCE-LENGTH
+                             WHEN WN = "Expires" AND WS-INNER-TYPE = 8
+                                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-EXPIRES WS-FIELD-SIZE WS-EXPIRES-LENGTH
+                             WHEN WN = "Reason" AND WS-INNER-TYPE = 8
+                                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-REASON WS-REASON-SIZE WS-REASON-LENGTH
+                             WHEN OTHER
+                                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-INNER-TYPE
+                         END-EVALUATE
+                     END-PERFORM
+                     CALL "ACCESS-ADD" USING WS-LIST WS-NAME WS-NAME-LENGTH WS-UUID WS-OUTCOME
+                     IF WS-OUTCOME = 0
+                         PERFORM KEEP-ENTRY
+                     END-IF
+                 END-PERFORM
+             WHEN WN = "AllowListEnforced" AND WS-TYPE = 1
+                 CALL "PB-GET-BYTE" USING PB-BUFFER WS-INT
+                 MOVE WS-INT TO AC-ENFORCED
+             WHEN OTHER
+                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-EVALUATE
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ACCESS-DAT-READ.

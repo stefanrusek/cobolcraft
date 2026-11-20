@@ -1,4 +1,4 @@
-*> Entity models part 9, non-living entities (docs/protocol/34-entity-models-9-non-living-entities.md): the lead knot (12) and the cushion (16).
+*> Entity models part 9, non-living entities (docs/protocol/34-entity-models-9-non-living-entities.md): the lead knot (12), the cushion (16), the minecarts (3, entmodel-34-9-3.cob).
 *>   EF9-LAYER layer(X(32) upper case: LEASH_KNOT, CUSHION) model ok(out) builds the layer of this part or gives ok 0;
 *>   EF9-KNOT-OPS IN() OUT(ops: count, then code and three values per op; 1 translate, 2 scale, 3 rotate Y degrees, 6 rotate X degrees): the submit of 12 (scale (-1, -1, 1));
 *>   EF9-KNOT-TEXTURE path(out X(60), relative to textures/);
@@ -55,6 +55,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. EF9-LAYER.
  DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-S                   FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLEMM.
  01 L-LAYER                PIC X(32).
@@ -66,6 +68,28 @@
              CALL "EF9-M-LEASH-KNOT" USING EMM-MODEL
          WHEN "CUSHION"
              CALL "EF9-M-CUSHION" USING EMM-MODEL
+         WHEN "TRIDENT"
+             CALL "EF9-M-TRIDENT" USING EMM-MODEL
+         WHEN "PLAYER_SPIN_ATTACK"
+             CALL "EF9-M-SPIN-ATTACK" USING EMM-MODEL
+         WHEN "WIND_CHARGE"
+             CALL "EF9-M-WIND-CHARGE" USING EMM-MODEL
+         WHEN "ELYTRA"
+             CALL "EF9-M-ELYTRA" USING EMM-MODEL
+         WHEN "ELYTRA_BABY"
+             CALL "EF9-M-ELYTRA" USING EMM-MODEL
+             MOVE 0.5 TO WS-S
+             CALL "EMD-SCALE-ROOT" USING EMM-MODEL WS-S
+         WHEN "SHIELD"
+             CALL "EF9-M-SHIELD" USING EMM-MODEL
+         WHEN "MINECART"
+         WHEN "CHEST_MINECART"
+         WHEN "COMMAND_BLOCK_MINECART"
+         WHEN "FURNACE_MINECART"
+         WHEN "HOPPER_MINECART"
+         WHEN "SPAWNER_MINECART"
+         WHEN "TNT_MINECART"
+             CALL "EF9-M-MINECART" USING EMM-MODEL
          WHEN OTHER
              MOVE 0 TO L-OK
      END-EVALUATE

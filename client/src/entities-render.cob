@@ -249,6 +249,9 @@
  01 WS-GSCALE              FLOAT-LONG VALUE 0.5.
  01 WS-GSTR                FLOAT-LONG.
  01 WS-FEET-EYE            FLOAT-LONG.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-HSLOT               BINARY-LONG.
+ 01 WS-HDYE                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-EYE-TABLE.
@@ -274,13 +277,19 @@
                  END-IF
              END-PERFORM
          END-IF
+         IF EN-USED(WS-R) = 1 AND EN-KEY(WS-R) = "end_crystal" AND EN-BP(WS-R) = 1
+             MOVE 1 TO WS-SEEN
+         END-IF
          MOVE EN-MODEL(WS-R) TO WS-ADULT-MODEL
-         MOVE 0 TO EN-HAND-OK(WS-R, 1) EN-HAND-OK(WS-R, 2)
+         MOVE 0 TO EN-HAND-OK(WS-R, 1) EN-HAND-OK(WS-R, 2) EN-HAND-FOK(WS-R, 1) EN-HAND-FOK(WS-R, 2)
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
              CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-R EN-MODEL(WS-R)
          END-IF
          IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND WS-SEEN = 1
              EVALUATE TRUE
+*>               An item frame draws no entity model: its item is in the ground item mesh (ENTITY-FRAME-EMIT).
+                 WHEN CL-MD-ANIM(EN-MODEL(WS-R)) = "F"
+                     CONTINUE
                  WHEN CL-MD-FAMILY(EN-MODEL(WS-R)) = 0 AND CL-MD-ANIM(EN-MODEL(WS-R)) = "A"
                      CALL "ENTITY-ARROW-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  WHEN CL-MD-FAMILY(EN-MODEL(WS-R)) = 0
@@ -288,6 +297,10 @@
                  WHEN OTHER
                      CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
              END-EVALUATE
+*>           A guardian's beam to its attack target (34-6 11.6).
+             IF (EN-KEY(WS-R) = "guardian" OR "elder_guardian") AND EN-TGT(WS-R) NOT = 0
+                 CALL "ENTITY-BEAM-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+             END-IF
 *>           The extra layer of the model (CL-MD-EXTRA: the sheep's wool) is the same row drawn as that model.
              MOVE EN-MODEL(WS-R) TO WS-SAVED-MODEL
 *>           A sheared sheep (entry 18 bit 16) draws no wool.
@@ -327,6 +340,23 @@
                      END-IF
                  END-PERFORM
              END-IF
+*>           The banner or shield a mob or a player holds (the entity atlas holds its sprites, so the entity pass draws it): the arm frames the model just found (ENTITY-HELD-POSED).
+             PERFORM VARYING WS-H FROM 1 BY 1 UNTIL WS-H > 2
+                 COMPUTE WS-HSLOT = WS-H
+                 IF FUNCTION MOD(FUNCTION INTEGER(EN-MOB-FLAGS(WS-R) / 2), 2) = 1
+                     COMPUTE WS-HSLOT = 3 - WS-H
+                 END-IF
+                 IF EN-HAND-FOK(WS-R, WS-H) = 1 AND EN-EQ(WS-R, WS-HSLOT) > 0
+                     CALL "HELD-ENTITY-PASS" USING CLIENT-STATE EN-EQ(WS-R, WS-HSLOT) WS-HDYE
+                     IF WS-HDYE = 1
+                         CALL "ENTITY-HELD-POSED" USING CLIENT-STATE WS-R WS-H EN-EQ(WS-R, WS-HSLOT) L-EYE-TABLE
+                     END-IF
+                 END-IF
+             END-PERFORM
+*>           The crystal beam of a crystal with a beam target and of a dragon with a nearest crystal (34-7 7.3, 8.5 pass 4, 8.7).
+             IF (EN-KEY(WS-R) = "end_crystal" AND EN-BP(WS-R) = 1) OR (EN-KEY(WS-R) = "ender_dragon" AND EN-NCI(WS-R) NOT = 0)
+                 CALL "ENTITY-CRYSTAL-BEAM-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+             END-IF
          END-IF
          MOVE WS-ADULT-MODEL TO EN-MODEL(WS-R)
          PERFORM VARYING WS-B FROM 1 BY 1 UNTIL WS-B > 8
@@ -347,6 +377,8 @@
              END-IF
          END-PERFORM
      END-PERFORM
+*>   The shulker boxes of the loaded chunks (the block entity renderer of 52 section 4).
+     CALL "SHULKER-MESH" USING CLIENT-STATE L-EYE-TABLE
 *>   The local player's own model in the third-person modes (12 §7.3): the operator's boxes at the player's position and yaw, on the first free row.
      IF CL-CAMERA > 0 AND EN-COUNT < CL-MAX-ENTITIES AND RL-EN-COUNT + 36 <= CL-MAX-ENTITY-VERTICES
          COMPUTE WS-R = EN-COUNT + 1
@@ -606,6 +638,7 @@
  01 WS-RZ                  FLOAT-LONG.
  01 WS-SIDE                FLOAT-LONG.
  01 WS-LOOSE               BINARY-LONG.
+ 01 WS-BDYE                BINARY-LONG.
  01 WS-LIGHT               FLOAT-LONG.
  01 WS-CX                  BINARY-LONG.
  01 WS-CY                  BINARY-LONG.
@@ -698,9 +731,39 @@
                      COMPUTE WS-SLOT = 3 - WS-H
                  END-IF
                  IF EN-HAND-OK(WS-R, WS-H) = 1 AND EN-EQ(WS-R, WS-SLOT) > 0
-                     CALL "ENTITY-HELD-EMIT" USING CLIENT-STATE WS-R WS-H EN-EQ(WS-R, WS-SLOT) L-EYE-TABLE
+                     CALL "HELD-ENTITY-PASS" USING CLIENT-STATE EN-EQ(WS-R, WS-SLOT) WS-BDYE
+*>                   A banner and a shield are drawn by the entity pass (ENTITIES-MESH).
+                     IF WS-BDYE = 0
+                         CALL "ENTITY-HELD-EMIT" USING CLIENT-STATE WS-R WS-H EN-EQ(WS-R, WS-SLOT) L-EYE-TABLE
+                     END-IF
                  END-IF
              END-PERFORM
+         END-IF
+     END-PERFORM
+*>   The items in item frames (34-9 section 10).
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         IF EN-USED(WS-R) = 1 AND (EN-KEY(WS-R) = "item_frame" OR "glow_item_frame") AND EN-STACK-COUNT(WS-R) > 0
+             CALL "ENTITY-FRAME-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+         END-IF
+     END-PERFORM
+*>   Thrown items and the firework rocket (34-9 section 7) and the ominous item spawner (9.3).
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
+         IF EN-USED(WS-R) = 1 AND EN-VANILLA(WS-R) = 1
+             EVALUATE EN-KEY(WS-R)
+                 WHEN "snowball" WHEN "egg" WHEN "ender_pearl" WHEN "splash_potion" WHEN "lingering_potion" WHEN "experience_bottle"
+                 WHEN "eye_of_ender" WHEN "fireball" WHEN "small_fireball" WHEN "firework_rocket"
+                     CALL "ENTITY-THROWN-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 WHEN "ominous_item_spawner"
+                     CALL "ENTITY-SPAWNER-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 WHEN "furnace_minecart" WHEN "spawner_minecart" WHEN "command_block_minecart" WHEN "tnt_minecart"
+                     CALL "ENTITY-CART-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 WHEN "tnt"
+                     CALL "ENTITY-TNT-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 WHEN "falling_block"
+                     CALL "ENTITY-FALLING-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+                 WHEN OTHER
+                     CONTINUE
+             END-EVALUATE
          END-IF
      END-PERFORM
      CALL "VANILLA-ITEMS-MESH" USING CLIENT-STATE L-EYE-TABLE
@@ -1042,6 +1105,10 @@
  WORKING-STORAGE SECTION.
  01 WS-TRG-1              FLOAT-LONG.
  COPY CLCONST.
+ 01 WS-F-IN.
+    05 WS-FI               FLOAT-LONG OCCURS 32 TIMES.
+ 01 WS-F-OUT.
+    05 WS-FO               FLOAT-LONG OCCURS 64 TIMES.
  01 WS-R                   BINARY-LONG.
  01 WS-K                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -1150,18 +1217,9 @@
              END-IF
          END-IF
          IF EN-USED(WS-R) = 1 AND EN-VANILLA(WS-R) = 1 AND EN-KEY(WS-R) = "item" AND EN-STACK-COUNT(WS-R) > 0 AND WS-SPK = 0
-             EVALUATE TRUE
-                 WHEN EN-STACK-COUNT(WS-R) <= 1
-                     MOVE 1 TO WS-COPIES
-                 WHEN EN-STACK-COUNT(WS-R) <= 16
-                     MOVE 2 TO WS-COPIES
-                 WHEN EN-STACK-COUNT(WS-R) <= 32
-                     MOVE 3 TO WS-COPIES
-                 WHEN EN-STACK-COUNT(WS-R) <= 48
-                     MOVE 4 TO WS-COPIES
-                 WHEN OTHER
-                     MOVE 5 TO WS-COPIES
-             END-EVALUATE
+             MOVE EN-STACK-COUNT(WS-R) TO WS-FI(1)
+             CALL "EF9-ITEM-COPIES" USING WS-F-IN WS-F-OUT
+             MOVE WS-FO(1) TO WS-COPIES
              IF RL-GI-COUNT + 12 * WS-COPIES <= CL-MAX-GI-VERTICES
                  CALL "ITEM-SPRITE-OF" USING CLIENT-STATE EN-STACK-ITEM(WS-R) WS-SPRITE
                  MOVE FUNCTION MAX(WS-SPRITE, 1) TO WS-SPRITE
