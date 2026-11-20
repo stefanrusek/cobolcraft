@@ -228,7 +228,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-HAND-KEY.
-*> USING hand (EN-HAND: 1 iron sword, 2 iron spear, 3 iron shovel, 4 bow, 10 iron axe, 11 crossbow, 12 stone sword), key out (PIC X(40)): the item key of the main-hand item; spaces for 0 or an unknown value.; 14 golden sword, 15 golden spear (lane p49s; its codes 11 to 13 are 14, 15 and 11 here)
+*> USING hand (EN-HAND: 1 iron sword, 2 iron spear, 3 iron shovel, 4 bow, 10 iron axe, 11 crossbow, 12 stone sword, 14 golden sword, 15 golden spear, 16 golden axe), key out (PIC X(40)): the item key of the main-hand item; spaces for 0 or an unknown value.; 14 golden sword, 15 golden spear (lane p49s; its codes 11 to 13 are 14, 15 and 11 here)
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CITEMS.
@@ -255,6 +255,7 @@
          WHEN 12 MOVE "minecraft:stone_sword" TO L-KEY
          WHEN 14 MOVE "minecraft:golden_sword" TO L-KEY
          WHEN 15 MOVE "minecraft:golden_spear" TO L-KEY
+         WHEN 16 MOVE "minecraft:golden_axe" TO L-KEY
      END-EVALUATE
      GOBACK.
  END PROGRAM STDMOB-HAND-KEY.
@@ -263,7 +264,8 @@
  PROGRAM-ID. STDMOB-EQUIP-BUILD.
 *> USING tracker row, PB-BUFFER (empty): Set Equipment (0x68) of the armour in EN-EQUIP (10 x (tier + 1) + slots worn) and the main-hand item EN-HAND: slot
 *> ordinals main hand 0, feet 2, legs 3, chest 4, head 5; bit 0x80 on every pair but the last (armour head to feet, then the hand). An item the set does
-*> not know, and a broken helmet (EN-HEAD-WEAR -1), is sent as an empty stack. Nothing is written for a row with neither armour nor weapon.
+*> not know, and a broken helmet (EN-HEAD-WEAR -1), is sent as an empty stack. Nothing is written for a row with neither armour nor weapon. A piglin's golden pieces (EN-PIG-GEAR bits,
+*> head first) replace the prefix count: tier 2, only the slots whose bit is set.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -274,6 +276,10 @@
  01 WS-SLOTS               BINARY-LONG.
  01 WS-TOTAL               BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-SLOT-LIST.
+    05 WS-SLOT-NO          BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-GEAR                BINARY-LONG.
+ 01 WS-BIT                 BINARY-LONG.
  01 WS-ORDINAL             BINARY-LONG.
  01 WS-KEY40               PIC X(40).
  01 WS-KEY                 PIC X(112).
@@ -289,6 +295,23 @@
          COMPUTE WS-TIER = EN-EQUIP(L-ROW) / 10 - 1
          COMPUTE WS-SLOTS = FUNCTION MOD(EN-EQUIP(L-ROW), 10)
      END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         MOVE WS-I TO WS-SLOT-NO(WS-I)
+     END-PERFORM
+     IF EN-PIG-GEAR(L-ROW) > 0
+*>       a piglin's golden pieces: the slots whose bit is set, in head to feet order
+         MOVE 2 TO WS-TIER
+         MOVE 0 TO WS-SLOTS
+         MOVE EN-PIG-GEAR(L-ROW) TO WS-GEAR
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+             COMPUTE WS-BIT = FUNCTION MOD(WS-GEAR, 2)
+             DIVIDE 2 INTO WS-GEAR
+             IF WS-BIT = 1
+                 ADD 1 TO WS-SLOTS
+                 MOVE WS-I TO WS-SLOT-NO(WS-SLOTS)
+             END-IF
+         END-PERFORM
+     END-IF
      MOVE WS-SLOTS TO WS-TOTAL
      IF EN-HAND(L-ROW) > 0
          ADD 1 TO WS-TOTAL
@@ -300,9 +323,9 @@
      CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-TOTAL
          IF WS-I <= WS-SLOTS
-             CALL "STDMOB-EQUIP-KEY" USING WS-TIER WS-I WS-KEY40
-             COMPUTE WS-ORDINAL = 6 - WS-I
-             IF WS-I = 1 AND EN-HEAD-WEAR(L-ROW) = -1
+             CALL "STDMOB-EQUIP-KEY" USING WS-TIER WS-SLOT-NO(WS-I) WS-KEY40
+             COMPUTE WS-ORDINAL = 6 - WS-SLOT-NO(WS-I)
+             IF WS-SLOT-NO(WS-I) = 1 AND EN-HEAD-WEAR(L-ROW) = -1
                  MOVE SPACES TO WS-KEY40
              END-IF
          ELSE

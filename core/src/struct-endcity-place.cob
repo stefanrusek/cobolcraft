@@ -1,7 +1,7 @@
 *> The end city as a structure (docs/protocol/36-structures-8-nether-and-end.md sections 8 to 11, 38 section 10): the start with its terrain rules (ENDCITY-FIND-POINT: the biome of the column,
 *> the rotation draw, the lowest of four surface heights, none below y 60), the layout of struct-endcity.cob as template pieces of kind 16 (ENDCITY-PIECES: woodland_mansion-like
 *> template pieces with the block-ignore processor of 9.1), the data markers (ENDCITY-MARKER, 9.4), and the placement into an End chunk after its terrain and features (END-GEN-STRUCTURES).
-*> Deviations: the `Elytra` marker makes no item frame (the entity channel of worldgen carries mobs and loose items, not frames: ENTITY-NBT-ONE reads no frame), so the ship has no elytra;
+*> The `Elytra` marker asks for an item frame through the entity channel (GENT-ADD-FRAME, ENTITY-NBT-ONE reads frames);
 *> a `Sentry` makes its shulker with no persistence flag as 9.4 says; the city is placed after all the placed features of the chunk, not at its own decoration step.
 *> Entry points: ENDCITY-HEIGHT USING x, z, height out (the first occupied height of the End terrain column, 0 when empty); ENDCITY-FIND-POINT USING seed (signed), chunk x, chunk z, x out, y
 *> out, z out, valid out; ENDCITY-MARKER USING row, metadata (PIC X(96)), x, y, z; END-GEN-STRUCTURES USING chunk x, chunk z, chunk memory.
@@ -175,12 +175,15 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENDCITY-MARKER.
 *> USING row, metadata, x, y, z: EndCityPiece.handleDataMarker (9.4), the prefix tested in this order: Chest (the table chests/end_city_treasure on the chest below), Sentry (a shulker at the
-*> centre of the marker cell, not persistent), Elytra (no item frame, see the header).
+*> centre of the marker cell, not persistent), Elytra (an item frame holding an elytra, GENT-ADD-FRAME).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-LOOT                PIC X(48) VALUE "minecraft:chests/end_city_treasure".
  01 WS-SHULKER             PIC X(32) VALUE "minecraft:shulker".
  01 WS-PERSISTENT          BINARY-LONG VALUE 0.
+ COPY STRUCTPIECE.
+ 01 WS-ELYTRA              PIC X(32) VALUE "minecraft:elytra".
+ 01 WS-FACING              BINARY-LONG.
  01 WS-FX                  FLOAT-LONG.
  01 WS-FY                  FLOAT-LONG.
  01 WS-FZ                  FLOAT-LONG.
@@ -199,6 +202,19 @@
              MOVE L-Y TO WS-FY
              COMPUTE WS-FZ = L-Z + 0.5
              CALL "GENT-ADD-MOB" USING WS-FX WS-FY WS-FZ WS-SHULKER WS-PERSISTENT
+         WHEN L-META(1:6) = "Elytra"
+*>           an item frame at the marker facing the piece's rotation of south (none south 3, clockwise 90 west 4, clockwise 180 north 2, counterclockwise 90 east 5) holding one elytra
+             EVALUATE SP-T-ROT(L-ROW)
+                 WHEN 0
+                     MOVE 3 TO WS-FACING
+                 WHEN 1
+                     MOVE 4 TO WS-FACING
+                 WHEN 2
+                     MOVE 2 TO WS-FACING
+                 WHEN OTHER
+                     MOVE 5 TO WS-FACING
+             END-EVALUATE
+             CALL "GENT-ADD-FRAME" USING L-X L-Y L-Z WS-FACING WS-ELYTRA
      END-EVALUATE
      GOBACK.
  END PROGRAM ENDCITY-MARKER.

@@ -338,6 +338,7 @@
 *>     --- 002-lane-mobsb4 (T8804): piglin family immunity to zombification (metadata 16 piglin and brute, 18 hoglin; 21 section 5.5) ---
        10 EN-PIG-IMMUNE       BINARY-LONG.        *> 1 = immune to zombification
        10 EN-WAKE            BINARY-LONG.        *> silverfish: wake-up-friends timer, 20 after a hit by an attacker, counting down to the scan (20 section 9.1)
+       10 EN-PIG-GEAR        BINARY-LONG.        *> piglin: golden armour worn, bits 1 helmet, 2 chestplate, 4 leggings, 8 boots (36 part 8 section 15.3: each slot rolled alone, so not the prefix count of EN-EQUIP)
 *>     --- 002-lane-mobsfull-h10: aquatic mobs (core/src/mob-21-4.cob; docs/protocol/21 section 4) ---
        10 EN-DRY             BINARY-LONG.        *> ticks out of water (a fish: air 300 - EN-DRY; a dolphin: moistness 2400 - EN-DRY); 0 in water
        10 EN-SWIM-SPEED      FLOAT-LONG.         *> a swimmer's current move speed (FishMoveControl lerp 0.125 toward attribute x modifier)

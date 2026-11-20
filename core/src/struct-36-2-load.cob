@@ -354,6 +354,7 @@
  01 WN                     PIC X(24).
  01 WL                     BINARY-LONG.
  01 WS-CAP48               BINARY-LONG VALUE 48.
+ 01 WS-CAP80               BINARY-LONG VALUE 80.
  01 WS-CAP96               BINARY-LONG VALUE 96.
  01 WS-CAP16               BINARY-LONG VALUE 16.
  01 WS-LENGTH              BINARY-LONG.
