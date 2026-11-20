@@ -76,28 +76,14 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HAND-PREFIX.
-*> USING CLIENT-STATE, partial tick, M out (12 FLOAT-LONG, HAND-M-IDENT layout): the first frame of the pose stack. View bobbing with w = -(walkDist + (walkDist -
-*> walkDistO) x partial) and b = lerp(partial, bobO, bob) (the option bobView, true when absent): translate (sin(w pi) b 0.5, -|cos(w pi) b|, 0), rotate Z by
-*> sin(w pi) b 3, rotate X by |cos(w pi - 0.2) b| 5 degrees; then the sway: rotate X by (pitch - xBob) 0.1 and Y by (yaw - yBob) 0.1 degrees, xBob and yBob taken
-*> at the partial tick. Before the first tick the lagging angles are unknown and the sway is 0.
+*> USING CLIENT-STATE, partial tick, M out (12 FLOAT-LONG, HAND-M-IDENT layout): the first frame of the pose stack: the view effects of 12 section 6.1 steps 1 and 2 (the hurt and
+*> death tilt, then view bobbing: VIEW-POSE, view-pose.cob, the one the world view starts from too), then the sway (step 3): rotate X by (pitch - xBob) 0.1 and Y by (yaw - yBob) 0.1
+*> degrees, xBob and yBob taken at the partial tick. Before the first tick the lagging angles are unknown and the sway is 0.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-NAME                PIC X(40) VALUE "bobView".
- 01 WS-VALUE               PIC X(64).
- 01 WS-LENGTH              BINARY-LONG.
- 01 WS-FOUND               BINARY-LONG.
- 01 WS-W                   FLOAT-LONG.
- 01 WS-B                   FLOAT-LONG.
- 01 WS-AX                  FLOAT-LONG.
- 01 WS-AY                  FLOAT-LONG.
- 01 WS-AZ                  FLOAT-LONG.
+ 01 WS-LAG                 FLOAT-LONG.
  01 WS-AXIS                BINARY-LONG.
  01 WS-DEG                 FLOAT-LONG.
- 01 WS-LAG                 FLOAT-LONG.
- 01 WS-T                   FLOAT-LONG.
- 01 WS-K                   FLOAT-LONG.
- 01 WS-STRENGTH            FLOAT-LONG.
- 01 WS-NAME2               PIC X(40).
  COPY CLCONST.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -105,55 +91,7 @@
  01 L-M.
     05 L-MV                FLOAT-LONG OCCURS 12 TIMES.
  PROCEDURE DIVISION USING CLIENT-STATE L-PARTIAL L-M.
-     CALL "HAND-M-IDENT" USING L-M
-     IF CL-BOB-INIT = 1
-         CALL "OPTIONS-GET" USING CLIENT-STATE WS-NAME WS-VALUE WS-LENGTH WS-FOUND
-         COMPUTE WS-B = CL-BOB-O + L-PARTIAL * (CL-BOB - CL-BOB-O)
-         IF WS-FOUND = 1 AND WS-VALUE(1:5) = "false"
-             MOVE 0 TO WS-B
-         END-IF
-         COMPUTE WS-W = 0 - (CL-BOB-WALK + (CL-BOB-WALK - CL-BOB-WALK-O) * L-PARTIAL)
-         COMPUTE WS-AX = FUNCTION SIN(WS-W * FUNCTION PI) * WS-B * 0.5
-         COMPUTE WS-AY = 0 - FUNCTION ABS(FUNCTION COS(WS-W * FUNCTION PI) * WS-B)
-         MOVE 0 TO WS-AZ
-         CALL "HAND-M-TRANSLATE" USING L-M WS-AX WS-AY WS-AZ
-         MOVE 3 TO WS-AXIS
-         COMPUTE WS-DEG = FUNCTION SIN(WS-W * FUNCTION PI) * WS-B * 3
-         CALL "HAND-M-ROTATE" USING L-M WS-AXIS WS-DEG
-         MOVE 1 TO WS-AXIS
-         COMPUTE WS-DEG = FUNCTION ABS(FUNCTION COS(WS-W * FUNCTION PI - 0.2) * WS-B) * 5
-         CALL "HAND-M-ROTATE" USING L-M WS-AXIS WS-DEG
-     END-IF
-*>   The tilt of 12 section 6.1 step 2. While the player dies (health 0 or less): rotate Z by 40 - 8000 / (min(deathTime, 20) + 200) degrees (deathTime is
-*>   CL-DEATH-TIME) and nothing else. Otherwise the hurt tilt: t = the hurt time left over its 500 ms (10 ticks), k = sin(t^4 pi); rotate Y by -dir, Z by -k 14 s,
-*>   Y by +dir (s the damageTiltStrength option, 1 by default).
-     IF PL-HEALTH <= 0
-         MOVE 3 TO WS-AXIS
-         COMPUTE WS-DEG = 40 - 8000 / (FUNCTION MIN(CL-DEATH-TIME, 20) + 200)
-         CALL "HAND-M-ROTATE" USING L-M WS-AXIS WS-DEG
-     END-IF
-     IF CL-NOW-MS < PL-HURT-UNTIL AND PL-HEALTH > 0
-         COMPUTE WS-T = (PL-HURT-UNTIL - CL-NOW-MS) / CL-HURT-MS
-         IF WS-T > 1
-             MOVE 1 TO WS-T
-         END-IF
-         MOVE "damageTiltStrength" TO WS-NAME2
-         CALL "OPTIONS-GET" USING CLIENT-STATE WS-NAME2 WS-VALUE WS-LENGTH WS-FOUND
-         MOVE 1 TO WS-STRENGTH
-         IF WS-FOUND = 1 AND WS-LENGTH > 0
-             COMPUTE WS-STRENGTH = FUNCTION NUMVAL(WS-VALUE(1:WS-LENGTH))
-         END-IF
-         COMPUTE WS-K = FUNCTION SIN(WS-T ** 4 * FUNCTION PI)
-         MOVE 2 TO WS-AXIS
-         COMPUTE WS-DEG = 0 - PL-HURT-DIR
-         CALL "HAND-M-ROTATE" USING L-M WS-AXIS WS-DEG
-         MOVE 3 TO WS-AXIS
-         COMPUTE WS-DEG = 0 - WS-K * 14 * WS-STRENGTH
-         CALL "HAND-M-ROTATE" USING L-M WS-AXIS WS-DEG
-         MOVE 2 TO WS-AXIS
-         MOVE PL-HURT-DIR TO WS-DEG
-         CALL "HAND-M-ROTATE" USING L-M WS-AXIS WS-DEG
-     END-IF
+     CALL "VIEW-POSE" USING CLIENT-STATE L-PARTIAL L-M
      IF CL-BOB-INIT = 0
          GOBACK
      END-IF

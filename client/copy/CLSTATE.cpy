@@ -26,7 +26,6 @@
     05 CL-HAND-KEY-LIGHT     FLOAT-LONG.
     05 CL-HAND-KEY-YAW       FLOAT-LONG.      *> the view angles it was shaded for (held items are lit in world orientation, 12 section 6.10)
     05 CL-HAND-KEY-PITCH     FLOAT-LONG.
-    05 CL-HAND-KEY-POSE      FLOAT-LONG OCCURS 12 TIMES. *> the view pose (tilt and bob, view-pose.cob) the mesh was built under
     05 CL-HAND-NOCULL        BINARY-LONG.     *> 1 keeps the quads that face away from the eye (tests and diagnostics only; 0 = back faces are dropped, 12 section 6.9)
     05 CL-HAND-KEY-COUNT     BINARY-LONG.     *> vertex count of that mesh, 0 = none to reuse
     05 CL-HAND-TICK-MS       BINARY-DOUBLE.   *> the clock of the last equip tick (0 = not started)
@@ -537,7 +536,6 @@
        10 PL-FOOD            BINARY-LONG.
        10 PL-SATURATION      FLOAT-SHORT.
        10 PL-HURT-UNTIL      BINARY-DOUBLE.
-       10 PL-HURT-DIR        FLOAT-LONG.    *> the yaw of the last Hurt Animation of the local player (the direction the hit came from, degrees)
 *>     Hunger (US8; standin-content §11; controls.cob): sprinting as last told to the server
 *>     (Player Command), and eating: 1 from the Use Item of a food item until the button is
 *>     released or Entity Event 9 (eating finished) for the local player; the clock of that Use Item.
