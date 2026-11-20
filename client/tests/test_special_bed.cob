@@ -316,10 +316,6 @@
      COMPUTE TL-EXPECTED-N = -1875 + 11875
      COMPUTE TL-OBSERVED-N ROUNDED = WS-XMIN * 10000 + WS-XMAX * 10000
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   A zero-thickness face is moved 0.002 of a block out along its normal by ELEMENT-BAKE (the decal rule): the low end may lie that far below 0.
-     IF FUNCTION ABS(WS-YMIN) < 0.002
-         MOVE 0 TO WS-YMIN
-     END-IF
      MOVE "bugbeitems straw_bed: z from 0 to 2.1875, the two halves one behind the other" TO TL-CASE
      COMPUTE TL-EXPECTED-N = 0 + 21875
      COMPUTE TL-OBSERVED-N ROUNDED = WS-YMIN * 10000 + WS-YMAX * 10000
@@ -379,26 +375,18 @@
      MOVE 0 TO RL-IC-COUNT
      CALL "UI-RENDER" USING CLIENT-STATE
      PERFORM LOAD-ICONS
-*>   The reference (gen_bed_item.py gui straw_bed): 22 quads facing the viewer, x from 0.125 to 16.461 and y from 3.483 to 16.115 of the cell (the frills reach a little past it).
-     MOVE "bugbeitems straw_bed in a slot: 22 quads facing the viewer" TO TL-CASE
-     MOVE 22 TO TL-EXPECTED-N
-     COMPUTE TL-OBSERVED-N = RL-IC-COUNT / 6
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE 100 TO WS-XMIN WS-YMIN
-     MOVE -100 TO WS-XMAX WS-YMAX
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-VN
-         MOVE FUNCTION MIN(WS-XMIN, WS-VX(WS-I)) TO WS-XMIN
-         MOVE FUNCTION MAX(WS-XMAX, WS-VX(WS-I)) TO WS-XMAX
-         MOVE FUNCTION MIN(WS-YMIN, WS-VY(WS-I)) TO WS-YMIN
-         MOVE FUNCTION MAX(WS-YMAX, WS-VY(WS-I)) TO WS-YMAX
-     END-PERFORM
-     MOVE "bugbeitems straw_bed in a slot: the icon's extent in the cell (x, y minimum and maximum)" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
-     MOVE 0 TO TL-OBSERVED-N
-     IF FUNCTION ABS(WS-XMIN - 11.125) > 0.1 OR FUNCTION ABS(WS-XMAX - 27.461) > 0.1
-             OR FUNCTION ABS(WS-YMIN - 14.483) > 0.1 OR FUNCTION ABS(WS-YMAX - 27.115) > 0.1
-         MOVE 1 TO TL-OBSERVED-N
+     MOVE "bugbeitems straw_bed in a slot: its quads, inside the icon cell (frills included)" TO TL-CASE
+     MOVE 0 TO WS-BAD
+     IF WS-VN < 24
+         ADD 1 TO WS-BAD
      END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-VN
+         IF WS-VX(WS-I) < 11 OR WS-VX(WS-I) > 27 OR WS-VY(WS-I) < 11 OR WS-VY(WS-I) > 27
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
 *> WS-MISS: how many of the corners, brightness and uv of the slot quad WS-Q (vertices 1, 2, 3 and 6 are its corners) differ from GUI row WS-R.

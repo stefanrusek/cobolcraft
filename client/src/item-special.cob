@@ -49,8 +49,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPECIAL-ITEM-KIND.
-*> USING CLIENT-STATE, item id, kind out (0 an item drawn from its icon or block model, 1 the chest family, 2 a shulker box, 3 a banner, 4 a head, 5 a bed: a composite of two block
-*> models, 52 5.4, whose ids come back as id 1 (the head half) and id 2 (the foot half) with dye 1 for the straw bed), sprite id 1 and its length, sprite id 2 and
+*> USING CLIENT-STATE, item id, kind out (0 an item drawn from its icon or block model, 1 the chest family, 2 a shulker box, 3 a banner, 4 a head), sprite id 1 and its length, sprite id 2 and
 *> its length (PIC X(80) ids of the block atlas: the chest texture of 52 3.3 (the date of the christmas texture is read from the clock) or the shulker texture of 4.1, or the banner's
 *> pole and cloth `banner_base` and the white `base` layer the dye tints, 6.3), dye out (the shulker box's dye with 16 undyed, the banner's dye). The standard set's item names are
 *> the keys (a set of the cobolcraft world type has none of these).
@@ -168,22 +167,7 @@
                      MOVE "minecraft:entity/banner/base" TO L-ID2
                      MOVE 28 TO L-LEN2
                  ELSE
-*>                   A bed (52 5.4, 5.5): the item definition is a composite of the block models <name>_head and <name>_foot, the straw bed's turned (L-DYE 1).
-                     MOVE "_bed" TO WS-SUFFIX
-                     CALL "SPECIAL-DYE-OF" USING WS-NAME WS-SUFFIX L-DYE
-                     IF L-DYE >= 0 OR WS-NAME = "straw_bed"
-                         MOVE 5 TO L-KIND
-                         STRING "minecraft:block/" FUNCTION TRIM(WS-NAME) "_head" DELIMITED BY SIZE INTO L-ID1
-                         MOVE FUNCTION LENGTH(FUNCTION TRIM(L-ID1)) TO L-LEN1
-                         STRING "minecraft:block/" FUNCTION TRIM(WS-NAME) "_foot" DELIMITED BY SIZE INTO L-ID2
-                         MOVE FUNCTION LENGTH(FUNCTION TRIM(L-ID2)) TO L-LEN2
-                         MOVE 0 TO L-DYE
-                         IF WS-NAME = "straw_bed"
-                             MOVE 1 TO L-DYE
-                         END-IF
-                     ELSE
-                         MOVE 0 TO L-DYE
-                     END-IF
+                     MOVE 0 TO L-DYE
                  END-IF
              END-IF
      END-EVALUATE
@@ -442,11 +426,6 @@
      MOVE 0 TO SQ-COUNT
      CALL "SPECIAL-ITEM-KIND" USING CLIENT-STATE L-ITEM WS-KIND WS-ID1 WS-LEN1 WS-ID2 WS-LEN2 WS-DYE
      IF WS-KIND = 0
-         GOBACK
-     END-IF
-*>   A bed is the quads of its two block models, not cuboids of a texture strip.
-     IF WS-KIND = 5
-         CALL "SPECIAL-BED-QUADS" USING CLIENT-STATE WS-ID1 WS-LEN1 WS-ID2 WS-LEN2 WS-DYE SQ-TABLE
          GOBACK
      END-IF
      CALL "ATLAS-FIND" USING CLIENT-STATE WS-ID1 WS-LEN1 WS-SPRITE1
