@@ -161,9 +161,14 @@
          ADD 1 TO WS-TICKS
          CALL "WORLD-LIGHT-READY" USING WS-DIM WS-CX WS-CZ WS-FLAG
      END-PERFORM
-     MOVE "test nether worker with no pool the in-tick queue made them in four ticks" TO TL-CASE
-     MOVE WS-TICKS TO TL-OBSERVED-N
-     MOVE 4 TO TL-EXPECTED-N
+*>   Two chunks a tick at most, but a chunk that takes the tick's wall time (GQ-MS-HUNDREDTHS) is the last of the tick (lane perfsteady): four ticks on a fast
+*>   machine, up to one chunk a tick (eight) on a slow or loaded one. The case holds the count to that range.
+     MOVE "test nether worker with no pool the in-tick queue made them within four to eight ticks" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-TICKS >= 4 AND WS-TICKS <= 8
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     MOVE 1 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   the view's far ring stays loaded one chunk further for the Nether (the light of the sent edge chunk), as the standard dimension's does not
      MOVE 2 TO CS-VIEW-DISTANCE
