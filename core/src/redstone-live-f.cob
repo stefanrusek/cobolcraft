@@ -178,7 +178,10 @@
              CALL "RL-HOOK-REMOVE" USING L-DIM L-X L-Y L-Z LS-NSTATE
              GOBACK
          END-IF
+         CALL "RL-HOOK-EMIT" USING L-DIM LS-QX L-Y LS-QZ LS-ATT LS-POW LS-WAS-A LS-WAS-P
      END-IF
+*>   the transition effects of this hook (7.3 writes step 2)
+     CALL "RL-HOOK-EMIT" USING L-DIM L-X L-Y L-Z LS-ATT LS-POW LS-WAS-A LS-WAS-P
      IF LS-WRITE-NEAR = 1
          CALL "LEVEL-SET-BLOCK" USING L-DIM L-X L-Y L-Z LS-NSTATE LS-FLAGS LS-BUDGET LS-RESULT
          IF LS-NOTIFY-NEAR = 1
@@ -562,3 +565,108 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM RL-TRIP-HOOK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RL-WIRE-SHEARS.
+*> USING player row, dimension row, x, y, z, state at the position: playerWillDestroy of a tripwire (30-8 7.5 shears): the wire of a player who holds shears becomes disarmed (flags 260) and the event shear
+*> goes out, before the wire is broken; any other block or tool does nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CBLOCKS.
+ COPY CITEMS.
+ COPY RSLIVE.
+ 01 WS-DISARMED            PIC X(16) VALUE "disarmed".
+ 01 WS-TRUE                PIC X(16) VALUE "true".
+ 01 WS-OLD                 PIC X(16).
+ 01 WS-NEW                 BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG VALUE 260.
+ 01 WS-BUDGET              BINARY-LONG VALUE 512.
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-BARE                PIC X(48).
+ 01 WS-EVENT               PIC X(24) VALUE "shear".
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-DIM L-X L-Y L-Z L-STATE.
+     CALL "REDSTONE-IDS-ENSURE"
+     IF RL-CLASS(CB-S-BLOCK(L-STATE + 1) + 1) = 25 AND PL-SLOT-COUNT(L-ROW, PL-HELD(L-ROW) + 1) > 0
+         MOVE IT-KEY(PL-SLOT-ITEM(L-ROW, PL-HELD(L-ROW) + 1) + 1) TO WS-KEY
+         CALL "KEY-BARE" USING WS-KEY WS-BARE
+         IF WS-BARE = "shears"
+             CALL "SW-SET-PROP" USING L-STATE WS-DISARMED WS-TRUE WS-NEW WS-OLD
+             CALL "LEVEL-SET-BLOCK" USING L-DIM L-X L-Y L-Z WS-NEW WS-FLAGS WS-BUDGET WS-RESULT
+             CALL "VIB-POST" USING L-DIM L-X L-Y L-Z WS-EVENT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM RL-WIRE-SHEARS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RL-WIRE-SIDES.
+*> USING dimension row, x, y, z, state of a tripwire, state out: the four sides of a wire placed at the position (30-8 7.1): side d is true when the neighbour in d is a tripwire hook facing the wire (its facing is
+*> the opposite of d) or another tripwire.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ COPY RSLIVE.
+ 01 WS-NAMES.
+    05 FILLER PIC X(16) VALUE "north".
+    05 FILLER PIC X(16) VALUE "south".
+    05 FILLER PIC X(16) VALUE "west".
+    05 FILLER PIC X(16) VALUE "east".
+ 01 WS-NAME-TABLE REDEFINES WS-NAMES.
+    05 WS-NAME             PIC X(16) OCCURS 4 TIMES.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DY                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-NX                  BINARY-LONG.
+ 01 WS-NZ                  BINARY-LONG.
+ 01 WS-NSTATE              BINARY-LONG.
+ 01 WS-CLASS               BINARY-LONG.
+ 01 WS-FACING              BINARY-LONG.
+ 01 WS-OPP                 BINARY-LONG.
+ 01 WS-SIDE                BINARY-LONG.
+ 01 WS-CUR                 BINARY-LONG.
+ 01 WS-NEXT                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE L-OUT.
+     CALL "REDSTONE-IDS-ENSURE"
+     MOVE L-STATE TO WS-CUR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         COMPUTE WS-D = WS-I + 1
+         CALL "BU-DIRECTION" USING WS-D WS-DX WS-DY WS-DZ
+         COMPUTE WS-NX = L-X + WS-DX
+         COMPUTE WS-NZ = L-Z + WS-DZ
+         CALL "WORLD-GET-BLOCK" USING L-DIM WS-NX L-Y WS-NZ WS-NSTATE
+         MOVE RL-CLASS(CB-S-BLOCK(WS-NSTATE + 1) + 1) TO WS-CLASS
+         MOVE 0 TO WS-SIDE
+         IF WS-CLASS = 25
+             MOVE 1 TO WS-SIDE
+         END-IF
+         IF WS-CLASS = 24
+             CALL "PST-FACING-OF" USING WS-NSTATE WS-FACING
+             COMPUTE WS-OPP = WS-D + 1 - 2 * FUNCTION MOD(WS-D, 2)
+             IF WS-FACING = WS-OPP
+                 MOVE 1 TO WS-SIDE
+             END-IF
+         END-IF
+         CALL "RL-SET-BOOL" USING WS-CUR WS-NAME(WS-I) WS-SIDE WS-NEXT
+         MOVE WS-NEXT TO WS-CUR
+     END-PERFORM
+     MOVE WS-CUR TO L-OUT
+     GOBACK.
+ END PROGRAM RL-WIRE-SIDES.
