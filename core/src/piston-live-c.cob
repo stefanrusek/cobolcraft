@@ -98,9 +98,7 @@
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  PROCEDURE DIVISION USING L-INDEX.
-     IF BE-PROGRESS-OLD(L-INDEX) >= 1
-         GOBACK
-     END-IF
+*>   finalTick (30-3 7.2) acts only while progressO < 1: an entity in use always has it (PST-MBE-TICK ends the entity in the tick that reads progress 1, and this program ends it before it returns), so no guard is needed
      MOVE BE-DIM(L-INDEX) TO LS-DIM
      MOVE BE-X(L-INDEX) TO LS-X
      MOVE BE-Y(L-INDEX) TO LS-Y

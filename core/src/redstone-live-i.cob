@@ -59,8 +59,6 @@
  01 WS-POWER               PIC X(16) VALUE "power".
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLOCK-LIGHT         BINARY-LONG.
- 01 WS-QY                  BINARY-LONG.
- 01 WS-SKY2                BINARY-LONG.
  01 WS-RAW                 BINARY-LONG.
  01 WS-DARKEN              BINARY-LONG.
  01 WS-EFFECTIVE           BINARY-LONG.
@@ -84,12 +82,6 @@
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE.
      CALL "LIGHT-RAW" USING L-DIM L-X L-Y L-Z WS-SKY WS-BLOCK-LIGHT WS-RAW
-*>   the detector's own block counts as opaque in the block table of this core (a full cube by its flags), which hides the sky light of its cell: the cell above is read too
-     COMPUTE WS-QY = L-Y + 1
-     CALL "LIGHT-RAW" USING L-DIM L-X WS-QY L-Z WS-SKY2 WS-BLOCK-LIGHT WS-RAW
-     IF WS-SKY2 > WS-SKY
-         MOVE WS-SKY2 TO WS-SKY
-     END-IF
      CALL "WORLDSIM-DARKEN" USING L-DIM WS-DARKEN
      CALL "L32-EFFECTIVE-SKY" USING WS-SKY WS-DARKEN WS-EFFECTIVE
      MOVE CW-TIME TO WS-TIME

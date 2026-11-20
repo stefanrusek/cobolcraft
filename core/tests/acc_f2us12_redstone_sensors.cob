@@ -258,6 +258,16 @@
      MOVE "acceptance US12-4 sensors 30-6 6.3 the cart gone, the next check releases the rail" TO WS-CASE
      MOVE "detector_rail:powered=false,shape=north_south,waterlogged=false" TO WS-EXP
      PERFORM ASSERT-PROPS
+*>   6.3 the check of a detector rail whose cell holds another block by now (a stale check) leaves the cell alone
+     MOVE 14 TO WS-Z
+     MOVE 3 TO WS-X MOVE 101 TO WS-Y MOVE "stone" TO WS-K PERFORM PUT-DEF
+     MOVE "detector_rail" TO WS-K PERFORM MAKE-DEF
+     CALL "RL-DETECTOR-CHECK" USING WS-DIM WS-X WS-Y WS-Z WS-ST
+     MOVE 3 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM READ-FULL
+     MOVE "acceptance US12-4 sensors 30-6 6.3 a stale check of a detector rail leaves the stone there" TO WS-CASE
+     MOVE "stone:" TO WS-EXP
+     PERFORM ASSERT-PROPS
      STOP RUN.
 
  READ-FULL.

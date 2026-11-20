@@ -127,6 +127,61 @@
      MOVE "0" TO WS-EXP
      MOVE FUNCTION TRIM(WS-ED) TO WS-OBS
      PERFORM ASSERT-TEXT
+*>   4.3 branches: a slime beside the line whose own line runs back along the push axis to the piston's column. Piston (1,102,13) faces east; slime (2,102,13) starts the line; the slime above it (2,103,13)
+*>   has the slime (1,103,13) behind it (the piston's cell is below that one: the branch of that slime reaches the piston itself, which is not part of the structure).
+     MOVE 1 TO WS-X MOVE 102 TO WS-Y MOVE 13 TO WS-Z
+     PERFORM PUT-STATE-PISTON
+     MOVE 2 TO WS-X MOVE 102 TO WS-Y MOVE "slime_block" TO WS-K PERFORM PUT-DEF
+     MOVE 2 TO WS-X MOVE 103 TO WS-Y MOVE "slime_block" TO WS-K PERFORM PUT-DEF
+     MOVE 1 TO WS-X MOVE 103 TO WS-Y MOVE "slime_block" TO WS-K PERFORM PUT-DEF
+     MOVE 1 TO WS-PX MOVE 102 TO WS-PY MOVE 13 TO WS-PZ
+     CALL "PST-RESOLVE" USING WS-DIM WS-PX WS-PY WS-PZ WS-FACE-N WS-EXTENDING WS-OK
+     MOVE WS-OK TO WS-ED
+     MOVE "acceptance US12-4 pistons 30-3 4.3 a slime behind a branch that sits above the piston resolves" TO WS-CASE
+     MOVE "1" TO WS-EXP
+     MOVE FUNCTION TRIM(WS-ED) TO WS-OBS
+     PERFORM ASSERT-TEXT
+     PERFORM BUILD-LIST
+     MOVE "acceptance US12-4 pistons 30-3 4.3 and the piston itself is not in the list" TO WS-CASE
+     MOVE "002,102,013;001,103,013;002,103,013;" TO WS-EXP
+     MOVE WS-LIST TO WS-OBS
+     PERFORM ASSERT-TEXT
+*>   4.3 step 4 in the walk back along the push axis: the branch above the first slime is a line of 13 slimes (x 3 to 15 at y 103), the walk back from (15,103) passes the limit of 12 listed cells.
+     MOVE 14 TO WS-X MOVE 102 TO WS-Y MOVE 14 TO WS-Z
+     PERFORM PUT-STATE-PISTON
+     MOVE 15 TO WS-X MOVE "slime_block" TO WS-K PERFORM PUT-DEF
+     MOVE 103 TO WS-Y
+     PERFORM VARYING WS-NX FROM 3 BY 1 UNTIL WS-NX > 15
+         MOVE WS-NX TO WS-X
+         MOVE "slime_block" TO WS-K
+         PERFORM PUT-DEF
+     END-PERFORM
+     MOVE 14 TO WS-PX MOVE 102 TO WS-PY MOVE 14 TO WS-PZ
+     CALL "PST-RESOLVE" USING WS-DIM WS-PX WS-PY WS-PZ WS-FACE-N WS-EXTENDING WS-OK
+     MOVE WS-OK TO WS-ED
+     MOVE "acceptance US12-4 pistons 30-3 4.3 a branch whose walk back along the axis passes 12 cells fails" TO WS-CASE
+     MOVE "0" TO WS-EXP
+     MOVE FUNCTION TRIM(WS-ED) TO WS-OBS
+     PERFORM ASSERT-TEXT
+*>   4.4 the re-check after the reorder: the layout of the first 4.4 case at z 1 and 2, with a stone above the last slime and an unmovable block in front of that stone: the re-check branches the slime that met
+*>   the other line, and its branch cannot move, so the whole push fails.
+     MOVE 1 TO WS-X MOVE 102 TO WS-Y MOVE 1 TO WS-Z
+     PERFORM PUT-STATE-PISTON
+     MOVE 2 TO WS-X MOVE 102 TO WS-Y MOVE 1 TO WS-Z MOVE "slime_block" TO WS-K PERFORM PUT-DEF
+     MOVE 2 TO WS-X MOVE 103 TO WS-Y MOVE 1 TO WS-Z MOVE "stone" TO WS-K PERFORM PUT-DEF
+     MOVE 3 TO WS-X MOVE 103 TO WS-Y MOVE 1 TO WS-Z MOVE "honey_block" TO WS-K PERFORM PUT-DEF
+     MOVE 2 TO WS-X MOVE 102 TO WS-Y MOVE 2 TO WS-Z MOVE "slime_block" TO WS-K PERFORM PUT-DEF
+     MOVE 2 TO WS-X MOVE 103 TO WS-Y MOVE 2 TO WS-Z MOVE "slime_block" TO WS-K PERFORM PUT-DEF
+     MOVE 3 TO WS-X MOVE 103 TO WS-Y MOVE 2 TO WS-Z MOVE "stone" TO WS-K PERFORM PUT-DEF
+     MOVE 2 TO WS-X MOVE 104 TO WS-Y MOVE 2 TO WS-Z MOVE "stone" TO WS-K PERFORM PUT-DEF
+     MOVE 3 TO WS-X MOVE 104 TO WS-Y MOVE 2 TO WS-Z MOVE "obsidian" TO WS-K PERFORM PUT-DEF
+     MOVE 1 TO WS-PX MOVE 102 TO WS-PY MOVE 1 TO WS-PZ
+     CALL "PST-RESOLVE" USING WS-DIM WS-PX WS-PY WS-PZ WS-FACE-N WS-EXTENDING WS-OK
+     MOVE WS-OK TO WS-ED
+     MOVE "acceptance US12-4 pistons 30-3 4.4 a branch that cannot move found by the re-check fails the push" TO WS-CASE
+     MOVE "0" TO WS-EXP
+     MOVE FUNCTION TRIM(WS-ED) TO WS-OBS
+     PERFORM ASSERT-TEXT
 *>   5.1 world edges: below the world, DOWN at the lowest layer, UP at the top layer
      MOVE 5 TO WS-X MOVE 12 TO WS-Z
      COMPUTE WS-Y = DM-MIN-Y(WS-DIM) - 1

@@ -382,6 +382,39 @@
      MOVE "acceptance US12-4 dispenser 30-4 4.22 a command block minecart is spent too" TO WS-CASE
      MOVE "0" TO WS-EXP
      PERFORM ASSERT-POWER
+*>   a chest minecart with air in front and a rail below the front cell (4.22: the cart comes out at offset -0.9 above the rail)
+     MOVE "chest_minecart" TO WS-K PERFORM FIND-ITEM MOVE WS-ITEM TO WS-ITEM2
+     MOVE 21 TO WS-Z
+     PERFORM SETUP-DISPENSER
+     MOVE WS-ITEM2 TO BE-SLOT-ITEM(WS-BE, 1) MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE 4 TO WS-X MOVE 99 TO WS-Y MOVE "stone" TO WS-K PERFORM PUT-DEF
+     MOVE 100 TO WS-Y MOVE "rail" TO WS-K PERFORM PUT-DEF
+     MOVE 101 TO WS-Y
+     MOVE "chest_minecart" TO WS-EKEY PERFORM COUNT-ENTITY
+     MOVE WS-ECOUNT TO WS-BEFORE
+     PERFORM POWER-ON
+     PERFORM COUNT-ENTITY
+     COMPUTE WS-P = WS-ECOUNT - WS-BEFORE
+     MOVE "acceptance US12-4 dispenser 30-4 4.22 a chest minecart comes out above the rail below the front cell" TO WS-CASE
+     MOVE "1" TO WS-EXP
+     PERFORM ASSERT-POWER
+     MOVE BE-SLOT-COUNT(WS-BE, 1) TO WS-P
+     MOVE "acceptance US12-4 dispenser 30-4 4.22 and the chest minecart item is spent" TO WS-CASE
+     MOVE "0" TO WS-EXP
+     PERFORM ASSERT-POWER
+*>   a minecart with air in front and a plain stone floor below the front cell: no cart (4.22), the item is dropped
+     MOVE "minecart" TO WS-K PERFORM FIND-ITEM MOVE WS-ITEM TO WS-ITEM2
+     MOVE 24 TO WS-Z
+     PERFORM SETUP-DISPENSER
+     MOVE WS-ITEM2 TO BE-SLOT-ITEM(WS-BE, 1) MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE "minecart" TO WS-EKEY PERFORM COUNT-ENTITY
+     MOVE WS-ECOUNT TO WS-BEFORE
+     PERFORM POWER-ON
+     PERFORM COUNT-ENTITY
+     COMPUTE WS-P = WS-ECOUNT - WS-BEFORE
+     MOVE "acceptance US12-4 dispenser 30-4 4.22 air in front over a stone floor: no cart" TO WS-CASE
+     MOVE "0" TO WS-EXP
+     PERFORM ASSERT-POWER
      STOP RUN.
 
  SETUP-DISPENSER.

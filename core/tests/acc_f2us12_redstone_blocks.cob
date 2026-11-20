@@ -582,6 +582,34 @@
      MOVE "acceptance US12-4 hopper 31-2 5.6 the item reached the empty hopper in front" TO WS-CASE
      MOVE "1" TO WS-EXP
      PERFORM ASSERT-POWER
+*>   31-2 5.6: the same, the empty hopper placed before the source (so it ticks no later than the source in a game tick: offset 1, cooldown 7); it holds 7 when the item arrives
+     MOVE 10 TO WS-Z
+     PERFORM MAKE-HOPPER
+     MOVE 3 TO WS-X MOVE "air" TO WS-K PERFORM PUT-DEF
+     MOVE 4 TO WS-X MOVE "hopper" TO WS-K PERFORM MAKE-DEF
+     MOVE "facing" TO WS-PN MOVE "east" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-BE2
+     MOVE 3 TO WS-X MOVE "hopper" TO WS-K PERFORM MAKE-DEF
+     MOVE "facing" TO WS-PN MOVE "east" TO WS-PV PERFORM SET-P
+     PERFORM PUT-ST
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-BE
+     MOVE "stone" TO WS-K PERFORM FIND-ITEM
+     MOVE WS-ITEM TO BE-SLOT-ITEM(WS-BE, 1) MOVE 1 TO BE-SLOT-COUNT(WS-BE, 1)
+     MOVE 1 TO WS-TICKS
+     MOVE 0 TO WS-N
+     PERFORM UNTIL BE-SLOT-COUNT(WS-BE2, 1) > 0 OR WS-N > 12
+         ADD 1 TO WS-N
+         PERFORM RUN-TICKS
+     END-PERFORM
+     MOVE BE-SLOT-COUNT(WS-BE2, 1) TO WS-P
+     MOVE "acceptance US12-4 hopper 31-2 5.6 the item reached the empty hopper placed first" TO WS-CASE
+     MOVE "1" TO WS-EXP
+     PERFORM ASSERT-POWER
+     MOVE BE-COOLDOWN(WS-BE2) TO WS-P
+     MOVE "acceptance US12-4 hopper 31-2 5.6 and its cooldown is 7 when the item arrived" TO WS-CASE
+     MOVE "7" TO WS-EXP
+     PERFORM ASSERT-POWER
 *>   30-5 7: lightning rods of other facings give the axis ordinals, a powered rod placed or removed
      MOVE 11 TO WS-Z
      MOVE 3 TO WS-X MOVE "lightning_rod" TO WS-K PERFORM MAKE-DEF
