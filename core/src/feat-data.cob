@@ -2330,6 +2330,16 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 37
+*>           replace_single_block (feat-replace.cob): unsupported when its targets, a rule test or a state cannot be read
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-REPLACE-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW) FT-B(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 46
 *>           speleothem_cluster (feat-35-6.cob): unsupported when a block, a provider or a number is missing
              MOVE FD-BAD TO LS-SAVED-BAD

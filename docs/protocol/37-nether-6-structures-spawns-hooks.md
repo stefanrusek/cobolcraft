@@ -300,17 +300,46 @@ variant's start template (computed again in this pass over the jar; the pool cou
 The mob pools are the preplaced piglins and hoglins of 44-2 section 10.5 (weights and which structure references them).
 
 Totals read from the archive (counted with `unzip -Z1 | grep -v '/$'`): 60 template-pool files under `worldgen/template_pool/bastion/`
-(counting `starts`), 167 structure NBT files under `structure/bastion/`, and 11 processor lists whose names relate to the bastion
-(`bastion_generic_degradation`, `bottom_rampart`, `bridge`, `empty`, `entrance_replacement`, `high_rampart`, `housing`, `rampart_degradation`,
-`side_wall_degradation`, `stable_degradation`, `treasure_rooms`; the jar has 40 processor-list files in all). Four bastion chest loot tables exist: `chests/bastion_bridge`,
+(counting `starts`), 167 structure NBT files under `structure/bastion/`, and 13 processor lists that the bastion uses or that are named for it (the twelve of section 5.2 plus `empty`; the jar has 40 processor-list files in all). Four bastion chest loot tables exist: `chests/bastion_bridge`,
 `chests/bastion_hoglin_stable`, `chests/bastion_other`, `chests/bastion_treasure` (data; the chests are template block entities with a
 `LootTable` key, not placed by code).
 
-**Processors** (data; the engine is 36-2): the degradation lists are `rule` processors made of `random_block_match`
-rules with `always_true` location tests. Example read (`bastion_generic_degradation`): polished blackstone bricks become cracked polished
-blackstone bricks with probability 0.3; blackstone becomes air with 0.0001; gold block becomes cracked polished blackstone bricks with 0.3;
-gilded blackstone becomes blackstone with 0.5; blackstone becomes gilded blackstone with 0.01. The other lists vary the numbers
-(for example `rampart_degradation` uses 0.4 for bricks).
+### 5.1 Start pool order: draw index to variant
+
+The four elements of `bastion/starts` are, in file order (and so in expanded-list order, every weight being 1), the following; the second draw of the start (36-8 section 13.2 step 3, `nextInt(4)` over the four-element expanded list, taken after the rotation draw) selects by index:
+
+| Draw index | Start template (`location`) | Variant | Processor list of the start element |
+|---|---|---|---|
+| 0 | `minecraft:bastion/units/air_base` | housing units | `bastion_generic_degradation` |
+| 1 | `minecraft:bastion/hoglin_stable/air_base` | hoglin stable | `bastion_generic_degradation` |
+| 2 | `minecraft:bastion/treasure/big_air_full` | treasure room | `bastion_generic_degradation` |
+| 3 | `minecraft:bastion/bridge/starting_pieces/entrance_base` | bridge | `bastion_generic_degradation` |
+
+All four have `element_type` `single_pool_element`, `projection` `rigid` and the pool fallback `minecraft:empty` (read from `worldgen/template_pool/bastion/starts.json`). The mapping index to variant is 0 housing, 1 stable, 2 treasure, 3 bridge; this is the same table as 36-8 section 13.2 (confirmed by reading the pool file again in this round).
+
+### 5.2 The processor lists of the bastion group (exact rule order)
+
+The jar has 40 processor lists. The elements of the bastion pools name twelve of them (counted over every element of the 60 bastion pool files: `stable_degradation` 51, `treasure_rooms` 50, `housing` 31, `high_wall` 10, `bastion_generic_degradation` 9, `rampart_degradation` 5, `roof` 3, `side_wall_degradation` 2, `bridge` 1, `entrance_replacement` 1, `bottom_rampart` 1, `high_rampart` 1) and give the rest of the elements an inline empty list (no processor); the named list `empty` is **not** referenced by any bastion pool element (the per-variant counts are in 36-8 section 14). The table below therefore has twelve used lists and `empty`, thirteen rows in all. Each list in the table holds exactly one processor, a `rule` processor (36-2 section 8), except `empty` which holds none. The rule processor evaluates the rules **in the order below and the first rule that matches decides the block** (36-2 section 8.1); the per-block random source is seeded from the block's absolute position (36-2 section 8.1 step 1), so only the draws of tests that reach their probability draw matter (36-2 section 8.3: `random_block_match` draws only when the block matches).
+
+Notation: `rbm(B, p)` is the input predicate `random_block_match` (block `B`, probability `p`: matches when the template block is `B` and then `nextFloat() < p`); every `location_predicate` below is `always_true` and the output is a default block state (no properties) unless stated. Block names are without `minecraft:`; `cpbb` is `cracked_polished_blackstone_bricks`, `pbb` is `polished_blackstone_bricks`, `gilded` is `gilded_blackstone`, `bs` is `blackstone`.
+
+| List | Rules, in order (input to output) |
+|---|---|
+| `bastion_generic_degradation` | 1. rbm(`pbb`, 0.3) to `cpbb`; 2. rbm(`bs`, 0.0001) to `air`; 3. rbm(`gold_block`, 0.3) to `cpbb`; 4. rbm(`gilded`, 0.5) to `bs`; 5. rbm(`bs`, 0.01) to `gilded` |
+| `housing` | 1. rbm(`pbb`, 0.3) to `cpbb`; 2. rbm(`bs`, 0.0001) to `air`; 3. rbm(`gilded`, 0.5) to `bs`; 4. rbm(`bs`, 0.01) to `gilded` |
+| `stable_degradation` | 1. rbm(`pbb`, 0.1) to `cpbb`; 2. rbm(`bs`, 0.0001) to `air`; 3. rbm(`gilded`, 0.5) to `bs`; 4. rbm(`bs`, 0.01) to `gilded` |
+| `side_wall_degradation` | 1. rbm(`chiseled_polished_blackstone`, 0.5) to `air`; 2. rbm(`gold_block`, 0.1) to `cpbb`; 3. rbm(`gilded`, 0.5) to `bs`; 4. rbm(`bs`, 0.01) to `gilded` |
+| `treasure_rooms` | 1. rbm(`pbb`, 0.35) to `cpbb`; 2. rbm(`chiseled_polished_blackstone`, 0.1) to `cpbb`; 3. rbm(`gilded`, 0.5) to `bs`; 4. rbm(`bs`, 0.01) to `gilded` |
+| `high_wall` | 1. rbm(`pbb`, 0.01) to `air`; 2. rbm(`pbb`, 0.5) to `cpbb`; 3. rbm(`pbb`, 0.3) to `bs`; 4. rbm(`gilded`, 0.5) to `bs` |
+| `roof` | 1. rbm(`pbb`, 0.3) to `cpbb`; 2. rbm(`pbb`, 0.15) to `air`; 3. rbm(`pbb`, 0.3) to `bs` |
+| `bottom_rampart` | 1. rbm(`magma_block`, 0.75) to `cpbb`; 2. rbm(`cpbb`, 0.15) to `pbb`; 3. rbm(`gilded`, 0.5) to `bs`; 4. rbm(`bs`, 0.01) to `gilded` |
+| `high_rampart` | 1. rbm(`gold_block`, 0.3) to `cpbb`; 2. input `always_true`, location `always_true`, **position predicate** `axis_aligned_linear_pos` (values read: `max_chance` 0.05, `max_dist` 100; `min_chance`, `min_dist` and `axis` absent, so 0, 0 and `y`), to `air`; 3. rbm(`gilded`, 0.5) to `bs` |
+| `rampart_degradation` | 1. rbm(`pbb`, 0.4) to `cpbb`; 2. rbm(`bs`, 0.01) to `cpbb`; 3. rbm(`pbb`, 0.0001) to `air`; 4. rbm(`bs`, 0.0001) to `air`; 5. rbm(`gold_block`, 0.3) to `cpbb`; 6. rbm(`gilded`, 0.5) to `bs`; 7. rbm(`bs`, 0.01) to `gilded` |
+| `bridge` | 1. rbm(`pbb`, 0.3) to `cpbb`; 2. rbm(`bs`, 0.0001) to `air` |
+| `entrance_replacement` | 1. rbm(`chiseled_polished_blackstone`, 0.5) to `air`; 2. rbm(`gold_block`, 0.6) to `cpbb`; 3. rbm(`gilded`, 0.5) to `bs`; 4. rbm(`bs`, 0.01) to `gilded` |
+| `empty` | no processor (a list with an empty `processors` array) |
+
+Consequences of the order (each follows from "first matching rule wins"): in `bastion_generic_degradation` a blackstone block is tested against rule 2 (probability 0.0001 to air), then, only if that draw failed, against rule 5 (0.01 to gilded blackstone); a block becomes gilded with probability `(1 - 0.0001) * 0.01`, air with 0.0001, and stays otherwise (the draws come from one per-block generator, so the second draw is the next value of the sequence after the first; 36-2 section 8.1 note). In `high_wall` a polished blackstone brick goes to air with 0.01, else (with the next draw) to cracked bricks with 0.5, else to blackstone with 0.3. The list `high_rampart` is the only bastion list with a position predicate. **Exact test of its rule 2** (36-2 section 8.4.1; read there, applied with the values above): rule 2 is reached only for a block that rule 1 did not take (rule 1 draws only when the block is gold, and its result ends the evaluation when it matches); its input and location predicates are `always_true` and consume no random number, so the position test is evaluated for every such block. With `d` the integer `|y - anchor y|`, where `y` is the block's absolute y and `anchor y` the y of the anchor position that `placeInWorld` hands to the processors (36-2 section 5), the test is: `chance = clampedLerp(inverseLerp(d, 0, 100), 0.0, 0.05)`, that is `0.05 * clamp(d / 100, 0, 1)` (floating point; `d / 100` is the unclamped `t`), then one `nextFloat()` is drawn from the block's own random source (seeded from the block's absolute position, 36-2 section 8.1), and the block becomes `air` when that float is **less than or equal to** `chance` (not strictly less, unlike `random_block_match`). So a block at the anchor's own height has chance 0 and becomes air only when the draw is exactly 0.0; a block 100 or more blocks above or below the anchor has chance 0.05. The draw happens exactly once per block that reaches rule 2, and only after the input and location predicates matched; it precedes the draw of rule 3, which therefore sees the next value of the sequence for a gilded blackstone block that rule 2 did not take.
 
 **Depth and range.** With `size` 6 the expansion has at most 6 levels below the start; with `max_distance_from_center` 80 no piece
 may extend beyond 80 blocks horizontally from the start (the exact box test is in 36-3, applied to the bastion in 36-8 section 13).
@@ -535,9 +564,8 @@ moved to `y = WorldGenRegion.getMaxY()` (the level's maximum y; for the Nether, 
 `WorldgenRandom` over a `LegacyRandomSource` is created with a unique seed (`RandomSupport.generateUniqueSeed`, not derived from the world seed), then
 `setDecorationSeed(region seed, chunk min x, chunk min z)` is called on it (the definition is in 10 section 2.6 and 11; its returned value is discarded).
 `NaturalSpawner.spawnMobsForChunkGeneration` (18 section 6.10) then runs with this random and the corner position. The call re-seeds the generator
-from the region seed and the corner, so (inferred, from `setDecorationSeed` being a seeding call on a legacy generator) the unique seed has no effect on
-the draws that follow and the pass is a function of the world seed and the chunk; this was not checked against the seeding definition in this round
-(Open question 16).
+from the region seed and the corner, so the unique seed has no effect on the draws that follow and the pass is a function of the world seed and the chunk.
+**Read in round R2** (`WorldgenRandom.setDecorationSeed`): the method first calls `setSeed(regionSeed)` on the same `WorldgenRandom` (which forwards to the wrapped legacy source's `setSeed`, resetting the generator state completely), draws `a = nextLong() | 1` and `b = nextLong() | 1`, computes `seed = (long) minBlockX * a + (long) minBlockZ * b` xor `regionSeed` (the two chunk corner coordinates are block coordinates, ints widened to long, products and sum in 64-bit wrap-around arithmetic) and calls `setSeed(seed)` again. The returned value is that seed, and the caller discards it. So the stream used by the spawn pass is the legacy generator seeded with that `seed`, exactly as the decoration seed of 10 section 2.6 and 11 section 4; `RandomSupport.generateUniqueSeed` only fills the initial constructor state, which the first `setSeed` overwrites (Open question 16 answered). `regionSeed` is `WorldGenRegion.getSeed()`, the level seed.
 
 `spawnMobsForChunkGeneration` runs with the `creature` list: a
 strider entry with probability 0.1 per check. For a dimension with a ceiling the candidate position is found by `getTopNonCollidingPos` (read, the
@@ -555,7 +583,7 @@ Only numbers read for the Nether side; the portal algorithm is RS23:
 |---|---|---|
 | `coordinate_scale` | Nether 8.0, Overworld 1.0 | dimension type JSON; `getTeleportationScale(from, to) = from.scale / to.scale` (a double division) |
 | Destination dimension | the destination is the Nether when the current level is **not** the Nether, and the Overworld when it is; so a portal used in the End targets the Nether (the portal round, RS23, owns the rest) | `NetherPortalBlock.getPortalDestination` (compares the level key with `Level.NETHER`) |
-| Scale of the coordinates | the entity's own x and z (not a portal block position) are multiplied by the teleportation scale (overworld to Nether 1/8, Nether to overworld 8); y is unscaled; `WorldBorder.clampToBounds(double, double, double)` clamps them to the destination border and returns an integer **block position**, which is the origin of the portal search | `NetherPortalBlock.getPortalDestination` |
+| Scale of the coordinates | the entity's own x and z (not a portal block position) are multiplied by the teleportation scale (overworld to Nether 1/8, Nether to overworld 8); y is unscaled; `WorldBorder.clampToBounds(double, double, double)` clamps them to the destination border (x and z to just inside the maximum edge, 9.999999747378752E-6 below it; y untouched) and returns the **block position** whose coordinates are the floors of the clamped values, which is the origin of the portal search | `NetherPortalBlock.getPortalDestination` |
 | Portal point search radius | 16 blocks when the destination is the Nether; 128 when the destination is the overworld (squares around the scaled position) | `PortalForcer.findClosestPortalPosition` (its flag is "destination is the Nether") |
 | Portal creation search | a spiral of radius 16 around the scaled position | `PortalForcer.createPortal` |
 | Top y for a created portal | `min(maxY, minY + logical_height - 1)`: in the Nether `min(255, 0 + 128 - 1) = 127`; in the overworld `min(319, -64 + 384 - 1) = 319` | `PortalForcer.createPortal` |
@@ -621,17 +649,17 @@ Questions of the earlier draft that were answered are listed first with their an
 4. Resolved. The selection loop (weights, 5 attempts, depth limit 30, `BridgeEndFiller` fallback) is 36-8 section 3.4.
 5. Resolved. The spread loop, drip columns and replace test are 36-4 sections 8.5 and 8.6.
 6. Resolved. The piece's template position is the stub `(chunk min x, y, chunk min z)` (36-4 section 8.2 step 9; section 6 step 7). Note that this document's earlier draft (box centre) was wrong.
-7. No player-boundary rule at the bedrock roof was found: the entity, player and level classes that mention the Nether key are portal, piglin, hoglin, wither, TNT and POI code. Whether anything damages or blocks a player above y 127 was not found; the build limit is `getMaxY` (255 inferred from `min_y + height - 1`).
+7. Answered (negative, round R2): `DimensionType.logicalHeight()` is reachable only through `ServerLevel.getLogicalHeight()`, and a scan of every class of the jar for the constant-pool names `logicalHeight` and `getLogicalHeight` finds only `DimensionType`, `ServerLevel`, `PortalForcer` (portal creation, section 10) and `TeleportRandomlyConsumeEffect` (the chorus-fruit teleport: its vertical range is limited by the logical height). No entity, player or movement class reads it, so **nothing in the jar prevents or damages a player standing above y 127**; the build limit is `getMaxY()` = 255 (`min_y + height - 1`), and below the world the `checkBelowWorld` rule applies (y below `minY - 64`).
 8. Resolved. `moveInsideHeights` is read (section 3.1).
 9. Resolved. `allowInRow` false skips an entry that equals the structure's last created piece (a single structure-wide record shared by both tables), 36-8 sections 3.4 and 3.5.
 10. Resolved. The biome check reads the biome at the stub position in quart coordinates (section 3.0); the four stubs are tabulated there.
 11. The bastion variant names ("housing units", "hoglin stable", "treasure room", "bridge") come from the data-generator class names and the template folder names; they are descriptive only.
-12. The processors of the 11 bastion lists were read in one example (`bastion_generic_degradation`) and partly for `rampart_degradation`; all are data (36-2 for the engine, 36-8 sections 13 to 16 for the bastion). The ruined portal's blackstone swap table is now read (section 6.1).
+12. Answered (round R2): the twelve processor lists named by bastion pool elements, plus `empty`, thirteen in all, are in section 5.2 in exact rule order; the ruined portal's blackstone swap table is section 6.1.
 13. The mob category of each Nether entity type is taken from the biome JSON (monster, creature); the `MobCategory` assignments in `EntityTypes` were not re-read here (21 section 2 holds the entity table).
 14. The dried ghast placement in fossils (probability 0.5) is taken from 37-5 and confirmed by the constant 0.5f in `placeDriedGhast`; which box (template box or chunk box) bounds the position is as stated in 37-5 and was not independently re-derived.
 15. Resolved. `Heightmap$Types` was read: `WORLD_SURFACE_WG` uses the predicate "not air", `OCEAN_FLOOR_WG` the motion-blocking material predicate; "surface y = base height - 1" is read (section 6 steps 5 and 6).
-16. `spawnOriginalMobs` seeds a fresh legacy `WorldgenRandom` with a unique seed and then calls `setDecorationSeed` on it; that the second call makes the first seed irrelevant is inferred from its being a seeding call and was not checked against the definition (section 9.6).
-17. The conversion of the clamped double position of `clampToBounds` to a block position (the example of section 11 assumes a floor, so 12.5 gives 12) was not read; only the return type `BlockPos` was.
+16. Answered (round R2): `setDecorationSeed` calls `setSeed` first, so the unique seed is irrelevant (section 9.6).
+17. Answered (round R2): `WorldBorder.clampToBounds(double, double, double)` clamps x to `[minX, maxX - 9.999999747378752E-6]` and z to `[minZ, maxZ - 9.999999747378752E-6]` (`Mth.clamp`, y unchanged) and then takes `BlockPos.containing`, which is the floor of each coordinate (`Mth.floor(double)`); the example of section 11 (12.5 gives 12, -5.0 gives -5) is therefore right, and a coordinate exactly on the upper border edge is moved to just below it before the floor.
 18. The fortress, bastion and ruined portal engines are owned by 36-8 and 36-4 and are not repeated here; if one of them changes, the stub table of section 3.0 and section 6 must be checked against it. The stubs were read in this document's own pass: the ruined portal stub is the chunk corner at the final y (not the box centre), and the bastion stub is the centre of the start piece's box at y 33 (not the chunk corner); 36-4 section 8.2 and 36-8 section 13 agree.
 19. `docs/protocol/README.md` has no entry for the 36-structures or 37-nether documents; the Documents table and scope sentence are for the orchestrator to update (this run may not edit the README).
-20. 37-1 section 6.5 describes the order of the two loops of `NaturalSpawner.getTopNonCollidingPos` in the opposite order of the artifact (section 9.6 here is the read order); 37-1 needs a correction.
+20. Answered (round R2): 37-1 section 6.5 is corrected (first move down while not air, then down while air; it keeps a note that it was corrected).

@@ -66,7 +66,7 @@ holds 58 types; §2 explains where patches went). In this version the feature cl
 | `huge_fungus` (4) | `crimson_fungus`, `crimson_fungus_planted`, `warped_fungus`, `warped_fungus_planted` |
 | `overlay` (11 files use it, 10 at top level) | `weeping_vines`, `basalt_pillar`, `coral/*`, `desert_well`, `nylium_bonemeal` |
 | `single_block_pillar`, `projected_random_patchy_square` | only inside `basalt_pillar` (Open question 6) |
-| `replace_single_block` | no configured feature in the jar uses it (Open question 7) |
+| `replace_single_block` | no configured feature in the jar uses it (§7.5.1); its `RuleTest` family is §7.5.3 |
 | trees (`tree`, 45) with decorators | §3 lists the decorator JSON that occurs |
 
 ## 2. Random patches: `count`, `offset`, `block_predicate_filter`
@@ -288,15 +288,35 @@ Double plant placement `DoublePlantBlock.placeAt(level, state, pos, flags)`: wri
 at `pos + up`; each with `waterlogged` copied from the fluid already at that cell (`copyWaterloggedFrom`: when the state has the `waterlogged` property, set `waterlogged` to the result of `LevelReader.isWaterAt(pos)` for that cell; otherwise return the state unchanged),
 the lower first.
 
-Mossy carpet placement `MossyCarpetBlock.placeAt(level, pos, random, flags)` (read; the block is the pale moss carpet): (a) `s1` = default
-pale moss carpet state with its sides recomputed (`getUpdatedState`, with the "base" flag forced true): a side (NORTH, EAST, SOUTH, WEST)
-becomes `low` when the neighbour in that direction can support it (`MultifaceBlock.canAttachTo`, never UP), `tall` when the block above is a
-pale moss carpet with `base = false` that already has that side; set `s1` at `pos`; (b) `topper`: nothing (air) when the block above is a
-pale moss carpet with `base = true`, or when it is not a pale moss carpet and is not replaceable; otherwise a pale moss carpet with
-`base = false` whose sides are recomputed against `pos + up` and then each non-`none` side is cleared when `random.nextBoolean()` is false
-(one draw per non-`none` side, in the order N, E, S, W); the topper is kept only if it has any side and differs from the state above; (c) when the topper is not
-air, set it at `pos + up` and recompute and re-set the lower carpet. The intermediate branch targets of `createTopperWithSideChance` were
-partly read from a flattened listing (Open question 9).
+Mossy carpet placement `MossyCarpetBlock.placeAt(level, pos, random, flags)` (read in full in the R3 round; the block is the pale moss carpet). The block's state has a boolean `base`
+(`BlockStateProperties.BOTTOM`) and four `WallSide` values `north`, `east`, `south`, `west` (`NORTH_WALL` ... `WEST_WALL`; values `none`, `low`, `tall`); its default state is `base = true` with all four sides
+`none`. Two helpers:
+
+*`getUpdatedState(state, level, p, forceBase)`* recomputes the four sides of `state` for the cell `p`. `base' = forceBase OR state.base` (the property of `state` itself is not changed).
+For each horizontal direction `d` in NORTH, EAST, SOUTH, WEST:
+1. `side = none` when `d`'s neighbour cannot hold a carpet face: that test is `MultifaceBlock.canAttachTo(level, p, d)`, which reads the state at `p.relative(d)` and applies the four-argument `canAttachTo(level, d, p.relative(d), state)` of §8.1; the helper `canSupportAtFace` returns false for UP without calling it, though only horizontal `d` occur here; otherwise `side = low` when `base'` is true and
+   `side = state.side(d)` (the current value, which may be `low`, `tall` or `none`) when `base'` is false.
+2. If `side` is `low`: (a) let `above` be the state at `p + up`; if it is a pale moss carpet whose side `d` is not `none` and whose `base` is **false**, `side = tall`. (b) Then, only when
+   `state.base` is **false** (the property of the input state, not `base'`): let `below` be the state at `p - up`; if it is a pale moss carpet whose side `d` is `none`, `side = none`.
+3. Set side `d` of the working state to `side`.
+
+*`hasFaces(state)`*: true when `state.base` is true; otherwise true when at least one of the four sides is not `none`.
+
+`placeAt` then runs, with `random` the one passed by the caller (for `simple_block` it is the level's own random, step 3 above):
+(a) `s1 = getUpdatedState(default pale moss carpet, level, pos, true)`; set `s1` at `pos` with `flags`. (With `base' = true` every side whose neighbour can hold a face becomes `low`; the
+`tall` rule looks at the cell above `pos`, and the `below` rule does not apply because the default state has `base = true`.)
+(b) `topper = createTopperWithSideChance(level, pos, chance = random.nextBoolean)`:
+ 1. `above = state at pos + up`. If `above` is a pale moss carpet **with `base = true`**, or `above` is **not** a pale moss carpet and `above.canBeReplaced()` is false: the topper is `air`
+    (no draw). (A pale moss carpet with `base = false` falls through; any other replaceable block falls through.)
+ 2. Otherwise `t = getUpdatedState(pale moss carpet with base = false and no sides, level, pos + up, true)`. Here the `below` rule applies (the input state has `base = false`) and
+    `below` is the carpet just placed at `pos` by step (a), which has `side(d) = none` exactly where it could not attach; so a topper side survives only above a lower side that exists.
+ 3. For `d` in NORTH, EAST, SOUTH, WEST (this order): when `t.side(d)` is not `none`, draw `nextBoolean()`; if it is **false** set `t.side(d) = none`. (One draw per side that is not `none` at that point,
+    none for sides already `none`.)
+ 4. The topper is `t` when `hasFaces(t)` (some side left, since `t.base = false`) **and** `t` is not the same state as `above`; otherwise `air`.
+(c) When the topper is not air: set it at `pos + up` with `flags`, then `s2 = getUpdatedState(s1, level, pos, true)` and set `s2` at `pos` with `flags` (this lets the lower carpet turn `low` sides into
+`tall` where the topper now has the same side).
+Total draws: 0 when the topper is air at step 1, otherwise one `nextBoolean` per side of `t` that is not `none` after step 2. *(Closed in this round: the earlier text described the topper step from an
+incomplete listing. Corrections: the `below` rule and the `tall` rule are as above, and the final test is "any side and not equal to the state above".)*
 
 ## 5. `block_column`
 
@@ -377,11 +397,118 @@ Jar data: `glowstone_extra` (accepts glowstone, `attempts 1500`, xz `trapezoid -
 Field `features`: a list of placed features. Place each placed feature, in order, at the **same** origin with the same random source (through
 the placed-feature pipeline, sibling part 1); the result is true when at least one of them returned true. Every entry runs, there is no early exit.
 
-### 7.5 `replace_single_block`
+### 7.5 `replace_single_block` and the `RuleTest` family
 
-Field `targets`: a list of `{target: rule test, state}`. At the origin, in list order, the first entry whose rule test accepts the current state
-(rule tests need `(state, pos, random)`; sibling part 2) has its `state` set at the origin (flags 2) and the loop ends. Always returns true.
-No configured feature in the jar uses it, so no vegetation instance exists (Open question 7).
+Read in the R3 round of the docs-structure pass from `ReplaceBlockFeature`, `BlockReplacement`, `RuleTest`, `RuleTestType`, the ten test classes of
+`net.minecraft.world.level.levelgen.structure.templatesystem` and `BlockState`/`StateHolder`/`StateDefinition`, in the artifact recorded in [README.md](README.md)
+(`minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`). This section completes 35-2 §8 (which only listed the names) and
+35-7 §6.2. The structure processor that also uses rule tests (`rule`, with its extra `testAgainstWorldState` entry point) is 36-2 §8; its table of the same ten tests agrees with
+§7.5.3 below, and §7.5.3 is the complete statement for worldgen features.
+
+#### 7.5.1 The feature
+
+| Member | Kind | Required | Notes |
+|---|---|---|---|
+| `targets` | list of `BlockReplacement` (§7.5.2) | required | may be empty (then the feature writes nothing and returns true) |
+
+`place(origin)` (the only block ever examined or written is `origin`; there is no search and no geometry):
+
+1. For each entry of `targets`, in list order: let `s` be the state **currently** at `origin` (read from the world-generation region again for every entry; nothing is written
+   before the first accepted entry, so every entry sees the same state). Evaluate `entry.target.test(s, origin, random)` with `random` the feature's own `RandomSource`
+   (11 §6.3), the same source that every other feature of the placed feature uses.
+2. If the test is true: write `entry.state` at `origin` with flags `2` (§1.2) and **leave the loop**: later entries are not evaluated and draw nothing.
+3. If the test is false: continue with the next entry. Draws already made by the failed test stay consumed (§7.5.3: a `random_block_match` that matches the block but loses the draw
+   falls through to the next entry having consumed one `nextFloat`).
+4. Return true, whether or not anything was written.
+
+There is no check on the replaced state (a block entity, a fluid or `air` is overwritten just the same), no `canSurvive` check and no update of the neighbours (flags 2).
+
+Use in the artifact (counted in this round): the id `replace_single_block` occurs in **no** JSON file of the jar (every `data/**/*.json` entry was scanned), and the only class
+that refers to `ReplaceBlockFeature` besides the class itself is the registration in `FeatureTypes`; no Java data-generation class instantiates it. The feature type exists for
+other data packs. An implementation must support it because it is a registered type (35-1 §3.1 lists it at its registry position), but no vanilla placement reaches it.
+
+#### 7.5.2 `BlockReplacement` (the target list shared with `ore` and `scattered_ore`)
+
+| Member | Kind | Required | Notes |
+|---|---|---|---|
+| `target` | `RuleTest` (§7.5.3) | required | |
+| `state` | block state (below) | required | the block written when the target accepts |
+
+Block state codec (`BlockState.CODEC`, the same one the block predicates and providers use, 35-2 §4.1): **either** a bare block id string (the block's default state;
+this is the form every state in the jar's feature data takes, for example `"state": "minecraft:coal_ore"`), **or** an object `{"id": <block id>, "properties": {<name>: <value>, ...}}`.
+In the object form `properties` is optional (read: `lenientOptionalFieldOf`; a property not listed takes its value from the block's default state: read in `StateDefinition.appendPropertyCodec`, which builds each property's field with `MapCodec.orElseGet` over the default state's value, and in the optional-`properties` lambda of `StateHolder.codec`, which falls back with `Optional.orElse`). The keys are `id` and `properties` (`StateHolder.ID_TAG`/`PROPERTIES_TAG`, constants read from the class); the keys `Name` and `Properties` belong to the chunk
+palette NBT of 06 and 07, not to the data JSON. *(Corrected in this round: 35-1 §13.1 had given `{"Name", "Properties"}` for this field; see the correction note there.)*
+Whether a malformed `properties` object is dropped silently instead of failing the decode is DFU library behaviour of `lenientOptionalFieldOf` (recalled, not verified, Open question 15).
+
+Replacement rule of a target list, shared by every consumer: the list is tried **in order**; the first entry whose acceptance test passes writes its `state`, and the walk ends for
+that position (one state at most per position and per evaluation). The consumers differ only in what "accepts" means:
+
+| Consumer | Accepts when | Position given to the rule test | Random source for the rule test |
+|---|---|---|---|
+| `replace_single_block` (this section) | the rule test is true | `origin` | the feature random |
+| `ore`, `scattered_ore` (11 §7.3, 35-1 §13) | the rule test is true **and then** the air-exposure test passes; an entry whose rule accepted but whose air test failed does **not** end the walk (the next entry is tried; read: the acceptance helper returns false and the caller continues) | the candidate cell being tested (so `height_match` sees that cell's y) | the feature random; the rule's own draws precede the air-exposure draw (11 §7.3) |
+| `rule` structure processor (36-2 §8) | `input_predicate`, `location_predicate` (via `testAgainstWorldState`) and the position test | the absolute position of the block | a fresh legacy source seeded with `Mth.getSeed(absolute position)` per block |
+
+The rule tests are also built in code by two structure pieces (`RuinedPortalPiece`, `OceanRuinPieces`) and by the data-generation classes `ProcessorLists`, `OreFeatures`
+and `MiscOverworldFeatures`; those uses produce data that the jar already contains as JSON and use the same ten types.
+
+#### 7.5.3 The ten rule tests
+
+`RuleTest.CODEC` dispatches on the key **`predicate_type`** (not `type`) over the code registry `rule_test` (`RuleTestType`, a static registry that data packs cannot extend). A bare
+name without a namespace is read in the `minecraft` namespace (23 §1). The registration order, which is the registry id order (ids are never written by this codec, which uses names),
+is:
+
+| Id | `predicate_type` | Class | Fields (JSON key: kind) |
+|---|---|---|---|
+| 0 | `all_of` | `AllOfRuleTest` | `rules`: list of rule tests (required) |
+| 1 | `always_true` | `AlwaysTrueTest` | none (a unit codec: `{"predicate_type": "minecraft:always_true"}` is the whole object) |
+| 2 | `any_of` | `AnyOfRuleTest` | `rules`: list of rule tests (required) |
+| 3 | `block_match` | `BlockMatchTest` | `block`: block id (required) |
+| 4 | `blockstate_match` | `BlockStateMatchTest` | `block_state`: block state, `BlockState.CODEC` form of §7.5.2 (required) |
+| 5 | `not` | `NotRuleTest` | `rule`: a rule test (required) |
+| 6 | `tag_match` | `TagMatchTest` | `tag`: block tag id **without** a leading `#` (required; the same `TagKey` codec as `matching_block_tag`, for which 35-2 §9.1 check 4 records that a leading `#` fails) |
+| 7 | `height_match` | `HeightMatchTest` | `min_inclusive`: int (required), `max_inclusive`: int (required) |
+| 8 | `random_block_match` | `RandomBlockMatchTest` | `block`: block id (required), `probability`: float (required) |
+| 9 | `random_blockstate_match` | `RandomBlockStateMatchTest` | `block_state`: block state (required), `probability`: float (required) |
+
+No range check exists on `probability` or on the two heights (`probability` is any float, and `min_inclusive > max_inclusive` is accepted and simply never matches). An unknown **block** id in `block` or in the `id` of a `block_state` fails the decode of the element (the block codec is the registry's by-name codec; the error text was not read, (inferred), Open question 15). A `tag` takes **any identifier**: `TagKey.codec` is the identifier codec mapped straight to a tag key with no registry lookup (read in `TagKey.codec`), so an unknown tag id decodes and simply matches nothing at run time; what a missing tag's content means belongs to the tag loader (23 §6). A leading `#` fails because it is not a valid identifier character (the variant that requires the `#`, `TagKey.hashedCodec`, is not used by rule tests; inferred from the identifier rules, and 35-2 §9.1 check 4 records the same for `matching_block_tag`).
+
+`test(state, pos, random)` returns a boolean; `state` is the block state under test, `pos` the position it stands at, `random` the source the consumer supplies (§7.5.2). Semantics, each read from
+the class named:
+
+| `predicate_type` | Result |
+|---|---|
+| `always_true` | true; no read of the world, no draw (it also overrides the world-state entry point of 36-2 §8.3 to return true without reading) |
+| `block_match` | `state.is(block)`: the state's block **is** the given block (identity of the block object; every state of the block matches, whatever its properties). No draw |
+| `blockstate_match` | the state **is** the given state: a reference comparison (read: `if_acmpne`). Block states are canonical (the `StateDefinition` builds exactly one state object per combination of property values, read in `createMultiPropertyStates`/`createSinglePropertyStates`), so this is equality of the block and of **every** property value; a property the JSON omitted counts with its default value (§7.5.2). No draw |
+| `tag_match` | `state.is(tag)`: the state's block belongs to the block tag (membership in the resolved tag, nested `#` entries included; tag content is data, 23 §6). No draw |
+| `random_block_match` | **if** `state.is(block)`: draw one `random.nextFloat()` and return `value < probability` (float comparison; read: `fcmpg` then `ifge` returns false). **Otherwise** return false **without drawing**. So a matching block consumes exactly one draw per evaluation, also when `probability` is 0 (never passes) or 1.0 (always passes, since `nextFloat` is in [0, 1)) |
+| `random_blockstate_match` | as `random_block_match`, with the state-identity test of `blockstate_match` in place of `state.is(block)`: the draw is made only when the state is the given state |
+| `height_match` | `min_inclusive <= pos.y` and `pos.y <= max_inclusive` (both inclusive, absolute world y; the state is not read). No draw |
+| `all_of` | evaluates the children in list order with the **same** `(state, pos, random)`; the first child that returns false ends the evaluation with false (later children are not evaluated and draw nothing); true when none returned false, so the empty list is **true** |
+| `any_of` | evaluates the children in order; the first child that returns true ends it with true (later children draw nothing); false when none did, so the empty list is **false** |
+| `not` | the negation of the child's result; the child's draws still happen (a `not` of a `random_block_match` on a matching block draws once) |
+
+Code-side helpers in `RuleTest`/`HeightMatchTest` (not data): `either(a, b, c)` = `any_of(all_of(a, b), all_of(not(a), c))` (read; the two-entry ore pattern of 11 §7.3 is built this way);
+`HeightMatchTest.min(m)` = `height_match [m, MAX_Y]` and `.max(m)` = `height_match [MIN_Y, m]`, with `MAX_Y = 2031` and `MIN_Y = -2032` (derived from the bytecode formulas
+`PACKED_HORIZONTAL_LENGTH = 26` (1 + log2 of the next power of two above 30 000 000), `PACKED_Y_LENGTH = 64 - 2 * 26 = 12`, `Y_SIZE = 2^12 - 32 = 4064`, `MAX_Y = Y_SIZE / 2 - 1`,
+`MIN_Y = MAX_Y - Y_SIZE + 1`; the values equal the heights written in the jar's ore files, (inferred) from the bytecode arithmetic).
+
+#### 7.5.4 Worked examples (computed from the rules above; `nextFloat` values are scripted)
+
+`targets` of three entries: E1 = `random_block_match(stone, 0.5)` giving `cobblestone`; E2 = `block_match(stone)` giving `mossy_cobblestone`; E3 = `tag_match(#minecraft:dirt)` giving `coarse_dirt` (written as `"minecraft:dirt"` in the JSON).
+
+| Block at `origin` | Scripted draws | Evaluation | Written | Draws consumed |
+|---|---|---|---|---|
+| `stone` | 0.3 | E1: block matches, 0.3 < 0.5 true | `cobblestone` (E2, E3 not evaluated) | 1 |
+| `stone` | 0.7 | E1: block matches, 0.7 < 0.5 false; E2 true | `mossy_cobblestone` | 1 |
+| `stone` | 0.5 | E1: 0.5 < 0.5 false (strict); E2 true | `mossy_cobblestone` | 1 |
+| `dirt` | (none) | E1 block differs, false, no draw; E2 false; E3 true | `coarse_dirt` | 0 |
+| `sand` | (none) | all false | nothing | 0 |
+
+`not(random_block_match(stone, 0.25))` on stone with draw 0.1: child true, `not` gives false; one draw. On `sand`: child false without a draw, `not` gives true; no draw.
+`height_match [0, 8]` is true at y = 0 and y = 8 and false at y = -1 and y = 9. `all_of []` is true and `any_of []` is false, with no draw.
+`all_of [random_block_match(stone, 0.9), random_block_match(stone, 0.9)]` on stone with draws 0.95, 0.1: the first child draws 0.95 (false), the second is **not evaluated**: one draw, result false.
 
 ### 7.6 `projected_random_patchy_square`
 
@@ -651,11 +778,12 @@ An implementation is conformant to this document when the following checks hold.
 4. **Probability comparisons.** Each probability test is recorded as read from the compare instructions in its own section: `attached_to_logs` and `cocoa` use `<=`; `attached_to_leaves`, `leave_vine`, `pale_moss` and the shelf mushroom top-level test use `<` / `>=`. The document does not normalise them. The two forms differ only when the drawn float equals the probability exactly, so the difference shows only in seed-exact tests.
 5. **Clockwise order.** Closed: `getClockWise` was matched case by case (see 1.1) and `Direction.Plane.HORIZONTAL` is NORTH, EAST, SOUTH, WEST.
 6. **`single_block_pillar` and `projected_random_patchy_square`.** Their only user is `basalt_pillar` (Nether, sibling part 7); the `rule_based` provider and the nested overlay there are data and provider topics (sibling part 2).
-7. **`replace_single_block`.** The engine is specified (§7.5) but no configured feature in the jar uses it; its `RuleTest` forms belong to sibling part 2.
+7. **`replace_single_block`.** Closed by §7.5: the engine and the whole `RuleTest` family are specified from the jar; the feature has no data user (no JSON of the jar and no class other than the `FeatureTypes` registration refers to it).
 8. **`copyWaterloggedFrom`.** Closed: read, the rule is in section 4 (`isWaterAt` for the cell when the state has `waterlogged`).
-9. **Pale moss carpet topper.** The final `return` conditions of `createTopperWithSideChance` were read from a listing without the branch targets for two jumps; §4's description of "kept only if it has any side and differs from the state above" is partly inferred. The block rules of the pale moss carpet belong to the block-registry documents.
-10. **Int providers.** `ConstantInt` drawing nothing, the `weighted_list` and `biased_to_bottom` providers and the `uniform` provider's draw (assumed `nextIntBetweenInclusive`) are in sibling part 2 and were not re-read here. `getOptionalState` versus `getState` semantics of the block state providers likewise.
+9. **Pale moss carpet topper.** Closed in the R3 round: `getUpdatedState`, `hasFaces`, `placeAt` and `createTopperWithSideChance` were read in full with their branch targets (§4).  The three-argument `canAttachTo` was read too: it is the four-argument form (§8.1) applied to the neighbour at `p.relative(d)`.
+10. **Int providers.** Closed in the R3 round: the int provider table (`constant` draws nothing, `uniform` is `Mth.randomBetweenInclusive` = `nextInt(max - min + 1) + min`, re-read in `UniformInt.sample`, `biased_to_bottom`, `weighted_list` and the rest) is 23 §7.1, and `getOptionalState` versus `getState` is 35-2 §4.2 and its Open question 3.
 11. **`MossyCarpetBlock` identity.** Closed: in `Blocks`, `minecraft:moss_carpet` is built with the ordinary `CarpetBlock` constructor and only `minecraft:pale_moss_carpet` with `MossyCarpetBlock`; `moss_vegetation` therefore places `moss_carpet` through plain `setBlock(origin, state, 2)` with no side or topper logic and no extra random draws (section 9).
 12. **Beehive block entity.** The occupant record created with `Occupant.create(ticks)` has default entity data; its NBT form belongs to the block-entity round (RS13), not here.
-13. **`getGenDepth`.** `huge_fungus` compares against `ChunkGenerator.getGenDepth()`; the value per dimension comes from the noise settings (384 for the overworld in the data of 10 §5; Nether value in part 7 / 37) and was not re-read here.
+13. **`getGenDepth`.** Closed in the R3 round: `NoiseBasedChunkGenerator.getGenDepth` returns the noise settings' `height` (`NoiseSettings.height`), read from the data: overworld 384 (`min_y` -64), Nether 128 (`min_y` 0), End 128 (`min_y` 0) in `noise_settings/{overworld,nether,end}.json`; `FlatLevelSource` and `DebugLevelSource` return the constant 384. So the `huge_fungus` bound of §11.5 step 3 is `origin.y + H + 1 >= 128` in the Nether (the dimension that has fungus) provided the Nether generator uses the `nether` noise settings (the dimension-to-settings binding is code-built, there is no `dimension/*.json` in the jar; it is 37-1 and 37-2's subject and was not re-read here), and `>= 384` in a flat world.
 14. **Placed-feature entry for the pale-moss ground patch.** `pale_moss` looks the patch feature up by registry key at run time and silently does nothing when it is absent; the key's resolution happens through the data pack and is covered by the registry loader (23).
+15. **Rule-test decode details (R3).** Two facts of §7.5 were not fully traced: that an unknown **block** id fails the decode of the element rather than substituting a default (inferred from the by-name codec shape: `Registry.byNameCodec` is built from `referenceHolderWithLifecycle` with a flat-map; the error text was not read), and that `lenientOptionalFieldOf("properties")` drops a malformed `properties` object instead of failing (DFU behaviour, recalled, not verified). Tags need no such question: `TagKey.codec` accepts any identifier (§7.5.3). None of these cases occurs in the jar's data.

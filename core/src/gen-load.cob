@@ -68,6 +68,9 @@
      IF GQ-SP-STATE NOT = 1
          MOVE GQ-SP-FX TO WS-FX
          MOVE GQ-SP-FZ TO WS-FZ
+     ELSE
+         MOVE GQ-SP-OX TO WS-FX
+         MOVE GQ-SP-OZ TO WS-FZ
      END-IF
 *>   chunks still to be made: the spiral chunks being looked at while the spawn is searched, the 7 x 7 square of the spawn area after it
      IF GQ-SP-STATE = 1

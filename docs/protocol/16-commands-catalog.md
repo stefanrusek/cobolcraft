@@ -1133,13 +1133,13 @@ Result = the number of blocks written. With `strict`, the base flag includes 816
 ### 7.5 `place`
 
 ```
-place feature <feature:resource_or_id configured_feature> [<pos>]
+place feature <feature:resource_or_id feature> [<pos>]
 place jigsaw <pool:resource_key> <target:identifier> <max_depth:integer 1..20> [<position>]
 place structure <structure:resource_key> [<pos>]
 place template <template:identifier> [<pos> [<rotation> [<mirror> [<integrity:float 0..1> [<seed:integer> [strict]]]]]]
 ```
 
-(Optional `<pos>` shown where the tree has an executable node before it. Read: for `feature` and `structure` the omitted position is the block containing the source's position; `jigsaw` requires its `position`; for `template` the optional-position default was not read.) `<rotation>` and `<mirror>` are template-rotation and template-mirror arguments (15 framework: argument types).
+(Optional `<pos>` shown where the tree has an executable node before it. Read in `PlaceCommand` (round R1, corrected: the earlier text said `jigsaw` requires its `position` and that the template defaults were not read): for `feature`, `jigsaw`, `structure` and `template` the omitted position is `BlockPos.containing(source position)`, the block containing the source's position (no loaded-chunk check; a given position is read with `BlockPosArgument.getLoadedBlockPos`, which requires a loaded position). The `jigsaw` tree has an executable node at `max_depth`, so `place jigsaw <pool> <target> <max_depth>` is a complete command and `<position>` is an optional last argument. The `feature` argument is a `ResourceOrIdArgument` over the data registry `worldgen/feature` (the registry the game calls `FEATURE`, i.e. the configured features) or an inline feature value (`Feature.DIRECT_CODEC`); **placed features are not accepted**; there is no default. The feature is placed without any placement modifiers, by `Feature.place` on the server level with the chunk generator and the server level's own random source, after a loaded-chunk check of the surrounding chunks (an unloaded one raises the command's own area-not-loaded error from `PlaceCommand.checkLoaded`; its message key was not read); a false result gives `commands.place.feature.failed`, success gives `commands.place.feature.success` (with the id when the holder has a registered name) or `commands.place.feature.success.inline`. The omitted trailing arguments of `template` default to: `rotation` none, `mirror` none, `integrity` 1.0, `seed` 0, `strict` false; the literal `strict` after `seed` sets it to true.) `<rotation>` and `<mirror>` are template-rotation and template-mirror arguments (15 framework: argument types).
 
 | Key | Arguments | English | When |
 |---|---|---|---|

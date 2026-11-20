@@ -13,3 +13,5 @@
     05 FR-RC-N              BINARY-LONG.
     05 FR-RC                BINARY-LONG OCCURS 4 TIMES.
     05 FR-TICKS             BINARY-LONG.
+*>   1 once the fight knows a dragon (created or adopted: the saved dragon UUID of 38 9.1 item 7); a fight without one makes it on the tick its scan fills the bar
+    05 FR-HAS-DRAGON        BINARY-LONG.

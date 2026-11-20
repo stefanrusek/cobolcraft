@@ -1,6 +1,7 @@
 *> World spawn search of docs/protocol/33 section 6 run against the world: the initial spawn of a new world (6.2) and the first-spawn search of a joining
-*> player (6.4). The noise spawn finder of 6.3 needs the density machinery of the standard generator: the origin is chunk (0, 0), as the section says for a
-*> generator without spawn targets. A dimension is taken to have no ceiling (its spawn height is the height of the highest non-void block).
+*> player (6.4). The origin chunk is the noise spawn finder's (6.3, 36-1 section 4.9: SPAWN-ORIGIN in spawn-find.cob) for a standard world whose content holds the
+*> overworld's spawn targets and climate functions, else chunk (0, 0), as the section says for a generator without spawn targets (the flat generator, a world without data).
+*> A dimension is taken to have no ceiling (its spawn height is the height of the highest non-void block).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLDSIM-COLUMN-SPAWN.
@@ -141,24 +142,30 @@
  01 WS-Z                   BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
- 01 WS-ZERO                BINARY-LONG VALUE 0.
- 01 WS-ZERO2               BINARY-LONG VALUE 0.
  01 WS-HEIGHT              BINARY-LONG VALUE 64.
  01 WS-ALL                 BINARY-LONG VALUE 256.
  01 WS-DONE                BINARY-LONG.
+ 01 WS-OX                  BINARY-LONG VALUE 0.
+ 01 WS-OZ                  BINARY-LONG VALUE 0.
  PROCEDURE DIVISION.
      MOVE CW-DIM(1) TO WS-DIM
 *>   The flat generator's spawn height (56 section 4.6 and 4.8) replaces the 64 of the noise terrain.
      IF CW-WORLD-TYPE = "superflat"
          CALL "FLAT-SPAWN-HEIGHT" USING WS-HEIGHT
      END-IF
-     CALL "WP-PROVISIONAL" USING WS-ZERO WS-ZERO2 WS-HEIGHT WS-X WS-Y WS-Z
+*>   the origin chunk of the noise generator (33 section 6.2 step 2; the flat generator has no spawn targets)
+     IF CW-WORLD-TYPE = "standard"
+         CALL "SPAWN-ORIGIN" USING WS-OX WS-OZ
+     END-IF
+     CALL "WP-PROVISIONAL" USING WS-OX WS-OZ WS-HEIGHT WS-X WS-Y WS-Z
      MOVE WS-X TO CW-SPAWN-X
      MOVE WS-Y TO CW-SPAWN-Y
      MOVE WS-Z TO CW-SPAWN-Z
      MOVE 0 TO CW-SPAWN-YAW WS-DONE
      PERFORM VARYING WS-CHUNK FROM 1 BY 1 UNTIL WS-CHUNK > 121 OR WS-DONE = 1
          CALL "WP-SPIRAL" USING WS-CHUNK WS-CX WS-CZ
+         ADD WS-OX TO WS-CX
+         ADD WS-OZ TO WS-CZ
          MOVE 1 TO WS-COLUMN
          CALL "WORLDSIM-CHUNK-SCAN" USING WS-DIM WS-CX WS-CZ WS-COLUMN WS-ALL WS-FOUND
          IF WS-FOUND = 1
@@ -179,11 +186,11 @@
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
- 01 WS-ZERO                BINARY-LONG VALUE 0.
- 01 WS-ZERO2               BINARY-LONG VALUE 0.
  01 WS-HEIGHT              BINARY-LONG VALUE 64.
  PROCEDURE DIVISION.
-     CALL "WP-PROVISIONAL" USING WS-ZERO WS-ZERO2 WS-HEIGHT WS-X WS-Y WS-Z
+*>   the origin chunk of the noise generator: the spiral of the search is centred on it (GQ-SP-OX, GQ-SP-OZ)
+     CALL "SPAWN-ORIGIN" USING GQ-SP-OX GQ-SP-OZ
+     CALL "WP-PROVISIONAL" USING GQ-SP-OX GQ-SP-OZ WS-HEIGHT WS-X WS-Y WS-Z
      MOVE WS-X TO CW-SPAWN-X
      MOVE WS-Y TO CW-SPAWN-Y
      MOVE WS-Z TO CW-SPAWN-Z
@@ -290,9 +297,13 @@
      END-IF
      PERFORM VARYING WS-K FROM GQ-SP-CHUNK BY 1 UNTIL WS-K > WS-LAST
          CALL "WP-SPIRAL" USING WS-K WS-CX WS-CZ
+         ADD GQ-SP-OX TO WS-CX
+         ADD GQ-SP-OZ TO WS-CZ
          CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
      END-PERFORM
      CALL "WP-SPIRAL" USING GQ-SP-CHUNK WS-CX WS-CZ
+     ADD GQ-SP-OX TO WS-CX
+     ADD GQ-SP-OZ TO WS-CZ
      CALL "WORLD-FIND" USING WS-DIM WS-CX WS-CZ WS-ROW
      IF WS-ROW = 0
          GOBACK

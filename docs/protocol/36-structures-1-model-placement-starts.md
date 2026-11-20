@@ -2,12 +2,12 @@
 
 | Item | Value |
 |---|---|
-| Covers | The model every structure shares: registries and id assignment (structure types, structure placement types, structure piece types), the element schemas of `worldgen/structure` and `worldgen/structure_set` (settings, spawn overrides, placements), the placement engines (`random_spread`, `concentric_rings`, `dimension_origin`, frequency reduction, exclusion zones, locate offset), structure start creation (generation context, biome check, weighted choice inside a set, stubs and pieces builder), the `StructureStart` record and its NBT, chunk references and the chunk-status handling, `StructureCheck`, the `StructurePiece` base class (coordinate frames, block helpers, box helpers, serialization), `BoundingBox`, `StructurePiecesBuilder`, `PiecesContainer`, the single-piece base (`SinglePieceStructure`, `ScatteredFeaturePiece`), terrain adaptation and the beardifier, structure spawn overrides and the queries that use them, structure tags, and the locate search. |
-| Does not cover | Rows of data (the extraction tool copies the `worldgen/structure`, `worldgen/structure_set`, `worldgen/template_pool`, `worldgen/processor_list` elements and the structure NBT files, see 22 and 23 section 2.1): this document gives the schema, the semantics and the engines, never a row. The template system and `TemplateStructurePiece` (36-2), jigsaw assembly and `PoolElementStructurePiece` (36-3), and the per-structure generators and points of interest (36-4 to 36-10). `NoiseSpawnFinder` (the dimension origin of the noise generator). The feature decoration engine (35). |
+| Covers | The model every structure shares: registries and id assignment (structure types, structure placement types, structure piece types), the element schemas of `worldgen/structure` and `worldgen/structure_set` (settings, spawn overrides, placements), the placement engines (`random_spread`, `concentric_rings`, `dimension_origin`, frequency reduction, exclusion zones, locate offset), structure start creation (generation context, biome check, weighted choice inside a set, stubs and pieces builder), the `StructureStart` record and its NBT, chunk references and the chunk-status handling, `StructureCheck`, the `StructurePiece` base class (coordinate frames, block helpers, box helpers, serialization), `BoundingBox`, `StructurePiecesBuilder`, `PiecesContainer`, the single-piece base (`SinglePieceStructure`, `ScatteredFeaturePiece`), terrain adaptation and the beardifier, structure spawn overrides and the queries that use them, structure tags, the locate search, the noise spawn finder that gives the dimension origin and the start of the world-spawn chain (section 4.9), and the index of each stock structure within its decoration step (section 8). |
+| Does not cover | Rows of data (the extraction tool copies the `worldgen/structure`, `worldgen/structure_set`, `worldgen/template_pool`, `worldgen/processor_list` elements and the structure NBT files, see 22 and 23 section 2.1): this document gives the schema, the semantics and the engines, never a row. The template system and `TemplateStructurePiece` (36-2), jigsaw assembly and `PoolElementStructurePiece` (36-3), and the per-structure generators and points of interest (36-4 to 36-10). The feature decoration engine (35). (The noise spawn finder, the dimension origin of the noise generator, is section 4.9.) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact already recorded in [README.md](README.md)) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`) of `net.minecraft.world.level.levelgen.structure.*` (`Structure`, `StructureStart`, `StructureCheck`, `StructureCheckResult`, `StructureSet`, `StructureType`, `TerrainAdjustment`, `StructureSpawnOverride`, `StructurePiece`, `BoundingBox`, `SinglePieceStructure`, `ScatteredFeaturePiece`, `BuiltinStructures`, `BuiltinStructureSets`, `pieces.*`, `placement.*`), `net.minecraft.world.level.levelgen.Beardifier`, `WorldgenRandom`, `net.minecraft.world.level.chunk.ChunkGenerator`, `ChunkGeneratorStructureState`, `ChunkAccess`, `storage.SerializableChunkData`, `status.ChunkStatusTasks`, `net.minecraft.world.level.StructureManager`, `net.minecraft.world.level.biome.BiomeSource`, `net.minecraft.tags.StructureTags`, `Direction`, `Mth`. No execution. Worked examples in section 12 were computed by hand-written arithmetic from the rules (not by running the artifact). |
 | Operator decisions | Standard Minecraft content is the target; a tool extracts the data pack and this document specifies the engines (ticket CC-0001, Decisions "World scope", "Vanilla assets and data"; design map `docs/design/README.md` GAP-12b, GAP-18, R4, R7, R10). |
-| Status | Written by the reader for round RS20, part 1. |
+| Status | Written by the reader for round RS20, part 1; corrected or extended in round R1 (clean-room round 2026-11-18): sections 4.1, 4.9, 6.1, 8, 9.3, 9.4, 12.5 and Open questions. |
 
 Class names in backticks say where a fact was read; they are not the design. "(inferred)" marks a deduction and "(recalled, not
 verified)" marks something not read; both are listed in the Open questions. No fact here is taken from recall: where the artifact
@@ -276,7 +276,7 @@ the flat-world variant. It holds:
 |---|---|
 | `levelSeed` | the world seed (the dimension's seed as given to the generator) |
 | `concentricRingsSeed` | normal generators: the world seed; flat generators: **0** |
-| `origin` | the "dimension origin" chunk: `ChunkGenerator.getOrigin(randomState)`. The base implementation returns chunk (0, 0). The noise generator returns, when its noise settings' `spawn_target` list is non-empty, the chunk containing `NoiseSpawnFinder.findSpawnPosition(spawn_target, samplers)` evaluated with a cached sampler context (the spawn search is outside this round), otherwise chunk (0, 0). |
+| `origin` | the "dimension origin" chunk: `ChunkGenerator.getOrigin(randomState)`. The base implementation returns chunk (0, 0). The noise generator returns, when its noise settings' `spawn_target` list is non-empty, the chunk containing `NoiseSpawnFinder.findSpawnPosition(spawn_target, samplers)` evaluated with a cached sampler context (the full search is section 4.9), otherwise chunk (0, 0). |
 | `possibleStructureSets` | every element of `worldgen/structure_set`, kept only if at least one structure of the set has at least one biome (of its `biomes` set) that is in the generator's biome source's possible-biome set. Order: registry listing order. |
 | `placementsForStructure` | built lazily on first query (`ensureStructuresGenerated`): for every kept set and every structure entry whose `biomes` intersect the possible biomes, the set's placement is appended to the structure's placement list (a structure listed in two sets gets two placements). |
 | `ringPositions` | built lazily with the above: for every kept set whose placement is `concentric_rings` and which has at least one qualifying structure, the ring chunk list of section 4.6 |
@@ -402,6 +402,86 @@ default).
 `getLocatePos(chunkPos)` is `(chunkPos.minBlockX, 0, chunkPos.minBlockZ) + locateOffset`. The offset is `locate_offset` for the two
 spreading placements and zero for `dimension_origin`. (The y of the result is the offset's y; `locate` commands show it as the
 reported position, see 16 section 7.7. The concentric rings locate path in section 11 uses a different fixed point.)
+
+### 4.9 The noise spawn finder (`NoiseSpawnFinder`): the dimension origin
+
+Added in the 2026-11 reader round R1 (answers former Open question 1). The same algorithm is also stated, from the world-spawn side, in 33 section 6.3; this section re-reads it in the artifact (`NoiseSpawnFinder`, its `Result`, `SpawnTargetPoint`,
+`DensitySamplerSet`, `Climate`, `Climate$Parameter`, `QuartPos`, `ChunkPos`, `NoiseBasedChunkGenerator.getOrigin`, `ChunkGenerator.getOrigin`, `MinecraftServer.setInitialSpawn`) and is the complete rule. The two agree on every constant and on the order of the steps (checked); this section adds the exact `spawn_target` data of all seven settings files (33 section 6.3 looked at only the
+first entry of the amplified and large-biomes lists), the quantised intervals, the float arithmetic of the ring loop and test vectors.
+
+**Who calls it.** `NoiseBasedChunkGenerator.getOrigin(randomState)`: if the generator's noise settings carry an empty `spawn_target` list the result is the base class answer, chunk `(0, 0)`; otherwise the result is `ChunkPos.containing(findSpawnPosition(spawnTargets, samplers))`
+with `samplers` the density samplers of the `RandomState` (the noise instances seeded from the world seed, 10 section 2.5) bound to a sampler context with caches enabled. `ChunkPos.containing` is `(x >> 4, z >> 4)` (arithmetic shift). `getOrigin` is called by the structure state of
+each dimension (section 4.1, for `dimension_origin`; no structure set of the artifact uses that placement: of the 21 `worldgen/structure_set` files 20 are `random_spread` and 1 is `concentric_rings`) and by the world-spawn setup (33 section 6.2: the origin chunk is the centre of the spawn search). The finder
+uses **no random source at all**: its output is a pure function of the `spawn_target` data and of the seed through the noise values.
+
+**Data (`spawn_target`, read from the seven `noise_settings` files).** A list of *spawn target points*; each point is a map from a density function reference to a closed interval `[min, max]` of climate values (JSON: an object keyed by density function id, each value a two-element array). The
+intervals are converted to integers with `Climate.quantizeCoord(f) = (long)(f * 10000.0f)` (float multiply, then truncation toward zero; the JSON shape of the entries is in 48). The lists are:
+
+| Settings file | Points | Entries of each point (function id: quantised interval) |
+|---|---|---|
+| `overworld`, `amplified` | 2 | both: `overworld/continents` [-1100, 10000], `overworld/erosion` [-10000, 10000], `overworld/temperature` [-10000, 10000], `overworld/vegetation` [-10000, 10000]; `overworld/ridges` is [-10000, -1600] in point 1 and [1600, 10000] in point 2 |
+| `large_biomes` | 2 | as above but with `overworld_large_biomes/continents`, `overworld_large_biomes/erosion`, `overworld_large_biomes/temperature`, `overworld_large_biomes/vegetation` in place of the four `overworld/...` functions; `overworld/ridges` (the shared function) keeps the two ridge intervals |
+| `caves`, `floating_islands`, `nether`, `end` | 0 | empty list: the origin is chunk (0, 0) |
+
+(The quantised values follow from the JSON bounds -0.11, 1.0, -1.0, -0.16, 0.16 through the float multiply: -0.11f x 10000f is exactly -1100.0 after the float rounding, 0.16f x 10000f is 1600.0, so no bound is off by one. `amplified` uses the plain `overworld/continents` etc., not amplified variants; it has no density functions of its own for these five.)
+
+**The functions.** `overworld/continents`, `erosion`, `ridges`, `temperature`, `vegetation` and the `overworld_large_biomes/*` variants are the climate functions of 10 section 6.1 (a `noise` node with `xz_scale 0.25`, `y_scale 0`, and `shift_x`/`shift_z`; `continents`, `erosion`, `ridges` inside a `cache` node; the large-biomes variants use the
+`*_large` noises, 10 section 3.6). They are evaluated **through the normal density sampler** at the integer position `(qx, 0, qz)` (below) and yield a **float**. Caches: `SamplerContext.sampleValueCached` stores one value per cache cell keyed by `BlockPos.asLong(x, y, z)` and returns it only for an identical `(x, y, z)`, and
+the volume-buffer branch is taken only when a volume sampling call has filled the cell's buffer (inferred: none is active during a single-position query); a `cache` node is therefore the identity (agreeing with 10 section 4.1; the question of 33 Open question 8 is answered: the caches do not change any value).
+
+**`fitness(x, z)`** for a probe at the integer block column `(x, z)` (the artifact's `getSpawnPositionAndFitness`):
+
+1. `qx = ((x >> 2) << 2)` and `qz = ((z >> 2) << 2)`: the column rounded **down** to a multiple of 4 (`QuartPos.fromBlock` is `>> 2`, `toBlock` is `<< 2`; for negative `x` this rounds toward negative infinity, so `x = -1` gives `qx = -4`).
+2. For each spawn target point `P` (list order): `s(P) = sum over the entries (f, [lo, hi]) of  d(f)^2`, where `v = (long)(f.sample(qx, 0, qz) * 10000.0f)` (the sample is a float; the multiply is a **float** multiply and the cast truncates toward zero; saturating, NaN gives 0) and
+   `d = v - hi` if `v - hi > 0`, else `max(lo - v, 0)` (so `d` is 0 inside the interval, the distance to the nearest bound outside it; `Climate$Parameter.distance`). `d` and `s` are 64-bit integers, `d^2` is `Mth.square(long)`. The order of the entries inside a point is irrelevant (an integer sum).
+3. `m = min over the points of s(P)` (a `long`; the initial value `Long.MAX_VALUE` is never the result because the list is non-empty).
+4. `fitness = m * 2048^2 + x^2 + z^2` as 64-bit integers, with `2048^2 = 4194304` and with `x`, `z` the **unaligned** probe coordinates (the density samples use `qx`, `qz`; the two squares and the stored position use `x`, `z`). The probe's position is `(x, 0, z)`.
+
+Overflow does not occur for stock data (inferred: the climate values are of magnitude far below 10, so each `d` is below 10^5, `s` below 5e10 and `m * 4194304` below 2.1e17, against a 64-bit limit of 9.2e18).
+
+**The search** (`new NoiseSpawnFinder`): a result is a pair (position, fitness); *lower fitness replaces, equal does not*.
+
+1. `best = (0, 0, 0)` with `fitness(0, 0)` (a probe at the world origin).
+2. **Pass 1**: `ringSearch(maxRadius = 2048.0f, step = 512.0f)`. **Pass 2**: `ringSearch(maxRadius = 512.0f, step = 32.0f)`. Each pass reads `c` = the best position *at the start of the pass*; `c` does not change while the pass runs, although `best` does. (Pass 1 therefore always centres on (0, 0); pass 2 centres on the best
+   position found by the initial probe and pass 1.)
+3. `ringSearch(maxRadius, step)`, with `angle` and `radius` **32-bit floats**: `angle = 0.0f`, `radius = step`. While `radius <= maxRadius`:
+   1. probe `X = c.x + (int)(Math.sin((double) angle) * (double) radius)`, `Z = c.z + (int)(Math.cos((double) angle) * (double) radius)` (double sine and cosine of the float widened to double; the product in double; `(int)` truncates toward zero). Note that `sin` feeds x and `cos` feeds z: the first probe of a ring (angle 0) is `(c.x, c.z + radius)`;
+   2. if `fitness(X, Z)` is **strictly lower** than the best fitness, the probe becomes the best (position `(X, 0, Z)`);
+   3. `angle = angle + step / radius` (float division, then float addition, each rounded to float);
+   4. if `(double) angle > 6.283185307179586` (that double constant is 2 pi): `angle = 0.0f` and `radius = radius + step` (float addition). The radius increases only at this point, so a ring is a full circle sampled at the fixed angular increment `step / radius` radians (arc length about `step` blocks).
+4. **Result**: the best position `(x, 0, z)`. The finder returns the block position; the origin chunk is `(x >> 4, z >> 4)`.
+
+No clamp to the world border, no biome or terrain test, no acceptance threshold: whichever probe has the lowest fitness wins. Because the distance term uses only `x^2 + z^2` and the climate term is multiplied by 2048^2, a probe outside every interval can only win while no probe in any interval exists; among probes with the same
+`m` the nearest to the origin wins, and equal fitness keeps the earlier probe in the probe order.
+
+**Probe geometry (independent of the seed, computed with scratch arithmetic; reproducing the float accumulation exactly).** Pass 1 runs 65 probes; pass 2 runs 862; with the initial probe a run evaluates 928 positions (each up to 10 density samples). Ring sizes (number of probes, then the sums of the x and z offsets from `c`, as a checksum):
+
+| Pass 1, `radius` | 512 | 1024 | 1536 | 2048 |
+|---|---|---|---|---|
+| probes | 7 | 13 | 19 | 26 |
+| sum of x offsets, sum of z offsets | -53, 371 | -63, 444 | -34, 229 | -27, 1777 |
+
+| Pass 2, `radius` | 32 | 64 | 96 | 128 | 160 | 192 | 224 | 256 | 288 | 320 | 352 | 384 | 416 | 448 | 480 | 512 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| probes | 7 | 13 | 19 | 26 | 32 | 38 | 44 | 51 | 57 | 63 | 70 | 76 | 82 | 88 | 95 | 101 |
+| sum of x offsets | -3 | -4 | -3 | -1 | -4 | -5 | -1 | -4 | -6 | -1 | -2 | -3 | -2 | -3 | -6 | -10 |
+| sum of z offsets | 24 | 29 | 14 | 111 | 94 | 61 | 4 | 190 | 129 | 52 | 310 | 231 | 136 | 17 | 361 | 244 |
+
+Each ring has `floor(2 pi k) + 1` probes for `k = radius / step` (every entry above agrees with that formula; the float accumulation never added or dropped a probe). The first probes of the ring at radius 512 around `c = (0, 0)` (angles 0, 1, 2, ... 6 radians, step 512/512 = 1.0) are the offsets
+`(0, 512)`, `(430, 276)`, `(465, -213)`, `(72, -506)`, `(-387, -334)`, `(-490, 145)`, `(-143, 491)`; the first ring of pass 2 (radius 32) gives `(0, 32)`, `(26, 17)`, `(29, -13)`, `(4, -31)`, `(-24, -20)`, `(-30, 9)`, `(-8, 30)`; the first probes of the radius 1024 ring (angle step 0.5) are `(0, 1024)`, `(490, 898)`, `(861, 553)`. (Computed
+by hand-written scratch arithmetic, not artifact output. The smallest distance of any probe's `sin * radius` or `cos * radius` from an integer, other than the exact zeros at angle 0, is 4.5e-5, so a one-unit-in-the-last-place difference between math libraries cannot change a truncated offset.)
+
+**Worked examples of the fitness (hand arithmetic from the rules above; the sample values are synthetic illustrations, not read from a world).**
+
+1. Probe `(30, -17)`, so `qx = 28`, `qz = -20`. Suppose the five samples at `(28, 0, -20)` are continents -0.25, erosion 0.5, temperature 0.125, vegetation -0.75, ridges -0.5 (all exactly representable floats), so `v` = -2500, 5000, 1250, -7500, -5000. Point 1: continents is below its minimum -1100 by 1400,
+   ridges -5000 lies inside [-10000, -1600], the others inside their intervals: `s = 1400^2 = 1 960 000`. Point 2: the same 1400 plus ridges 1600 - (-5000) = 6600 below the minimum 1600: `s = 1 960 000 + 43 560 000 = 45 520 000`. `m = 1 960 000`. `fitness = 1 960 000 * 4 194 304 + 30^2 + (-17)^2 = 8 220 835 840 000 + 900 + 289 = 8 220 835 841 189`.
+2. A value above the interval: continents 1.5 gives `v = 15000`, `d = 15000 - 10000 = 5000`, `d^2 = 25 000 000`.
+3. Why the multiply is a float multiply: the float nearest 0.0025 is 0.0024999999441206455; times `10000.0f` in **float** arithmetic rounds to exactly 25.0, so `v = 25`; a double multiply would give 24.99999944 and `v = 24`. (Of the 1999 floats nearest to `i / 2000`, `i` = 1 to 1999, 872 differ between the two methods.)
+4. A column on the grid edge: `x = -1` gives `qx = -4` (not 0); `x = 3` gives `qx = 0`; `x = 4` gives `qx = 4`.
+
+**What the origin is used for in a new world** (33 section 6.2, read again here in `MinecraftServer.setInitialSpawn`). `setInitialSpawn(overworld, levelData, generateBonusChest, isDebugWorld, listener)` runs once, from `createLevels`, only when the overworld's level data is not yet initialised, with `generateBonusChest` = `WorldOptions.generateBonusChest()` and `isDebugWorld` = `WorldData.isDebugWorld()`. It has **two early exits before the origin is looked at** (33 section 6.2 step 1 mentions only "debug world options" without the conditions; round R1): (1) if **both** debug switches `ONLY_GENERATE_HALF_THE_WORLD` and `WORLD_RECREATE` (`SharedConstants.DEBUG_ONLY_GENERATE_HALF_THE_WORLD` and `DEBUG_WORLD_RECREATE`, operator-set, off in normal operation) are on, the world spawn is set to block `(0, 64, -100)` of the overworld with yaw 0 and pitch 0 and the method returns; (2) otherwise, if the world is a debug world (`isDebugWorld` true, the `debug` generator), the spawn is `(0, 80, 0)` (`BlockPos.ZERO.above(80)`), yaw 0, pitch 0, and the method returns. Neither exit places a bonus chest. Otherwise the normal path follows: the origin chunk `(ox, oz)`; the provisional spawn is `(16 ox + 8, y, 16 oz + 8)` with `y = 64` for the noise generator (`ChunkGenerator.getSpawnHeight`; below the dimension's minimum y it is the
+`WORLD_SURFACE` height of the column instead); then the 121-chunk square spiral of offsets -5 to 5 around `(ox, oz)` asks `PlayerSpawnFinder.getSpawnPosInChunk` for each chunk in turn (start direction `(0, -1)`, direction turned by 90 degrees `(dx, dz) -> (-dz, dx)` after a cell with `x == z`, or `x < 0 and x == -z`, or `x > 0 and x == 1 - z`), and the
+first non-null column wins. `getSpawnPosInChunk` scans the chunk's columns x-major then z, each ascending; `getLevelRespawnPos` is as 33 section 6.2. The spiral loop count is 121 (`11 * 11`) and the range test inside it is redundant (the 121 offsets are exactly the 11 by 11 square). Both were read in this round and agree with 33 section 6.2.
 
 ---
 
@@ -540,7 +620,7 @@ Fields: `structure`, `pieceContainer` (the ordered pieces), `chunkPos` (the chun
 |---|---|
 | `type` | the `StructurePieceType` (section 2.4) |
 | `boundingBox` | the piece's `BoundingBox` (mutable) |
-| `genDepth` | generation depth (an int; used by recursive generators as the recursion depth, jigsaw as the depth) |
+| `genDepth` | generation depth (an int; used by recursive generators as the recursion depth). A jigsaw piece (`PoolElementStructurePiece`) always has generation depth 0: the constructor the assembler uses passes the constant 0 to the base class and the assembler's own depth counter is never stored (36-3 section 14.2; corrected in round R1, the table used to say that jigsaw pieces store the depth) |
 | `orientation` | a horizontal `Direction` or null |
 | `rotation`, `mirror` | derived from `orientation` by `setOrientation` (section 6.4); `NONE` when the orientation is null |
 
@@ -822,6 +902,20 @@ on a Xoroshiro-wrapped `WorldgenRandom`, 35-1 section 5.1). Debug-only early exi
 chunk's generation height accessor: the lowest layer of the level is never written by structures. The seed is set once per structure
 (not per start), so several starts of the same structure referencing this chunk consume one random stream in turn.
 
+**Structure index within a step (read in round R1; closes the gap noted by 36-4 Open question 16).** The list of step 1 above is built by grouping the stream of the `worldgen/structure` registry (`Registry.stream()` iterates `MappedRegistry.byId`, so it
+is **numeric id order**, which is registration order) by the step's ordinal with `Collectors.groupingBy` (a list per step, encounter order kept). The numeric id order of a data-pack-loaded registry is the sort order of 23 section 3.4: the element identifier compared **path first**
+(`String.compareTo`, UTF-16 code units), then namespace. The index `k` of a structure is therefore its rank, counted from 0, among **all** structures of the registry with the same step (not only those that have a start in the chunk), in that order. With the stock data (52 structure files, all in the
+`minecraft` namespace) the indexes are:
+
+| Step | Count | `k`: structure (path order) |
+|---|---|---|
+| `surface_structures` | 44 | 0 `abandoned_camp_bamboo_jungle`, 1 `abandoned_camp_birch_forest`, 2 `abandoned_camp_cherry_grove`, 3 `abandoned_camp_dappled_forest`, 4 `abandoned_camp_flower_forest`, 5 `abandoned_camp_forest`, 6 `abandoned_camp_meadow`, 7 `abandoned_camp_old_growth_birch_forest`, 8 `abandoned_camp_old_growth_pine_taiga`, 9 `abandoned_camp_old_growth_spruce_taiga`, 10 `abandoned_camp_pale_garden`, 11 `abandoned_camp_savanna`, 12 `abandoned_camp_snowy_taiga`, 13 `abandoned_camp_sparse_jungle`, 14 `abandoned_camp_swamp`, 15 `abandoned_camp_taiga`, 16 `abandoned_camp_windswept_forest`, 17 `abandoned_camp_wooded_badlands`, 18 `bastion_remnant`, 19 `desert_pyramid`, 20 `end_city`, 21 `igloo`, 22 `jungle_pyramid`, 23 `mansion`, 24 `monument`, 25 `ocean_ruin_cold`, 26 `ocean_ruin_warm`, 27 `pillager_outpost`, 28 `ruined_portal`, 29 `ruined_portal_desert`, 30 `ruined_portal_jungle`, 31 `ruined_portal_mountain`, 32 `ruined_portal_nether`, 33 `ruined_portal_ocean`, 34 `ruined_portal_swamp`, 35 `shipwreck`, 36 `shipwreck_beached`, 37 `stronghold`, 38 `swamp_hut`, 39 `village_desert`, 40 `village_plains`, 41 `village_savanna`, 42 `village_snowy`, 43 `village_taiga` |
+| `underground_decoration` | 3 | 0 `ancient_city`, 1 `fortress`, 2 `nether_fossil` |
+| `underground_structures` | 5 | 0 `buried_treasure`, 1 `mineshaft`, 2 `mineshaft_mesa`, 3 `trail_ruins`, 4 `trial_chambers` |
+
+(The `step` field of each file was read from the jar's data; the table is the sorted listing of those files grouped by `step`, computed by hand-written scratch arithmetic. A data pack that adds or removes a structure changes every index sorted after it, as it does the numeric ids. The seed of the piece random of
+a structure is `decorationSeed + k + 10000 * step ordinal`, 36-4 section 2.1.)
+
 `StructureStart.placeInChunk` (section 5.6):
 
 1. If the start has no pieces, return.
@@ -892,11 +986,11 @@ junction (a float accumulator starting at 0.0, added in list order, single preci
 |---|---|
 | `none` | 0 |
 | `bury` | `bury(dx, dy / 2, dz)` (`dx`, `dy / 2.0`, `dz` as floats) |
-| `beard_thin` | `0.8 * beard(dx, dy, dz, yb)` |
-| `beard_box` | `0.8 * beard(dx, dy, dz, yb)` |
-| `encapsulate` | `0.8 * bury(dx / 2, dy / 2, dz / 2)` (all as floats) |
+| `beard_thin` | `0.8f * beard(dx, dy, dz, yb)` (the float constant 0.8f = 0.800000011920929; a single-precision multiply) |
+| `beard_box` | `0.8f * beard(dx, dy, dz, yb)` |
+| `encapsulate` | `0.8f * bury(dx / 2, dy / 2, dz / 2)` (all as floats) |
 
-**Junction** `(srcX, srcGroundY, srcZ)`: `jx = x - srcX`, `jy = y - srcGroundY`, `jz = z - srcZ`; contribution `0.4 * beard(jx, jy, jz, jy)`.
+**Junction** `(srcX, srcGroundY, srcZ)`: `jx = x - srcX`, `jy = y - srcGroundY`, `jz = z - srcZ`; contribution `0.4f * beard(jx, jy, jz, jy)` (the float constant 0.4f = 0.4000000059604645; single-precision multiply, then single-precision add to the running total; the three constants were read as `float` literals in `Beardifier.sampleValue`).
 
 **`bury(a, b, c)`** (floats): `L = a*a + b*b + c*c` (single precision); `0` if `L >= 36`; else `1 - sqrt(L) / 6` (the square root is the
 double-precision root rounded to float).
@@ -921,8 +1015,11 @@ so the vertical profile is symmetric around the box.)
 
 ### 9.4 How the terrain stage evaluates it
 
-The artifact evaluates the beardifier with a volume sampler: for an interpolation volume (a grid of `sizeX x sizeY x sizeZ` sample
-points at block positions `minBlock + index * step`, the cell sizes of the interpolated density are parameters `cell_size_xz` and `cell_size_y` of 10 section 4.1; the data does not give them: `noise_settings/overworld.json` has a `noise` block with only `min_y` (-64) and `height` (384), the nether file 0 and 128, and neither has `size_horizontal` or `size_vertical`; the figure of 4 x 8 x 4 blocks per cell is (recalled, not verified), Open question 10), `sampleVolume` first fills the
+The artifact evaluates the beardifier with a volume sampler: for a `DensityVolume` (a grid of `sizeX x sizeY x sizeZ` sample points at block positions `minBlock + index * step`). In the chunk fill the volume is the chunk volume of 37-2 section 6.1
+(`NoiseBasedChunkGenerator.chunkVolume`: 16 x height x 16 points anchored at the chunk's minimum corner and the dimension's minimum y, block step 1), so the beardifier is evaluated at **every block position of the chunk column range**, not at the corners of the noise interpolation cells. The cell sizes
+are parameters of the `interpolated` nodes of the density function data, not of the noise settings (round R1, reading the data files; this closes the former Open question 10): the `interpolated` node of the final density has `cell_size_xz` 4 and `cell_size_y` 8 in the overworld (`density_function/overworld/final_density`, and its amplified and large-biomes copies), in `noise_settings/nether` and in `noise_settings/caves`, and `cell_size_xz` 8 and `cell_size_y` 4 in `noise_settings/end` and
+`noise_settings/floating_islands` (those four files carry their `final_density` inline); the other `interpolated` nodes of the overworld data (`overworld/caves/noodle`, 4 nodes; `overworld/ore_vein/mask`, 2; `overworld/ore_vein/toggle`, 1) are also 4 and 8, and `chunk_surface_level` (`overworld`, `overworld_amplified`, `overworld_large_biomes`) is 16 and 1. In all seven noise settings the `beardifier` node is the **right operand of the top `add`** of `final_density`
+(the left operand holds the `interpolated` node, in the overworld inside a `min` with the noodle cave function and a `squeeze`, 10 section 8), so it sits outside the interpolated node and is not itself interpolated: its value at a block is exactly section 9.3's `sampleValue`. (The earlier text gave 4 x 8 x 4 blocks per cell as "(recalled, not verified)"; it is now read per dimension as above, and it is irrelevant to the beardifier except through the interpolated node's own grid.) `sampleVolume` first fills the
 output buffer with 0.0; then, if the affected box intersects the volume, it computes the index range of grid points whose block
 position lies inside the affected box (`floorDiv` of the offsets by the steps, clamped to the volume) and writes
 `sampleValue`-equivalent values at exactly those grid points, looping `z` outermost, then `x`, then `y` innermost (loop order read in the bytecode; the `DensityVolume` record holds `size`, `minBlock` and `stepBlock` per axis). The observable result is
@@ -1074,8 +1171,8 @@ All single precision where stated; box `B` below stands for a piece with `ground
 | `beard` above the bottom | `beard(0, 5, 0, yb = 5)` | -0.106574 |
 | `beard` out of the kernel | `beard(12, 0, 0, 0)` | 0 (index 24 is outside 0..23) |
 | `bury` | `bury(0, 0, 0)`, `bury(3, 2, 0)`, `bury(6, 0, 0)` | 1.0, 0.399075, 0.0 |
-| `beard_thin` | at `(dx, dz) = (0, 0)`, 5 above the bottom | `0.8 * -0.106574` = -0.085259 |
-| junction | `jx = 1, jy = -3, jz = 2` | `0.4 * beard(1, -3, 2, -3)` = `0.4 * 0.260653` = 0.104261 |
+| `beard_thin` | at `(dx, dz) = (0, 0)`, 5 above the bottom | `0.8f * -0.106574` = -0.085259 |
+| junction | `jx = 1, jy = -3, jz = 2` | `0.4f * beard(1, -3, 2, -3)` = `0.4f * 0.260653` = 0.104261 |
 
 ### 12.6 References and the stage radius
 
@@ -1119,10 +1216,7 @@ An implementation is consistent with this document when all of the following hol
 
 ## Open questions
 
-1. **Dimension origin of the noise generator.** `NoiseSpawnFinder.findSpawnPosition` (the spawn search over the noise settings'
-   `spawn_target` parameter boxes) was not read, so the one chunk of a `dimension_origin` placement is only known as "the chunk
-   containing the found spawn position, or (0, 0) without spawn targets". Needs a round on the spawn finder (shared with the world spawn
-   point).
+1. (Closed in round R1.) **Dimension origin of the noise generator**: the spawn finder is read, section 4.9.
 2. **Biome resolver details in the ring search.** The ring-position biome snap (section 4.6.1) samples the multi-noise source at
    quart coordinates with y = 0 through a caching resolver; the exact climate evaluation (10 section 7) was cited, not re-read for this
    path. The search radius 112 and the reservoir rule were read.
@@ -1130,10 +1224,7 @@ An implementation is consistent with this document when all of the following hol
    schemas) are in the siblings 36-2 to 36-10 and are not verified here.
 4. **Tag consumers.** Which engine reads each of the 33 structure tags (section 2.6): the attribution after the list is inferred
    from the tag names, not traced to call sites.
-5. **Order of structures in `getAllStructuresAt`.** The reference map of a chunk is a hash map keyed by structure objects, so when
-   two structures with a spawn override for the same category overlap one chunk, which wins is not determined by the data order
-   (inferred from the map type; the chunk's map class was not read to the end). Implementations should pick registry order and
-   record it.
+5. (Closed in round R1.) **Order of structures in `getAllStructuresAt`.** The chunk's reference map is created in the `ChunkAccess` constructor by `Maps.newHashMap()` (a `java.util.HashMap`) keyed by `Structure` objects; neither `Structure` nor the structure subclasses read (`JigsawStructure`, `ShipwreckStructure`) declare `hashCode` or `equals`, so the keys hash by identity and the iteration order of the map depends on the JVM's identity hash codes: it is **not reproducible, even in the reference game**. Two overlapping structures with a spawn override for the same category are therefore resolved in an unspecified order there; an implementation may pick registry (numeric id) order, which is the order of section 8's step list.
 6. **Numerical exactness.** Ring positions use `Math.cos`/`Math.sin` and `Math.round`; a platform whose sine and cosine differ from
     the JVM's in the last place can differ at exact half-way rounding cases. The beardifier uses `Math.pow` and `Math.sqrt` (double) and
     float arithmetic; the kernel table values were not compared against a run.
@@ -1143,7 +1234,7 @@ An implementation is consistent with this document when all of the following hol
     y is the first free block above the surface or the surface block itself is defined in 35-1 section 4.2 (cited, not re-read).
 9. **`StructureCheck` partial data-fixer path.** The scan accepts three layouts (`Level.Structures.Starts`, `structures.starts`
     plus `DataVersion`) and runs a partial data fixer before reading; the fixer itself (only relevant for old worlds) is out of scope.
-10. **Interpolation cell size in the beardifier volume.** Section 9.4 relies on the cell sizes of the noise interpolation (4 blocks in x and z, 8 in y); the figure was not read in `Beardifier.sampleVolume` or the noise chunk in this round (searched 10 section 4.1, which gives only the `cell_size_xz` and `cell_size_y` parameters). Further read in this pass: the overworld and nether `noise_settings` files carry no cell-size fields (only `min_y` and `height`), so 10 section 4.1's `cell_size_xz` and `cell_size_y` cannot be tied to data here; they must be reconciled in 10 (the owner of the noise settings) or by reading the noise-chunk class. Marked (recalled, not verified).
+10. (Closed in round R1.) **Interpolation cell size in the beardifier volume**: the cell sizes are in the density function data (4 x 8 for the overworld, Nether and caves final densities, 8 x 4 for the End and floating islands, 16 x 1 for `chunk_surface_level`), and the beardifier is evaluated at every block of the chunk volume, outside the interpolated node; section 9.4.
 11. **(Closed.)** The default `step` is read (section 3.1); nothing remains open.
 12. **Debug flags: switch mechanism.** `SharedConstants` sets both flags from `debugFlag(name)` (read); how `debugFlag` obtains its value (inferred: a system property or similar operator switch) was not read. The debug path itself is out of scope.
 13. **Scope not owned by 36-1.** `PostPlacementProcessor` is an interface with one `afterPlace` method and a `NONE` constant that does nothing; no other class under `levelgen/structure` refers to it (read), so it is unused. The real hook is `Structure.afterPlace(level, structureManager, generator, random, box, chunkPos, PiecesContainer)`, a no-op in the base class (section 8 calls it). Templates and processors are in 36-2; jigsaw assembly in 36-3; scattered and small structures in 36-4; mineshaft and stronghold in 36-5; ocean in 36-6; woodland mansion in 36-7; nether and end in 36-8; villages, outposts and their points of interest (`PoiTypes`, workstation registration at generation) in 36-9 section 10 (section 9 there covers chests and markers); ancient city, trial chambers, trail ruins, loot and the spawn checklist in 36-10 (titles of the siblings read; loot placement not re-checked against 26). Chunk-level `structureReferences` is declared `Map<Structure, LongSet>` but the concrete map class was not read (see 5).
