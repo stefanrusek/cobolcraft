@@ -55,6 +55,9 @@
      MOVE 0 TO CS-HOSTILE-MOBS CS-WEATHER-CHANGES
      MOVE 1 TO CS-EXTRA-DIMENSIONS
      MOVE 1 TO ND-PLACEHOLDER
+*>   A fixed seed: an empty seed text is a random seed (a different world every run), and the arenas the tests build in the standard terrain
+*>   met water or other terrain in some seeds (the pistons never extended, the dispensers' fire found water): the same world every run.
+     MOVE "1" TO CS-SEED-TEXT
      CALL "TEST-OPEN-WORLD-IN" USING CORE-SETTINGS L-FOLDER
      GOBACK.
  END PROGRAM PT-OPEN-IN.
