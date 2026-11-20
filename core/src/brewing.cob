@@ -5,7 +5,7 @@
 *> (the potions of the input's potion_contents condition and of the output's potion_contents component, content/src/recipes.cob).
 *>   BREW-IS-INPUT USING item, flag out         the item may be a bottle: it is the input item of a brewing recipe (the set brewing_input) or in the tag brewing_potion_inputs
 *>   BREW-IS-REAGENT USING item, flag out       the item is the ingredient of a brewing recipe (the set brewing_reagent)
-*>   BREW-FUEL USING item, uses out, speed out (FLOAT-LONG)   the brewing_fuel of a stack: blaze_powder (the only item with the component, 25-5 section 2.4), uses of brewing/uses_default and the speed
+*>   BREW-STAND-FUEL USING item, uses out, speed out (FLOAT-LONG)   the brewing_fuel of a stack: blaze_powder (the only item with the component, 25-5 section 2.4), uses of brewing/uses_default and the speed
 *>        of brewing/speed_default (fallbacks of 31-2 section 4.3: 0 uses, 1.0); another item has none
 *>   BREW-TICK-LIVE USING block entity index, dim   the tick (31-2 section 4.5): BE2-BREW-TICK, the brew-complete level event 1035 and the has_bottle_0..2 properties of the block
 *>   MENU-BREW-MAYPLACE USING own slot, item, ok out   the slot rules of 40-2 section 4.3
@@ -82,7 +82,7 @@
  END PROGRAM BREW-IS-REAGENT.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. BREW-FUEL.
+ PROGRAM-ID. BREW-STAND-FUEL.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CITEMS.
@@ -127,7 +127,7 @@
          END-IF
      END-IF
      GOBACK.
- END PROGRAM BREW-FUEL.
+ END PROGRAM BREW-STAND-FUEL.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BREW-TICK-LIVE.
@@ -157,7 +157,7 @@
      MOVE 0 TO WS-USES
      MOVE 1.0 TO WS-SPEED
      IF BE-SLOT-COUNT(L-INDEX, 5) > 0
-         CALL "BREW-FUEL" USING BE-SLOT-ITEM(L-INDEX, 5) WS-USES WS-SPEED
+         CALL "BREW-STAND-FUEL" USING BE-SLOT-ITEM(L-INDEX, 5) WS-USES WS-SPEED
      END-IF
      CALL "BE2-BREW-TICK" USING L-INDEX WS-USES WS-SPEED WS-DONE WS-CHANGED
      IF WS-DONE = 1
@@ -204,7 +204,7 @@
      CALL "BREW-IS-INPUT" USING L-ITEM WS-INP
      MOVE 0 TO WS-TAG
      CALL "BREW-IS-REAGENT" USING L-ITEM WS-REA
-     CALL "BREW-FUEL" USING L-ITEM WS-USES WS-SPEED
+     CALL "BREW-STAND-FUEL" USING L-ITEM WS-USES WS-SPEED
      MOVE 0 TO WS-FUEL
      IF WS-USES > 0
          MOVE 1 TO WS-FUEL
@@ -247,7 +247,7 @@
      IF WS-COUNT = 0
          GOBACK
      END-IF
-     CALL "BREW-FUEL" USING WS-ITEM WS-USES WS-SPEED
+     CALL "BREW-STAND-FUEL" USING WS-ITEM WS-USES WS-SPEED
      MOVE 0 TO WS-FUEL
      IF WS-USES > 0
          MOVE 1 TO WS-FUEL

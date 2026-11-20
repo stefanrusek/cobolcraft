@@ -181,7 +181,7 @@
      MOVE "acceptance p70c brew quick edges: items 0 are no input, reagent or fuel; a click on an empty slot does nothing; blaze powder with a full fuel slot goes nowhere unless it is a reagent, then into the empty ingredient slot" TO TL-CASE
      CALL "BREW-IS-INPUT" USING WS-ZERO WS-OK
      CALL "BREW-IS-REAGENT" USING WS-ZERO WS-OK2
-     CALL "BREW-FUEL" USING WS-ZERO WS-USES WS-SPEED
+     CALL "BREW-STAND-FUEL" USING WS-ZERO WS-USES WS-SPEED
      MOVE WS-OK TO WS-E1
      MOVE WS-OK2 TO WS-E2
      MOVE WS-USES TO WS-E3
@@ -309,9 +309,9 @@
      MOVE WS-OK TO WS-E1
      MOVE WS-OK2 TO WS-E2
      MOVE WS-OK3 TO WS-E3
-     CALL "BREW-FUEL" USING WS-DIRT WS-USES WS-SPEED
+     CALL "BREW-STAND-FUEL" USING WS-DIRT WS-USES WS-SPEED
      MOVE WS-USES TO WS-E4
-     CALL "BREW-FUEL" USING WS-BLAZE WS-USES WS-SPEED
+     CALL "BREW-STAND-FUEL" USING WS-BLAZE WS-USES WS-SPEED
      MOVE WS-USES TO WS-E5
      MOVE SPACES TO WS-TEXT
      STRING "potion " FUNCTION TRIM(WS-E1) " dirt-slot3 " FUNCTION TRIM(WS-E2) " dirt-fuel " FUNCTION TRIM(WS-E3) " dirt-uses " FUNCTION TRIM(WS-E4)
