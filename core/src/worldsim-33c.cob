@@ -133,6 +133,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY GENQUEUE.
  01 WS-CHUNK               BINARY-LONG.
  01 WS-COLUMN              BINARY-LONG.
  01 WS-CX                  BINARY-LONG.
@@ -154,7 +155,7 @@
          CALL "FLAT-SPAWN-HEIGHT" USING WS-HEIGHT
      END-IF
 *>   the origin chunk of the noise generator (33 section 6.2 step 2; the flat generator has no spawn targets)
-     IF CW-WORLD-TYPE = "standard"
+     IF CW-WORLD-TYPE = "standard" AND GQ-SP-PIN NOT = 1
          CALL "SPAWN-ORIGIN" USING WS-OX WS-OZ
      END-IF
      CALL "WP-PROVISIONAL" USING WS-OX WS-OZ WS-HEIGHT WS-X WS-Y WS-Z
