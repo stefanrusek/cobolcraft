@@ -1497,7 +1497,8 @@
      CALL "ENTITIES-CLEAR" USING CLIENT-STATE
      MOVE 0 TO EA-MT-COUNT
      MOVE SPACES TO WS-KEY
-     MOVE "snowball" TO WS-KEY
+     *>   (the snowball, egg, ender pearl and eye of ender without a stack take their default item since lane buglocate3: T43410; a fireball has none)
+     MOVE "fireball" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
      MOVE 41 TO WS-ID
      MOVE 0 TO WS-YAW
@@ -1505,7 +1506,7 @@
      CALL "E9-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-PITCH
      MOVE 0 TO EN-STACK-COUNT(1)
      CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
-     MOVE "acceptance US15 34-9§7 a thrown item without a stack draws nothing" TO TL-CASE
+     MOVE "acceptance US15 34-9§7 a thrown item without a stack and without a default item (a fireball) draws nothing" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE RL-GI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
