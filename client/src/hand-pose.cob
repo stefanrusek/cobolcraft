@@ -1,20 +1,15 @@
 *> The view pose and the arm poses of the first-person hand (12 section 6.1, 6.2, 6.6; 53 section 15). HAND-TICK runs one 50 ms client tick of the state the hand
-*> keeps (walk distance and bob amount 53 section 15.2, the lagging view angles 15.3, the attack strength ticker 17 section 4.1). HAND-PREFIX builds the pose stack's
-*> first frame: view bobbing (12 section 6.1 step 1, the bobView option) and hand sway (step 3). HAND-ATTACK-DELAY is the full-charge delay of an item. HAND-ARM
-*> applies the arm transform of 12 section 6.3 step 1 or, while an item is used, the pose of its use animation (6.6). HAND-DEATH-TICK keeps the death time. Not done: brush and spear poses (open question 6 of 12).
+*> keeps (the lagging view angles 15.3, the attack strength ticker 17 section 4.1). HAND-PREFIX builds the pose stack's first frame: the view effects (VIEW-POSE:
+*> hurt and death tilt, view bobbing, 12 section 6.1 steps 1 and 2) and hand sway (step 3). HAND-ATTACK-DELAY is the full-charge delay of an item. HAND-ARM
+*> applies the arm transform of 12 section 6.3 step 1 or, while an item is used, the pose of its use animation (6.6). Not done: brush and spear poses (open question 6 of 12).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HAND-TICK.
 *> USING CLIENT-STATE, held (the main-hand stack as item id + 1, 0 none): one client tick of the hand's own state. The attack strength ticker counts up and
-*> restarts when the held stack differs from the last tick's. The bob amount b moves 0.4 of the way to its target (0 in the air, dead or in water; else the
-*> smaller of 0.1 and the horizontal speed), the walk distance adds 0.6 x the horizontal distance moved since the last tick (a jump over 8 blocks is a
-*> teleport, not a move), and the lagging view angles move half way to the real ones.
+*> restarts when the held stack differs from the last tick's, and the lagging view angles (53 section 15.3) move half way to the real ones. The walk distance and
+*> the bob amount of 53 section 15.2 are the player's own (PL-WALK, PL-BOB: SMOOTH-WALK, smooth.cob), the deathTime too (PL-DEATH-TIME).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-F                   FLOAT-LONG.
- 01 WS-D                   FLOAT-LONG.
- 01 WS-DX                  FLOAT-LONG.
- 01 WS-DZ                  FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-HELD                 BINARY-LONG.
@@ -26,53 +21,17 @@
          MOVE L-HELD TO CL-ATK-LAST
      END-IF
      IF CL-BOB-INIT = 0
-         MOVE PL-X TO CL-BOB-X
-         MOVE PL-Z TO CL-BOB-Z
          MOVE PL-PITCH TO CL-XBOB CL-XBOB-O
          MOVE PL-YAW TO CL-YBOB CL-YBOB-O
          MOVE 1 TO CL-BOB-INIT
          GOBACK
      END-IF
-     MOVE CL-BOB TO CL-BOB-O
-     MOVE CL-BOB-WALK TO CL-BOB-WALK-O
      MOVE CL-XBOB TO CL-XBOB-O
      MOVE CL-YBOB TO CL-YBOB-O
-     MOVE 0 TO WS-F
-     IF PL-ON-GROUND = 1 AND PL-HEALTH > 0 AND PL-IN-WATER = 0
-         COMPUTE WS-F = FUNCTION MIN(0.1, FUNCTION SQRT(PL-VX * PL-VX + PL-VZ * PL-VZ))
-     END-IF
-     COMPUTE CL-BOB = CL-BOB + (WS-F - CL-BOB) * 0.4
      COMPUTE CL-XBOB = CL-XBOB + (PL-PITCH - CL-XBOB) * 0.5
      COMPUTE CL-YBOB = CL-YBOB + (PL-YAW - CL-YBOB) * 0.5
-     COMPUTE WS-DX = PL-X - CL-BOB-X
-     COMPUTE WS-DZ = PL-Z - CL-BOB-Z
-     COMPUTE WS-D = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
-     IF WS-D < 8
-         COMPUTE CL-BOB-WALK = CL-BOB-WALK + 0.6 * WS-D
-     END-IF
-     MOVE PL-X TO CL-BOB-X
-     MOVE PL-Z TO CL-BOB-Z
      GOBACK.
  END PROGRAM HAND-TICK.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. HAND-DEATH-TICK.
-*> USING CLIENT-STATE: one client tick of deathTime (12 section 6.1 step 2): CL-DEATH-TIME counts up while the local player's health is 0 or less, at most to 20
-*> (the value the tilt reads), and is 0 while the player is alive.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- LINKAGE SECTION.
- COPY CLSTATE.
- PROCEDURE DIVISION USING CLIENT-STATE.
-     IF PL-HEALTH <= 0
-         IF CL-DEATH-TIME < 20
-             ADD 1 TO CL-DEATH-TIME
-         END-IF
-     ELSE
-         MOVE 0 TO CL-DEATH-TIME
-     END-IF
-     GOBACK.
- END PROGRAM HAND-DEATH-TICK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HAND-PREFIX.

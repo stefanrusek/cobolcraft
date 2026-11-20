@@ -500,6 +500,22 @@
      MOVE WS-T TO WS-DIST
      MOVE -1000000 TO WS-T
      PERFORM ASSERT-FLOAT
+*>   BSH-TOP (lane p70e's entry point, BSH-TOP-OVER with a hit flag): the same boxes, hit 1 and the top 0.5 inside the slab, hit 0 and top 0 standing on it.
+     MOVE 0.4 TO WS-B(2)
+     MOVE 2.15 TO WS-B(5)
+     CALL "BSH-TOP" USING WS-ID WS-CX WS-CY WS-CZ WS-BOX WS-HIT WS-T
+     MOVE "top: a body inside the lower half of the slab hits it and rests on 0.5" TO TL-CASE
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-HIT * 1000000 + WS-T * 1000
+     MOVE 1000500 TO TL-EXPECTED-N
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0.5 TO WS-B(2)
+     MOVE 2.25 TO WS-B(5)
+     CALL "BSH-TOP" USING WS-ID WS-CX WS-CY WS-CZ WS-BOX WS-HIT WS-T
+     MOVE "top: a body that only stands on the slab hits nothing (hit 0, top 0)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-HIT * 1000000 + WS-T * 1000
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO WS-B(2)
      MOVE 2.75 TO WS-B(5)
      MOVE -1 TO WS-DIST

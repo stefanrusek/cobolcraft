@@ -345,9 +345,9 @@
 *>   The view pose: 53 section 15.2 worked example (b 0.1, walkDist 10, walkDistO 9.8, partial 0.5: translate (-0.0155, -0.0951, 0), rotate Z -0.093, rotate X 0.435
 *>   degrees), then the sway of 12 section 6.1 step 3 (pitch 30 against 20, yaw 90 against 70: 1 and 2 degrees).
      MOVE 1 TO CL-BOB-INIT
-     MOVE 10 TO CL-BOB-WALK
-     MOVE 9.8 TO CL-BOB-WALK-O
-     MOVE 0.1 TO CL-BOB CL-BOB-O
+     MOVE 10 TO PL-WALK
+     MOVE 9.8 TO PL-WALK-O
+     MOVE 0.1 TO PL-BOB PL-BOB-O
      MOVE 20 TO CL-XBOB CL-XBOB-O
      MOVE 70 TO CL-YBOB CL-YBOB-O
      MOVE 30 TO PL-PITCH
@@ -383,8 +383,9 @@
      MOVE "true" TO WS-OPT-VALUE
      MOVE 4 TO WS-OPT-LENGTH
      CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
-*>   Before the first tick the pose is the identity.
+*>   Before the first hand tick the lagging angles are unknown (no sway) and, at rest (bob amount 0), the pose is the identity.
      MOVE 0 TO CL-BOB-INIT
+     MOVE 0 TO PL-WALK PL-WALK-O PL-BOB PL-BOB-O
      CALL "HAND-PREFIX" USING CLIENT-STATE WS-PART WS-M
      MOVE "T5301 before the first hand tick the view pose is the identity" TO WS-NAME
      MOVE 0 TO WS-EXP(1) WS-EXP(2) WS-EXP(3) WS-EXP(4) WS-EXP(5) WS-EXP(7) WS-EXP(8) WS-EXP(9)
@@ -438,7 +439,7 @@
      CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
      MOVE 0 TO PL-HURT-UNTIL
 *>   The tick state. The first tick only records the position and the angles; then a player on the ground at 0.2 blocks a tick moved 0.25 blocks.
-     MOVE 0 TO CL-BOB-INIT CL-BOB CL-BOB-O CL-BOB-WALK CL-BOB-WALK-O CL-ATK-TICKER CL-ATK-LAST
+     MOVE 0 TO CL-BOB-INIT CL-ATK-TICKER CL-ATK-LAST
      MOVE 5 TO PL-X
      MOVE 5 TO PL-Z
      MOVE 40 TO PL-PITCH
@@ -456,19 +457,6 @@
      MOVE 5.25 TO PL-X
      MOVE 60 TO PL-PITCH
      CALL "HAND-TICK" USING CLIENT-STATE WS-HELD
-     MOVE "T5301 a tick on the ground adds 0.6 x the distance moved to the walk distance (0.15)" TO TL-CASE
-     MOVE 0 TO TL-OBSERVED-N
-     IF FUNCTION ABS(CL-BOB-WALK - 0.15) < 0.0001 AND CL-BOB-WALK-O = 0
-         MOVE 1 TO TL-OBSERVED-N
-     END-IF
-     MOVE 1 TO TL-EXPECTED-N
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "T5301 the bob amount moves 0.4 of the way to min(0.1, speed) = 0.1 (0.04)" TO TL-CASE
-     MOVE 0 TO TL-OBSERVED-N
-     IF FUNCTION ABS(CL-BOB - 0.04) < 0.0001
-         MOVE 1 TO TL-OBSERVED-N
-     END-IF
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "T5301 the lagging pitch moves half way to the view (40 to 60 gives 50)" TO TL-CASE
      MOVE 0 TO TL-OBSERVED-N
      IF FUNCTION ABS(CL-XBOB - 50) < 0.0001 AND FUNCTION ABS(CL-XBOB-O - 40) < 0.0001
@@ -479,39 +467,15 @@
      MOVE 1 TO TL-EXPECTED-N
      MOVE CL-ATK-TICKER TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-*>   In the air the target is 0 (0.04 falls to 0.024); a move over 8 blocks is a teleport and adds no walk distance; another stack restarts the ticker.
-     MOVE 0 TO PL-ON-GROUND
-     MOVE 105.25 TO PL-X
+*>   Another stack restarts the ticker.
      MOVE 7 TO WS-HELD
      CALL "HAND-TICK" USING CLIENT-STATE WS-HELD
-     MOVE "T5301 in the air the bob amount decays toward 0 (0.024)" TO TL-CASE
-     MOVE 0 TO TL-OBSERVED-N
-     IF FUNCTION ABS(CL-BOB - 0.024) < 0.0001
-         MOVE 1 TO TL-OBSERVED-N
-     END-IF
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "T5301 a jump of 100 blocks is a teleport, not walked distance" TO TL-CASE
-     MOVE 0 TO TL-OBSERVED-N
-     IF FUNCTION ABS(CL-BOB-WALK - 0.15) < 0.0001
-         MOVE 1 TO TL-OBSERVED-N
-     END-IF
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "T5301 another held stack restarts the attack ticker" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE CL-ATK-TICKER TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE 1 TO PL-ON-GROUND
-     MOVE 0 TO PL-HEALTH
-     CALL "HAND-TICK" USING CLIENT-STATE WS-HELD
-     MOVE "T5301 a dead player has the bob target 0 (0.0144)" TO TL-CASE
-     MOVE 0 TO TL-OBSERVED-N
-     IF FUNCTION ABS(CL-BOB - 0.0144) < 0.0001
-         MOVE 1 TO TL-OBSERVED-N
-     END-IF
-     MOVE 1 TO TL-EXPECTED-N
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 30 TO PL-HEALTH
-     MOVE 0 TO CL-BOB-INIT CL-BOB CL-BOB-O CL-BOB-WALK CL-BOB-WALK-O
+     MOVE 0 TO CL-BOB-INIT PL-WALK PL-WALK-O PL-BOB PL-BOB-O
      MOVE 0 TO PL-PITCH PL-YAW PL-VX
      MOVE 0.5 TO PL-X PL-Z
 *>   The attack-cooldown dip (12 section 6.2): after an attack (ticker 0) the held item, bare-hand delay D = 5 ticks, drops with the cube of (ticker + 1) / 5.
@@ -589,14 +553,14 @@
      MOVE RL-HAND-SAME TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO CL-BOB-INIT
-     MOVE 0.1 TO CL-BOB CL-BOB-O
-     MOVE 10 TO CL-BOB-WALK CL-BOB-WALK-O
+     MOVE 0.1 TO PL-BOB PL-BOB-O
+     MOVE 10 TO PL-WALK PL-WALK-O
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE "T5301 a changed view pose builds the mesh again" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE RL-HAND-SAME TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE 0 TO CL-BOB-INIT CL-BOB CL-BOB-O CL-BOB-WALK CL-BOB-WALK-O
+     MOVE 0 TO CL-BOB-INIT PL-WALK PL-WALK-O PL-BOB PL-BOB-O
 *>   The mainHand option left puts the main hand on the left arm and the off hand on the right.
      MOVE "mainHand" TO WS-OPT-NAME
      MOVE '"left"' TO WS-OPT-VALUE
