@@ -141,7 +141,8 @@
      MOVE PL-CONN(WS-PLAYER) TO WS-CONN
      MOVE 0 TO PL-SNEAKING(WS-PLAYER) PL-FLYING(WS-PLAYER)
      MOVE 0 TO PL-MODE(WS-PLAYER)
-     COMPUTE WS-Y = WS-BY + 1
+*>   The player stands on the egg's top, 7 pixels above its cell (the shapes of 51: an egg is no full cube since the merge with the shape lanes, so a player a block up would hang in the air).
+     COMPUTE WS-Y = WS-BY + 0.4375
      MOVE WS-X TO PL-X(WS-PLAYER)
      MOVE WS-Y TO PL-Y(WS-PLAYER)
      MOVE WS-Z TO PL-Z(WS-PLAYER)

@@ -172,10 +172,12 @@
      MOVE "test box surface: a box in air does not hit" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      PERFORM HIT-OF
+*>   The first look at a cell of an unloaded chunk loads it (WORLD-GET-BLOCK of ENTITY-BOX-HITS-Y), so each case has a chunk of its own.
      MOVE 100000.5 TO WS-X
      MOVE "test box surface: a box in an unloaded chunk hits" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM HIT-OF
+     MOVE 200000.5 TO WS-X
      MOVE "test box surface: the top of an unloaded cell is the top of the cell, 55" TO TL-CASE
      MOVE 55 TO WS-DIFF
      PERFORM TOP-OF
