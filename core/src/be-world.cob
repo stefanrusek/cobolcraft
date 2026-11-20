@@ -12,7 +12,7 @@
 *>   BE-RESET                                                    forgets every entity (a world was opened)
 *>   BE-BLOCK-KEY USING block id, key out (X(48), "minecraft:" + path when the table key has no namespace), length out
 *>   BE-BLOCK-TYPE USING block id, block entity type out (-1 none)    the type whose valid blocks hold the block (cached)
-*>   BE-BLOCK-FAMILY USING block id, family out                    0 none, 1 chest or trapped chest, 2 ender chest, 3 barrel, 4 shulker box,
+*>   BE-BLOCK-FAMILY USING block id, family out                    0 none, 1 chest, trapped chest or copper chest, 2 ender chest, 3 barrel, 4 shulker box,
 *>        5 hopper, 6 dispenser or dropper (their menus count no openers), 7 chiseled bookshelf, 8 furnace, smoker, blast furnace
 *>   BE-STATE-FIELDS USING state, family out, direction out, chest type out, flag out
 *>        direction 0 north, 1 east, 2 south, 3 west, 4 up, 5 down; chest type 0 single, 1 left, 2 right; flag waterlogged (chest family,
@@ -140,6 +140,12 @@
              COMPUTE WS-START = WS-LENGTH - 10
              IF WS-KEY(WS-START:11) = "shulker_box"
                  MOVE 4 TO L-FAMILY
+             END-IF
+*>           The copper chests (31-1 section 3.1: chest, plus the copper chest family; same states and menu as the chest): copper_chest with
+*>           an optional weathering prefix and an optional waxed_.
+             COMPUTE WS-START = WS-LENGTH - 11
+             IF WS-KEY(WS-START:12) = "copper_chest"
+                 MOVE 1 TO L-FAMILY
              END-IF
      END-EVALUATE
      GOBACK.
