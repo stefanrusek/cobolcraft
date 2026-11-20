@@ -386,6 +386,9 @@
  01 WS-CY                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-SOLID               BINARY-LONG.
+ 01 WS-HCX                 BINARY-LONG.
+ 01 WS-HCY                 BINARY-LONG.
+ 01 WS-HCZ                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-CHECK                BINARY-LONG.
@@ -409,6 +412,9 @@
          CALL "GI-SOLID-CELL" USING EN-DIM(L-ROW) WS-CX WS-CY WS-CZ WS-SOLID
          IF WS-SOLID = 1
              MOVE 1 TO L-HIT
+             MOVE WS-CX TO WS-HCX
+             MOVE WS-CY TO WS-HCY
+             MOVE WS-CZ TO WS-HCZ
          ELSE
              MOVE WS-QX TO WS-PX
              MOVE WS-QY TO WS-PY
@@ -424,6 +430,10 @@
      MOVE WS-PX TO EN-X(L-ROW)
      MOVE WS-PY TO EN-Y(L-ROW)
      MOVE WS-PZ TO EN-Z(L-ROW)
+*>   Projectile.onHit's projectile_land (30-8 14.2.2): once, on the tick the hook reached a block or an entity (THROWN-LAND skips a hook that already lies on the ground).
+     IF L-HIT > 0
+         CALL "THROWN-LAND" USING L-ROW L-HIT WS-HCX WS-HCY WS-HCZ
+     END-IF
      GOBACK.
  END PROGRAM BOBBER-MOVE.
 
@@ -507,6 +517,7 @@
  01 WS-R3                  BINARY-LONG.
  01 WS-OPEN                BINARY-LONG.
  01 WS-FLYING              BINARY-LONG.
+ 01 WS-BEFORE              BINARY-LONG VALUE 1.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-AMOUNT              BINARY-LONG.
  01 WS-NO                  BINARY-LONG VALUE 0.
@@ -545,6 +556,9 @@
          CALL "PJ-DROP" USING L-ROW
          GOBACK
      END-IF
+*>   Projectile.tick early: the tick count, then the hook's projectile_shoot on its first tick at the position before the move (THROWN-FLY2 did both before the hook had its own mover).
+     ADD 1 TO EN-COOLDOWN(L-ROW)
+     CALL "THROWN-SHOOT-FIRST" USING L-ROW WS-BEFORE
      COMPUTE WS-CX = FUNCTION INTEGER(EN-X(L-ROW))
      COMPUTE WS-CY = FUNCTION INTEGER(EN-Y(L-ROW))
      COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(L-ROW))
