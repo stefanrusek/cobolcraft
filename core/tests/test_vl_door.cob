@@ -40,6 +40,10 @@
  01 WS-FZ                  FLOAT-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-EX                 FLOAT-LONG.
+ 01 WS-EZ                 FLOAT-LONG.
+ 01 WS-EK                 BINARY-LONG.
+ 01 WS-ANY                BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
@@ -122,7 +126,7 @@
      MOVE 0 TO WS-E
      MOVE WS-OPEN TO WS-O
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-FX WS-FY2 WS-FZ WS-HIT WS-TOP
+     PERFORM BOX-AT-EDGES
      MOVE "test vl door a closed oak door stops a villager's box" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-HIT TO WS-O
@@ -152,7 +156,7 @@
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
      MOVE 0 TO VD-PATH-DOORS
 *>   An iron door that is open (powered) lets the box through too; closed it stops it.
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-FX WS-FY2 WS-FZ WS-HIT WS-TOP
+     PERFORM BOX-AT-EDGES
      MOVE "test vl door a closed iron door stops a villager's box" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE WS-HIT TO WS-O
@@ -246,6 +250,25 @@
      CALL "Q3-EQ" USING WS-CASE WS-E WS-O
      STOP RUN.
 
+ BOX-AT-EDGES.
+*>   A closed door is a panel of 3/16 at one edge of its cell (its collision shape): a villager's box centred in the cell clears it, so the box is put against
+*>   each of the four edges and the door stops it when any of them is hit (an open door leaves the centre free: the case above).
+     MOVE 0 TO WS-ANY
+     PERFORM VARYING WS-EK FROM 1 BY 1 UNTIL WS-EK > 4
+         MOVE WS-FX TO WS-EX
+         MOVE WS-FZ TO WS-EZ
+         EVALUATE WS-EK
+             WHEN 1 COMPUTE WS-EX = WS-FX + 0.4
+             WHEN 2 COMPUTE WS-EX = WS-FX - 0.4
+             WHEN 3 COMPUTE WS-EZ = WS-FZ + 0.4
+             WHEN 4 COMPUTE WS-EZ = WS-FZ - 0.4
+         END-EVALUATE
+         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-EX WS-FY2 WS-EZ WS-HIT WS-TOP
+         IF WS-HIT = 1
+             MOVE 1 TO WS-ANY
+         END-IF
+     END-PERFORM
+     MOVE WS-ANY TO WS-HIT.
  PLACE-OAK.
      MOVE "minecraft:oak_door" TO WS-KEY
      MOVE "facing=east,half=lower,hinge=left,open=false,powered=false" TO WS-PAIRS

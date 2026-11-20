@@ -471,6 +471,26 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-HIT TO TL-OBSERVED-N
      PERFORM ASSERT-N
+*>   The height an entity box rests on (BSH-TOP-OVER, lane bugbed): the top of the part the box overlaps, nothing when it only stands on it.
+     MOVE 0.4 TO WS-B(2)
+     MOVE 2.15 TO WS-B(5)
+     MOVE 1 TO WS-B(3)
+     MOVE 0.3 TO WS-B(1)
+     MOVE 0.7 TO WS-B(4)
+     MOVE 0.3 TO WS-B(3)
+     MOVE 0.7 TO WS-B(6)
+     CALL "BSH-TOP-OVER" USING WS-ID WS-CX WS-CY WS-CZ WS-BOX WS-T
+     MOVE "top over: a body inside the lower half of the slab rests on its top, 0.5" TO TL-CASE
+     MOVE WS-T TO WS-DIST
+     MOVE 0.5 TO WS-T
+     PERFORM ASSERT-FLOAT
+     MOVE 0.5 TO WS-B(2)
+     MOVE 2.25 TO WS-B(5)
+     CALL "BSH-TOP-OVER" USING WS-ID WS-CX WS-CY WS-CZ WS-BOX WS-T
+     MOVE "top over: a body that only stands on the slab overlaps nothing (-1000000)" TO TL-CASE
+     MOVE WS-T TO WS-DIST
+     MOVE -1000000 TO WS-T
+     PERFORM ASSERT-FLOAT
      MOVE 1 TO WS-B(2)
      MOVE 2.75 TO WS-B(5)
      MOVE -1 TO WS-DIST

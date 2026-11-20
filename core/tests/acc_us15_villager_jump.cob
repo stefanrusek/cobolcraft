@@ -55,8 +55,9 @@
      MOVE 5000 TO CW-TIME
      MOVE 1000 TO CW-TICKS
      MOVE 0 TO WS-MAX-K WS-MAX-AD WS-JUMPS WS-WAS-UP
-     COMPUTE WS-TOP = WS-FY + 2
-     COMPUTE WS-LIMIT = WS-FY + 3.0
+*>   The top of the bed is 9/16 above its cell since lane bugbed (the collision shape of the bed block): the baby stands on it, not on a full cube.
+     COMPUTE WS-TOP = WS-FY + 1.5625
+     COMPUTE WS-LIMIT = WS-FY + 2.5625
      PERFORM 600 TIMES
          ADD 1 TO CW-TICKS
          CALL "STDMOB-STEP" USING WS-K
