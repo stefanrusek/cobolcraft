@@ -911,6 +911,55 @@
  END PROGRAM BE-CHUNK-READ.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE-CHUNK-BACKFILL.
+*> USING cache row (BINARY-LONG; its cells filled): makes the block entity of every end_portal and end_gateway block of the chunk that has none (docs/protocol/52
+*> section 8.1 point 2: the client creates these entities only from the chunk packet's block entity list, so a block without an entity is not drawn). A chunk read from
+*> a save made before the portal blocks got entities, or whose list lost them, is mended here, through BE-BLOCK-SET like a block a player places.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY DIMENSIONS.
+ COPY CELLS.
+ COPY ENDTRAVEL.
+ COPY ENDGATEWAY.
+ 01 WS-CELLS               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-REST                BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "END-TRAVEL-IDS"
+     CALL "END-GATEWAY-IDS"
+     MOVE CK-DIM(L-ROW) TO WS-DIM
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(L-ROW)
+     COMPUTE WS-CELLS = DM-HEIGHT(WS-DIM) * 256
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-CELLS
+         IF CE-STATE(WS-I) = ET-S-PORTAL OR CE-STATE(WS-I) = EG-S-GATEWAY
+             MOVE CE-STATE(WS-I) TO WS-STATE
+             COMPUTE WS-Y = (WS-I - 1) / 256
+             COMPUTE WS-REST = WS-I - 1 - WS-Y * 256
+             COMPUTE WS-Z = WS-REST / 16
+             COMPUTE WS-X = WS-REST - WS-Z * 16
+             COMPUTE WS-X = CK-X(L-ROW) * 16 + WS-X
+             COMPUTE WS-Z = CK-Z(L-ROW) * 16 + WS-Z
+             COMPUTE WS-Y = WS-Y + DM-MIN-Y(WS-DIM)
+             CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-INDEX
+             IF WS-INDEX = 0
+                 CALL "BE-BLOCK-SET" USING WS-DIM WS-X WS-Y WS-Z WS-AIR WS-STATE
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BE-CHUNK-BACKFILL.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BE-CHUNK-DROP.
 *> USING dim, chunk x, chunk z: the chunk leaves the cache (it was written first when changed): its entities leave with it.
  DATA DIVISION.

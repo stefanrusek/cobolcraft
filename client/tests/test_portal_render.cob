@@ -1,0 +1,539 @@
+*> Implementation test of client/src/portal-render.cob (T54010; docs/protocol/52 section 8, the pure rules of the end portal and end gateway):
+*> the 16 tints of 8.7.2 (E7), the layer coordinate UV(L) of 8.7.2 (E6 and the rows of the worked example 8.7.6), GameTime of 8.7.3, the rounding of
+*> the output byte of 8.7.5, the draw distances of 8.3 (E4), the faces drawn of 8.5 (E3, E5), the face corners of 8.4 (E2) and the back-face test of 8.6 (E3).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PORTAL-RENDER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ 01 WS-LAYER               BINARY-LONG.
+ 01 WS-R                   FLOAT-LONG.
+ 01 WS-G                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-U0                  FLOAT-LONG.
+ 01 WS-V0                  FLOAT-LONG.
+ 01 WS-GT                  FLOAT-LONG.
+ 01 WS-U                   FLOAT-LONG.
+ 01 WS-V                   FLOAT-LONG.
+ 01 WS-EXP                 FLOAT-LONG.
+ 01 WS-VAL                 FLOAT-LONG.
+ 01 WS-DIFF                FLOAT-LONG.
+ 01 WS-EDIT                PIC -(4)9.9(6).
+ 01 WS-GAME                BINARY-DOUBLE.
+ 01 WS-PARTIAL             FLOAT-LONG.
+ 01 WS-R8                  BINARY-LONG.
+ 01 WS-G8                  BINARY-LONG.
+ 01 WS-B8                  BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-DIR                 BINARY-LONG.
+ 01 WS-FULL                BINARY-LONG.
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-CORNERS.
+    05 WS-CORNER           FLOAT-LONG OCCURS 12 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-TEXT                PIC X(160).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-DIGIT               PIC 9.
+ 01 WS-AGE                 BINARY-DOUBLE.
+ 01 WS-COOL                BINARY-LONG.
+ 01 WS-MAXY                BINARY-LONG.
+ 01 WS-HEIGHT              BINARY-LONG.
+ 01 WS-MODE                BINARY-LONG.
+ 01 WS-H3                  PIC 9(3).
+ 01 WS-PTR-BEAM            BINARY-LONG VALUE 12.
+ 01 WS-MILLI               PIC -(6)9.
+ 01 WS-N1                  PIC 9(3).
+ 01 WS-N2                  PIC 9(3).
+ 01 WS-N3                  PIC 9(3).
+ 01 WS-EXPECT              BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+
+*>   E7 and 8.7.2: the tint table; layer 1 is also the sky term, layer 16 only the gateway's.
+     MOVE 1 TO WS-LAYER
+     CALL "PORTAL-TINT" USING WS-LAYER WS-R WS-G WS-B
+     MOVE "portal tint layer 1 is (0.022087, 0.098399, 0.110818)" TO TL-CASE
+     MOVE WS-R TO WS-VAL
+     MOVE 0.022087 TO WS-EXP
+     PERFORM CHECK-FLOAT
+     MOVE "portal tint layer 1 green" TO TL-CASE
+     MOVE WS-G TO WS-VAL
+     MOVE 0.098399 TO WS-EXP
+     PERFORM CHECK-FLOAT
+     MOVE "portal tint layer 1 blue" TO TL-CASE
+     MOVE WS-B TO WS-VAL
+     MOVE 0.110818 TO WS-EXP
+     PERFORM CHECK-FLOAT
+     MOVE 15 TO WS-LAYER
+     CALL "PORTAL-TINT" USING WS-LAYER WS-R WS-G WS-B
+     MOVE "portal tint layer 15 is (0.204675, 0.390010, 0.302066)" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     MOVE WS-R TO WS-VAL PERFORM APPEND-VALUE
+     MOVE WS-G TO WS-VAL PERFORM APPEND-VALUE
+     MOVE WS-B TO WS-VAL PERFORM APPEND-VALUE
+     MOVE WS-TEXT TO TL-OBSERVED
+     MOVE "0.204675 0.390010 0.302066" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 16 TO WS-LAYER
+     CALL "PORTAL-TINT" USING WS-LAYER WS-R WS-G WS-B
+     MOVE "portal tint layer 16 (COLORS[15], read only by the gateway) is (0.080955, 0.314821, 0.661491)" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     MOVE WS-R TO WS-VAL PERFORM APPEND-VALUE
+     MOVE WS-G TO WS-VAL PERFORM APPEND-VALUE
+     MOVE WS-B TO WS-VAL PERFORM APPEND-VALUE
+     MOVE WS-TEXT TO TL-OBSERVED
+     MOVE "0.080955 0.314821 0.661491" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 8 TO WS-LAYER
+     CALL "PORTAL-TINT" USING WS-LAYER WS-R WS-G WS-B
+     MOVE "portal tint layer 8 is (0.097489, 0.154120, 0.091064)" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     MOVE WS-R TO WS-VAL PERFORM APPEND-VALUE
+     MOVE WS-G TO WS-VAL PERFORM APPEND-VALUE
+     MOVE WS-B TO WS-VAL PERFORM APPEND-VALUE
+     MOVE WS-TEXT TO TL-OBSERVED
+     MOVE "0.097489 0.154120 0.091064" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   8.7.3: GameTime = ((gameTime mod 24000) + partial) / 24000.
+     MOVE 1000 TO WS-GAME
+     MOVE 0.5 TO WS-PARTIAL
+     CALL "PORTAL-GAME-TIME" USING WS-GAME WS-PARTIAL WS-GT
+     MOVE "portal GameTime of game time 1000 and partial 0.5 is 1000.5 / 24000 = 0.0416875" TO TL-CASE
+     MOVE WS-GT TO WS-VAL
+     MOVE 0.0416875 TO WS-EXP
+     PERFORM CHECK-FLOAT
+     MOVE 48000 TO WS-GAME
+     MOVE 0 TO WS-PARTIAL
+     CALL "PORTAL-GAME-TIME" USING WS-GAME WS-PARTIAL WS-GT
+     MOVE "portal GameTime is 0 when the game time is a whole number of days (the scroll jumps back)" TO TL-CASE
+     MOVE WS-GT TO WS-VAL
+     MOVE 0 TO WS-EXP
+     PERFORM CHECK-FLOAT
+     MOVE 23999 TO WS-GAME
+     MOVE 0.75 TO WS-PARTIAL
+     CALL "PORTAL-GAME-TIME" USING WS-GAME WS-PARTIAL WS-GT
+     MOVE "portal GameTime of game time 23999 and partial 0.75 is 23999.75 / 24000" TO TL-CASE
+     MOVE WS-GT TO WS-VAL
+     COMPUTE WS-EXP = 23999.75 / 24000
+     PERFORM CHECK-FLOAT
+     MOVE 72001 TO WS-GAME
+     CALL "PORTAL-GAME-TIME" USING WS-GAME WS-PARTIAL WS-GT
+     MOVE "portal GameTime reduces a game time of the third day modulo 24000" TO TL-CASE
+     MOVE WS-GT TO WS-VAL
+     COMPUTE WS-EXP = 1.75 / 24000
+     PERFORM CHECK-FLOAT
+
+*>   E6: layer 1 at GameTime 0 and uv0 (0.5, 0.5) is (10.0201, 2.9736).
+     MOVE 1 TO WS-LAYER
+     MOVE 0.5 TO WS-U0 WS-V0
+     MOVE 0 TO WS-GT
+     CALL "PORTAL-LAYER-UV" USING WS-LAYER WS-U0 WS-V0 WS-GT WS-U WS-V
+     MOVE "portal layer 1 coordinate of (0.5, 0.5) at GameTime 0 is 10.020054 (E6, u)" TO TL-CASE
+     MOVE WS-U TO WS-VAL
+     MOVE 10.020054 TO WS-EXP
+     PERFORM CHECK-FLOAT
+     MOVE "portal layer 1 coordinate of (0.5, 0.5) at GameTime 0 is 2.973640 (E6, v)" TO TL-CASE
+     MOVE WS-V TO WS-VAL
+     MOVE 2.973640 TO WS-EXP
+     PERFORM CHECK-FLOAT
+
+*>   The rows of the worked example 8.7.6: uv0 (0.525, 0.8625), GameTime 1000.5 / 24000.
+     MOVE 0.525 TO WS-U0
+     MOVE 0.8625 TO WS-V0
+     COMPUTE WS-GT = 1000.5 / 24000
+     MOVE 1 TO WS-LAYER
+     CALL "PORTAL-LAYER-UV" USING WS-LAYER WS-U0 WS-V0 WS-GT WS-U WS-V
+     MOVE "portal worked example layer 1 is (9.592972, 4.541068)" TO TL-CASE
+     PERFORM TEXT-UV
+     MOVE "9.592972 4.541068" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO WS-LAYER
+     CALL "PORTAL-LAYER-UV" USING WS-LAYER WS-U0 WS-V0 WS-GT WS-U WS-V
+     MOVE "portal worked example layer 2 is (3.614042, 4.294724)" TO TL-CASE
+     PERFORM TEXT-UV
+     MOVE "3.614042 4.294724" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO WS-LAYER
+     CALL "PORTAL-LAYER-UV" USING WS-LAYER WS-U0 WS-V0 WS-GT WS-U WS-V
+     MOVE "portal worked example layer 3 is (0.615637, 3.246932)" TO TL-CASE
+     PERFORM TEXT-UV
+     MOVE "0.615637 3.246932" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 5 TO WS-LAYER
+     CALL "PORTAL-LAYER-UV" USING WS-LAYER WS-U0 WS-V0 WS-GT WS-U WS-V
+     MOVE "portal worked example layer 5 is (-1.158877, -0.633812)" TO TL-CASE
+     PERFORM TEXT-UV
+     MOVE "-1.158877 -0.633812" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 13 TO WS-LAYER
+     CALL "PORTAL-LAYER-UV" USING WS-LAYER WS-U0 WS-V0 WS-GT WS-U WS-V
+     MOVE "portal worked example layer 13 is (0.918634, -0.678561)" TO TL-CASE
+     PERFORM TEXT-UV
+     MOVE "0.918634 -0.678561" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 15 TO WS-LAYER
+     CALL "PORTAL-LAYER-UV" USING WS-LAYER WS-U0 WS-V0 WS-GT WS-U WS-V
+     MOVE "portal worked example layer 15 (theta mod 360 = 0) u is 1.210417" TO TL-CASE
+     MOVE WS-U TO WS-VAL
+     MOVE 1.210417 TO WS-EXP
+     PERFORM CHECK-FLOAT
+     MOVE "portal worked example layer 15 v is 1.272063 (1.2720625 exactly)" TO TL-CASE
+     MOVE WS-V TO WS-VAL
+     MOVE 1.272063 TO WS-EXP
+     PERFORM CHECK-FLOAT
+     MOVE 16 TO WS-LAYER
+     CALL "PORTAL-LAYER-UV" USING WS-LAYER WS-U0 WS-V0 WS-GT WS-U WS-V
+     MOVE "portal layer 16 (gateway only, theta mod 360 = 80, scale 0.5) is (0.402134, 0.979429)" TO TL-CASE
+     PERFORM TEXT-UV
+     MOVE "0.402134 0.979429" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   8.7.5: the output byte is the channel clamped to 0..1 and rounded to the nearest of 255 steps.
+     MOVE 0.011917 TO WS-R
+     MOVE 0.030539 TO WS-G
+     MOVE 0.062253 TO WS-B
+     CALL "PORTAL-RGB8" USING WS-R WS-G WS-B WS-R8 WS-G8 WS-B8
+     MOVE "portal output byte of the sum of the worked example is (3, 8, 16)" TO TL-CASE
+     PERFORM TEXT-BYTES
+     MOVE "003 008 016" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1.275 TO WS-R
+     MOVE -0.5 TO WS-G
+     MOVE 0.5 TO WS-B
+     CALL "PORTAL-RGB8" USING WS-R WS-G WS-B WS-R8 WS-G8 WS-B8
+     MOVE "portal output byte clamps above 1 to 255, below 0 to 0, and rounds 127.5 up to 128" TO TL-CASE
+     PERFORM TEXT-BYTES
+     MOVE "255 000 128" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   E4: the portal is drawn closer than 64 blocks (centre to camera), the gateway closer than 256, a true 3D distance.
+     MOVE 14 TO WS-TYPE
+     MOVE 63.9 TO WS-DX
+     MOVE 0 TO WS-DY WS-DZ
+     CALL "PORTAL-IN-RANGE" USING WS-TYPE WS-DX WS-DY WS-DZ WS-RESULT
+     MOVE "portal drawn at 63.9 blocks (E4)" TO TL-CASE
+     MOVE 1 TO WS-EXPECT PERFORM CHECK-RESULT
+     MOVE 64.1 TO WS-DX
+     CALL "PORTAL-IN-RANGE" USING WS-TYPE WS-DX WS-DY WS-DZ WS-RESULT
+     MOVE "portal not drawn at 64.1 blocks (E4)" TO TL-CASE
+     MOVE 0 TO WS-EXPECT PERFORM CHECK-RESULT
+     MOVE 64 TO WS-DX
+     CALL "PORTAL-IN-RANGE" USING WS-TYPE WS-DX WS-DY WS-DZ WS-RESULT
+     MOVE "portal not drawn at exactly 64 blocks (strictly closer)" TO TL-CASE
+     MOVE 0 TO WS-EXPECT PERFORM CHECK-RESULT
+     MOVE 40 TO WS-DX
+     MOVE 40 TO WS-DY
+     CALL "PORTAL-IN-RANGE" USING WS-TYPE WS-DX WS-DY WS-DZ WS-RESULT
+     MOVE "portal at (40, 40, 0) is 56.6 away (a 3D distance, y counts) and drawn" TO TL-CASE
+     MOVE 1 TO WS-EXPECT PERFORM CHECK-RESULT
+     MOVE 40 TO WS-DZ
+     CALL "PORTAL-IN-RANGE" USING WS-TYPE WS-DX WS-DY WS-DZ WS-RESULT
+     MOVE "portal at (40, 40, 40) is 69.3 away and not drawn" TO TL-CASE
+     MOVE 0 TO WS-EXPECT PERFORM CHECK-RESULT
+     MOVE 22 TO WS-TYPE
+     MOVE 255.9 TO WS-DX
+     MOVE 0 TO WS-DY WS-DZ
+     CALL "PORTAL-IN-RANGE" USING WS-TYPE WS-DX WS-DY WS-DZ WS-RESULT
+     MOVE "gateway drawn at 255.9 blocks (E4)" TO TL-CASE
+     MOVE 1 TO WS-EXPECT PERFORM CHECK-RESULT
+     MOVE 256.1 TO WS-DX
+     CALL "PORTAL-IN-RANGE" USING WS-TYPE WS-DX WS-DY WS-DZ WS-RESULT
+     MOVE "gateway not drawn at 256.1 blocks (E4)" TO TL-CASE
+     MOVE 0 TO WS-EXPECT PERFORM CHECK-RESULT
+     MOVE 100 TO WS-DX
+     CALL "PORTAL-IN-RANGE" USING WS-TYPE WS-DX WS-DY WS-DZ WS-RESULT
+     MOVE "gateway drawn at 100 blocks, where the portal would not be" TO TL-CASE
+     MOVE 1 TO WS-EXPECT PERFORM CHECK-RESULT
+
+*>   8.5: the portal draws UP and DOWN always (a full block above does not hide them), never a side; the gateway draws a face unless the neighbour's face is the full block.
+     MOVE 14 TO WS-TYPE
+     MOVE 1 TO WS-FULL
+     MOVE SPACES TO WS-TEXT
+     PERFORM VARYING WS-DIR FROM 0 BY 1 UNTIL WS-DIR > 5
+         CALL "PORTAL-FACE-DRAWN" USING WS-TYPE WS-DIR WS-FULL WS-RESULT
+         MOVE WS-RESULT TO WS-DIGIT
+         MOVE WS-DIGIT TO WS-TEXT(WS-DIR + 1:1)
+     END-PERFORM
+     MOVE "portal faces drawn with a full block on every side: DOWN and UP only (E3)" TO TL-CASE
+     MOVE WS-TEXT(1:6) TO TL-OBSERVED
+     MOVE "110000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-FULL
+     PERFORM VARYING WS-DIR FROM 0 BY 1 UNTIL WS-DIR > 5
+         CALL "PORTAL-FACE-DRAWN" USING WS-TYPE WS-DIR WS-FULL WS-RESULT
+         MOVE WS-RESULT TO WS-DIGIT
+         MOVE WS-DIGIT TO WS-TEXT(WS-DIR + 1:1)
+     END-PERFORM
+     MOVE "portal faces drawn with air on every side are the same two" TO TL-CASE
+     MOVE WS-TEXT(1:6) TO TL-OBSERVED
+     MOVE "110000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 22 TO WS-TYPE
+     MOVE 1 TO WS-FULL
+     PERFORM VARYING WS-DIR FROM 0 BY 1 UNTIL WS-DIR > 5
+         CALL "PORTAL-FACE-DRAWN" USING WS-TYPE WS-DIR WS-FULL WS-RESULT
+         MOVE WS-RESULT TO WS-DIGIT
+         MOVE WS-DIGIT TO WS-TEXT(WS-DIR + 1:1)
+     END-PERFORM
+     MOVE "gateway with a full block on all six sides draws no face (E5)" TO TL-CASE
+     MOVE WS-TEXT(1:6) TO TL-OBSERVED
+     MOVE "000000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-FULL
+     PERFORM VARYING WS-DIR FROM 0 BY 1 UNTIL WS-DIR > 5
+         CALL "PORTAL-FACE-DRAWN" USING WS-TYPE WS-DIR WS-FULL WS-RESULT
+         MOVE WS-RESULT TO WS-DIGIT
+         MOVE WS-DIGIT TO WS-TEXT(WS-DIR + 1:1)
+     END-PERFORM
+     MOVE "gateway with air on all six sides draws all six faces (E5: the UP face with air above)" TO TL-CASE
+     MOVE WS-TEXT(1:6) TO TL-OBSERVED
+     MOVE "111111" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   8.4 (E2): the corners of the portal's UP face at the cell floor (0, 0, 0): (0, 0.75, 0), (0, 0.75, 1), (1, 0.75, 1), (1, 0.75, 0); the bottom ones at y 0.375.
+     MOVE 14 TO WS-TYPE
+     MOVE 1 TO WS-DIR
+     CALL "PORTAL-FACE-QUAD" USING WS-TYPE WS-DIR WS-CORNERS
+     MOVE "portal UP face corners are (0, 0.75, 0) (0, 0.75, 1) (1, 0.75, 1) (1, 0.75, 0) (E2)" TO TL-CASE
+     PERFORM TEXT-CORNERS
+     MOVE "0 750 0|0 750 1000|1000 750 1000|1000 750 0|" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-DIR
+     CALL "PORTAL-FACE-QUAD" USING WS-TYPE WS-DIR WS-CORNERS
+     MOVE "portal DOWN face corners are (0, 0.375, 1) (0, 0.375, 0) (1, 0.375, 0) (1, 0.375, 1) (E2)" TO TL-CASE
+     PERFORM TEXT-CORNERS
+     MOVE "0 375 1000|0 375 0|1000 375 0|1000 375 1000|" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 22 TO WS-TYPE
+     MOVE 1 TO WS-DIR
+     CALL "PORTAL-FACE-QUAD" USING WS-TYPE WS-DIR WS-CORNERS
+     MOVE "gateway UP face is the top of the unit cube (0, 1, 0) (0, 1, 1) (1, 1, 1) (1, 1, 0)" TO TL-CASE
+     PERFORM TEXT-CORNERS
+     MOVE "0 1000 0|0 1000 1000|1000 1000 1000|1000 1000 0|" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO WS-DIR
+     CALL "PORTAL-FACE-QUAD" USING WS-TYPE WS-DIR WS-CORNERS
+     MOVE "gateway NORTH face corners are (1, 1, 0) (1, 0, 0) (0, 0, 0) (0, 1, 0)" TO TL-CASE
+     PERFORM TEXT-CORNERS
+     MOVE "1000 1000 0|1000 0 0|0 0 0|0 1000 0|" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO WS-DIR
+     CALL "PORTAL-FACE-QUAD" USING WS-TYPE WS-DIR WS-CORNERS
+     MOVE "gateway SOUTH face corners are (0, 1, 1) (0, 0, 1) (1, 0, 1) (1, 1, 1)" TO TL-CASE
+     PERFORM TEXT-CORNERS
+     MOVE "0 1000 1000|0 0 1000|1000 0 1000|1000 1000 1000|" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 4 TO WS-DIR
+     CALL "PORTAL-FACE-QUAD" USING WS-TYPE WS-DIR WS-CORNERS
+     MOVE "gateway WEST face corners are (0, 1, 0) (0, 0, 0) (0, 0, 1) (0, 1, 1)" TO TL-CASE
+     PERFORM TEXT-CORNERS
+     MOVE "0 1000 0|0 0 0|0 0 1000|0 1000 1000|" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 5 TO WS-DIR
+     CALL "PORTAL-FACE-QUAD" USING WS-TYPE WS-DIR WS-CORNERS
+     MOVE "gateway EAST face corners are (1, 1, 1) (1, 0, 1) (1, 0, 0) (1, 1, 0)" TO TL-CASE
+     PERFORM TEXT-CORNERS
+     MOVE "1000 1000 1000|1000 0 1000|1000 0 0|1000 1000 0|" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-DIR
+     CALL "PORTAL-FACE-QUAD" USING WS-TYPE WS-DIR WS-CORNERS
+     MOVE "gateway DOWN face corners are (0, 0, 1) (0, 0, 0) (1, 0, 0) (1, 0, 1)" TO TL-CASE
+     PERFORM TEXT-CORNERS
+     MOVE "0 0 1000|0 0 0|1000 0 0|1000 0 1000|" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   8.6 (E3): back faces are culled: the portal's top is seen only from above y 0.75, its bottom only from below 0.375; a camera inside the slab sees neither.
+     MOVE 14 TO WS-TYPE
+     MOVE 0.5 TO WS-DX WS-DZ
+     MOVE 2 TO WS-DY
+     PERFORM SEEN-SIX
+     MOVE "portal seen from above (y 2): the top only" TO TL-CASE
+     MOVE WS-TEXT(1:6) TO TL-OBSERVED
+     MOVE "010000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE -3 TO WS-DY
+     PERFORM SEEN-SIX
+     MOVE "portal seen from below (y -3): the bottom only" TO TL-CASE
+     MOVE WS-TEXT(1:6) TO TL-OBSERVED
+     MOVE "100000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0.5 TO WS-DY
+     PERFORM SEEN-SIX
+     MOVE "portal seen from inside the slab (y 0.5): neither face" TO TL-CASE
+     MOVE WS-TEXT(1:6) TO TL-OBSERVED
+     MOVE "000000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0.75 TO WS-DY
+     PERFORM SEEN-SIX
+     MOVE "portal seen from exactly the top plane (y 0.75): neither face" TO TL-CASE
+     MOVE WS-TEXT(1:6) TO TL-OBSERVED
+     MOVE "000000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 22 TO WS-TYPE
+     MOVE 0.5 TO WS-DX WS-DY WS-DZ
+     PERFORM SEEN-SIX
+     MOVE "gateway seen from inside its own cube: no face" TO TL-CASE
+     MOVE WS-TEXT(1:6) TO TL-OBSERVED
+     MOVE "000000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2.5 TO WS-DX
+     PERFORM SEEN-SIX
+     MOVE "gateway seen from the east (x 2.5): the east face only" TO TL-CASE
+     MOVE WS-TEXT(1:6) TO TL-OBSERVED
+     MOVE "000001" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE -2.5 TO WS-DX
+     MOVE 2.5 TO WS-DY
+     MOVE -2.5 TO WS-DZ
+     PERFORM SEEN-SIX
+     MOVE "gateway seen from the west, above and the north (-2.5, 2.5, -2.5): the up, north and west faces" TO TL-CASE
+     MOVE WS-TEXT(1:6) TO TL-OBSERVED
+     MOVE "011010" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0.5 TO WS-DX
+     MOVE -2.5 TO WS-DY
+     MOVE 3.5 TO WS-DZ
+     PERFORM SEEN-SIX
+     MOVE "gateway seen from below and the south (0.5, -2.5, 3.5): the down and south faces" TO TL-CASE
+     MOVE WS-TEXT(1:6) TO TL-OBSERVED
+     MOVE "100100" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   8.9 and E9: the spawn beam (age 60, partial 0.25, End top y 255: height 206, magenta (199, 78, 189)), the cooldown beam (cooldown 20, partial 0.5: height 49,
+*>   purple (137, 50, 184)), and no beam from age 200 with no cooldown.
+     MOVE 60 TO WS-AGE
+     MOVE 0 TO WS-COOL
+     MOVE 0.25 TO WS-PARTIAL
+     MOVE 255 TO WS-MAXY
+     CALL "PORTAL-BEAM-PARAMS" USING WS-AGE WS-COOL WS-PARTIAL WS-MAXY WS-HEIGHT WS-R WS-G WS-B WS-MODE
+     CALL "PORTAL-RGB8" USING WS-R WS-G WS-B WS-R8 WS-G8 WS-B8
+     MOVE "portal beam E9: age 60 and partial 0.25 give height 206, mode 1, colour (199, 78, 189)" TO TL-CASE
+     PERFORM TEXT-BYTES
+     MOVE WS-HEIGHT TO WS-H3
+     MOVE WS-MODE TO WS-N1
+     MOVE 12 TO WS-PTR-BEAM
+     STRING " " WS-H3 " " WS-N1(3:1) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR-BEAM
+     MOVE "199 078 189 206 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 250 TO WS-AGE
+     MOVE 20 TO WS-COOL
+     MOVE 0.5 TO WS-PARTIAL
+     CALL "PORTAL-BEAM-PARAMS" USING WS-AGE WS-COOL WS-PARTIAL WS-MAXY WS-HEIGHT WS-R WS-G WS-B WS-MODE
+     CALL "PORTAL-RGB8" USING WS-R WS-G WS-B WS-R8 WS-G8 WS-B8
+     MOVE "portal beam E9: cooldown 20 and partial 0.5 give height 49, mode 2, colour (137, 50, 184)" TO TL-CASE
+     PERFORM TEXT-BYTES
+     MOVE WS-HEIGHT TO WS-H3
+     MOVE WS-MODE TO WS-N1
+     MOVE 12 TO WS-PTR-BEAM
+     STRING " " WS-H3 " " WS-N1(3:1) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR-BEAM
+     MOVE "137 050 184 049 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 200 TO WS-AGE
+     MOVE 0 TO WS-COOL
+     CALL "PORTAL-BEAM-PARAMS" USING WS-AGE WS-COOL WS-PARTIAL WS-MAXY WS-HEIGHT WS-R WS-G WS-B WS-MODE
+     MOVE "portal beam E9: at age 200 with no cooldown there is no beam (height 0, mode 0)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-HEIGHT TO WS-H3
+     MOVE WS-MODE TO WS-N1
+     STRING WS-H3 " " WS-N1(3:1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "000 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-AGE
+     MOVE 0 TO WS-PARTIAL
+     CALL "PORTAL-BEAM-PARAMS" USING WS-AGE WS-COOL WS-PARTIAL WS-MAXY WS-HEIGHT WS-R WS-G WS-B WS-MODE
+     MOVE "portal beam: a gateway just placed (age 0, partial 0) has height 0 (the hump starts at 0) but is spawning (mode 1)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-HEIGHT TO WS-H3
+     MOVE WS-MODE TO WS-N1
+     STRING WS-H3 " " WS-N1(3:1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "000 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 100 TO WS-AGE
+     CALL "PORTAL-BEAM-PARAMS" USING WS-AGE WS-COOL WS-PARTIAL WS-MAXY WS-HEIGHT WS-R WS-G WS-B WS-MODE
+     MOVE "portal beam: at age 100 (half the spawn time) the hump is at its top: height 255" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-HEIGHT TO WS-H3
+     STRING WS-H3 DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "255" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 300 TO WS-AGE
+     MOVE 45 TO WS-COOL
+     CALL "PORTAL-BEAM-PARAMS" USING WS-AGE WS-COOL WS-PARTIAL WS-MAXY WS-HEIGHT WS-R WS-G WS-B WS-MODE
+     MOVE "portal beam: a cooldown above 40 is clamped (percent 0): height 0, mode 2" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-HEIGHT TO WS-H3
+     MOVE WS-MODE TO WS-N1
+     STRING WS-H3 " " WS-N1(3:1) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "000 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+*> SEEN-SIX: PORTAL-FACE-SEEN of the six faces for the eye (WS-DX, WS-DY, WS-DZ) relative to the block's corner: WS-TEXT(1:6) the six results.
+ SEEN-SIX.
+     MOVE SPACES TO WS-TEXT
+     PERFORM VARYING WS-DIR FROM 0 BY 1 UNTIL WS-DIR > 5
+         CALL "PORTAL-FACE-SEEN" USING WS-TYPE WS-DIR WS-DX WS-DY WS-DZ WS-RESULT
+         MOVE WS-RESULT TO WS-DIGIT
+         MOVE WS-DIGIT TO WS-TEXT(WS-DIR + 1:1)
+     END-PERFORM.
+
+*> CHECK-FLOAT: WS-VAL against WS-EXP within 0.0000015 as "ok".
+ CHECK-FLOAT.
+     COMPUTE WS-DIFF = FUNCTION ABS(WS-VAL - WS-EXP)
+     MOVE "ok" TO TL-EXPECTED
+     MOVE "ok" TO TL-OBSERVED
+     IF WS-DIFF > 0.0000015
+         COMPUTE WS-EDIT ROUNDED = WS-VAL
+         MOVE WS-EDIT TO TL-OBSERVED
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK-RESULT.
+     MOVE "N" TO TL-MODE
+     MOVE WS-EXPECT TO TL-EXPECTED-N
+     MOVE WS-RESULT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE.
+
+ TEXT-BYTES.
+     MOVE WS-R8 TO WS-N1
+     MOVE WS-G8 TO WS-N2
+     MOVE WS-B8 TO WS-N3
+     MOVE SPACES TO TL-OBSERVED
+     STRING WS-N1 " " WS-N2 " " WS-N3 DELIMITED BY SIZE INTO TL-OBSERVED.
+
+*> TEXT-UV: TL-OBSERVED = WS-U and WS-V with six decimals.
+ TEXT-UV.
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     MOVE WS-U TO WS-VAL PERFORM APPEND-VALUE
+     MOVE WS-V TO WS-VAL PERFORM APPEND-VALUE
+     MOVE WS-TEXT TO TL-OBSERVED.
+
+*> APPEND-VALUE: WS-VAL with six decimals and a space after it, at WS-PTR of WS-TEXT.
+ APPEND-VALUE.
+     COMPUTE WS-EDIT ROUNDED = WS-VAL
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR.
+
+*> TEXT-CORNERS: TL-OBSERVED = the four corners of WS-CORNERS as "x y z|" in thousandths of a block.
+ TEXT-CORNERS.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+         COMPUTE WS-MILLI ROUNDED = WS-CORNER(WS-I) * 1000
+         STRING FUNCTION TRIM(WS-MILLI) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         IF FUNCTION MOD(WS-I, 3) = 0
+             STRING "|" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         ELSE
+             STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+     END-PERFORM.
+
+ END PROGRAM TEST-PORTAL-RENDER.

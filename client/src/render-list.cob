@@ -482,6 +482,16 @@
      MOVE CC-TEX-GLINT-ARMOR TO WS-TEX
      CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-GL-VERTEX(1) RL-GL-COUNT RL-GL-UPLOADED
          WS-PIPE WS-TEX WS-PV-TABLE
+*>   The end portal and end gateway faces (52 section 8; portal-mesh.cob): opaque, depth written, eye-relative, with a colour on every vertex, on the UI atlas's white swatch.
+     MOVE 0 TO RL-EP-COUNT
+     IF WS-WORLD = 1
+         CALL "PORTAL-MESH" USING CLIENT-STATE WS-EYE-TABLE WS-PV-TABLE
+     END-IF
+     MOVE MESH-SLOT-PORTAL TO WS-SLOT
+     MOVE CC-PIPE-OPAQUE TO WS-PIPE
+     MOVE CC-TEX-UI TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-EP-VERTEX(1) RL-EP-COUNT RL-EP-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
 *>   Translucent sections back to front (insertion sort, farthest first).
      PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > WS-TCOUNT
          MOVE WS-TSLOT(WS-I) TO WS-SWAP-SLOT
@@ -578,6 +588,10 @@
      MOVE CC-PIPE-TRANSLUCENT TO WS-PIPE
      MOVE CC-TEX-UI TO WS-TEX
      CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-HB-VERTEX(1) RL-HB-COUNT RL-HB-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
+*>   The glow of the end gateway's beam (52 section 8.9; portal-mesh.cob): alpha 32 / 255, eye-relative, translucent.
+     MOVE MESH-SLOT-BEAM TO WS-SLOT
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-EB-VERTEX(1) RL-EB-COUNT RL-EB-UPLOADED
          WS-PIPE WS-TEX WS-PV-TABLE
 *>   The UI: uploaded every frame, drawn last with x' = 2x / w - 1, y' = 2y / h - 1.
 *>   The hand (first person, world screen): a depth clear, then the held item in view space with the projection alone.

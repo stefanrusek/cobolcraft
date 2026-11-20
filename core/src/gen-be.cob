@@ -100,13 +100,15 @@
          MOVE CE-STATE(WS-CELL) TO WS-STATE
          IF GB-KIND(WS-I) = 3
 *>           kind 3: an end gateway the generator placed: GB-SEED the flags (1 exit present, 2 exact), GB-TEXT the exit as three 10-character signed numbers; the entity is of the
-*>           gateway table (end-gateway.cob), not of the chunk
+*>           gateway table (end-gateway.cob); the chunk's entity (type 22, only its Age) is made as well so that the chunk packet lists the gateway
              MOVE GB-TEXT(WS-I) TO WS-GNUMS
              MOVE GB-SEED(WS-I) TO WS-FLAGS
              MOVE WS-GNUM(1) TO WS-EX
              MOVE WS-GNUM(2) TO WS-EY
              MOVE WS-GNUM(3) TO WS-EZ
              CALL "END-GATEWAY-SET" USING L-DIM GB-X(WS-I) GB-Y(WS-I) GB-Z(WS-I) WS-FLAGS WS-EX WS-EY WS-EZ
+*>           The block entity of the chunk too (type 22: its Age tag): a client creates the entity only from the chunk packet's list, and draws the gateway from it (52 section 8.1).
+             CALL "BE-BLOCK-SET" USING L-DIM GB-X(WS-I) GB-Y(WS-I) GB-Z(WS-I) WS-AIR WS-STATE
              MOVE 0 TO WS-INDEX
          ELSE
              CALL "BE-BLOCK-SET" USING L-DIM GB-X(WS-I) GB-Y(WS-I) GB-Z(WS-I) WS-AIR WS-STATE

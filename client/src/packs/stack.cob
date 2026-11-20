@@ -181,6 +181,8 @@
      CALL "PARTICLE-ATLAS-BUILD" USING CLIENT-STATE
      CALL "MODELS-BAKE" USING CLIENT-STATE
      CALL "ITEMDEFS-LOAD" USING CLIENT-STATE
+*>   The end portal's textures (portal-render.cob) are read again at their next use.
+     MOVE 0 TO EP-TEX
 *>   The cloud image and the star texture coordinates come from the packs too.
      CALL "SKY-RESET" USING CLIENT-STATE
      GOBACK.

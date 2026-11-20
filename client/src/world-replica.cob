@@ -38,6 +38,7 @@
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 256
          MOVE 0 TO SN-USED(WS-R)
      END-PERFORM
+     MOVE 0 TO EP-COUNT
      GOBACK.
  END PROGRAM WORLD-CLEAR.
 
@@ -61,6 +62,7 @@
      IF WS-ROW > 0
          MOVE 0 TO WR-USED(WS-ROW)
          MOVE 1 TO WR-RELEASE(WS-ROW)
+         CALL "PORTAL-BE-FORGET" USING CLIENT-STATE L-CX L-CZ
          COMPUTE WS-NX = L-CX - 1
          CALL "WORLD-DIRTY" USING CLIENT-STATE WS-NX L-CZ
          COMPUTE WS-NX = L-CX + 1
@@ -373,6 +375,8 @@
          GOBACK
      END-IF
      CALL "WORLD-ROW-NEW" USING CLIENT-STATE WS-CX WS-CZ WS-ROW
+*>   The block entities of the end portal and end gateway of the packet's list (52 section 8.1: only these entries make them).
+     CALL "PORTAL-BE-CHUNK" USING CLIENT-STATE WS-CX WS-CZ WS-BE-COUNT WS-BE-HEADS WS-BE-DATA
      SET ADDRESS OF CE-CHUNK TO WR-ADDR(WS-ROW)
 *>   Block states: an id the set does not know is void. Biome ids above 255 are kept as 255: no
 *>   biome known.
@@ -581,6 +585,7 @@
  01 WS-LX                  BINARY-LONG.
  01 WS-LZ                  BINARY-LONG.
  01 WS-NOTE                BINARY-LONG.
+ 01 WS-SET                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-X                    BINARY-LONG.
@@ -607,6 +612,9 @@
 *>       A bell (31-4 section 4) is noted for its renderer (bell.cob).
          MOVE CE-STATE(WS-CELL) TO WS-NOTE
          CALL "BELL-NOTE" USING CLIENT-STATE L-X L-Y L-Z WS-NOTE
+*>       A cell that becomes an end portal or end gateway gets its block entity (52 section 8.1 point 2), one that stops being one loses it.
+         MOVE CE-STATE(WS-CELL) TO WS-SET
+         CALL "PORTAL-BE-BLOCK" USING CLIENT-STATE L-X L-Y L-Z WS-SET
 *>       CC-0007 stopgap (sky-stopgap.cob): the column's surface again, the sections its change lights meshed again.
          IF PL-HAS-SKY = 1
              COMPUTE WS-LX = L-X - WS-CX * 16
