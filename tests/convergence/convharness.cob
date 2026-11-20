@@ -113,6 +113,7 @@
  PROGRAM-ID. CV-HOST-OPEN.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY GENQUEUE.
  01 WS-NAME                PIC X(64).
  01 WS-NAME-LENGTH         BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
@@ -129,6 +130,10 @@
      MOVE SPACES TO WS-NAME
      MOVE L-FOLDER(1:L-LENGTH) TO WS-NAME
      MOVE L-LENGTH TO WS-NAME-LENGTH
+*>   The acceptance tests build and look around the origin: the spawn search of a standard world stays centred on chunk (0, 0) as before lane p45i (see GQ-SP-PIN, GENQUEUE.cpy).
+     IF GQ-SP-PIN = 0
+         MOVE 1 TO GQ-SP-PIN
+     END-IF
      CALL "SP-OPEN" USING CLIENT-STATE L-FOLDER L-LENGTH WS-NAME WS-NAME-LENGTH L-MODE
      MOVE WS-INDEX TO CV-HOST
      GOBACK.

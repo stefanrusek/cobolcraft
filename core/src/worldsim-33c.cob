@@ -125,6 +125,25 @@
  END PROGRAM WORLDSIM-CHUNK-SCAN.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. SPAWN-ORIGIN-OF-WORLD.
+*> USING origin chunk x, z out: the chunk the spawn search of a world is centred on: the noise spawn finder's origin chunk (SPAWN-ORIGIN), or chunk (0, 0) while GQ-SP-PIN is 1 (the tests of the
+*> core build around the origin, TEST-OPEN-WORLD sets it).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY GENQUEUE.
+ LINKAGE SECTION.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-CX L-CZ.
+     IF GQ-SP-PIN = 1
+         MOVE 0 TO L-CX L-CZ
+     ELSE
+         CALL "SPAWN-ORIGIN" USING L-CX L-CZ
+     END-IF
+     GOBACK.
+ END PROGRAM SPAWN-ORIGIN-OF-WORLD.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. WORLDSIM-INITIAL-SPAWN.
 *> No parameters: setInitialSpawn of the overworld (33 section 6.2): the provisional spawn (WP-PROVISIONAL, chunk (0, 0), height 64) is stored first; then the
 *> 121 chunks of the square spiral around the origin (WP-SPIRAL) are searched, each chunk's 256 columns with x outer and z inner (WORLDSIM-CHUNK-SCAN); the first column
@@ -155,8 +174,8 @@
          CALL "FLAT-SPAWN-HEIGHT" USING WS-HEIGHT
      END-IF
 *>   the origin chunk of the noise generator (33 section 6.2 step 2; the flat generator has no spawn targets)
-     IF CW-WORLD-TYPE = "standard" AND GQ-SP-PIN NOT = 1
-         CALL "SPAWN-ORIGIN" USING WS-OX WS-OZ
+     IF CW-WORLD-TYPE = "standard"
+         CALL "SPAWN-ORIGIN-OF-WORLD" USING WS-OX WS-OZ
      END-IF
      CALL "WP-PROVISIONAL" USING WS-OX WS-OZ WS-HEIGHT WS-X WS-Y WS-Z
      MOVE WS-X TO CW-SPAWN-X
@@ -190,11 +209,7 @@
  01 WS-HEIGHT              BINARY-LONG VALUE 64.
  PROCEDURE DIVISION.
 *>   the origin chunk of the noise generator: the spiral of the search is centred on it (GQ-SP-OX, GQ-SP-OZ)
-     IF GQ-SP-PIN = 1
-         MOVE 0 TO GQ-SP-OX GQ-SP-OZ
-     ELSE
-         CALL "SPAWN-ORIGIN" USING GQ-SP-OX GQ-SP-OZ
-     END-IF
+     CALL "SPAWN-ORIGIN-OF-WORLD" USING GQ-SP-OX GQ-SP-OZ
      CALL "WP-PROVISIONAL" USING GQ-SP-OX GQ-SP-OZ WS-HEIGHT WS-X WS-Y WS-Z
      MOVE WS-X TO CW-SPAWN-X
      MOVE WS-Y TO CW-SPAWN-Y

@@ -823,7 +823,7 @@
  PROCEDURE DIVISION.
      GO TO MAIN-LINE.
 
-*> The cause of the damage type argument in WS-CAUSE; another namespace than minecraft: or cobolcraft:hail raises the failure.
+*> The cause of the damage type argument in WS-CAUSE.
  FIND-CAUSE.
      MOVE CAUSE-COMMAND TO WS-CAUSE
      COMPUTE WS-ID-LENGTH = BA-END(WS-TYPE) - BA-START(WS-TYPE)
@@ -851,18 +851,10 @@
              MOVE CAUSE-PLAYER TO WS-CAUSE
          WHEN WS-ID = "minecraft:starve"
              MOVE CAUSE-STARVATION TO WS-CAUSE
-         WHEN WS-ID(1:10) = "minecraft:"
-             CONTINUE
          WHEN OTHER
-             MOVE "argument.resource.not_found" TO WS-KEY
-             MOVE 2 TO WS-N-ARGS
-             MOVE SPACES TO WS-A1 WS-A2
-             MOVE WS-ID TO WS-A1
-             MOVE WS-ID-LENGTH TO WS-L1
-             MOVE "minecraft:damage_type" TO WS-A2
-             MOVE 21 TO WS-L2
-             CALL "BR-RAISE" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2 WS-RC
-             MOVE 1 TO BR-R-FAILED
+*>           another id of minecraft: keeps the command cause; any other namespace never gets here: the damage_type argument of the command tree (a resource of the registry
+*>           minecraft:damage_type, lane p46) refuses it with argument.resource.not_found when the line is parsed
+             CONTINUE
      END-EVALUATE.
 
 *> The attacker of the by (and from) entity in WS-ATTACKER (a player row) and WS-SOURCE (its entity id), 0 when none.
