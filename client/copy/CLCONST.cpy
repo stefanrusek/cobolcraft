@@ -232,9 +232,9 @@
  78 SKY-CLOUD-VERTICES      VALUE 120000.   *> the cloud mesh's capacity in vertices
  78 SKY-CLOUD-RADIUS-MAX    VALUE 32.       *> cells meshed at most (cloudRange 128 asks 171: see sky-render.cob)
 *> The glint of the item in the hand (one mesh, view space, texture 5, glint pipeline; hand.cob).
- 78 MESH-SLOT-HAND-GLINT    VALUE 65015.
+ 78 MESH-SLOT-HAND-GLINT    VALUE 65018.
 *> The arm of an empty main hand (one mesh, view space, texture 1; hand-arm.cob).
- 78 MESH-SLOT-HAND-ARM      VALUE 65016.
+ 78 MESH-SLOT-HAND-ARM      VALUE 65019.
  78 CL-SWING-MS             VALUE 300.  *> the hand's swing, milliseconds
 
 *> Weather kinds (standin-content §14.1), from the Game Event pair (rain level, thunder level).
