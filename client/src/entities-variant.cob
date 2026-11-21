@@ -117,6 +117,9 @@
  COPY CLMODELS.
  01 WS-BASE                PIC X(20).
  01 WS-TAIL                PIC X(2).
+ 01 WS-SKIN-INDEX          BINARY-LONG.
+ 01 WS-SKIN-TEXTURE        PIC X(40).
+ 01 WS-SKIN-SLIM           BINARY-LONG.
  01 WS-TD-IN.
     05 WS-TDI              FLOAT-LONG OCCURS 32 TIMES.
  01 WS-TD-OUT.
@@ -174,6 +177,11 @@
                  CONTINUE
          END-EVALUATE
      END-IF
+*>   A player wears the default skin of its UUID (47 section 2.2): the skin index plus 1 (ENTITY-TEX-PATH names the image).
+     IF EN-KEY(L-ROW) = "player" AND (WS-BASE = "player" OR "player_slim")
+         CALL "PLAYER-SKIN-FOR-UUID" USING EN-UUID(L-ROW) WS-SKIN-INDEX WS-SKIN-TEXTURE WS-SKIN-SLIM
+         COMPUTE L-CODE = WS-SKIN-INDEX + 1
+     END-IF
 *>   A rabbit named Toast (EN-X1 1, ENTITY-NAME-SET) wears the toast skin, whatever its variant: code 9 (34-4 12.1).
      IF EN-KEY(L-ROW) = "rabbit" AND WS-BASE = "rabbit" AND EN-X1(L-ROW) = 1
          MOVE 9 TO L-CODE
@@ -219,6 +227,9 @@
  01 WS-TAIL                PIC X(2).
  01 WS-NAME                PIC X(20).
  01 WS-DIR                 PIC X(10).
+ 01 WS-SKIN-INDEX          BINARY-LONG.
+ 01 WS-SKIN-TEXTURE        PIC X(40).
+ 01 WS-SKIN-SLIM           BINARY-LONG.
  01 WS-PTR                 BINARY-LONG.
  01 WS-BABY                PIC X(5).
  01 WS-DIGIT               PIC 9.
@@ -260,6 +271,13 @@
      UNSTRING L-KEY DELIMITED BY "~" INTO WS-BASE WS-TAIL
      IF WS-TAIL = "b"
          MOVE "_baby" TO WS-BABY
+     END-IF
+*>   A player's skin (code = the default skin index plus 1, 47 section 2.1): textures/entity/player/<wide or slim>/<name>.png.
+     IF (WS-BASE = "player" OR "player_slim") AND L-CODE >= 1 AND L-CODE <= 18
+         COMPUTE WS-SKIN-INDEX = L-CODE - 1
+         CALL "PLAYER-SKIN-ENTRY" USING WS-SKIN-INDEX WS-SKIN-TEXTURE WS-SKIN-SLIM
+         STRING "textures/" FUNCTION TRIM(WS-SKIN-TEXTURE) ".png" DELIMITED BY SIZE INTO L-PATH
+         GOBACK
      END-IF
 *>   The no-hat rows stand in for the type layer of the villagers: their textures are those of the villager and the zombie villager.
      IF WS-BASE = "villager_nohat"
@@ -613,6 +631,9 @@
  COPY CLMODELS.
  01 WS-KEY                 PIC X(24).
  01 WS-FIND                BINARY-LONG.
+ 01 WS-SKIN-INDEX          BINARY-LONG.
+ 01 WS-SKIN-TEXTURE        PIC X(40).
+ 01 WS-SKIN-SLIM           BINARY-LONG.
  01 WS-TD-IN.
     05 WS-TDI              FLOAT-LONG OCCURS 32 TIMES.
  01 WS-TD-OUT.
@@ -627,6 +648,13 @@
          MOVE CL-MD-BABY(L-MODEL) TO L-MODEL
      END-IF
      MOVE SPACES TO WS-KEY
+*>   A player of a slim skin (47 section 2.2, the table of its UUID) is drawn from the slim model (3 pixel arms, 12 section 7.4).
+     IF L-MODEL > 0 AND EN-KEY(L-ROW) = "player"
+         CALL "PLAYER-SKIN-FOR-UUID" USING EN-UUID(L-ROW) WS-SKIN-INDEX WS-SKIN-TEXTURE WS-SKIN-SLIM
+         IF WS-SKIN-SLIM = 1
+             MOVE "player_slim" TO WS-KEY
+         END-IF
+     END-IF
      IF L-MODEL > 0 AND EN-VAR(L-ROW) >= 0
          EVALUATE EN-KEY(L-ROW)
              WHEN "tropical_fish"

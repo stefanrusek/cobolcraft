@@ -771,6 +771,7 @@
           15 EN-POSE         BINARY-LONG.
           15 EN-LIVING       BINARY-LONG.   *> the living entity flags byte (entry 8: bit 0 uses an item, bit 1 with the off hand), 12 section 7.5
           15 EN-SWIM         FLOAT-LONG.    *> the swim amount 0 to 1 (53 section 12: 0.09 a tick toward 1 while the pose is swimming)
+          15 EN-PARTS        BINARY-LONG.   *> a player's skin parts byte (entry 16, BYTE, 47 section 5.3: bit 0 cape, 1 jacket, 2 left sleeve, 3 right sleeve, 4 left pants leg, 5 right pants leg, 6 hat; 0 until set)
 *>        The walk animation of a living entity (docs/protocol/54 section 1.1): the speed one tick ago, the speed, the position, the position scale (3 for a
 *>        baby, else 1) and the position at the previous client tick (ENTITIES-ANIM-TICK). EN-MOB-FLAGS is the mob flags byte (Set Entity Data entry 15: 1 no AI,
 *>        2 left-handed, 4 aggressive), EN-BABY the ageable mob's baby flag (entry 16, BOOLEAN). The swing (54 section 2.1, 12 section 6.4): active, ticks, duration,

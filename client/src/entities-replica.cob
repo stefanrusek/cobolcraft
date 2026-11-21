@@ -237,7 +237,7 @@
 *>               of CL-MODELS that draws it (0 = none); a cobolcraft world's EN-TYPE is a stand-in type.
                  MOVE 0 TO EN-BOX-ATTACK(WS-ROW)
                  MOVE 0 TO EN-VANILLA(WS-ROW) EN-MODEL(WS-ROW) EN-VALUE(WS-ROW) EN-SWELL-BASE(WS-ROW) EN-SWELL-MS(WS-ROW)
-                 MOVE 0 TO EN-FLAGS(WS-ROW) EN-POSE(WS-ROW) EN-LIVING(WS-ROW)
+                 MOVE 0 TO EN-FLAGS(WS-ROW) EN-POSE(WS-ROW) EN-LIVING(WS-ROW) EN-PARTS(WS-ROW)
 *>               The walk animation and the swing start at rest (54 section 1.1); the position of the previous tick is this one.
                  MOVE 0 TO EN-WALK-SPEED-OLD(WS-ROW) EN-WALK-SPEED(WS-ROW) EN-WALK-POS(WS-ROW)
                  MOVE 1 TO EN-WALK-SCALE(WS-ROW)
@@ -355,6 +355,10 @@
                  END-IF
                  IF WS-ROW > 0 AND MD-MD-INDEX = 8 AND MD-MD-SERIALIZER = PB-MDS-BYTE
                      MOVE MD-MD-INT TO EN-LIVING(WS-ROW)
+                 END-IF
+*>               The skin parts byte of a player (entry 16, BYTE, 47 section 5.3): the overlay layers the model shows.
+                 IF WS-ROW > 0 AND MD-MD-INDEX = 16 AND MD-MD-SERIALIZER = PB-MDS-BYTE AND EN-KEY(WS-ROW) = "player"
+                     MOVE MD-MD-INT TO EN-PARTS(WS-ROW)
                  END-IF
 *>               A mob's flags byte (entry 15: bit 4 aggressive, 54 section 2.3) and an ageable mob's baby flag (entry 16, BOOLEAN).
                  IF WS-ROW > 0 AND MD-MD-INDEX = 15 AND MD-MD-SERIALIZER = PB-MDS-BYTE

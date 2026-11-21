@@ -44,6 +44,7 @@
  01 WS-BAD-DUP             BINARY-LONG.
  01 WS-BAD-MOVED           BINARY-LONG.
  01 WS-SEEN                BINARY-LONG.
+ 01 WS-DRAWN               BINARY-LONG.
  01 WS-PREV-TABLE.
     05 WS-PREV             BINARY-LONG OCCURS 64 TIMES.
  01 WS-EYE-TABLE.
@@ -153,8 +154,10 @@
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
              MOVE 0 TO WS-SEEN
              IF EN-MODEL(WS-I) > 0 AND CL-MD-ANIM(EN-MODEL(WS-I)) NOT = "F"
+*>               The slot is of the row drawn: the slim model for a player of a slim skin (ENTITY-MODEL-ROW).
+                 CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-I WS-DRAWN
                  PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
-                     IF EA-MT-MODEL(WS-S) = EN-MODEL(WS-I)
+                     IF EA-MT-MODEL(WS-S) = WS-DRAWN
                          MOVE 1 TO WS-SEEN
                      END-IF
                  END-PERFORM

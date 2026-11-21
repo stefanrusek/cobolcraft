@@ -5,6 +5,7 @@
 *>   PLAYER-SKIN-DEFAULT texture slim: getDefaultSkin, entry 6 (slim steve), the skin of a head without a profile (2.2);
 *>   PLAYER-PART-MASK part(0 cape, 1 jacket, 2 left sleeve, 3 right sleeve, 4 left pants leg, 5 right pants leg, 6 hat) mask(out) (5.1; an unknown part has mask 0);
 *>   PLAYER-PART-SHOWN flags(the customisation byte of entity entry 16) part shown(out 1 when (flags and mask) = mask) (5.3);
+*>   PLAYER-PARTS-OPTIONS CLIENT-STATE parts(out): the skin parts byte of the options modelPart_* (47 5.2; 127 by default);
 *>   PLAYER-SKIN-LEGACY pixels(X(16384): a 64 x 64 RGBA image, rows of 256 bytes; a legacy skin has its 64 x 32 rows first) width height status(out 0, or -1 for a size
 *>     other than 64 x 32 and 64 x 64, the image then untouched): the conversion of 4 (the twelve mirrored copies of a legacy skin, the hat transparency hack, the opaque
 *>     base regions).
@@ -231,3 +232,41 @@
      END-PERFORM
      GOBACK.
  END PROGRAM PLAYER-SKIN-LEGACY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAYER-PARTS-OPTIONS.
+*> USING CLIENT-STATE, parts out (BINARY-LONG): the skin parts byte of the options (47 section 5.2): the masks (PLAYER-PART-MASK) of the parts whose option modelPart_<id>
+*> (cape, jacket, left_sleeve, right_sleeve, left_pants_leg, right_pants_leg, hat) is not false; all seven on (127) by default.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAMES-DATA.
+    05 FILLER PIC X(40) VALUE "modelPart_cape".
+    05 FILLER PIC X(40) VALUE "modelPart_jacket".
+    05 FILLER PIC X(40) VALUE "modelPart_left_sleeve".
+    05 FILLER PIC X(40) VALUE "modelPart_right_sleeve".
+    05 FILLER PIC X(40) VALUE "modelPart_left_pants_leg".
+    05 FILLER PIC X(40) VALUE "modelPart_right_pants_leg".
+    05 FILLER PIC X(40) VALUE "modelPart_hat".
+ 01 WS-NAMES REDEFINES WS-NAMES-DATA.
+    05 WS-OPTION-NAME      PIC X(40) OCCURS 7 TIMES.
+ 01 WS-NAME                PIC X(40).
+ 01 WS-VALUE               PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-PART                BINARY-LONG.
+ 01 WS-MASK                BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-PARTS                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-PARTS.
+     MOVE 0 TO L-PARTS
+     PERFORM VARYING WS-PART FROM 0 BY 1 UNTIL WS-PART > 6
+         MOVE WS-OPTION-NAME(WS-PART + 1) TO WS-NAME
+         CALL "OPTIONS-GET" USING CLIENT-STATE WS-NAME WS-VALUE WS-LENGTH WS-FOUND
+         IF WS-FOUND = 0 OR WS-VALUE(1:5) NOT = "false"
+             CALL "PLAYER-PART-MASK" USING WS-PART WS-MASK
+             ADD WS-MASK TO L-PARTS
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM PLAYER-PARTS-OPTIONS.

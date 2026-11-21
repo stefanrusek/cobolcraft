@@ -43,7 +43,7 @@
 *>   rowing times
 *>                and drawn with their own render sequence (34-8 7.4).
 *>                The atlas holds the models on screen at once, at most 64 rows (EA-MT).
- 78 CL-MODEL-COUNT           VALUE 232.
+ 78 CL-MODEL-COUNT           VALUE 233.
  01 CL-MODEL-DATA.
     05 FILLER PIC X(24) VALUE "cow".
     05 FILLER PIC 9 VALUE 4.
@@ -182,7 +182,7 @@
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC X(24) VALUE "player".
     05 FILLER PIC 9 VALUE 2.
-    05 FILLER PIC X(24) VALUE "ZOMBIE".
+    05 FILLER PIC X(24) VALUE "PLAYER".
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC 999 VALUE 64.
     05 FILLER PIC X VALUE "H".
@@ -2133,8 +2133,17 @@
     05 FILLER PIC X(64) VALUE "textures/entity/projectiles/arrow_spectral.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(24) VALUE "player_slim".
+    05 FILLER PIC 9 VALUE 2.
+    05 FILLER PIC X(24) VALUE "PLAYER_SLIM".
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC 999 VALUE 64.
+    05 FILLER PIC X VALUE "H".
+    05 FILLER PIC X(64) VALUE "textures/entity/player/slim/steve.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
  01 CL-MODELS REDEFINES CL-MODEL-DATA.
-    05 CL-MD OCCURS 232 TIMES.
+    05 CL-MD OCCURS 233 TIMES.
        10 CL-MD-KEY      PIC X(24).
        10 CL-MD-FAMILY   PIC 9.
        10 CL-MD-LAYER    PIC X(24).

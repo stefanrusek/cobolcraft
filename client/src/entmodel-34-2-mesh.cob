@@ -395,6 +395,72 @@
  END PROGRAM EMD-PIGLIN-BABY-ARMOR.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. EMD-PLAYER.
+*> EMD-PLAYER EMM-MODEL slim(0 the wide model, 1 the slim model with 3 pixel arms): PlayerModel.createMesh (12 section 7.4, 64 x 64 skin): the humanoid and its seven overlay
+*> parts (hat, jacket, left and right sleeve, left and right pants) as children of the part they cover, so that a part hidden by the skin parts (entry 16, 47 section 5) hides its cuboid.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(100) VALUE "P head root 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C head 0 0 -4 -8 -4 8 8 8 0 0".
+    05 FILLER PIC X(100) VALUE "P hat head 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C hat 32 0 -4 -8 -4 8 8 8 0.5 0".
+    05 FILLER PIC X(100) VALUE "P body root 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C body 16 16 -4 0 -2 8 12 4 0 0".
+    05 FILLER PIC X(100) VALUE "P jacket body 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C jacket 16 32 -4 0 -2 8 12 4 0.25 0".
+    05 FILLER PIC X(100) VALUE "P right_arm root -5 2 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_arm 40 16 -3 -2 -2 4 12 4 0 0".
+    05 FILLER PIC X(100) VALUE "P right_sleeve right_arm 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_sleeve 40 32 -3 -2 -2 4 12 4 0.25 0".
+    05 FILLER PIC X(100) VALUE "P left_arm root 5 2 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_arm 32 48 -1 -2 -2 4 12 4 0 0".
+    05 FILLER PIC X(100) VALUE "P left_sleeve left_arm 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_sleeve 48 48 -1 -2 -2 4 12 4 0.25 0".
+    05 FILLER PIC X(100) VALUE "P right_leg root -1.9 12 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_leg 0 16 -2 0 -2 4 12 4 0 0".
+    05 FILLER PIC X(100) VALUE "P right_pants right_leg 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_pants 0 32 -2 0 -2 4 12 4 0.25 0".
+    05 FILLER PIC X(100) VALUE "P left_leg root 1.9 12 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_leg 16 48 -2 0 -2 4 12 4 0 0".
+    05 FILLER PIC X(100) VALUE "P left_pants left_leg 0 0 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_pants 0 48 -2 0 -2 4 12 4 0.25 0".
+ 01 WS-ROWS-R REDEFINES WS-ROWS.
+    05 WS-ROW              PIC X(100) OCCURS 24 TIMES.
+ 01 WS-SLIM-ROWS.
+    05 FILLER PIC X(100) VALUE "C right_arm 40 16 -2 -2 -2 3 12 4 0 0".
+    05 FILLER PIC X(100) VALUE "C right_sleeve 40 32 -2 -2 -2 3 12 4 0.25 0".
+    05 FILLER PIC X(100) VALUE "C left_arm 32 48 -1 -2 -2 3 12 4 0 0".
+    05 FILLER PIC X(100) VALUE "C left_sleeve 48 48 -1 -2 -2 3 12 4 0.25 0".
+ 01 WS-SLIM-R REDEFINES WS-SLIM-ROWS.
+    05 WS-SLIM-ROW         PIC X(100) OCCURS 4 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-G.
+    05 WS-GV               FLOAT-LONG OCCURS 3 TIMES.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-SLIM                 BINARY-LONG.
+ PROCEDURE DIVISION USING EMM-MODEL L-SLIM.
+     CALL "EMM-INIT" USING EMM-MODEL
+     MOVE 0 TO WS-GV(1) WS-GV(2) WS-GV(3)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 24
+         EVALUATE TRUE
+             WHEN L-SLIM = 1 AND WS-I = 10
+                 CALL "EMM-ROW" USING EMM-MODEL WS-SLIM-ROW(1) WS-G
+             WHEN L-SLIM = 1 AND WS-I = 12
+                 CALL "EMM-ROW" USING EMM-MODEL WS-SLIM-ROW(2) WS-G
+             WHEN L-SLIM = 1 AND WS-I = 14
+                 CALL "EMM-ROW" USING EMM-MODEL WS-SLIM-ROW(3) WS-G
+             WHEN L-SLIM = 1 AND WS-I = 16
+                 CALL "EMM-ROW" USING EMM-MODEL WS-SLIM-ROW(4) WS-G
+             WHEN OTHER
+                 CALL "EMM-ROW" USING EMM-MODEL WS-ROW(WS-I) WS-G
+         END-EVALUATE
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EMD-PLAYER.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. EMD-LAYER.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -407,6 +473,7 @@
  01 WS-G1                  FLOAT-LONG VALUE 1.
  01 WS-G102                FLOAT-LONG VALUE 1.02.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-SLIM                BINARY-LONG.
  LINKAGE SECTION.
  COPY CLEMM.
  01 L-LAYER                PIC X(32).
@@ -416,6 +483,12 @@
      EVALUATE L-LAYER
          WHEN "ZOMBIE"
              CALL "EMD-HUMANOID" USING EMM-MODEL WS-ZERO WS-ZERO2
+         WHEN "PLAYER"
+             MOVE 0 TO WS-SLIM
+             CALL "EMD-PLAYER" USING EMM-MODEL WS-SLIM
+         WHEN "PLAYER_SLIM"
+             MOVE 1 TO WS-SLIM
+             CALL "EMD-PLAYER" USING EMM-MODEL WS-SLIM
          WHEN "HUSK"
              CALL "EMD-HUMANOID" USING EMM-MODEL WS-ZERO WS-ZERO2
              MOVE 1.0625 TO WS-S

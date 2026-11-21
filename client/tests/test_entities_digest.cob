@@ -176,7 +176,7 @@
      MOVE "test entities digest: the digest of the entity mesh of every model in four states is the one taken before the optimisations" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE SPACES TO TL-EXPECTED TL-OBSERVED
-     MOVE "1429702255458470596" TO TL-EXPECTED
+     MOVE "1871543665946725500" TO TL-EXPECTED
      MOVE WS-DIGEST TO WS-D20
      MOVE FUNCTION TRIM(WS-D20) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

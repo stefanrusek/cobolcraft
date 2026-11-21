@@ -403,7 +403,11 @@
              MOVE 0 TO EN-MOB-FLAGS(WS-R) EN-SW-ACTIVE(WS-R)
              MOVE SPACES TO EN-KEY(WS-R)
              MOVE "player" TO EN-KEY(WS-R)
+*>           The local player wears the default skin of its own offline UUID and shows the parts of its options (47 sections 2.2 and 5.2).
+             CALL "CLP-OFFLINE-UUID" USING CL-NAME CL-NAME-LENGTH EN-UUID(WS-R)
+             CALL "PLAYER-PARTS-OPTIONS" USING CLIENT-STATE EN-PARTS(WS-R)
              CALL "ENTITY-MODEL-FIND" USING EN-KEY(WS-R) EN-MODEL(WS-R)
+             CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-R EN-MODEL(WS-R)
              ADD 1 TO EN-COUNT
              CALL "ENTITY-MODEL-SLOTS" USING CLIENT-STATE
              CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
