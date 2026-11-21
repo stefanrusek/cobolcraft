@@ -164,12 +164,254 @@
  END PROGRAM RL-BLOCK-SOUND.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. HOPPER-CONTAINER.
-*> USING dim, x, y, z, block entity index out, size out: the container at the position that a hopper can move items into and out of (0 and 0 when there is none): a chest, trapped chest, barrel, shulker
-*> box, dispenser, dropper or hopper block entity (31-2 5.7 step 1 for the containers without face rules).
+ PROGRAM-ID. HOPPER-WORLDLY.
+*> USING block entity type, kind out: 1 for a furnace, smoker or blast furnace, 2 for a brewing stand (the containers with slots by face, 31-2 3.1 and 4.1), 0 for the others (their slots are the flat list 0 to size - 1, 5.4).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-KIND.
+     MOVE 0 TO L-KIND
+     EVALUATE L-TYPE
+         WHEN 0 WHEN 27 WHEN 28
+             MOVE 1 TO L-KIND
+         WHEN 12
+             MOVE 2 TO L-KIND
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM HOPPER-WORLDLY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HOPPER-FACE-SLOT.
+*> USING block entity index, face (0 down, 1 up, 2 side), n, slot out: the n-th slot (1 based) of getSlots(container, face) (31-2 5.4), 0 past the end. A furnace gives down [result, fuel], up [input],
+*> a side [fuel]; a brewing stand up [reagent], down [potions, reagent], a side [potions, fuel]; any other container the flat list.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BESTATE.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-LIST.
+    05 WS-LIST-SLOT        BINARY-LONG OCCURS 5 TIMES.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-FACE                 BINARY-LONG.
+ 01 L-N                    BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-FACE L-N L-SLOT.
+     MOVE 0 TO L-SLOT
+     CALL "HOPPER-WORLDLY" USING BE-TYPE(L-INDEX) WS-KIND
+     CALL "BE-CONTAINER-SIZE" USING BE-TYPE(L-INDEX) WS-SIZE
+     EVALUATE WS-KIND
+         WHEN 1
+             EVALUATE TRUE
+                 WHEN L-FACE = 0 AND L-N = 1
+                     MOVE 3 TO L-SLOT
+                 WHEN L-FACE = 0 AND L-N = 2
+                     MOVE 2 TO L-SLOT
+                 WHEN L-FACE = 1 AND L-N = 1
+                     MOVE 1 TO L-SLOT
+                 WHEN L-FACE = 2 AND L-N = 1
+                     MOVE 2 TO L-SLOT
+             END-EVALUATE
+         WHEN 2
+             CALL "BE2-BREW-FACE" USING L-FACE WS-LIST WS-COUNT
+             IF L-N <= WS-COUNT
+                 COMPUTE L-SLOT = WS-LIST-SLOT(L-N) + 1
+             END-IF
+         WHEN OTHER
+             IF L-N <= WS-SIZE
+                 MOVE L-N TO L-SLOT
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM HOPPER-FACE-SLOT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HOPPER-KEY-IS.
+*> USING item, key (PIC X(16), bare), flag out: 1 when the item has that key (with or without the minecraft: prefix).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CITEMS.
+ 01 WS-BARE                PIC X(48).
+ LINKAGE SECTION.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-KEY                  PIC X(16).
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ITEM L-KEY L-FLAG.
+     MOVE 0 TO L-FLAG
+     CALL "KEY-BARE" USING IT-KEY(L-ITEM + 1) WS-BARE
+     IF WS-BARE = L-KEY
+         MOVE 1 TO L-FLAG
+     END-IF
+     GOBACK.
+ END PROGRAM HOPPER-KEY-IS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HOPPER-CAN-PLACE.
+*> USING block entity index, slot (1 based), item, allowed out: the destination's canPlaceItem(slot, stack) (31-2 5.6; canPlaceItemThroughFace is the same). A furnace: the result slot never; the fuel
+*> slot a fuel, or an empty bucket while the slot holds none (3.1); the input slot anything. A brewing stand: BE2-BREW-PLACE with the brewing_fuel, reagent and potion input tests of the stack
+*> and whether the slot is empty (4.1). Every other container accepts any stack.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ COPY CITEMS.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-FUEL                BINARY-LONG.
+ 01 WS-BUCKET              BINARY-LONG.
+ 01 WS-HELD                BINARY-LONG.
+ 01 WS-INPUT               BINARY-LONG.
+ 01 WS-REAGENT             BINARY-LONG.
+ 01 WS-USES                BINARY-LONG.
+ 01 WS-SPEED               FLOAT-LONG.
+ 01 WS-BREW-FUEL           BINARY-LONG.
+ 01 WS-EMPTY               BINARY-LONG.
+ 01 WS-SLOT0               BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG VALUE 1.
+ 01 WS-BUCKET-KEY          PIC X(16) VALUE "bucket".
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-SLOT L-ITEM L-OK.
+     MOVE 1 TO L-OK
+     CALL "HOPPER-WORLDLY" USING BE-TYPE(L-INDEX) WS-KIND
+     EVALUATE WS-KIND
+         WHEN 1
+             EVALUATE L-SLOT
+                 WHEN 3
+                     MOVE 0 TO L-OK
+                 WHEN 2
+                     CALL "FURN-MAY-FUEL" USING L-ITEM L-OK
+                     CALL "HOPPER-KEY-IS" USING L-ITEM WS-BUCKET-KEY WS-BUCKET
+                     MOVE 0 TO WS-HELD
+                     IF BE-SLOT-COUNT(L-INDEX, 2) > 0
+                         CALL "HOPPER-KEY-IS" USING BE-SLOT-ITEM(L-INDEX, 2) WS-BUCKET-KEY WS-HELD
+                     END-IF
+                     IF WS-BUCKET = 1 AND WS-HELD = 1
+                         MOVE 0 TO L-OK
+                     END-IF
+             END-EVALUATE
+         WHEN 2
+             CALL "BREW-IS-INPUT" USING L-ITEM WS-INPUT
+             CALL "BREW-IS-REAGENT" USING L-ITEM WS-REAGENT
+             CALL "BREW-STAND-FUEL" USING L-ITEM WS-USES WS-SPEED
+             MOVE 0 TO WS-BREW-FUEL
+             IF WS-USES > 0
+                 MOVE 1 TO WS-BREW-FUEL
+             END-IF
+             MOVE 0 TO WS-EMPTY
+             IF BE-SLOT-COUNT(L-INDEX, L-SLOT) = 0
+                 MOVE 1 TO WS-EMPTY
+             END-IF
+             COMPUTE WS-SLOT0 = L-SLOT - 1
+             CALL "BE2-BREW-PLACE" USING WS-SLOT0 WS-BREW-FUEL WS-LEVEL WS-REAGENT WS-INPUT WS-EMPTY L-OK
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM HOPPER-CAN-PLACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HOPPER-CAN-TAKE.
+*> USING block entity index, slot (1 based), item, face (0 down), allowed out: canTakeItemThroughFace(slot, stack, face) (31-2 3.1 and 4.1): a furnace's fuel slot below only gives a bucket or a
+*> water bucket (the item tag furnace_fuel_bottom_takeable); a brewing stand's reagent slot only gives a glass bottle. Every other slot and container gives its stack.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-BUCKET              BINARY-LONG.
+ 01 WS-WATER               BINARY-LONG.
+ 01 WS-GLASS               BINARY-LONG.
+ 01 WS-SLOT0               BINARY-LONG.
+ 01 WS-BUCKET-KEY          PIC X(16) VALUE "bucket".
+ 01 WS-WATER-KEY           PIC X(16) VALUE "water_bucket".
+ 01 WS-GLASS-KEY           PIC X(16) VALUE "glass_bottle".
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-FACE                 BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-SLOT L-ITEM L-FACE L-OK.
+     MOVE 1 TO L-OK
+     CALL "HOPPER-WORLDLY" USING BE-TYPE(L-INDEX) WS-KIND
+     EVALUATE WS-KIND
+         WHEN 1
+             IF L-FACE = 0 AND L-SLOT = 2
+                 CALL "HOPPER-KEY-IS" USING L-ITEM WS-BUCKET-KEY WS-BUCKET
+                 CALL "HOPPER-KEY-IS" USING L-ITEM WS-WATER-KEY WS-WATER
+                 MOVE 0 TO L-OK
+                 IF WS-BUCKET = 1 OR WS-WATER = 1
+                     MOVE 1 TO L-OK
+                 END-IF
+             END-IF
+         WHEN 2
+             CALL "HOPPER-KEY-IS" USING L-ITEM WS-GLASS-KEY WS-GLASS
+             COMPUTE WS-SLOT0 = L-SLOT - 1
+             CALL "BE2-BREW-TAKE" USING WS-SLOT0 WS-GLASS L-OK
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM HOPPER-CAN-TAKE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HOPPER-ADD-ONE.
+*> USING block entity index, item, variant, face, left out (0 when one item went in): addItem(source, dest, stack, direction) of a single item (31-2 5.6): for each slot of getSlots(dest, face) in
+*> order, the item goes into the slot that is empty or already holds the same stack with room (canMergeItems), when canPlaceItem allows it. The containers without face rules take the flat
+*> insertion of RL-INSERT-ONE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ COPY CITEMS.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-LIMIT               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-VAR                  BINARY-LONG.
+ 01 L-FACE                 BINARY-LONG.
+ 01 L-LEFT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-ITEM L-VAR L-FACE L-LEFT.
+     CALL "HOPPER-WORLDLY" USING BE-TYPE(L-INDEX) WS-KIND
+     IF WS-KIND = 0
+         CALL "RL-INSERT-ONE" USING L-INDEX L-ITEM L-VAR L-LEFT
+         GOBACK
+     END-IF
+     MOVE 1 TO L-LEFT
+     CALL "BE-MAX-STACK" USING IT-MAX-STACK(L-ITEM + 1) WS-LIMIT
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > 5 OR L-LEFT = 0
+         CALL "HOPPER-FACE-SLOT" USING L-INDEX L-FACE WS-N WS-SLOT
+         IF WS-SLOT > 0
+             CALL "HOPPER-CAN-PLACE" USING L-INDEX WS-SLOT L-ITEM WS-OK
+             IF WS-OK = 1 AND BE-SLOT-COUNT(L-INDEX, WS-SLOT) = 0
+                 MOVE L-ITEM TO BE-SLOT-ITEM(L-INDEX, WS-SLOT)
+                 MOVE L-VAR TO BE-SLOT-VAR(L-INDEX, WS-SLOT)
+                 MOVE 1 TO BE-SLOT-COUNT(L-INDEX, WS-SLOT)
+                 MOVE 0 TO L-LEFT
+             END-IF
+             IF WS-OK = 1 AND L-LEFT = 1 AND BE-SLOT-ITEM(L-INDEX, WS-SLOT) = L-ITEM AND BE-SLOT-VAR(L-INDEX, WS-SLOT) = L-VAR
+                     AND BE-SLOT-COUNT(L-INDEX, WS-SLOT) < WS-LIMIT
+                 ADD 1 TO BE-SLOT-COUNT(L-INDEX, WS-SLOT)
+                 MOVE 0 TO L-LEFT
+             END-IF
+         END-IF
+     END-PERFORM
+     IF L-LEFT = 0
+         CALL "BE-MARK-CHUNK" USING L-INDEX
+     END-IF
+     GOBACK.
+ END PROGRAM HOPPER-ADD-ONE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HOPPER-CONTAINER.
+*> USING dim, x, y, z, block entity index out, size out: the container at the position that a hopper can move items into and out of (0 and 0 when there is none): a chest, trapped chest, barrel, shulker
+*> box, dispenser, dropper or hopper block entity (31-2 5.7 step 1), or a furnace, smoker, blast furnace or brewing stand (slots by face, HOPPER-FACE-SLOT).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WS-KIND                BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -181,7 +423,8 @@
      MOVE 0 TO L-SIZE
      CALL "BE-FIND" USING L-DIM L-X L-Y L-Z L-INDEX
      IF L-INDEX > 0
-         IF BE-TYPE(L-INDEX) = 1 OR BE-TYPE(L-INDEX) = 2 OR BE-TYPE(L-INDEX) = 5 OR BE-TYPE(L-INDEX) = 6
+         CALL "HOPPER-WORLDLY" USING BE-TYPE(L-INDEX) WS-KIND
+         IF WS-KIND > 0 OR BE-TYPE(L-INDEX) = 1 OR BE-TYPE(L-INDEX) = 2 OR BE-TYPE(L-INDEX) = 5 OR BE-TYPE(L-INDEX) = 6
                  OR BE-TYPE(L-INDEX) = 18 OR BE-TYPE(L-INDEX) = 24 OR BE-TYPE(L-INDEX) = 26
              CALL "BE-CONTAINER-SIZE" USING BE-TYPE(L-INDEX) L-SIZE
          END-IF
@@ -191,7 +434,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HOPPER-EJECT.
-*> USING hopper block entity index, state of the hopper block, moved out: ejectItems (5.4): one item of the first slot the container in front accepts
+*> USING hopper block entity index, state of the hopper block, moved out: ejectItems (5.4): one item of the first slot the container in front accepts, through the face opposite to the hopper's facing
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BESTATE.
@@ -211,6 +454,7 @@
  01 WS-LEFT                BINARY-LONG.
  01 WS-OFFSET              BINARY-LONG.
  01 WS-DONE                BINARY-LONG.
+ 01 WS-FACE                BINARY-LONG.
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  01 L-STATE                BINARY-LONG.
@@ -218,6 +462,12 @@
  PROCEDURE DIVISION USING L-INDEX L-STATE L-MOVED.
      CALL "PST-FACING-OF" USING L-STATE WS-FACING
      CALL "BU-DIRECTION" USING WS-FACING WS-DX WS-DY WS-DZ
+*>   side = facing.getOpposite(): a hopper facing down puts into the top of the container below, one facing a side into the side face
+     IF WS-FACING = 0
+         MOVE 1 TO WS-FACE
+     ELSE
+         MOVE 2 TO WS-FACE
+     END-IF
      COMPUTE WS-QX = BE-X(L-INDEX) + WS-DX
      COMPUTE WS-QY = BE-Y(L-INDEX) + WS-DY
      COMPUTE WS-QZ = BE-Z(L-INDEX) + WS-DZ
@@ -234,7 +484,7 @@
              IF BE-SLOT-COUNT(L-INDEX, WS-S) > 0
                  MOVE BE-SLOT-ITEM(L-INDEX, WS-S) TO WS-ITEM
                  MOVE BE-SLOT-VAR(L-INDEX, WS-S) TO WS-VAR
-                 CALL "RL-INSERT-ONE" USING WS-TARGET WS-ITEM WS-VAR WS-LEFT
+                 CALL "HOPPER-ADD-ONE" USING WS-TARGET WS-ITEM WS-VAR WS-FACE WS-LEFT
                  IF WS-LEFT = 0
                      SUBTRACT 1 FROM BE-SLOT-COUNT(L-INDEX, WS-S)
                      IF BE-SLOT-COUNT(L-INDEX, WS-S) = 0
@@ -260,7 +510,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HOPPER-SUCK.
-*> USING hopper block entity index, moved out: suckInItems (5.5): one item from the first slot of the container above that the hopper accepts
+*> USING hopper block entity index, moved out: suckInItems (5.5): one item from the first slot of getSlots(source, DOWN) of the container above that the hopper accepts and the source lets go
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BESTATE.
@@ -272,6 +522,9 @@
  01 WS-VAR                 BINARY-LONG.
  01 WS-LEFT                BINARY-LONG.
  01 WS-DONE                BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-DOWN                BINARY-LONG VALUE 0.
+ 01 WS-OK                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  01 L-MOVED                BINARY-LONG.
@@ -280,8 +533,13 @@
      CALL "HOPPER-CONTAINER" USING BE-DIM(L-INDEX) BE-X(L-INDEX) WS-QY BE-Z(L-INDEX) WS-SOURCE WS-SSIZE
      IF WS-SOURCE > 0
          MOVE 0 TO WS-DONE
-         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-SSIZE OR WS-DONE = 1
-             IF BE-SLOT-COUNT(WS-SOURCE, WS-S) > 0
+         PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > WS-SSIZE OR WS-DONE = 1
+             CALL "HOPPER-FACE-SLOT" USING WS-SOURCE WS-DOWN WS-N WS-S
+             MOVE 0 TO WS-OK
+             IF WS-S > 0 AND BE-SLOT-COUNT(WS-SOURCE, WS-S) > 0
+                 CALL "HOPPER-CAN-TAKE" USING WS-SOURCE WS-S BE-SLOT-ITEM(WS-SOURCE, WS-S) WS-DOWN WS-OK
+             END-IF
+             IF WS-OK = 1
                  MOVE BE-SLOT-ITEM(WS-SOURCE, WS-S) TO WS-ITEM
                  MOVE BE-SLOT-VAR(WS-SOURCE, WS-S) TO WS-VAR
                  CALL "RL-INSERT-ONE" USING L-INDEX WS-ITEM WS-VAR WS-LEFT

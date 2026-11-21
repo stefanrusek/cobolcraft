@@ -1,6 +1,7 @@
 *> Live redstone, dispensers, droppers and hoppers (docs/protocol/30-redstone-4 sections 1, 2 and 5.1): the trigger of a dispenser or dropper on a neighbour change (power at the block or at the
 *> block above, one dispense per rising edge, 4 ticks later), the dispense of the scheduled tick (a random non-empty slot; the dropper puts one item into the container in front or drops it,
 *> the dispenser drops it or, for TNT, primes it; level events 1000, 1001 and 2000), and the hopper's `enabled` property follows its signal.
+*> The dropper puts into a furnace, smoker, blast furnace or brewing stand through the slots of its face (HOPPER-ADD-ONE, redstone-live-k.cob).
 *> Deviations: the slot is drawn as nextInt(n) is, with the level's double (the same distribution, not the same sequence); the registered behaviours of 30-4 section 4 other than TNT are in
 *> redstone-live-j.cob (flint and steel, bone meal, buckets, spawn eggs, minecarts); the others are not wired: such an item is dropped like any other; the container in front of a dropper is a block entity container (a minecart or a horse is not looked for); the
 *> game event block_activate of an empty dispenser is not sent. The hopper's transfer of items (31-2 section 5) is not part of this core: only its enabled state is.
@@ -64,6 +65,7 @@
  01 LS-BLOCK               BINARY-LONG.
  01 LS-CLASS               BINARY-LONG.
  01 LS-F                   BINARY-LONG.
+ 01 LS-FACE                BINARY-LONG.
  01 LS-HERE                BINARY-LONG.
  01 LS-ABOVE               BINARY-LONG.
  01 LS-QY                  BINARY-LONG.
@@ -245,7 +247,16 @@
                  END-IF
                  IF LS-SIZE > 0
                      MOVE 1 TO LS-CONTAINER
-                     CALL "RL-INSERT-ONE" USING LS-INDEX2 LS-ITEM LS-VAR LS-LEFT
+*>                   addItem(dropper, container, stack, facing.getOpposite()) (30-4 1.4): a furnace or brewing stand takes it through the face that looks back at the dropper
+                     EVALUATE LS-F
+                         WHEN 0
+                             MOVE 1 TO LS-FACE
+                         WHEN 1
+                             MOVE 0 TO LS-FACE
+                         WHEN OTHER
+                             MOVE 2 TO LS-FACE
+                     END-EVALUATE
+                     CALL "HOPPER-ADD-ONE" USING LS-INDEX2 LS-ITEM LS-VAR LS-FACE LS-LEFT
                  ELSE
                      MOVE 1 TO LS-LEFT
                  END-IF
