@@ -12,7 +12,8 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 ## Language and build
 
 - GnuCOBOL 3.2, **free format**. Every build uses `-free -debug -std=default -fstatic-call`
-  (`tools/package.mk`). Comments are `*>`.
+  (`tools/package.mk`); `make build RELEASE=1` (output under `build/release`) swaps `-debug` for `-O2`
+  (gates and coverage stay `-debug`). Comments are `*>`.
 - `-fstatic-call` is required: without it a `CALL "X"` does not pull program X out of a package `.a`.
 - Calls to C use `CALL STATIC` (research R2). COBOL may call any C library directly; C glue
   (`shim/`) exists only where a call can't be expressed cleanly (callbacks, struct layouts, variadics),
@@ -30,6 +31,8 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   exclusions.
 - **Keep production logic inline.** Trailing performed paragraphs make gcov report the `END PROGRAM`
   line as uncovered. Prefer several small programs (one `PROGRAM-ID` each) to paragraphs.
+  When a program must keep performed paragraphs after its main flow, end the main flow with `GO TO MAIN-EXIT.` instead of `GOBACK.` and put
+  `MAIN-EXIT.` + `CONTINUE.` as the last paragraph before `END PROGRAM`: the run then falls off the end and the `END PROGRAM` line counts as executed.
 - Write a failure branch on its own line(s), so coverage actually shows whether it ran.
 - Several programs may share one source file (`END PROGRAM` after each). Under `-Wall`, calls between
   programs in one file are size-checked: the argument sizes must match.
@@ -72,6 +75,7 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   distinct fields (e.g. three zero fields for a zero vector).
 - **Float edges**: `x + 0.35` is not exact; compare cell faces with a small tolerance (movement.cob
   uses 1e-7) so that touching faces do not count as overlaps.
+- **Comparing two FLOAT-LONG items is fuzzy** (relative tolerance 1e-7: 29999985 = 29999984): compare limits as scaled `BINARY-DOUBLE` integers.
 - **MOVE of a float to a numeric-edited item truncates** (100.215 shows as 100.21499): use
   `COMPUTE edited ROUNDED = float` when a test prints a float.
 - **OCCURS is not allowed at level 01**: wrap a table in a 01 group (`01 WS-ORDERS. 05 WS-ORDER
@@ -145,8 +149,8 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   `TEST-DRAIN-HUNGER` (Set Health, Entity Event and Container Set Slot, `|`-separated), `TEST-PLACE-RECIPE`,
   `TEST-DRAIN-CRAFT` (Recipe Book Add as `book <n> craftable <ids> replace <r>` and Container Set Slot,
   `|`-separated), `TEST-DRAIN-WEATHER` (weather Game Events 1, 2, 7, 8 as `<event> <value>`,
-  `|`-separated), fixture loading and comparison. Test copybooks are not make dependencies: touch the test or delete
-  `build/coverage/core` after changing one.
+  `|`-separated), fixture loading and comparison. Copybooks are make dependencies (see Gates): a changed test
+  copybook rebuilds the tests that COPY it.
 - Coverage fixtures are named `*.gcov.txt` (`*.gcov` is gitignored).
 - **Recipe Book Add follows every inventory change** (standin §13; `CRAFT-REFRESH-ALL` runs after each
   play packet and each tick). `TEST-DRAIN-BLOCKS` and `TEST-DRAIN-ENTITIES` leave it out (like Set Time);
@@ -299,8 +303,7 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
   phrase, literals included: `STRING "a b|" X DELIMITED BY SPACE` yields `a`. Give the literal its
   own `DELIMITED BY SIZE`.
 
-- **Client tests** (client/tests/CLTEST.cpy, COPY it after the test program; touch the tests
-  after changing it): `TEST-LOAD-HEX`, `TEST-SAME-AS-FIXTURE`, `TEST-HEX-OF`, `TEST-FEED` (a fixture
+- **Client tests** (client/tests/CLTEST.cpy, COPY it after the test program): `TEST-LOAD-HEX`, `TEST-SAME-AS-FIXTURE`, `TEST-HEX-OF`, `TEST-FEED` (a fixture
   packet into `PROTO-PACKET` on a connection), `TEST-SENT` / `TEST-SENT-IDS` / `TEST-CLEAR-SENT`
   (what the client queued in `CN-OUT`, decoded as id + body),
   `TEST-LOOPBACK` (a real loopback connection for a client connection), `TEST-SERVE`,
@@ -362,6 +365,13 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 - **Programs that never return in a test**: a test runs itself again with arguments through
   `CALL "SYSTEM"` (`FUNCTION MODULE-PATH`; the status is `RETURN-CODE / 256`), and a SIGALRM handler
   (`SET proc-pointer TO ENTRY "..."`, `signal`, `alarm`) can end a window run (`test_cl_main_run`).
+- **Game rules** are read with `CALL "BR-RULE-GET" USING name-PIC-X(40) value-BINARY-DOUBLE` (boolean 1 or 0, integer rules
+  their value; core/src/cmd-rules.cob); a test sets one with `BR-RULE-FIND` then `BR-RULE-SET` and must put it back.
+  `RULE-CAUSE-*` tables hold the 11 player damage causes only: a cause above `CAUSE-COUNT` (fire, lava) never reaches `HEALTH-HURT`.
+- **`STRING` of a numeric item**: a `BINARY-LONG` is not display data; move it to a `PIC 99` first. A literal before a `DELIMITED BY SPACE`
+  source needs its own `DELIMITED BY SIZE`, else the text stops at its first space.
+- **macOS tools**: `sed -i ''` needs the empty suffix, and `git add -A -- . ':!scratchpad'` fails (and stops a following `&&`) because
+  scratchpad is git-ignored: use plain `git add -A`.
 
 ## Failure handling (FR-012)
 
@@ -373,4 +383,37 @@ implementing. If this file and tasks.md disagree, tasks.md and the constitution 
 
 - Each package has a gate: `make gate-<pkg>` (shim, proto, core, server, client), `make gate-contract` and
   `make gate-tools`, plus `make gate` for everything. A gate runs lint, the tests and coverage.
+- Builds are incremental and parallel (`tools/package.mk`, `tools/runtests.py`). Every compile records the
+  copybooks and headers it read, in any package, so a changed copybook rebuilds exactly the sources that COPY
+  it: no command needs a clean `build/` first. `JOBS=<n>` sets how many compiles and test programs run at a
+  time (default: every processor).
+- Test programs link each package's shared library (`build/<pkg>/lib<pkg>.dylib`), not the archive; the
+  programs (`bin`) link the archives. A test program that defines a program name of the library (a seam such
+  as `core/tests/JIGSEAM.cpy`) still replaces it for the library's own calls.
+- A core test that opens a new standard world for its generation only (no `TEST-JOIN`, no use of the world
+  spawn) puts `COPY NOSPAWN.` before `COPY CORETEST.`: `core/tests/NOSPAWN.cpy` stands in for
+  `WORLDSIM-NEW-WORLD-SPAWN`, so opening the world runs no spawn search and generates no chunk; it does the
+  one-time setup the first generated chunk would have done (generator seed, climate points, possible
+  structure sets). A test of the spawn point or of a joining player keeps the real search.
+- With more than one job each running test program works in a sandbox (`<build>/sandbox/<n>`: copy-on-write
+  copies of the package, contract, tools and tests folders, its own `build/`, no `.git`), so tests may keep
+  using fixed scratch names under `build/` and may change copied fixtures. Two tests must not share anything
+  outside the repository (a fixed port, a file in `/tmp`).
+- A test program with a failing case in the parallel pass is run once more afterwards, alone in the
+  repository root (`RERUN <test source>`), and only that run counts: cases that measure time are judged on a
+  quiet machine.
+- `make cover-changed SINCE=<ref> [ONLY="<pattern> ..."]` is a branch's own coverage check: it runs the ONLY
+  test programs (default: all tests of the packages whose production sources changed) instrumented and fails
+  on every production line changed since the branch left `<ref>` that the run never executed. It is an
+  intermediate check, never a gate.
 - Check a command's exit status directly, not through a pipe.
+
+## Task lists
+
+- A feature whose task list was split (`tools/tasks.py split`) has `specs/<feature>/tasks.md` as the index and
+  one file per phase under `specs/<feature>/tasks/` (`<package>/phase-<id>.md`); read the index and the files
+  of the phases you work on, not the whole list. A lane keeps its own list in
+  `specs/<feature>/tasks/lanes/<lane>.md` and adds nothing to the index.
+- `python3 tools/tasks.py status specs/<feature> --open` lists the files with open tasks;
+  `python3 tools/tasks.py absorb specs/<feature> <ref>` brings in the task changes of a branch that still has
+  the one-file layout (run it with `MERGE_HEAD` when a merge stops on `tasks.md`).

@@ -849,7 +849,7 @@ Id 43. Grammar (read): a float (read with `readFloat`), then an unquoted run as 
 | `d` | 24000 |
 
 An unknown unit gives `argument.time.invalid_unit` (cursor after the unit). The value is `round(number * unit)` as a Java
-`Math.round` of the float product (round half up to a positive integer; negative halves toward positive infinity). If
+`Math.round` of the float product (round half up to a positive integer; negative halves toward positive infinity) (exact floor(x + 1/2), see 10 §16.2 `round_f32`; not a float add then floor). If
 the result is below the **minimum** carried in the parser's property (Int), the error is
 `argument.time.tick_count_too_low` with the minimum and the found value. Examples (minimum 0): `10` = 10 ticks, `10t` = 10,
 `1.5s` = 30, `1d` = 24000, `0.5d` = 12000, `-1` with minimum 0 = error `The tick count must not be less than 0: found -1`.

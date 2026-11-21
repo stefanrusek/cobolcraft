@@ -40,10 +40,10 @@
      CALL "ATLAS-BUILD" USING CLIENT-STATE
      CALL "ATLAS-BUILD" USING CLIENT-STATE
      SET ADDRESS OF B-ATLAS TO AT-ADDR
-     MOVE "atlas the built-in pack gives 15 block sprites and 6 item sprites (items.json) after the "
+     MOVE "atlas the built-in pack gives 15 block sprites, 20 crack overlays and 6 item sprites (items.json) after the "
          & "missing sprite; the atlas is marked for upload" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 221 TO TL-EXPECTED-N
+     MOVE 421 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = AT-SPRITE-COUNT * 10 + AT-UPLOAD(1)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

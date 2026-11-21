@@ -17,7 +17,7 @@
  COPY TESTLIB.
  COPY CORESTATE.
  COPY COREAPI.
- COPY ENTITYTYPES.
+ COPY ETIDS.
  01 WS-NAME                PIC X(16).
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
  01 WS-ALICE               BINARY-LONG.
@@ -62,7 +62,7 @@
      MOVE 1 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "damage 1 type 28 source 3 | hurt 1 | health 27 food 24" TO TL-EXPECTED
+     MOVE "damage 1 type 28 source 3 | hurt 1 | health 17 food 17" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US9-2 given the abend attacked when 29 ticks pass then it does not attack "
@@ -79,7 +79,7 @@
      MOVE 1 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "damage 1 type 28 source 3 | hurt 1 | health 24 food 24" TO TL-EXPECTED
+     MOVE "damage 1 type 28 source 3 | hurt 1 | health 14 food 17" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US9-3 given a sodgrazer next to survival Alice when 98 ticks pass then it "
@@ -170,6 +170,9 @@
      MOVE 16001 TO CW-TIME
      MOVE "Alice" TO WS-NAME
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ALICE
+*>   Food 17 and saturation 0: no natural regeneration between the hits.
+     MOVE 17 TO PL-FOOD(CN-PLAYER(WS-ALICE))
+     MOVE 0 TO PL-SATURATION(CN-PLAYER(WS-ALICE))
      MOVE 8.5 TO WS-Z
      CALL "TEST-MOVE" USING WS-ALICE WS-MOVE WS-X WS-Y WS-Z WS-YAW WS-PITCH WS-FLAGS
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT.

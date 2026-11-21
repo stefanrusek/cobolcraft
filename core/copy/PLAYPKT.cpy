@@ -59,9 +59,15 @@
 *>  items (Boolean, 1 = true).
     05 PSB-RECIPE             BINARY-LONG.
     05 PSB-USE-MAX            BINARY-LONG.
+*>  0x2F Recipe Book Change Settings: book type (0 to 3), is open and is filtering (0 or 1). 0x30 Recipe Book Seen: the
+*>  display id is in PSB-RECIPE.
+    05 PSB-BOOK-TYPE          BINARY-LONG.
+    05 PSB-BOOK-OPEN          BINARY-LONG.
+    05 PSB-BOOK-FILTER        BINARY-LONG.
 *>  0x39 Set Creative Mode Slot: the stack (count 0 = empty).
     05 PSB-STACK-ITEM         BINARY-LONG.
     05 PSB-STACK-COUNT        BINARY-LONG.
+    05 PSB-STACK-VAR          BINARY-LONG.   *> the component patch as a handle of CSTACK.cpy (0 = none)
 *>  0x0F Command Suggestion: the transaction id (VarInt); its text is in PSB-MESSAGE. 0x07 Chat
 *>  Command: the command text (without the leading `/`) is in PSB-MESSAGE.
     05 PSB-TRANSACTION        BINARY-LONG.
@@ -70,3 +76,9 @@
 *>  not kept.
     05 PSB-MESSAGE-LENGTH     BINARY-LONG.
     05 PSB-MESSAGE            PIC X(768).
+*>  0x3E Sign Update (05c): the position in PSB-BX, PSB-BY, PSB-BZ, the side (VarInt, 0 back, 1 front) in PSB-DATA and the four lines (at most 384 bytes each) as
+*>  byte length and text, the layout BE3-SIGN-UPDATE takes.
+    05 PSB-SIGN-LINES.
+       10 PSB-SIGN-LINE OCCURS 4 TIMES.
+          15 PSB-SIGN-LENGTH  BINARY-LONG.
+          15 PSB-SIGN-TEXT    PIC X(384).

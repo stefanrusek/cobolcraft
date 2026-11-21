@@ -1,0 +1,18 @@
+# Fixture: Container Click with hashed components
+# Phase: play. Direction: serverbound (C->S). Packet id 0x12 (18).
+# Doc refs: 05c 0x12; 00 section 12.4 (HashedStack, HashedPatchMap)
+# Stated inputs:
+#   container 2, state id 300 (two-byte VarInt), slot 45, button 1 (right click), click type 0 PICKUP
+#   changed: slot 45 -> 1 x stone, added damage (3) with hash -559038737 (0xdeadbeef as a signed Int), removed max_stack_size (1)
+#   carried: 2 x oak_planks, added custom_name (6) with hash 0x12345678
+
+12                                               # packet id: VarInt 0x12
+02                                               # Container id: VarInt 2
+ac 02                                            # State id: VarInt 300
+00 2d                                            # Slot: Short 45
+01                                               # Button: Byte 1
+00                                               # Click type: VarInt 0
+01                                               # Changed slots: Map count 1
+00 2d                                            #   slot key: Short 45
+01 01 01 01 03 de ad be ef 01 01                 #   value: HashedStack
+01 3f 02 01 06 12 34 56 78 00                    # Carried item: HashedStack

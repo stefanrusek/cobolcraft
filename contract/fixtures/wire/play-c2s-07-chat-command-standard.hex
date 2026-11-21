@@ -1,0 +1,14 @@
+# Fixture: Chat Command (unsigned)
+# Phase: play. Direction: serverbound (C->S). Packet id 0x07 (7).
+# Doc refs: 05c 0x07; 09 section 1
+# Stated inputs:
+#   command text of 144 characters (a two-byte length VarInt): "gamemode creative " + 120 x "x" + " Steve"
+
+07                                               # packet id: VarInt 0x07
+90 01 67 61 6d 65 6d 6f 64 65 20 63 72 65 61 74 69 76 65 20 78 78 78 78  # Command: String (VarInt length 144 + UTF-8)
+78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78  #   (continued)
+78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78  #   (continued)
+78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78  #   (continued)
+78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78  #   (continued)
+78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 78 20 53 74 65  #   (continued)
+76 65                                                                    #   (continued)

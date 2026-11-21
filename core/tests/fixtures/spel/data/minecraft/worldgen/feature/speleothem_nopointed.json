@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:speleothem",
+  "base_block": "minecraft:dripstone_block",
+  "replaceable_blocks": "#minecraft:dripstone_replaceable_blocks"
+}

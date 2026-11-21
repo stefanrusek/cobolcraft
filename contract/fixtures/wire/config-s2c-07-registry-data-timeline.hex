@@ -1,0 +1,669 @@
+# Fixture: Registry Data (minecraft:timeline), cobolcraft world type
+# Phase: configuration. Direction: clientbound (S->C). Packet id 0x07 (7).
+# Doc refs: 04 Registry Data and section 6 timeline (Timeline.NETWORK_CODEC); docs/design/cobolcraft-standard-core.md section 3.2 (CORE-6)
+# Stated inputs:
+#   2 entries: id 0 minecraft:day (every track of CORE 3.2 and the five time markers), id 1 minecraft:moon (moon_phase track);
+#   field order is the order of the CORE JSON; colours are Strings, numbers Float, ticks Int; cubic_bezier is 4 Floats;
+#   the marker wake_up_from_sleep is a bare Int, the others Compounds with ticks and show_in_commands (Byte 1)
+
+07                                               # packet id: VarInt 0x07
+12 6d 69 6e 65 63 72 61 66 74 3a 74 69 6d 65 6c  # Registry: Identifier
+69 6e 65                                         #   (continued)
+02                                               # Entries: VarInt count 2
+# ---- entry 0: minecraft:day ----
+0d 6d 69 6e 65 63 72 61 66 74 3a 64 61 79        # Entry[0].Id: Identifier
+01                                               # Entry[0].Data present: Boolean true
+0a                                               # Entry[0].Data: root Compound (type 0a), unnamed
+08 00 05 63 6c 6f 63 6b                          #   NBT String (type 08) name "clock"
+00 13 6d 69 6e 65 63 72 61 66 74 3a 6f 76 65 72  #     String 'minecraft:overworld'
+77 6f 72 6c 64                                   #   (continued)
+03 00 0c 70 65 72 69 6f 64 5f 74 69 63 6b 73     #   NBT Int (type 03) name "period_ticks"
+00 00 5d c0                                      #     Int 24000
+0a 00 0c 74 69 6d 65 5f 6d 61 72 6b 65 72 73     #   NBT Compound (type 0a) name "time_markers"
+0a 00 0d 6d 69 6e 65 63 72 61 66 74 3a 64 61 79  #     NBT Compound (type 0a) name "minecraft:day"
+03 00 05 74 69 63 6b 73                          #       NBT Int (type 03) name "ticks"
+00 00 03 e8                                      #         Int 1000
+01 00 10 73 68 6f 77 5f 69 6e 5f 63 6f 6d 6d 61  #       NBT Byte (type 01) name "show_in_commands"
+6e 64 73                                         #   (continued)
+01                                               #         Byte 1
+00                                               #     NBT End: end of the compound
+0a 00 0e 6d 69 6e 65 63 72 61 66 74 3a 6e 6f 6f  #     NBT Compound (type 0a) name "minecraft:noon"
+6e                                               #   (continued)
+03 00 05 74 69 63 6b 73                          #       NBT Int (type 03) name "ticks"
+00 00 17 70                                      #         Int 6000
+01 00 10 73 68 6f 77 5f 69 6e 5f 63 6f 6d 6d 61  #       NBT Byte (type 01) name "show_in_commands"
+6e 64 73                                         #   (continued)
+01                                               #         Byte 1
+00                                               #     NBT End: end of the compound
+0a 00 0f 6d 69 6e 65 63 72 61 66 74 3a 6e 69 67  #     NBT Compound (type 0a) name "minecraft:night"
+68 74                                            #   (continued)
+03 00 05 74 69 63 6b 73                          #       NBT Int (type 03) name "ticks"
+00 00 32 c8                                      #         Int 13000
+01 00 10 73 68 6f 77 5f 69 6e 5f 63 6f 6d 6d 61  #       NBT Byte (type 01) name "show_in_commands"
+6e 64 73                                         #   (continued)
+01                                               #         Byte 1
+00                                               #     NBT End: end of the compound
+0a 00 12 6d 69 6e 65 63 72 61 66 74 3a 6d 69 64  #     NBT Compound (type 0a) name "minecraft:midnight"
+6e 69 67 68 74                                   #   (continued)
+03 00 05 74 69 63 6b 73                          #       NBT Int (type 03) name "ticks"
+00 00 46 50                                      #         Int 18000
+01 00 10 73 68 6f 77 5f 69 6e 5f 63 6f 6d 6d 61  #       NBT Byte (type 01) name "show_in_commands"
+6e 64 73                                         #   (continued)
+01                                               #         Byte 1
+00                                               #     NBT End: end of the compound
+03 00 1c 6d 69 6e 65 63 72 61 66 74 3a 77 61 6b  #     NBT Int (type 03) name "minecraft:wake_up_from_sleep"
+65 5f 75 70 5f 66 72 6f 6d 5f 73 6c 65 65 70     #   (continued)
+00 00 00 00                                      #       Int 0
+00                                               #   NBT End: end of the compound
+0a 00 06 74 72 61 63 6b 73                       #   NBT Compound (type 0a) name "tracks"
+0a 00 1a 6d 69 6e 65 63 72 61 66 74 3a 76 69 73  #     NBT Compound (type 0a) name "minecraft:visual/sky_color"
+75 61 6c 2f 73 6b 79 5f 63 6f 6c 6f 72           #   (continued)
+08 00 08 6d 6f 64 69 66 69 65 72                 #       NBT String (type 08) name "modifier"
+00 08 6d 75 6c 74 69 70 6c 79                    #         String 'multiply'
+09 00 09 6b 65 79 66 72 61 6d 65 73              #       NBT List (type 09) name "keyframes"
+0a 00 00 00 04                                   #         list element type 0a, count 4
+#         [0] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 00 85                                      #               Int 133
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 07 23 66 66 66 66 66 66                       #               String '#ffffff'
+00                                               #           NBT End: end of the compound
+#         [1] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 2e 5b                                      #               Int 11867
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 07 23 66 66 66 66 66 66                       #               String '#ffffff'
+00                                               #           NBT End: end of the compound
+#         [2] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 35 66                                      #               Int 13670
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 07 23 30 30 30 30 30 30                       #               String '#000000'
+00                                               #           NBT End: end of the compound
+#         [3] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 57 3a                                      #               Int 22330
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 07 23 30 30 30 30 30 30                       #               String '#000000'
+00                                               #           NBT End: end of the compound
+00                                               #     NBT End: end of the compound
+0a 00 1a 6d 69 6e 65 63 72 61 66 74 3a 76 69 73  #     NBT Compound (type 0a) name "minecraft:visual/fog_color"
+75 61 6c 2f 66 6f 67 5f 63 6f 6c 6f 72           #   (continued)
+08 00 08 6d 6f 64 69 66 69 65 72                 #       NBT String (type 08) name "modifier"
+00 08 6d 75 6c 74 69 70 6c 79                    #         String 'multiply'
+09 00 09 6b 65 79 66 72 61 6d 65 73              #       NBT List (type 09) name "keyframes"
+0a 00 00 00 04                                   #         list element type 0a, count 4
+#         [0] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 00 85                                      #               Int 133
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 07 23 66 66 66 66 66 66                       #               String '#ffffff'
+00                                               #           NBT End: end of the compound
+#         [1] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 2e 5b                                      #               Int 11867
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 07 23 66 66 66 66 66 66                       #               String '#ffffff'
+00                                               #           NBT End: end of the compound
+#         [2] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 35 66                                      #               Int 13670
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 07 23 30 66 30 66 31 36                       #               String '#0f0f16'
+00                                               #           NBT End: end of the compound
+#         [3] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 57 3a                                      #               Int 22330
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 07 23 30 66 30 66 31 36                       #               String '#0f0f16'
+00                                               #           NBT End: end of the compound
+00                                               #     NBT End: end of the compound
+0a 00 1c 6d 69 6e 65 63 72 61 66 74 3a 76 69 73  #     NBT Compound (type 0a) name "minecraft:visual/cloud_color"
+75 61 6c 2f 63 6c 6f 75 64 5f 63 6f 6c 6f 72     #   (continued)
+08 00 08 6d 6f 64 69 66 69 65 72                 #       NBT String (type 08) name "modifier"
+00 08 6d 75 6c 74 69 70 6c 79                    #         String 'multiply'
+09 00 09 6b 65 79 66 72 61 6d 65 73              #       NBT List (type 09) name "keyframes"
+0a 00 00 00 04                                   #         list element type 0a, count 4
+#         [0] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 00 85                                      #               Int 133
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 66 66 66 66 66 66 66 66                 #               String '#ffffffff'
+00                                               #           NBT End: end of the compound
+#         [1] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 2e 5b                                      #               Int 11867
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 66 66 66 66 66 66 66 66                 #               String '#ffffffff'
+00                                               #           NBT End: end of the compound
+#         [2] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 35 66                                      #               Int 13670
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 66 66 31 39 31 39 32 36                 #               String '#ff191926'
+00                                               #           NBT End: end of the compound
+#         [3] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 57 3a                                      #               Int 22330
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 66 66 31 39 31 39 32 36                 #               String '#ff191926'
+00                                               #           NBT End: end of the compound
+00                                               #     NBT End: end of the compound
+0a 00 20 6d 69 6e 65 63 72 61 66 74 3a 76 69 73  #     NBT Compound (type 0a) name "minecraft:visual/sky_light_color"
+75 61 6c 2f 73 6b 79 5f 6c 69 67 68 74 5f 63 6f  #   (continued)
+6c 6f 72                                         #   (continued)
+08 00 08 6d 6f 64 69 66 69 65 72                 #       NBT String (type 08) name "modifier"
+00 08 6d 75 6c 74 69 70 6c 79                    #         String 'multiply'
+09 00 09 6b 65 79 66 72 61 6d 65 73              #       NBT List (type 09) name "keyframes"
+0a 00 00 00 04                                   #         list element type 0a, count 4
+#         [0] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 02 da                                      #               Int 730
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 07 23 66 66 66 66 66 66                       #               String '#ffffff'
+00                                               #           NBT End: end of the compound
+#         [1] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 2c 06                                      #               Int 11270
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 07 23 66 66 66 66 66 66                       #               String '#ffffff'
+00                                               #           NBT End: end of the compound
+#         [2] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 33 54                                      #               Int 13140
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 07 23 37 61 37 61 66 66                       #               String '#7a7aff'
+00                                               #           NBT End: end of the compound
+#         [3] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 59 4c                                      #               Int 22860
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 07 23 37 61 37 61 66 66                       #               String '#7a7aff'
+00                                               #           NBT End: end of the compound
+00                                               #     NBT End: end of the compound
+0a 00 21 6d 69 6e 65 63 72 61 66 74 3a 76 69 73  #     NBT Compound (type 0a) name "minecraft:visual/sky_light_factor"
+75 61 6c 2f 73 6b 79 5f 6c 69 67 68 74 5f 66 61  #   (continued)
+63 74 6f 72                                      #   (continued)
+08 00 08 6d 6f 64 69 66 69 65 72                 #       NBT String (type 08) name "modifier"
+00 08 6d 75 6c 74 69 70 6c 79                    #         String 'multiply'
+09 00 09 6b 65 79 66 72 61 6d 65 73              #       NBT List (type 09) name "keyframes"
+0a 00 00 00 04                                   #         list element type 0a, count 4
+#         [0] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 02 da                                      #               Int 730
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3f 80 00 00                                      #               Float 1.0
+00                                               #           NBT End: end of the compound
+#         [1] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 2c 06                                      #               Int 11270
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3f 80 00 00                                      #               Float 1.0
+00                                               #           NBT End: end of the compound
+#         [2] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 33 54                                      #               Int 13140
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3e 75 c2 8f                                      #               Float 0.24
+00                                               #           NBT End: end of the compound
+#         [3] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 59 4c                                      #               Int 22860
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3e 75 c2 8f                                      #               Float 0.24
+00                                               #           NBT End: end of the compound
+00                                               #     NBT End: end of the compound
+0a 00 20 6d 69 6e 65 63 72 61 66 74 3a 76 69 73  #     NBT Compound (type 0a) name "minecraft:visual/star_brightness"
+75 61 6c 2f 73 74 61 72 5f 62 72 69 67 68 74 6e  #   (continued)
+65 73 73                                         #   (continued)
+08 00 08 6d 6f 64 69 66 69 65 72                 #       NBT String (type 08) name "modifier"
+00 07 6d 61 78 69 6d 75 6d                       #         String 'maximum'
+09 00 09 6b 65 79 66 72 61 6d 65 73              #       NBT List (type 09) name "keyframes"
+0a 00 00 00 0c                                   #         list element type 0a, count 12
+#         [0] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 00 5c                                      #               Int 92
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3d 17 8d 50                                      #               Float 0.037
+00                                               #           NBT End: end of the compound
+#         [1] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 02 73                                      #               Int 627
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+00 00 00 00                                      #               Float 0.0
+00                                               #           NBT End: end of the compound
+#         [2] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 2c 6d                                      #               Int 11373
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+00 00 00 00                                      #               Float 0.0
+00                                               #           NBT End: end of the compound
+#         [3] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 2d d4                                      #               Int 11732
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3c 83 12 6f                                      #               Float 0.016
+00                                               #           NBT End: end of the compound
+#         [4] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 2e b7                                      #               Int 11959
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3d 34 39 58                                      #               Float 0.044
+00                                               #           NBT End: end of the compound
+#         [5] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 30 6f                                      #               Int 12399
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3e 12 6e 98                                      #               Float 0.143
+00                                               #           NBT End: end of the compound
+#         [6] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 31 b9                                      #               Int 12729
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3e 84 18 93                                      #               Float 0.258
+00                                               #           NBT End: end of the compound
+#         [7] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 33 ac                                      #               Int 13228
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3f 00 00 00                                      #               Float 0.5
+00                                               #           NBT End: end of the compound
+#         [8] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 58 f4                                      #               Int 22772
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3f 00 00 00                                      #               Float 0.5
+00                                               #           NBT End: end of the compound
+#         [9] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 59 f8                                      #               Int 23032
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3e ba 5e 35                                      #               Float 0.364
+00                                               #           NBT End: end of the compound
+#         [10] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 5b 3c                                      #               Int 23356
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3e 66 66 66                                      #               Float 0.225
+00                                               #           NBT End: end of the compound
+#         [11] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 5c ce                                      #               Int 23758
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3d ce d9 17                                      #               Float 0.101
+00                                               #           NBT End: end of the compound
+00                                               #     NBT End: end of the compound
+0a 00 1a 6d 69 6e 65 63 72 61 66 74 3a 76 69 73  #     NBT Compound (type 0a) name "minecraft:visual/sun_angle"
+75 61 6c 2f 73 75 6e 5f 61 6e 67 6c 65           #   (continued)
+0a 00 04 65 61 73 65                             #       NBT Compound (type 0a) name "ease"
+09 00 0c 63 75 62 69 63 5f 62 65 7a 69 65 72     #         NBT List (type 09) name "cubic_bezier"
+05 00 00 00 04                                   #           list element type 05, count 4
+3e b9 58 10                                      #           [0] Float 0.362
+3e 76 c8 b4                                      #           [1] Float 0.241
+3f 23 53 f8                                      #           [2] Float 0.638
+3f 42 4d d3                                      #           [3] Float 0.759
+00                                               #       NBT End: end of the compound
+09 00 09 6b 65 79 66 72 61 6d 65 73              #       NBT List (type 09) name "keyframes"
+0a 00 00 00 02                                   #         list element type 0a, count 2
+#         [0] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 17 70                                      #               Int 6000
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+43 b4 00 00                                      #               Float 360.0
+00                                               #           NBT End: end of the compound
+#         [1] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 17 70                                      #               Int 6000
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+00 00 00 00                                      #               Float 0.0
+00                                               #           NBT End: end of the compound
+00                                               #     NBT End: end of the compound
+0a 00 1b 6d 69 6e 65 63 72 61 66 74 3a 76 69 73  #     NBT Compound (type 0a) name "minecraft:visual/moon_angle"
+75 61 6c 2f 6d 6f 6f 6e 5f 61 6e 67 6c 65        #   (continued)
+0a 00 04 65 61 73 65                             #       NBT Compound (type 0a) name "ease"
+09 00 0c 63 75 62 69 63 5f 62 65 7a 69 65 72     #         NBT List (type 09) name "cubic_bezier"
+05 00 00 00 04                                   #           list element type 05, count 4
+3e b9 58 10                                      #           [0] Float 0.362
+3e 76 c8 b4                                      #           [1] Float 0.241
+3f 23 53 f8                                      #           [2] Float 0.638
+3f 42 4d d3                                      #           [3] Float 0.759
+00                                               #       NBT End: end of the compound
+09 00 09 6b 65 79 66 72 61 6d 65 73              #       NBT List (type 09) name "keyframes"
+0a 00 00 00 02                                   #         list element type 0a, count 2
+#         [0] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 17 70                                      #               Int 6000
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+44 07 00 00                                      #               Float 540.0
+00                                               #           NBT End: end of the compound
+#         [1] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 17 70                                      #               Int 6000
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+43 34 00 00                                      #               Float 180.0
+00                                               #           NBT End: end of the compound
+00                                               #     NBT End: end of the compound
+0a 00 1b 6d 69 6e 65 63 72 61 66 74 3a 76 69 73  #     NBT Compound (type 0a) name "minecraft:visual/star_angle"
+75 61 6c 2f 73 74 61 72 5f 61 6e 67 6c 65        #   (continued)
+0a 00 04 65 61 73 65                             #       NBT Compound (type 0a) name "ease"
+09 00 0c 63 75 62 69 63 5f 62 65 7a 69 65 72     #         NBT List (type 09) name "cubic_bezier"
+05 00 00 00 04                                   #           list element type 05, count 4
+3e b9 58 10                                      #           [0] Float 0.362
+3e 76 c8 b4                                      #           [1] Float 0.241
+3f 23 53 f8                                      #           [2] Float 0.638
+3f 42 4d d3                                      #           [3] Float 0.759
+00                                               #       NBT End: end of the compound
+09 00 09 6b 65 79 66 72 61 6d 65 73              #       NBT List (type 09) name "keyframes"
+0a 00 00 00 02                                   #         list element type 0a, count 2
+#         [0] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 17 70                                      #               Int 6000
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+43 b4 00 00                                      #               Float 360.0
+00                                               #           NBT End: end of the compound
+#         [1] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 17 70                                      #               Int 6000
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+00 00 00 00                                      #               Float 0.0
+00                                               #           NBT End: end of the compound
+00                                               #     NBT End: end of the compound
+0a 00 25 6d 69 6e 65 63 72 61 66 74 3a 76 69 73  #     NBT Compound (type 0a) name "minecraft:visual/sunrise_sunset_color"
+75 61 6c 2f 73 75 6e 72 69 73 65 5f 73 75 6e 73  #   (continued)
+65 74 5f 63 6f 6c 6f 72                          #   (continued)
+09 00 09 6b 65 79 66 72 61 6d 65 73              #       NBT List (type 09) name "keyframes"
+0a 00 00 00 20                                   #         list element type 0a, count 32
+#         [0] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 00 47                                      #               Int 71
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 35 66 65 66 61 33 33 33                 #               String '#5fefa333'
+00                                               #           NBT End: end of the compound
+#         [1] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 01 36                                      #               Int 310
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 32 39 66 35 62 61 33 33                 #               String '#29f5ba33'
+00                                               #           NBT End: end of the compound
+#         [2] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 02 35                                      #               Int 565
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 30 36 66 62 64 34 33 33                 #               String '#06fbd433'
+00                                               #           NBT End: end of the compound
+#         [3] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 02 da                                      #               Int 730
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 30 30 66 66 65 35 33 33                 #               String '#00ffe533'
+00                                               #           NBT End: end of the compound
+#         [4] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 2c 06                                      #               Int 11270
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 30 30 66 66 65 35 33 33                 #               String '#00ffe533'
+00                                               #           NBT End: end of the compound
+#         [5] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 2c 85                                      #               Int 11397
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 30 34 66 63 64 38 33 33                 #               String '#04fcd833'
+00                                               #           NBT End: end of the compound
+#         [6] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 2d 02                                      #               Int 11522
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 30 66 66 39 63 62 33 33                 #               String '#0ff9cb33'
+00                                               #           NBT End: end of the compound
+#         [7] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 2d aa                                      #               Int 11690
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 32 39 66 35 62 61 33 33                 #               String '#29f5ba33'
+00                                               #           NBT End: end of the compound
+#         [8] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 2e 99                                      #               Int 11929
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 35 66 65 66 61 33 33 33                 #               String '#5fefa333'
+00                                               #           NBT End: end of the compound
+#         [9] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 2f d3                                      #               Int 12243
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 62 31 65 37 38 37 33 33                 #               String '#b1e78733'
+00                                               #           NBT End: end of the compound
+#         [10] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 30 46                                      #               Int 12358
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 63 63 65 34 37 65 33 33                 #               String '#cce47e33'
+00                                               #           NBT End: end of the compound
+#         [11] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 30 e0                                      #               Int 12512
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 65 39 65 30 37 32 33 33                 #               String '#e9e07233'
+00                                               #           NBT End: end of the compound
+#         [12] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 31 45                                      #               Int 12613
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 66 36 64 64 36 62 33 33                 #               String '#f6dd6b33'
+00                                               #           NBT End: end of the compound
+#         [13] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 31 bc                                      #               Int 12732
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 66 65 64 61 36 33 33 33                 #               String '#feda6333'
+00                                               #           NBT End: end of the compound
+#         [14] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 32 29                                      #               Int 12841
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 66 65 64 37 35 63 33 33                 #               String '#fed75c33'
+00                                               #           NBT End: end of the compound
+#         [15] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 32 eb                                      #               Int 13035
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 65 63 64 32 35 31 33 33                 #               String '#ecd25133'
+00                                               #           NBT End: end of the compound
+#         [16] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 33 c4                                      #               Int 13252
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 63 31 63 63 34 37 33 33                 #               String '#c1cc4733'
+00                                               #           NBT End: end of the compound
+#         [17] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 35 cf                                      #               Int 13775
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 33 36 62 65 33 37 33 33                 #               String '#36be3733'
+00                                               #           NBT End: end of the compound
+#         [18] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 36 40                                      #               Int 13888
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 31 66 62 62 33 35 33 33                 #               String '#1fbb3533'
+00                                               #           NBT End: end of the compound
+#         [19] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 36 d7                                      #               Int 14039
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 30 39 62 37 33 33 33 33                 #               String '#09b73333'
+00                                               #           NBT End: end of the compound
+#         [20] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 37 70                                      #               Int 14192
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 30 30 62 33 33 33 33 33                 #               String '#00b33333'
+00                                               #           NBT End: end of the compound
+#         [21] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 55 2f                                      #               Int 21807
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 30 30 62 32 33 33 33 33                 #               String '#00b23333'
+00                                               #           NBT End: end of the compound
+#         [22] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 55 c9                                      #               Int 21961
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 30 39 62 37 33 33 33 33                 #               String '#09b73333'
+00                                               #           NBT End: end of the compound
+#         [23] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 56 60                                      #               Int 22112
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 31 66 62 62 33 35 33 33                 #               String '#1fbb3533'
+00                                               #           NBT End: end of the compound
+#         [24] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 56 d1                                      #               Int 22225
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 33 36 62 65 33 37 33 33                 #               String '#36be3733'
+00                                               #           NBT End: end of the compound
+#         [25] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 58 dc                                      #               Int 22748
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 63 31 63 63 34 37 33 33                 #               String '#c1cc4733'
+00                                               #           NBT End: end of the compound
+#         [26] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 59 b5                                      #               Int 22965
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 65 63 64 32 35 31 33 33                 #               String '#ecd25133'
+00                                               #           NBT End: end of the compound
+#         [27] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 5a 77                                      #               Int 23159
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 66 65 64 37 35 63 33 33                 #               String '#fed75c33'
+00                                               #           NBT End: end of the compound
+#         [28] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 5a e8                                      #               Int 23272
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 66 65 64 61 36 33 33 33                 #               String '#feda6333'
+00                                               #           NBT End: end of the compound
+#         [29] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 5b c0                                      #               Int 23488
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 65 39 65 30 37 32 33 33                 #               String '#e9e07233'
+00                                               #           NBT End: end of the compound
+#         [30] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 5c 5a                                      #               Int 23642
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 63 63 65 34 37 65 33 33                 #               String '#cce47e33'
+00                                               #           NBT End: end of the compound
+#         [31] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 5c cd                                      #               Int 23757
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 23 62 31 65 37 38 37 33 33                 #               String '#b1e78733'
+00                                               #           NBT End: end of the compound
+00                                               #     NBT End: end of the compound
+0a 00 22 6d 69 6e 65 63 72 61 66 74 3a 67 61 6d  #     NBT Compound (type 0a) name "minecraft:gameplay/sky_light_level"
+65 70 6c 61 79 2f 73 6b 79 5f 6c 69 67 68 74 5f  #   (continued)
+6c 65 76 65 6c                                   #   (continued)
+08 00 08 6d 6f 64 69 66 69 65 72                 #       NBT String (type 08) name "modifier"
+00 08 6d 75 6c 74 69 70 6c 79                    #         String 'multiply'
+09 00 09 6b 65 79 66 72 61 6d 65 73              #       NBT List (type 09) name "keyframes"
+0a 00 00 00 04                                   #         list element type 0a, count 4
+#         [0] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 00 85                                      #               Int 133
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3f 80 00 00                                      #               Float 1.0
+00                                               #           NBT End: end of the compound
+#         [1] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 2e 5b                                      #               Int 11867
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3f 80 00 00                                      #               Float 1.0
+00                                               #           NBT End: end of the compound
+#         [2] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 35 66                                      #               Int 13670
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3e 88 88 89                                      #               Float 0.26666668
+00                                               #           NBT End: end of the compound
+#         [3] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 57 3a                                      #               Int 22330
+05 00 05 76 61 6c 75 65                          #             NBT Float (type 05) name "value"
+3e 88 88 89                                      #               Float 0.26666668
+00                                               #           NBT End: end of the compound
+00                                               #     NBT End: end of the compound
+00                                               #   NBT End: end of the compound
+00                                               # NBT End: end of the root compound
+# ---- entry 1: minecraft:moon ----
+0e 6d 69 6e 65 63 72 61 66 74 3a 6d 6f 6f 6e     # Entry[1].Id: Identifier
+01                                               # Entry[1].Data present: Boolean true
+0a                                               # Entry[1].Data: root Compound (type 0a), unnamed
+08 00 05 63 6c 6f 63 6b                          #   NBT String (type 08) name "clock"
+00 13 6d 69 6e 65 63 72 61 66 74 3a 6f 76 65 72  #     String 'minecraft:overworld'
+77 6f 72 6c 64                                   #   (continued)
+03 00 0c 70 65 72 69 6f 64 5f 74 69 63 6b 73     #   NBT Int (type 03) name "period_ticks"
+00 02 ee 00                                      #     Int 192000
+0a 00 06 74 72 61 63 6b 73                       #   NBT Compound (type 0a) name "tracks"
+0a 00 1b 6d 69 6e 65 63 72 61 66 74 3a 76 69 73  #     NBT Compound (type 0a) name "minecraft:visual/moon_phase"
+75 61 6c 2f 6d 6f 6f 6e 5f 70 68 61 73 65        #   (continued)
+09 00 09 6b 65 79 66 72 61 6d 65 73              #       NBT List (type 09) name "keyframes"
+0a 00 00 00 08                                   #         list element type 0a, count 8
+#         [0] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 00 00                                      #               Int 0
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 09 66 75 6c 6c 5f 6d 6f 6f 6e                 #               String 'full_moon'
+00                                               #           NBT End: end of the compound
+#         [1] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 5d c0                                      #               Int 24000
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 0e 77 61 6e 69 6e 67 5f 67 69 62 62 6f 75 73  #               String 'waning_gibbous'
+00                                               #           NBT End: end of the compound
+#         [2] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 00 bb 80                                      #               Int 48000
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 0d 74 68 69 72 64 5f 71 75 61 72 74 65 72     #               String 'third_quarter'
+00                                               #           NBT End: end of the compound
+#         [3] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 01 19 40                                      #               Int 72000
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 0f 77 61 6e 69 6e 67 5f 63 72 65 73 63 65 6e  #               String 'waning_crescent'
+74                                               #   (continued)
+00                                               #           NBT End: end of the compound
+#         [4] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 01 77 00                                      #               Int 96000
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 08 6e 65 77 5f 6d 6f 6f 6e                    #               String 'new_moon'
+00                                               #           NBT End: end of the compound
+#         [5] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 01 d4 c0                                      #               Int 120000
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 0f 77 61 78 69 6e 67 5f 63 72 65 73 63 65 6e  #               String 'waxing_crescent'
+74                                               #   (continued)
+00                                               #           NBT End: end of the compound
+#         [6] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 02 32 80                                      #               Int 144000
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 0d 66 69 72 73 74 5f 71 75 61 72 74 65 72     #               String 'first_quarter'
+00                                               #           NBT End: end of the compound
+#         [7] Compound
+03 00 05 74 69 63 6b 73                          #             NBT Int (type 03) name "ticks"
+00 02 90 40                                      #               Int 168000
+08 00 05 76 61 6c 75 65                          #             NBT String (type 08) name "value"
+00 0e 77 61 78 69 6e 67 5f 67 69 62 62 6f 75 73  #               String 'waxing_gibbous'
+00                                               #           NBT End: end of the compound
+00                                               #     NBT End: end of the compound
+00                                               #   NBT End: end of the compound
+00                                               # NBT End: end of the root compound

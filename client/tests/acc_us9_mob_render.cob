@@ -38,6 +38,8 @@
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "CL-INIT" USING CLIENT-STATE
+*>   These cases check the geometry of figures from a fixed eye, whichever way the camera looks: the figure cull of the view frustum is off.
+     MOVE 1 TO RL-CULL-DISABLE
      CALL "PACK-STACK-INIT" USING CLIENT-STATE
      CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
      CALL "NET-BUFFERS-INIT" USING CLIENT-STATE WS-CONN

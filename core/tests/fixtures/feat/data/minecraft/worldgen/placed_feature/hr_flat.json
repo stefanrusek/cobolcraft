@@ -1,0 +1,23 @@
+{
+ "feature": {
+  "type": "minecraft:simple_block",
+  "to_place": {
+   "Name": "minecraft:poppy"
+  }
+ },
+ "placement": [
+  {
+   "type": "minecraft:height_range",
+   "height": {
+    "type": "minecraft:trapezoid",
+    "min_inclusive": {
+     "absolute": 0
+    },
+    "max_inclusive": {
+     "absolute": 4
+    },
+    "plateau": 4
+   }
+  }
+ ]
+}

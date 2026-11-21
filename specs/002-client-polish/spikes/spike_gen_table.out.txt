@@ -1,0 +1,11 @@
+cobc (GnuCOBOL) 3.2.0, -x -free -debug -std=default, Apple M4 Pro, 2026-11-09. Table shape: 1,200 block rows of 16
+columns, 30,000 state rows of 3 columns (spike_gen_table.py).
+
+style=filler (one FILLER VALUE per column, the style of core/copy/BLOCKS.cpy): 140,402 lines.
+  cobc did not finish in over 4 minutes (the run was stopped by hand). Not usable at registry size.
+style=packed (one PIC X row per record, 120 and 24 bytes): 31,202 lines.
+  compile 36.1 s (user 35.9 s); start-up 0.00 s. Usable but costs 36 s per rebuild of every program that COPYs it.
+style=blob (the same bytes in 400-character literal rows, 939,665 bytes): 2,163 lines.
+  compile 0.25 s; start-up 0.00 s. A source line in free format is limited to 512 bytes (warning "source text exceeds
+  512 bytes, will be truncated" at 4,000 characters), so rows are 400 characters.
+(Re-run: python3 -I spike_gen_table.py $S/GENTABLE.cpy <style>; cobc -x -free -debug -std=default -I $S spike_gen_table.cob)

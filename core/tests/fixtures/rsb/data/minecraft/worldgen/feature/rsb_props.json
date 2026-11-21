@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:replace_single_block",
+  "targets": [
+    {
+      "target": {
+        "predicate_type": "minecraft:always_true"
+      },
+      "state": {
+        "id": "minecraft:oak_log",
+        "properties": {
+          "axis": "x"
+        }
+      }
+    }
+  ]
+}

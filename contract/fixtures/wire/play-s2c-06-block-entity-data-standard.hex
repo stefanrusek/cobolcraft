@@ -1,0 +1,15 @@
+# Fixture: Block Entity Data, sign
+# Phase: play. Direction: clientbound (S->C). Packet id 0x06 (6).
+# Doc refs: 05a 0x06; 46 section 5.4 (sign = 7); 00 section 4.1; 07 section 1
+# Stated inputs:
+#   location (-8, 70, 21); block entity type 7 (sign); data: network NBT compound {is_waxed: Byte 1, note: String "hi"}
+
+06                                               # packet id: VarInt 0x06
+ff ff fe 00 00 01 50 46                          # Location: Position (-8, 70, 21)
+07                                               # Block entity type: VarInt 7 (sign)
+0a                                               # Data: root Compound (type 0a), unnamed
+01 00 08 69 73 5f 77 61 78 65 64                 #   NBT Byte (type 01) name "is_waxed"
+01                                               #     Byte 1
+08 00 04 6e 6f 74 65                             #   NBT String (type 08) name "note"
+00 02 68 69                                      #     String 'hi'
+00                                               # NBT End: end of the root compound

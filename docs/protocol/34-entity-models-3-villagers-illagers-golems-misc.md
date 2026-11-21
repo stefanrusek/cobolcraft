@@ -189,15 +189,15 @@ Starts from `HumanoidModel.createMesh(NONE, 0)` (12 §7.4) and re-defines every 
 
 ### 2.3 `AnimationUtils.animateZombieArms(leftArm, rightArm, attacking, state)`
 
-Used by the zombie villager and by the illager `ATTACKING` pose with an empty hand.
+Used by the zombie villager and by the illager `ATTACKING` pose with an empty hand. Corrected in round Z: step 2 and every formula that uses `empty` were wrong in the earlier text (they treated a baby as always raised); the condition is read in the bytecode as below. The parameter order is `(left, right, flag, state)`; the first ModelPart receives the left-arm formula and the second the right-arm formula. The zombie villager passes `ZombieVillagerRenderState.isAggressive` as the flag (from `setupAttackAnimation`, after the base swing); the illager passes the constant `true`.
 
 1. If either arm pose of the state is `SPEAR`, do nothing.
-2. `empty` = the state is a baby, or its main-hand item stack is `ItemStack.EMPTY`.
+2. `empty` (name kept; it means "arms raised") = the state is **not** a baby, **or** its main-hand item stack is `ItemStack.EMPTY` (reference identity). A baby holding an item is the only case where it is false. Corrected in round Z (was: "is a baby, or ...").
 3. `base` = if `empty`: `-pi / (attacking ? 1.5 : 2.25)`, else 0. `s` = the swing progress (`swingAnimation`). `a` = `(empty ? 1 : -1) * sin(s * pi)`. `b` = `sin((1 - (1 - s)^2) * pi)`.
 4. `x = base + a * 1.2 - b * 0.4`, `y = 0.1 - a * 0.6`.
 5. Right arm (unless its pose is `THROW_TRIDENT`): `xRot = x`, `yRot = empty ? -y : y`, `zRot = 0`. Left arm (unless `THROW_TRIDENT`): `xRot = x`, `yRot = empty ? y : -y`, `zRot = 0`.
 
-Example: an attacking zombie villager with an empty hand and `s = 0`: `base = -2.0944`, `a = 0`, `b = 0`, so both arms `xRot = -2.0944` (raised 120 deg), right `yRot = -0.1`, left `yRot = +0.1`.
+Examples (Corrected in round Z): an attacking zombie villager, adult, any hand, `s = 0`, flag true: raised, so the same numbers as below; a baby zombie villager holding an item, `s = 0`, flag true: `empty` false, `base = 0`, both arms `xRot = 0`, right `yRot = +0.1`, left `yRot = -0.1`; a baby with an empty hand is raised like an adult. An illager is never a baby (its state's `isBaby` stays false, inferred), so for an illager `empty` is always true here. Original example: an attacking zombie villager with an empty hand and `s = 0`: `base = -2.0944`, `a = 0`, `b = 0`, so both arms `xRot = -2.0944` (raised 120 deg), right `yRot = -0.1`, left `yRot = +0.1`.
 
 ### 2.4 Zombie villager armor layers (`ZombieVillagerModel.createArmorLayerSet`)
 
@@ -924,3 +924,5 @@ Time in seconds; a keyframe is `time:(x, y, z)`. Rotation channels are degrees, 
 10. **Animation state driving.** Which entity events start the copper golem and creaking animation states, and with which start ticks, is entity logic; copper golem in 44-3 §8, creaking in 20 §17; not re-read here.
 11. **`Math.cos` versus table `Mth.cos`.** Reproducing 1-ulp differences is not required. Double-precision `Math` functions are used in two places only: the allay root bob (`Math.cos`) and the ravager stun sway (`Math.sin`); the illusioner offsets, the spellcaster particle angle and the fangs base height use the table functions (0.1 item 9).
 12. **Spot-check coverage.** The review of this document did not independently re-verify the renderer classes (shadow radii, texture paths, layer order, head and held-item layers, profession layer file-name rules), the copper golem and creaking mesh tables, the Appendix A keyframe tables, the section 12.1 and 14 tables, the snow golem, zombie villager and baby models, or the spellcaster colours against the jar. A later pass should spot-check these, Appendix A first, as it holds the most transcribed data.
+
+12. **Illager `isBaby`.** `IllagerRenderState` extends `UndeadRenderState`, so `animateZombieArms` reads its `isBaby`; that the illager extraction never sets it (so it is false) was not read in this round (inferred). (Round Z)

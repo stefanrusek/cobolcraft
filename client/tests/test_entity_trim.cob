@@ -1,0 +1,289 @@
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTITY-TRIM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY CLMODELS.
+ COPY TESTLIB.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ROW-AREA            PIC X(66).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG VALUE 10.5.
+ 01 WS-Y                   FLOAT-LONG VALUE 64.
+ 01 WS-Z                   FLOAT-LONG VALUE 10.5.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-I-D                 PIC 99.
+ 01 WS-LAYER               BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ASSET               BINARY-LONG.
+ 01 WS-CODE                BINARY-LONG.
+ 01 WS-MODEL               BINARY-LONG.
+ 01 WS-RED                 FLOAT-LONG.
+ 01 WS-GREEN               FLOAT-LONG.
+ 01 WS-BLUE                FLOAT-LONG.
+ 01 WS-PATH                PIC X(64).
+ 01 WS-K20                 PIC X(24).
+ 01 WS-BASE-COUNT          BINARY-LONG.
+ 01 WS-IMG                PIC X(1048576).
+ 01 WS-W                  BINARY-LONG.
+ 01 WS-H                  BINARY-LONG.
+ 01 WS-PAL                BINARY-LONG.
+ 01 WS-NAME10             PIC X(10).
+ 01 WS-HEX                PIC X(8).
+ 01 WS-J                  BINARY-LONG.
+ 01 WS-K                  BINARY-LONG.
+ 01 WS-B                  BINARY-LONG.
+ 01 WS-HEXDIGITS          PIC X(16) VALUE "0123456789ABCDEF".
+ 01 WS-EYE-TABLE.
+    05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION.
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE 0 TO PK-COUNT
+     CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
+     MOVE 1 TO CT-OPEN
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     MOVE 256 TO PL-HEIGHT
+     MOVE 0 TO SK-U
+     MOVE 10 TO WS-EYE(1) WS-EYE(3)
+     MOVE 64 TO WS-EYE(2)
+     MOVE "N" TO TL-MODE
+*>   Palette choice (54 section 18.4 rule 2): the armor's own material uses the darker palette.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 7
+         EVALUATE WS-I
+             WHEN 1 MOVE 4 TO WS-ASSET MOVE 6 TO WS-N MOVE 12 TO WS-S
+             WHEN 2 MOVE 2 TO WS-ASSET MOVE 2 TO WS-N MOVE 13 TO WS-S
+             WHEN 3 MOVE 5 TO WS-ASSET MOVE 5 TO WS-N MOVE 14 TO WS-S
+             WHEN 4 MOVE 6 TO WS-ASSET MOVE 3 TO WS-N MOVE 15 TO WS-S
+             WHEN 5 MOVE 8 TO WS-ASSET MOVE 8 TO WS-N MOVE 16 TO WS-S
+             WHEN 6 MOVE 4 TO WS-ASSET MOVE 5 TO WS-N MOVE 5 TO WS-S
+             WHEN OTHER MOVE 1 TO WS-ASSET MOVE 6 TO WS-N MOVE 6 TO WS-S
+         END-EVALUATE
+         CALL "TRIM-PALETTE-FOR" USING WS-ASSET WS-N WS-PAL
+         MOVE SPACES TO TL-CASE
+         MOVE WS-I TO WS-I-D
+         STRING "trim palette case " WS-I-D DELIMITED BY SIZE INTO TL-CASE
+         MOVE WS-S TO TL-EXPECTED-N
+         MOVE WS-PAL TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+*>   Pattern names: the first, the last, and out of range.
+     MOVE "T" TO TL-MODE
+     MOVE 1 TO WS-N
+     CALL "TRIM-PATTERN-NAME" USING WS-N WS-NAME10
+     MOVE "trim pattern 1 is bolt" TO TL-CASE
+     MOVE "bolt" TO TL-EXPECTED
+     MOVE WS-NAME10 TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 18 TO WS-N
+     CALL "TRIM-PATTERN-NAME" USING WS-N WS-NAME10
+     MOVE "trim pattern 18 is wild" TO TL-CASE
+     MOVE "wild" TO TL-EXPECTED
+     MOVE WS-NAME10 TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 19 TO WS-N
+     CALL "TRIM-PATTERN-NAME" USING WS-N WS-NAME10
+     MOVE "trim pattern 19 has no name" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-NAME10 TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Recolouring (54 section 18.4 rule 4, worked example 18.5): four pixels A0A0A0, 606060, 123456 (not a key grey) and a transparent A0A0A0; the gold palette (5), the
+*>   gold_darker palette (14), and a palette number out of range changes nothing.
+     MOVE 4 TO WS-W
+     MOVE 1 TO WS-H
+     PERFORM FILL-IMAGE
+     MOVE 5 TO WS-PAL
+     CALL "TRIM-RECOLOUR" USING WS-IMG WS-W WS-H WS-PAL
+     MOVE "trim recolour gold: A0A0A0 becomes DEB12D" TO TL-CASE
+     MOVE "DEB12DFF" TO TL-EXPECTED
+     PERFORM PIXEL-1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "trim recolour gold: 606060 (index 5) becomes A0450A" TO TL-CASE
+     MOVE "A0450AFF" TO TL-EXPECTED
+     MOVE 2 TO WS-J
+     PERFORM PIXEL-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "trim recolour a colour outside the key stays" TO TL-CASE
+     MOVE "123456FF" TO TL-EXPECTED
+     MOVE 3 TO WS-J
+     PERFORM PIXEL-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "trim recolour a transparent pixel stays" TO TL-CASE
+     MOVE "A0A0A000" TO TL-EXPECTED
+     MOVE 4 TO WS-J
+     PERFORM PIXEL-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM FILL-IMAGE
+     MOVE 14 TO WS-PAL
+     CALL "TRIM-RECOLOUR" USING WS-IMG WS-W WS-H WS-PAL
+     MOVE "trim recolour gold_darker: A0A0A0 becomes A35F14" TO TL-CASE
+     MOVE "A35F14FF" TO TL-EXPECTED
+     PERFORM PIXEL-1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "trim recolour gold_darker: 606060 (index 5) becomes 803503" TO TL-CASE
+     MOVE "803503FF" TO TL-EXPECTED
+     MOVE 2 TO WS-J
+     PERFORM PIXEL-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM FILL-IMAGE
+     MOVE 17 TO WS-PAL
+     CALL "TRIM-RECOLOUR" USING WS-IMG WS-W WS-H WS-PAL
+     MOVE "trim recolour with palette 17 changes nothing" TO TL-CASE
+     MOVE "A0A0A0FF" TO TL-EXPECTED
+     PERFORM PIXEL-1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Texture paths: code 100000 + palette * 100 + pattern on the armor rows (the leggings directory for armor_legs).
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO WS-PATH
+     MOVE "armor_chest" TO WS-K20
+     MOVE 100518 TO WS-CODE
+     CALL "ENTITY-TEX-PATH" USING WS-K20 WS-CODE WS-PATH
+     MOVE "trim path chest wild" TO TL-CASE
+     MOVE "textures/trims/entity/humanoid/wild.png" TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO WS-PATH
+     MOVE "armor_legs" TO WS-K20
+     MOVE 101201 TO WS-CODE
+     CALL "ENTITY-TEX-PATH" USING WS-K20 WS-CODE WS-PATH
+     MOVE "trim path legs bolt" TO TL-CASE
+     MOVE "textures/trims/entity/humanoid_leggings/bolt.png" TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO WS-PATH
+     MOVE "armor_head" TO WS-K20
+     MOVE 100000 TO WS-CODE
+     CALL "ENTITY-TEX-PATH" USING WS-K20 WS-CODE WS-PATH
+     MOVE "trim path with pattern 0 is none" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-PATH TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Layers 9 to 12 of a zombie in a trimmed iron helmet (gold, wild) and an iron chestplate with an iron trim (bolt): layer 12 is the head trim with the gold palette, layer 9
+*>   the chest trim with iron_darker; no trim or a mismatched slot gives none.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE "zombie" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 1 TO WS-ID
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     MOVE "iron_helmet" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO EN-EQ(1, 6)
+     MOVE 5 TO EN-EQ-TRIM-MAT(1, 6)
+     MOVE 18 TO EN-EQ-TRIM-PAT(1, 6)
+     MOVE "iron_chestplate" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO EN-EQ(1, 5)
+     MOVE 6 TO EN-EQ-TRIM-MAT(1, 5)
+     MOVE 1 TO EN-EQ-TRIM-PAT(1, 5)
+     MOVE "N" TO TL-MODE
+     PERFORM VARYING WS-I FROM 9 BY 1 UNTIL WS-I > 12
+         CALL "ENTITY-OVERLAY" USING CLIENT-STATE 1 WS-I WS-CODE WS-RED WS-GREEN WS-BLUE WS-MODEL
+         MOVE SPACES TO TL-CASE
+         MOVE WS-I TO WS-I-D
+         STRING "trim layer " WS-I-D " code" DELIMITED BY SIZE INTO TL-CASE
+         EVALUATE WS-I
+             WHEN 9 MOVE 101201 TO TL-EXPECTED-N
+             WHEN 12 MOVE 100518 TO TL-EXPECTED-N
+             WHEN OTHER MOVE 0 TO TL-EXPECTED-N
+         END-EVALUATE
+         MOVE WS-CODE TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+     CALL "ENTITY-OVERLAY" USING CLIENT-STATE 1 12 WS-CODE WS-RED WS-GREEN WS-BLUE WS-MODEL
+     MOVE "T" TO TL-MODE
+     MOVE "trim layer 12 uses the model row armor_head" TO TL-CASE
+     MOVE "armor_head" TO TL-EXPECTED
+     MOVE CL-MD-KEY(WS-MODEL) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO EN-EQ-TRIM-PAT(1, 6)
+     CALL "ENTITY-OVERLAY" USING CLIENT-STATE 1 12 WS-CODE WS-RED WS-GREEN WS-BLUE WS-MODEL
+     MOVE "N" TO TL-MODE
+     MOVE "trim layer 12 without a pattern is none" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-CODE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Drawing: the zombie with two trimmed pieces draws two more cuboid sets, each with its own atlas slot (body, chest, head, chest trim = 4 slots).
+     MOVE 18 TO EN-EQ-TRIM-PAT(1, 6)
+     MOVE 0 TO EA-MT-COUNT
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "trim a zombie with trimmed iron head and chest takes five atlas slots" TO TL-CASE
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE EA-MT-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ FILL-IMAGE.
+     MOVE LOW-VALUES TO WS-IMG(1:16)
+     MOVE X"A0A0A0FF" TO WS-IMG(1:4)
+     MOVE X"606060FF" TO WS-IMG(5:4)
+     MOVE X"123456FF" TO WS-IMG(9:4)
+     MOVE X"A0A0A000" TO WS-IMG(13:4).
+
+ PIXEL-1.
+     MOVE 1 TO WS-J
+     PERFORM PIXEL-N.
+
+ PIXEL-N.
+*>   The hex text of pixel WS-J (RRGGBBAA) into TL-OBSERVED.
+     MOVE "T" TO TL-MODE
+     MOVE SPACES TO TL-OBSERVED
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+         COMPUTE WS-B = FUNCTION ORD(WS-IMG((WS-J - 1) * 4 + WS-K:1)) - 1
+         MOVE WS-HEXDIGITS(FUNCTION INTEGER(WS-B / 16) + 1:1) TO TL-OBSERVED(WS-K * 2 - 1:1)
+         MOVE WS-HEXDIGITS(FUNCTION MOD(WS-B, 16) + 1:1) TO TL-OBSERVED(WS-K * 2:1)
+     END-PERFORM.
+ END PROGRAM TEST-ENTITY-TRIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MM-SPAWN.
+*> USING CLIENT-STATE, entity id, type (registry id), x y z (FLOAT-LONG), yaw (FLOAT-SHORT, also the head yaw): Add Entity.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-ADD                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-UUID                PIC X(16) VALUE LOW-VALUES.
+ 01 WS-V0                  FLOAT-LONG VALUE 0.
+ 01 WS-V1                  FLOAT-LONG VALUE 0.
+ 01 WS-V2                  FLOAT-LONG VALUE 0.
+ 01 WS-A0                  FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ID L-TYPE L-X L-Y L-Z L-YAW.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-V0 WS-V1 WS-V2
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER WS-A0
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-PACKET" USING CLIENT-STATE PB-BUFFER WS-ADD
+     GOBACK.
+ END PROGRAM MM-SPAWN.
+

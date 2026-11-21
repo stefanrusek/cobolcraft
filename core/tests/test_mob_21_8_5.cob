@@ -1,0 +1,99 @@
+*> Area effect cloud entity data (docs/protocol/21 section 8.5, 44-9 section 3; lane p49f, T21030): the viewer is sent metadata 8 (radius, clamped to 0 to 32) and 9 (waiting) right after
+*> Add Entity, the waiting flag falls when tickCount reaches the wait time, and a radius that changes (radius per tick) is sent again.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MOB-21-8-5.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-RADIUS              FLOAT-LONG.
+ 01 WS-DURATION            BINARY-LONG.
+ 01 WS-WAIT                BINARY-LONG.
+ 01 WS-REAPP               BINARY-LONG VALUE 20.
+ 01 WS-OWNER               BINARY-LONG VALUE 0.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-EXPECT              PIC X(200).
+ 01 WS-ID                  PIC Z(8)9.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE 0 TO WS-CONN
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CORE-MAX-CONNS
+         IF CN-PLAYER(WS-I) = WS-PLAYER
+             MOVE WS-I TO WS-CONN
+         END-IF
+     END-PERFORM
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     COMPUTE WS-Y = PL-Y(WS-PLAYER) + 20
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE 5 TO WS-RADIUS
+     MOVE 200 TO WS-DURATION
+     MOVE 20 TO WS-WAIT
+     CALL "CLOUD-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-RADIUS WS-DURATION WS-WAIT WS-REAPP WS-OWNER WS-ROW
+     MOVE EN-ID(WS-ROW) TO WS-ID
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE SPACES TO WS-EXPECT
+     STRING "1 101(" FUNCTION TRIM(WS-ID) ";8=F5.00,9=Z1)" DELIMITED BY SIZE INTO WS-EXPECT
+     MOVE "A" TO TL-MODE
+     MOVE "acceptance US15 21§8.5 Add Entity then Set Entity Data: radius 5.0 (metadata 8) and waiting true (9)" TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Waiting for 19 ticks (tickCount 19 is below 20): nothing is sent.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 19
+         CALL "THROWN-TICK"
+     END-PERFORM
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE "acceptance US15 21§8.5 nothing changes while the cloud waits (19 ticks): no packet" TO TL-CASE
+     MOVE "A" TO TL-MODE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-TEXT(1:1) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "THROWN-TICK"
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE SPACES TO WS-EXPECT
+     STRING "101(" FUNCTION TRIM(WS-ID) ";8=F5.00,9=Z0)" DELIMITED BY SIZE INTO WS-EXPECT
+     MOVE "acceptance US15 21§8.5 at tickCount 20 (the wait time) the waiting flag becomes false" TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A radius that shrinks per tick is sent again.
+     CALL "PJ-FIND" USING EN-ID(WS-ROW) WS-SLOT
+     MOVE -0.25 TO PJ-RPT(WS-SLOT)
+     CALL "THROWN-TICK"
+     CALL "THROWN-TICK"
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE SPACES TO WS-EXPECT
+     STRING "101(" FUNCTION TRIM(WS-ID) ";8=F4.75,9=Z0) 101(" FUNCTION TRIM(WS-ID) ";8=F4.50,9=Z0)" DELIMITED BY SIZE INTO WS-EXPECT
+     MOVE "acceptance US15 21§8.5 radius per tick -0.25: each tick sends the new radius (4.75, 4.50)" TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PJ-DROP" USING WS-ROW
+*>   The radius is clamped to 0 to 32 (metadata 8).
+     MOVE 40 TO WS-RADIUS
+     CALL "CLOUD-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-RADIUS WS-DURATION WS-WAIT WS-REAPP WS-OWNER WS-ROW
+     MOVE EN-ID(WS-ROW) TO WS-ID
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE SPACES TO WS-EXPECT
+     STRING "78 1 101(" FUNCTION TRIM(WS-ID) ";8=F32.00,9=Z1)" DELIMITED BY SIZE INTO WS-EXPECT
+     MOVE "acceptance US15 21§8.5 a radius of 40 is clamped to 32 in metadata 8" TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-MOB-21-8-5.
+ COPY CORETEST.
+ COPY MOBSPTEST.
+ COPY P49FTEST.

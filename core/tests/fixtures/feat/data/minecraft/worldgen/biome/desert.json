@@ -1,0 +1,28 @@
+{
+ "temperature": 2.0,
+ "downfall": 0.0,
+ "has_precipitation": false,
+ "carvers": [],
+ "effects": {
+  "water_color": 4159204,
+  "water_fog_color": 329011,
+  "fog_color": 12638463,
+  "sky_color": 7907327
+ },
+ "features": [
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+   "minecraft:patch_dead",
+   "minecraft:patch_flowers"
+  ],
+  []
+ ]
+}

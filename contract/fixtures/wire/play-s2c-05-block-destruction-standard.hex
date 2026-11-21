@@ -1,0 +1,10 @@
+# Fixture: Block Destruction, stage 9
+# Phase: play. Direction: clientbound (S->C). Packet id 0x05 (5).
+# Doc refs: 05a 0x05; 00 section 4.1; 13 section 2.4
+# Stated inputs:
+#   breaker entity id 300 (two-byte VarInt); location (-12, -60, 40); progress stage 9; stage -1 (255) would remove the overlay
+
+05                                               # packet id: VarInt 0x05
+ac 02                                            # Breaker id: VarInt 300
+ff ff fd 00 00 02 8f c4                          # Location: Position (-12, -60, 40)
+09                                               # Progress: UByte 9

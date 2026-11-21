@@ -26,8 +26,7 @@
      CALL "CL-INIT" USING CLIENT-STATE
      CALL "NET-BUFFERS-INIT" USING CLIENT-STATE WS-CONN
      MOVE PH-PLAY TO CN-PHASE(WS-CONN)
-     MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-starting-items.hex" TO WS-PATH
-     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     CALL "TEST-FEED-STARTING-ITEMS" USING CLIENT-STATE WS-CONN
      MOVE "inventory replica Container Set Content fills the 36 slots: items 2 to 9 x 64 in the "
          & "hotbar, a pry bar in slot 8, a trowel in slot 9, the rest empty; state id 1" TO TL-CASE
      PERFORM SLOTS-TEXT
@@ -65,7 +64,7 @@
 
 *>   Slots and held slots out of range: ignored.
      CALL "PB-RESET" USING PB-BUFFER
-     MOVE 36 TO WS-V
+     MOVE 41 TO WS-V
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-V
      CALL "PB-PUT-ITEMSTACK" USING PB-BUFFER PB-ITEMSTACK
      MOVE 110 TO WS-ID
@@ -86,7 +85,7 @@
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-V
      MOVE 107 TO WS-ID
      CALL "INVENTORY-PACKET" USING CLIENT-STATE PB-BUFFER WS-ID
-     MOVE "inventory replica Set Player Inventory slot 36, Container Set Slot slot -1 and Set Held "
+     MOVE "inventory replica Set Player Inventory slot 41, Container Set Slot slot -1 and Set Held "
          & "Slot 9 are ignored (the state id of the slot packet is kept)" TO TL-CASE
      PERFORM SLOTS-TEXT
      MOVE PL-HELD TO WS-E
@@ -98,6 +97,8 @@
 
      MOVE "contract/fixtures/wire/play-s2c-14-container-set-slot.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
+     MOVE "contract/fixtures/wire/play-s2c-6e-set-player-inventory.hex" TO WS-PATH
+     CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
      MOVE "contract/fixtures/wire/play-s2c-6b-set-held-slot.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
      CALL "PB-RESET" USING PB-BUFFER
@@ -107,8 +108,9 @@
      CALL "PB-PUT-ITEMSTACK" USING PB-BUFFER PB-ITEMSTACK
      MOVE 110 TO WS-ID
      CALL "INVENTORY-PACKET" USING CLIENT-STATE PB-BUFFER WS-ID
-     MOVE "inventory replica Container Set Slot sets slot 0 to 63 greystone (state id 2), Set Held "
-         & "Slot holds slot 0, Set Player Inventory empties slot 9" TO TL-CASE
+     MOVE "inventory replica Container Set Slot of menu slot 0 (the crafting result) leaves the 36 slots, Set Player "
+         & "Inventory sets slot 0 to 63 greystone, Set Held Slot holds slot 0, Set Player Inventory empties slot 9 "
+         & "(state id 2)" TO TL-CASE
      PERFORM SLOTS-TEXT
      MOVE PL-HELD TO WS-E
      STRING FUNCTION TRIM(TL-OBSERVED) " held " FUNCTION TRIM(WS-E) DELIMITED BY SIZE

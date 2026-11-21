@@ -7,7 +7,7 @@
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact already recorded in [README.md](README.md)) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`) of `net.minecraft.world.level.levelgen.structure.templatesystem.*` (including `loader.*` and `rule.blockentity.*`), `...structure.TemplateStructurePiece`, `net.minecraft.world.level.block.entity.StructureBlockEntity` and `JigsawBlockEntity`, `net.minecraft.world.level.block.Rotation` and `Mirror`, `net.minecraft.util.Mth`, `net.minecraft.util.Util` (`toShuffledList`), `RandomSource`, `SingleThreadedRandomSource`, `LegacyRandomSource$LegacyPositionalRandomFactory`, `net.minecraft.world.phys.shapes.DiscreteVoxelShape`, `net.minecraft.core.AxisCycle`, `net.minecraft.nbt.NbtUtils`, `net.minecraft.core.registries.Registries`; static reading of the jar's data (`version.json`, every `data/minecraft/structure/**.nbt` file decompressed and scanned with a script, and every `data/minecraft/worldgen/processor_list/*.json`). No execution of the artifact. The worked examples in section 10 were computed by hand and by a small script that implements the formulas of this document; they were not run against the artifact. |
 | Operator decisions | Standard Minecraft content is the target; a tool extracts the data pack and this document specifies the engine (ticket CC-0001, Decisions "World scope", "Vanilla assets and data"; design map `docs/design/README.md` GAP-12b, R4, R7, R10). |
-| Status | Written by the reader for round RS20, part 2. |
+| Status | Written by the reader for round RS20, part 2; corrected or extended in round R1 (clean-room round 2026-11-18): Open question 13. |
 
 Class names in backticks say where a fact was read; they are not the design. "(inferred)" marks a deduction and "(recalled, not
 verified)" marks something not read; both are listed in the Open questions. Facts are read from the artifact; where
@@ -577,7 +577,7 @@ later rules (section 11.4).
 | `input_predicate` | `rule_test` | required | tested against the **template state** at the absolute position (`test(state, absPos, rng)`) |
 | `location_predicate` | `rule_test` | required | tested against the **world's current state** at the absolute position (`testAgainstWorldState(level, absPos, rng)`, section 8.3) |
 | `position_predicate` | `pos_rule_test` | `always_true` (lenient: an invalid value falls back to the default) | `test(localPos, absPos, anchor, rng)` |
-| `output_state` | block state (the standard block-state codec: `Name`, optional `Properties`) | required | the state written |
+| `output_state` | block state (`BlockState.CODEC`: either a bare block id string, meaning that block's default state, as every state in the jar's processor data is written, or an object `{"id": block id, "properties": {...}}` with `properties` optional (lenient); not `Name` and `Properties`, which are the keys of the chunk-palette NBT; read in round R1) | required | the state written |
 | `block_entity_modifier` | `rule_block_entity_modifier` | `passthrough` (lenient) | how the block entity tag changes |
 
 The rule matches when all three predicates are true, evaluated in the order input, location, position, with short-circuit: when the input
@@ -593,7 +593,7 @@ Only `always_true` overrides it (returning true **without** reading the world).
 | `always_true` | none | true |
 | `block_match` | `block` (a block id) | `state.is(block)` |
 | `blockstate_match` | `block_state` (a block state) | the state equals the given state exactly (every property value; a property missing from the JSON takes its default) |
-| `tag_match` | `tag` (a block tag id; whether a leading `#` is accepted was not checked) | `state.is(tag)` |
+| `tag_match` | `tag` (a block tag id written **without** `#`: a leading `#` fails the decode (inferred from the identifier rules: `TagKey.codec` is the plain identifier codec with no registry lookup, read; a `#` is not an identifier character), so any valid identifier decodes and an unknown tag matches nothing at run time; see 35-4 section 7.5.3; read in round R1) | `state.is(tag)` |
 | `random_block_match` | `block`, `probability` (float) | `state.is(block)` and then `rng.nextFloat() < probability` (the draw is made **only when the block matches**) |
 | `random_blockstate_match` | `block_state`, `probability` | state equals and then `rng.nextFloat() < probability` (draw only on a match) |
 | `height_match` | `min_inclusive`, `max_inclusive` (Int) | `min_inclusive <= pos.y <= max_inclusive` (absolute y; the state is ignored) |
@@ -918,7 +918,7 @@ An implementation is correct against this document when:
 2. The data-fixer upgrade for older structure files (`DataFixTypes.STRUCTURE`, base version 500) was not read; all shipped files are already at 5023, so it matters
    only for user-supplied or world-generated files.
 3. `BlockState.rotate` and `BlockState.mirror` are per-block rules (24-x, block registry parts); this document uses them without restating them. Properties such as
-   a jigsaw's `orientation` rotate by their own rule (31-6 section 8, 24).
+   a jigsaw's `orientation` rotate by their own rule (31-6 section 8, 24). Answered by [24-block-registry-9-rotation-and-mirror.md](24-block-registry-9-rotation-and-mirror.md) (consolidated rules and block table).
 4. `LiquidBlockContainer.placeLiquid` and the fluid cells' source tests are the fluid engine's (29a); only their use in sections 5.3 and 5.4 is specified here.
 5. `Entity.rotate`, `Entity.mirror`, hanging-entity overrides and `EntityType.create` from NBT are entity-model topics (44, 45); sections 5.6 uses them as black boxes.
 6. (Closed: `allowNbt` read, sections 6.2 and 9.6; number kept.)
@@ -930,4 +930,4 @@ An implementation is correct against this document when:
 11. `IntProvider.maxInclusive()` and `sample` (used by `capped`) are specified in 23 section 7.1; the exact value range of the `POSITIVE_CODEC` constraint was not
     re-read here.
 12. Example 11.9 assumes the uniform provider draws `min + nextInt(max - min + 1)`; this is the form 23 section 7.1 gives, not re-read here.
-13. The block-collection part of `fillFromWorld` (which positions are collected, the structure-void ignore list, how size and the block lists are filled) is specified in 31-6 section 6.3 only as the call (ignore list = `structure_void`, include-entities = not `ignoreEntities`); the inside of the collection loop was not re-read here. The `StructureProcessorList` direct codec (object versus bare array) is only stated in section 12; the shipped lists all use the object form (`processors` key, seen in `ancient_city_start_degradation`); the bare-array form was not exercised by data (a sample of the 41 listing entries was not exhaustively checked).
+13. The block-collection part of `fillFromWorld` (which positions are collected, the structure-void ignore list, how size and the block lists are filled) is specified in 31-6 section 6.3 only as the call (ignore list = `structure_void`, include-entities = not `ignoreEntities`); the inside of the collection loop was not re-read here. (Answered in round R1, the processor-list codec part:) `StructureProcessorType.DIRECT_CODEC` is `Codec.withAlternative(primary, alternative)` with the primary form the object `{"processors": [processor, ...]}` and the alternative form the bare array `[processor, ...]`: decoding accepts either, encoding always writes the object form. Each processor is dispatched on `processor_type` over the processor-type registry. `StructureProcessorType.LIST_CODEC`, the codec of a processor-list field in a pool element or a `processor_list` reference, is the registry holder codec of that direct codec: a string is a reference to a `worldgen/processor_list` element, anything else is decoded inline with the direct codec. (Read in the static initialiser of `StructureProcessorType`.)

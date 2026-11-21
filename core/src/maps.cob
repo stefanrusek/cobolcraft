@@ -1,0 +1,219 @@
+*> The saved map data and the map components of a stack (lane p70c, T23501; docs/protocol/25-item-registry-5 section 8.1 and 8.2, 54 section 26.1, 40-4 section 5.4). The store is CORE-MAPS (MAPSTATE.cpy).
+*>   MAP-NEW USING dim, x, z, scale, id out (-1 when the store is full)      MapItemSavedData.createFresh: the centre of the map around (x, z) at the scale, a new id from the counter
+*>   MAP-FIND USING id, scale out, locked out, centre x out, centre z out, dim out, found out
+*>   MAP-DERIVE USING id, mode (1 scaled(), 2 locked()), new id out (-1 when the map is missing or the store is full)
+*>   SC-MAPID-GET USING handle, id out, has out; SC-MAPID-SET USING handle (in, out), id                  map_id (48): a VarInt
+*>   SC-MAPPOST-GET USING handle, mode out (-1 none, 0 lock, 1 scale); SC-MAPPOST-SET USING handle (in, out), mode   map_post_processing (50): a VarInt enum
+*>   SC-COMP-DROP USING handle (in, out), component type                                                     the stack's patch without the added component of that type
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MAP-NEW.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY MAPSTATE.
+ 01 WS-SIZE                BINARY-LONG.
+ 01 WS-HALF                BINARY-LONG.
+ 01 WS-Q                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-SCALE                BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Z L-SCALE L-ID.
+     MOVE -1 TO L-ID
+     IF MP-COUNT >= 256
+         GOBACK
+     END-IF
+     ADD 1 TO MP-COUNT
+     COMPUTE WS-SIZE = 128 * 2 ** L-SCALE
+     COMPUTE WS-HALF = WS-SIZE / 2
+     MOVE MP-NEXT TO MP-ID(MP-COUNT) L-ID
+     ADD 1 TO MP-NEXT
+     MOVE L-SCALE TO MP-SCALE(MP-COUNT)
+     MOVE 0 TO MP-LOCKED(MP-COUNT)
+     MOVE L-DIM TO MP-DIM(MP-COUNT)
+     COMPUTE WS-Q = FUNCTION INTEGER((L-X + 64) / WS-SIZE)
+     COMPUTE MP-CX(MP-COUNT) = WS-Q * WS-SIZE + WS-HALF - 64
+     COMPUTE WS-Q = FUNCTION INTEGER((L-Z + 64) / WS-SIZE)
+     COMPUTE MP-CZ(MP-COUNT) = WS-Q * WS-SIZE + WS-HALF - 64
+     GOBACK.
+ END PROGRAM MAP-NEW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MAP-FIND.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY MAPSTATE.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-SCALE                BINARY-LONG.
+ 01 L-LOCKED               BINARY-LONG.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-SCALE L-LOCKED L-CX L-CZ L-DIM L-FOUND.
+     MOVE 0 TO L-FOUND L-SCALE L-LOCKED L-CX L-CZ L-DIM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > MP-COUNT
+         IF MP-ID(WS-I) = L-ID
+             MOVE 1 TO L-FOUND
+             MOVE MP-SCALE(WS-I) TO L-SCALE
+             MOVE MP-LOCKED(WS-I) TO L-LOCKED
+             MOVE MP-CX(WS-I) TO L-CX
+             MOVE MP-CZ(WS-I) TO L-CZ
+             MOVE MP-DIM(WS-I) TO L-DIM
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM MAP-FIND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MAP-DERIVE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY MAPSTATE.
+ 01 WS-SCALE               BINARY-LONG.
+ 01 WS-LOCKED              BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-MODE                 BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-MODE L-NEW.
+     MOVE -1 TO L-NEW
+     CALL "MAP-FIND" USING L-ID WS-SCALE WS-LOCKED WS-CX WS-CZ WS-DIM WS-FOUND
+     IF WS-FOUND = 0
+         GOBACK
+     END-IF
+*>   scaled(): createFresh around the old centre at scale + 1 (at most 4), no pixels; locked(): a copy with the flag set.
+     IF L-MODE = 1
+         COMPUTE WS-SCALE = FUNCTION MIN(WS-SCALE + 1, 4)
+         CALL "MAP-NEW" USING WS-DIM WS-CX WS-CZ WS-SCALE L-NEW
+         GOBACK
+     END-IF
+     CALL "MAP-NEW" USING WS-DIM WS-CX WS-CZ WS-SCALE L-NEW
+     IF L-NEW >= 0
+         MOVE WS-CX TO MP-CX(MP-COUNT)
+         MOVE WS-CZ TO MP-CZ(MP-COUNT)
+         MOVE 1 TO MP-LOCKED(MP-COUNT)
+     END-IF
+     GOBACK.
+ END PROGRAM MAP-DERIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SC-MAPID-GET.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 48.
+ 01 WS-VALUE               PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-POS                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-HANDLE               BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-HAS                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-HANDLE L-ID L-HAS.
+     MOVE 0 TO L-ID L-HAS
+     CALL "SP-GET-COMPONENT" USING L-HANDLE WS-TYPE WS-VALUE WS-LENGTH WS-FOUND
+     IF WS-FOUND = 1
+         MOVE 1 TO WS-POS L-HAS
+         CALL "SP-VARINT-GET" USING WS-VALUE WS-POS L-ID
+     END-IF
+     GOBACK.
+ END PROGRAM SC-MAPID-GET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SC-MAPID-SET.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 48.
+ 01 WS-VALUE               PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-POS                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-HANDLE               BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-HANDLE L-ID.
+     MOVE SPACES TO WS-VALUE
+     MOVE 1 TO WS-POS
+     CALL "SP-VARINT-PUT" USING WS-VALUE WS-POS L-ID
+     COMPUTE WS-LENGTH = WS-POS - 1
+     CALL "SP-SET-COMPONENT" USING L-HANDLE WS-TYPE WS-VALUE WS-LENGTH
+     GOBACK.
+ END PROGRAM SC-MAPID-SET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SC-MAPPOST-GET.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 50.
+ 01 WS-VALUE               PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-POS                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-HANDLE               BINARY-LONG.
+ 01 L-MODE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-HANDLE L-MODE.
+     MOVE -1 TO L-MODE
+     CALL "SP-GET-COMPONENT" USING L-HANDLE WS-TYPE WS-VALUE WS-LENGTH WS-FOUND
+     IF WS-FOUND = 1
+         MOVE 1 TO WS-POS
+         CALL "SP-VARINT-GET" USING WS-VALUE WS-POS L-MODE
+     END-IF
+     GOBACK.
+ END PROGRAM SC-MAPPOST-GET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SC-MAPPOST-SET.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TYPE                BINARY-LONG VALUE 50.
+ 01 WS-VALUE               PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-POS                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-HANDLE               BINARY-LONG.
+ 01 L-MODE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-HANDLE L-MODE.
+     MOVE SPACES TO WS-VALUE
+     MOVE 1 TO WS-POS
+     CALL "SP-VARINT-PUT" USING WS-VALUE WS-POS L-MODE
+     COMPUTE WS-LENGTH = WS-POS - 1
+     CALL "SP-SET-COMPONENT" USING L-HANDLE WS-TYPE WS-VALUE WS-LENGTH
+     GOBACK.
+ END PROGRAM SC-MAPPOST-SET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SC-COMP-DROP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==DR-==.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-ONE-ITEM            BINARY-LONG VALUE 1.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-HANDLE               BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-HANDLE L-TYPE.
+     CALL "SP-EXPORT" USING WS-ONE-ITEM WS-ONE L-HANDLE DR-ITEMSTACK-X
+     MOVE 0 TO WS-J
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > DR-ISX-ADDED-COUNT
+         IF DR-ISX-TYPE(WS-I) NOT = L-TYPE
+             ADD 1 TO WS-J
+             MOVE DR-ISX-TYPE(WS-I) TO DR-ISX-TYPE(WS-J)
+             MOVE DR-ISX-VALUE-LENGTH(WS-I) TO DR-ISX-VALUE-LENGTH(WS-J)
+             MOVE DR-ISX-VALUE(WS-I) TO DR-ISX-VALUE(WS-J)
+         END-IF
+     END-PERFORM
+     MOVE WS-J TO DR-ISX-ADDED-COUNT
+     CALL "SP-INTERN" USING DR-ITEMSTACK-X L-HANDLE
+     GOBACK.
+ END PROGRAM SC-COMP-DROP.

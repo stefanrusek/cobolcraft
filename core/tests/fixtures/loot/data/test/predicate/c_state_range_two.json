@@ -1,0 +1,10 @@
+{
+ "type": "minecraft:match_block",
+ "blocks": "cobolcraft:cardstack",
+ "state": {
+  "axis": {
+   "min": "y"
+  },
+  "punched": "false"
+ }
+}

@@ -1,0 +1,4 @@
+{"type": "minecraft:interval_select",
+ "input": {"type": "minecraft:gradient", "axis": "z", "from_coordinate": 0, "to_coordinate": 4, "from_value": -1.0, "to_value": 1.0},
+ "thresholds": [0.25],
+ "functions": [{"type": "minecraft:add", "left": 1.0, "right": 2.0}, "minecraft:t/pick4"]}

@@ -1,0 +1,67 @@
+*> Acceptance test (lane p49a; docs/protocol/18-mob-framework.md section 2.10 No-AI and immobile mobs, the cobolcraft set): an abend 6 blocks from survival Alice at night
+*> walks to her (as in acc_us9_hostile); the same abend with the no-AI flag does not move, notice her or attack in 60 ticks.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US15-NOAI-LEGACY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY ETIDS.
+ 01 WS-NAME                PIC X(16).
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-ALICE               BINARY-LONG.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG VALUE 1.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-MOVE                BINARY-LONG VALUE 31.
+ 01 WS-X                   FLOAT-LONG VALUE 4.5.
+ 01 WS-Y                   FLOAT-LONG VALUE 54.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-PITCH               FLOAT-SHORT VALUE 0.
+ 01 WS-FLAGS               BINARY-LONG VALUE 1.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-MOVED               BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-DEFAULT-MODE
+     MOVE 2 TO CS-VIEW-DISTANCE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE 16001 TO CW-TIME
+     MOVE "Alice" TO WS-NAME
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ALICE
+     MOVE 8.5 TO WS-Z
+     CALL "TEST-MOVE" USING WS-ALICE WS-MOVE WS-X WS-Y WS-Z WS-YAW WS-PITCH WS-FLAGS
+     CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
+     MOVE ET-ABEND TO WS-TYPE
+     MOVE 14.5 TO WS-Z
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     MOVE 1 TO EN-NO-AI(WS-ROW)
+     MOVE 60 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 0 TO WS-MOVED
+     IF EN-Z(WS-ROW) NOT = 14.5 OR EN-TARGET-ID(WS-ROW) NOT = 0
+         MOVE 1 TO WS-MOVED
+     END-IF
+     MOVE "acceptance US15 18§2.10 No-AI: a no-AI abend does not walk or take a target in 60 ticks" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-MOVED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO EN-NO-AI(WS-ROW)
+     MOVE 30 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 0 TO WS-MOVED
+     IF EN-Z(WS-ROW) < 14.5
+         MOVE 1 TO WS-MOVED
+     END-IF
+     MOVE "acceptance US15 18§2.10 No-AI: with the flag cleared it walks to her" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-MOVED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM ACC-US15-NOAI-LEGACY.
+
+ COPY CORETEST.

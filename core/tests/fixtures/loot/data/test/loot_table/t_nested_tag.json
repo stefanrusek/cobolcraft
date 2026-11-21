@@ -1,0 +1,23 @@
+{
+ "type": "minecraft:generic",
+ "pools": [
+  {
+   "rolls": 1,
+   "entries": [
+    {
+     "type": "minecraft:loot_table",
+     "value": "#minecraft:no_tables"
+    }
+   ]
+  },
+  {
+   "rolls": 1,
+   "entries": [
+    {
+     "type": "minecraft:item",
+     "name": "cobolcraft:grit"
+    }
+   ]
+  }
+ ]
+}

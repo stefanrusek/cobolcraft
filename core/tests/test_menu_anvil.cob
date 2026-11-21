@@ -1,0 +1,126 @@
+*> Test of the live anvil programs that the acceptance test does not reach (core/src/menu-anvil.cob; docs/protocol/40-menus-3 section 3.4, 3.5 and 3.7; lane itemcomp2, T10102): the chipped and damaged
+*> anvil are anvils, taking more levels than the player has leaves level, progress and total 0, a take that needs more units than the right stack holds empties it, a merge uses the right stack up
+*> and a pure rename leaves it; Rename Item outside an anvil menu is ignored and a name of more than 60 bytes is refused.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MENU-ANVIL.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY CMENU.
+ COPY CBLOCKS.
+ COPY PLAYPKT.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-K1                  BINARY-LONG.
+ 01 WS-K2                  BINARY-LONG.
+ 01 WS-K3                  BINARY-LONG.
+ 01 WS-LEVELS              BINARY-LONG.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(9)9.
+ 01 WS-E3                  PIC -(9)9.
+ 01 WS-E4                  PIC -(9)9.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "T" TO TL-MODE
+     MOVE 0 TO WS-CONN
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CORE-MAX-CONNS
+         IF CN-PLAYER(WS-I) = WS-PLAYER
+             MOVE WS-I TO WS-CONN
+         END-IF
+     END-PERFORM
+
+     MOVE "test menu anvil kinds: the anvil, the chipped anvil and the damaged anvil open the anvil menu, stone does not" TO TL-CASE
+     MOVE "anvil" TO WS-KEY
+     CALL "TEST-BLOCK-ID" USING WS-KEY WS-ID
+     MOVE CB-DEFAULT-STATE(WS-ID + 1) TO WS-STATE
+     CALL "MENU-STATION-KIND" USING WS-STATE WS-K1
+     MOVE "chipped_anvil" TO WS-KEY
+     CALL "TEST-BLOCK-ID" USING WS-KEY WS-ID
+     MOVE CB-DEFAULT-STATE(WS-ID + 1) TO WS-STATE
+     CALL "MENU-STATION-KIND" USING WS-STATE WS-K2
+     MOVE "damaged_anvil" TO WS-KEY
+     CALL "TEST-BLOCK-ID" USING WS-KEY WS-ID
+     MOVE CB-DEFAULT-STATE(WS-ID + 1) TO WS-STATE
+     CALL "MENU-STATION-KIND" USING WS-STATE WS-K3
+     MOVE "stone" TO WS-KEY
+     CALL "TEST-BLOCK-ID" USING WS-KEY WS-ID
+     MOVE CB-DEFAULT-STATE(WS-ID + 1) TO WS-STATE
+     CALL "MENU-STATION-KIND" USING WS-STATE WS-LEVELS
+     MOVE WS-K1 TO WS-E1
+     MOVE WS-K2 TO WS-E2
+     MOVE WS-K3 TO WS-E3
+     MOVE WS-LEVELS TO WS-E4
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) " " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "4 4 4 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test menu anvil levels: paying 5 levels with 1 leaves level 0, progress 0 and total 0" TO TL-CASE
+     MOVE 1 TO PL-XP-LEVEL(WS-PLAYER)
+     MOVE 3 TO PL-XP-POINTS(WS-PLAYER)
+     MOVE 40 TO PL-XP-TOTAL(WS-PLAYER)
+     MOVE 5 TO WS-LEVELS
+     CALL "XP-TAKE-LEVELS" USING WS-PLAYER WS-LEVELS
+     MOVE PL-XP-LEVEL(WS-PLAYER) TO WS-E1
+     MOVE PL-XP-POINTS(WS-PLAYER) TO WS-E2
+     MOVE PL-XP-TOTAL(WS-PLAYER) TO WS-E3
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test menu anvil take: units above the right stack empty it, a merge (no units) uses it up, a pure rename leaves it" TO TL-CASE
+     MOVE 24 TO MN-CFAMILY(WS-PLAYER)
+     MOVE 1 TO MN-WINDOW(WS-PLAYER)
+*>   the take sends the anvil's level event at the menu's block (57-client-closures-2 section 3.2): the bench is the player's own cell
+     MOVE PL-DIM(WS-PLAYER) TO MN-BENCH-DIM(WS-PLAYER)
+     COMPUTE MN-BENCH-X(WS-PLAYER) = FUNCTION INTEGER(PL-X(WS-PLAYER))
+     COMPUTE MN-BENCH-Y(WS-PLAYER) = FUNCTION INTEGER(PL-Y(WS-PLAYER))
+     COMPUTE MN-BENCH-Z(WS-PLAYER) = FUNCTION INTEGER(PL-Z(WS-PLAYER))
+     MOVE 3 TO MN-WSLOT-COUNT(WS-PLAYER, 2)
+     MOVE 7 TO MN-WSLOT-ITEM(WS-PLAYER, 2)
+     MOVE 5 TO MN-WSEL(WS-PLAYER)
+     MOVE 0 TO MN-WKEEP(WS-PLAYER)
+     MOVE 1 TO PL-MODE(WS-PLAYER)
+     CALL "MENU-ANVIL-TAKEN" USING WS-PLAYER
+     MOVE MN-WSLOT-COUNT(WS-PLAYER, 2) TO WS-E1
+     MOVE 3 TO MN-WSLOT-COUNT(WS-PLAYER, 2)
+     MOVE 7 TO MN-WSLOT-ITEM(WS-PLAYER, 2)
+     MOVE 0 TO MN-WSEL(WS-PLAYER)
+     CALL "MENU-ANVIL-TAKEN" USING WS-PLAYER
+     MOVE MN-WSLOT-COUNT(WS-PLAYER, 2) TO WS-E2
+     MOVE 3 TO MN-WSLOT-COUNT(WS-PLAYER, 2)
+     MOVE 7 TO MN-WSLOT-ITEM(WS-PLAYER, 2)
+     MOVE 1 TO MN-WKEEP(WS-PLAYER)
+     CALL "MENU-ANVIL-TAKEN" USING WS-PLAYER
+     MOVE MN-WSLOT-COUNT(WS-PLAYER, 2) TO WS-E3
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0 0 3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test menu anvil rename: outside an anvil menu nothing is stored; a name of 61 bytes is refused" TO TL-CASE
+     MOVE 0 TO MN-WINDOW(WS-PLAYER) MN-WNAME-LEN(WS-PLAYER)
+     MOVE "Blade" TO PSB-MESSAGE
+     MOVE 5 TO PSB-MESSAGE-LENGTH
+     CALL "ANVIL-RENAME" USING WS-CONN PLAY-SERVERBOUND
+     MOVE MN-WNAME-LEN(WS-PLAYER) TO WS-E1
+     MOVE 1 TO MN-WINDOW(WS-PLAYER)
+     MOVE ALL "Y" TO PSB-MESSAGE(1:61)
+     MOVE 61 TO PSB-MESSAGE-LENGTH
+     CALL "ANVIL-RENAME" USING WS-CONN PLAY-SERVERBOUND
+     MOVE MN-WNAME-LEN(WS-PLAYER) TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-MENU-ANVIL.
+ COPY MOBSPTEST.
+ COPY CORETEST.
+ COPY BETEST.

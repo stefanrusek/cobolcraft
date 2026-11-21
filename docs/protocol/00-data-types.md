@@ -411,7 +411,7 @@ AddedEntry:
 | Field | Type | Notes |
 |---|---|---|
 | Type | RegistryId<data_component_type> | |
-| Value | (type-specific) | Encoded with that component type's own stream codec (`DataComponentType.streamCodec()`). The per-type content is not documented here. |
+| Value | (type-specific) | Encoded with that component type's own stream codec (`DataComponentType.streamCodec()`). The per-type content is in 54 §15 to §26 (layouts, NBT forms, defaults). |
 
 If both counts are 0 the patch is empty. Writers emit all added entries first, then all removed entries.
 

@@ -34,7 +34,10 @@
  01 WS-FZ                  FLOAT-LONG VALUE 20.5.
  01 WS-YAW                 FLOAT-SHORT VALUE 0.
  01 WS-PITCH               FLOAT-SHORT VALUE 0.
- 01 WS-FLAGS               BINARY-LONG VALUE 0.
+ 01 WS-FLAGS               BINARY-LONG VALUE 1.
+ 01 WS-FLOOR-X             BINARY-LONG.
+ 01 WS-FLOOR-Z             BINARY-LONG VALUE 20.
+ 01 WS-FLOOR-Y             BINARY-LONG VALUE 100.
  01 WS-ROW                 BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-ENTITY              BINARY-LONG.
@@ -58,12 +61,18 @@
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-BOB
      MOVE 100 TO WS-Y
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+*>   Greystone under the players: a break by a player in the air is five times slower (13 section 2.1).
+     PERFORM VARYING WS-FLOOR-X FROM 20 BY 1 UNTIL WS-FLOOR-X > 26
+         PERFORM VARYING WS-FLOOR-Z FROM 19 BY 1 UNTIL WS-FLOOR-Z > 21
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FLOOR-X WS-FLOOR-Y WS-FLOOR-Z WS-STATE
+         END-PERFORM
+     END-PERFORM
      MOVE 21 TO WS-X
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      MOVE 22 TO WS-X
-     MOVE 21.5 TO WS-FX
+     MOVE 22.0 TO WS-FX
      CALL "TEST-MOVE" USING WS-ALICE WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
-     MOVE 23.5 TO WS-FX
+     MOVE 23.0 TO WS-FX
      CALL "TEST-MOVE" USING WS-BOB WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
      MOVE 8 TO WS-SLOT
      CALL "TEST-HELD" USING WS-ALICE WS-SLOT
@@ -80,20 +89,20 @@
      MOVE 3 TO WS-ACTION
      PERFORM ACT
      CALL "TEST-DRAIN-ENTITIES" USING WS-BOB WS-TEXT
-     MOVE 10 TO WS-TICKS
+     MOVE 11 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-ENTITIES" USING WS-BOB WS-TEXT
+     CALL "TEST-DROP-MOVES" USING WS-TEXT
      MOVE 10 TO WS-S
      MOVE CN-PLAYER(WS-ALICE) TO WS-ROW
      PERFORM ADD-SLOT
      MOVE CN-PLAYER(WS-BOB) TO WS-ROW
      PERFORM ADD-SLOT
-     MOVE "128(4)x4 127(4,2,1) 78(4) row 2 slot 10 2x1 row 1 slot 10 0x0" TO TL-EXPECTED
+     MOVE "127(4,2,1) 78(4) row 2 slot 10 2x1 row 1 slot 10 0x0" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US5 edge given a player whose inventory has room for 10 of a 64 stack when "
-         & "it comes within pickup range then it takes 10, the rest stays on the ground and the "
-         & "viewers are sent Set Entity Data with 54" TO TL-CASE
+     MOVE "acceptance US5 edge given an inventory with room for 10 of a 64 stack when it is within pickup range "
+         & "then it takes 10, the rest stays, no Take Item Entity is sent (41 §4.2) and Set Entity Data says 54" TO TL-CASE
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
          MOVE 3 TO PL-SLOT-ITEM(WS-ROW, WS-S)
          MOVE 64 TO PL-SLOT-COUNT(WS-ROW, WS-S)
@@ -112,14 +121,16 @@
      MOVE 22.5 TO WS-FX
      CALL "TEST-MOVE" USING WS-BOB WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
      CALL "TEST-DRAIN-ENTITIES" USING WS-BOB WS-TEXT
-     MOVE 30 TO WS-TICKS
+*>   A thrown item has pickup delay 40: it can be touched from the 41st tick.
+     MOVE 45 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-ENTITIES" USING WS-BOB WS-TEXT
+     CALL "TEST-DROP-MOVES" USING WS-TEXT
      MOVE 0 TO WS-S
      PERFORM ADD-SLOT
      MOVE 5 TO WS-ENTITY
      PERFORM ADD-ITEM
-     MOVE "128(5)x6 127(5,3,10) 20(0=2x64) 101(5=2x54) row 1 slot 0 2x64 item 5 2x54"
+     MOVE "20(36=2x64) 101(5=2x54) row 1 slot 0 2x64 item 5 2x54"
          TO TL-EXPECTED
      PERFORM CHECK
 

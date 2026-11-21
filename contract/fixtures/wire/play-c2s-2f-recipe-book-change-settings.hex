@@ -1,0 +1,10 @@
+# Fixture: Recipe Book Change Settings
+# Phase: play. Direction: serverbound (C->S). Packet id 0x2f (47).
+# Doc refs: 05c 0x2F
+# Stated inputs:
+#   book type 1 (furnace), is open true, is filtering false
+
+2f                                               # packet id: VarInt 0x2f
+01                                               # Book type: VarInt 1 furnace
+01                                               # Is open: Boolean true
+00                                               # Is filtering: Boolean false

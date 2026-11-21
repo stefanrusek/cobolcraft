@@ -1,0 +1,198 @@
+*> Test of 31 section 13 (ShulkerBoxBlockEntity; T0865): the animation tick (10 ticks to open and to close with the exact single
+*> precision values, neighbour updates at the edges, push while opening), startOpen and stopOpen (block event 1, sound and game event on the
+*> first and last), triggerEvent 1 statuses, sided access (no shulker box inside a shulker box), canOpen (collision of the lid path) and the
+*> creative break rule.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-1-13.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ 01 WS-TEXT                PIC X(8192).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-EDIT2               PIC -(9)9.
+ 01 WS-EDIT3               PIC -(9)9.
+ 01 WS-EDIT4               PIC -(9)9.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-TYPE10              BINARY-LONG VALUE 10.
+ COPY BEFX.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-X                   BINARY-LONG VALUE 5.
+ 01 WS-Y                   BINARY-LONG VALUE 70.
+ 01 WS-Z                   BINARY-LONG VALUE 5.
+ 01 WS-T                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-BOX                 BINARY-LONG.
+ 01 WS-NB                  BINARY-LONG.
+ 01 WS-PUSH                BINARY-LONG.
+ 01 WS-SPEC                BINARY-LONG VALUE 0.
+ 01 WS-HANDLED             BINARY-LONG.
+ 01 WS-EVENT               BINARY-LONG VALUE 1.
+ 01 WS-PARAM               BINARY-LONG.
+ 01 WS-FLOAT-EDIT          PIC -9.9999999999.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-RES                 BINARY-LONG.
+ 01 WS-TEXT2               PIC X(8192).
+ 01 WS-F                   FLOAT-SHORT.
+ 01 WS-EDIT5               PIC -(9)9.
+ 01 WS-I2                  PIC 99.
+ 01 WS-NB9                 PIC 9.
+ 01 WS-PU9                 PIC 9.
+ PROCEDURE DIVISION.
+     MOVE "minecraft:cyan_shulker_box" TO WS-KEY
+     MOVE 26 TO WS-LEN
+     MOVE 24 TO WS-T
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-T WS-KEY WS-LEN WS-BOX
+
+     MOVE "acceptance US12 31-1§13 shulker: startOpen sends block event 1 with the count, sound and CONTAINER_OPEN only for the first opener; stopOpen likewise for the last" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     CALL "BE-SHULKER-START" USING WS-BOX WS-SPEC BE-FX
+     PERFORM FX-TEXT
+     CALL "BE-SHULKER-START" USING WS-BOX WS-SPEC BE-FX
+     PERFORM FX-TEXT
+     CALL "BE-SHULKER-STOP" USING WS-BOX WS-SPEC BE-FX
+     PERFORM FX-TEXT
+     CALL "BE-SHULKER-STOP" USING WS-BOX WS-SPEC BE-FX
+     PERFORM FX-TEXT
+     MOVE 1 TO WS-SPEC
+     CALL "BE-SHULKER-START" USING WS-BOX WS-SPEC BE-FX
+     PERFORM FX-TEXT
+     MOVE "c1 s1 e1 b1 | c2 s0 e0 b2 | c1 s0 e0 b1 | c0 s2 e2 b0 | c0 s0 e0 b-1 |" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 31-1§13 shulker: triggerEvent 1 with 1 starts OPENING, with 0 CLOSING, with 2 changes neither; other ids are not handled" TO TL-CASE
+     MOVE 1 TO WS-PARAM
+     CALL "BE-TRIGGER-EVENT" USING WS-BOX WS-EVENT WS-PARAM WS-HANDLED
+     MOVE WS-HANDLED TO WS-EDIT
+     MOVE BE-STATUS(WS-BOX) TO WS-EDIT2
+     MOVE 2 TO WS-PARAM
+     CALL "BE-TRIGGER-EVENT" USING WS-BOX WS-EVENT WS-PARAM WS-HANDLED
+     MOVE BE-STATUS(WS-BOX) TO WS-EDIT3
+     MOVE 0 TO WS-PARAM
+     CALL "BE-TRIGGER-EVENT" USING WS-BOX WS-EVENT WS-PARAM WS-HANDLED
+     MOVE BE-STATUS(WS-BOX) TO WS-EDIT4
+     MOVE 2 TO WS-A
+     CALL "BE-TRIGGER-EVENT" USING WS-BOX WS-A WS-PARAM WS-HANDLED
+     MOVE WS-HANDLED TO WS-EDIT5
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) " " FUNCTION TRIM(WS-EDIT3) " " FUNCTION TRIM(WS-EDIT4) " "
+         FUNCTION TRIM(WS-EDIT5) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "1 1 1 3 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 31-1§13 shulker: opening takes 10 ticks (tick 9 0.9000000954, tick 10 OPENED with 1), neighbour updates on tick 1 and 10, push on every opening tick" TO TL-CASE
+     MOVE 0 TO BE-STATUS(WS-BOX)
+     MOVE 0 TO BE-PROGRESS(WS-BOX)
+     MOVE 1 TO WS-PARAM
+     CALL "BE-TRIGGER-EVENT" USING WS-BOX WS-EVENT WS-PARAM WS-HANDLED
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
+         CALL "BE-SHULKER-TICK" USING WS-BOX WS-NB WS-PUSH
+         IF WS-I = 1 OR WS-I = 9 OR WS-I = 10
+             COMPUTE WS-FLOAT-EDIT ROUNDED = BE-PROGRESS(WS-BOX)
+             MOVE BE-STATUS(WS-BOX) TO WS-EDIT
+             MOVE WS-I TO WS-I2
+             MOVE WS-NB TO WS-NB9
+             MOVE WS-PUSH TO WS-PU9
+             STRING "t" WS-I2 " " FUNCTION TRIM(WS-FLOAT-EDIT) " st" FUNCTION TRIM(WS-EDIT) " n" WS-NB9 " p" WS-PU9 " | " DELIMITED BY SIZE
+                 INTO WS-TEXT WITH POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     MOVE "t01 0.1000000015 st1 n1 p1 | t09 0.9000000954 st1 n0 p1 | t10 1.0000000000 st2 n1 p1 |" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 31-1§13 shulker: closing takes 10 ticks (tick 9 0.0999999270, tick 10 CLOSED with 0), neighbour updates on tick 1 and 10; OPENED and CLOSED hold their progress" TO TL-CASE
+     CALL "BE-SHULKER-TICK" USING WS-BOX WS-NB WS-PUSH
+     MOVE BE-PROGRESS(WS-BOX) TO WS-F
+     MOVE 0 TO WS-PARAM
+     CALL "BE-TRIGGER-EVENT" USING WS-BOX WS-EVENT WS-PARAM WS-HANDLED
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 10
+         CALL "BE-SHULKER-TICK" USING WS-BOX WS-NB WS-PUSH
+         IF WS-I = 1 OR WS-I = 9 OR WS-I = 10
+             COMPUTE WS-FLOAT-EDIT ROUNDED = BE-PROGRESS(WS-BOX)
+             MOVE BE-STATUS(WS-BOX) TO WS-EDIT
+             MOVE WS-I TO WS-I2
+             MOVE WS-NB TO WS-NB9
+             MOVE WS-PUSH TO WS-PU9
+             STRING "t" WS-I2 " " FUNCTION TRIM(WS-FLOAT-EDIT) " st" FUNCTION TRIM(WS-EDIT) " n" WS-NB9 " p" WS-PU9 " | " DELIMITED BY SIZE
+                 INTO WS-TEXT WITH POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     CALL "BE-SHULKER-TICK" USING WS-BOX WS-NB WS-PUSH
+     MOVE "t01 0.8999999762 st3 n1 p0 | t09 0.0999999270 st3 n0 p0 | t10 0.0000000000 st0 n1 p0 |" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 31-1§13 shulker: no shulker box can be placed through a face of a shulker box, taking is always allowed" TO TL-CASE
+     MOVE 1 TO WS-A
+     CALL "BE-SHULKER-FACE" USING WS-A WS-RES
+     MOVE WS-RES TO WS-EDIT
+     MOVE 0 TO WS-A
+     CALL "BE-SHULKER-FACE" USING WS-A WS-RES
+     MOVE WS-RES TO WS-EDIT2
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-EDIT) FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "01" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 31-1§13 shulker: a closed box opens only when its lid path is free; an open box can always be used" TO TL-CASE
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE-SHULKER-CAN-OPEN" USING WS-A WS-B WS-RES
+     MOVE WS-RES TO WS-EDIT
+     MOVE 0 TO WS-B
+     CALL "BE-SHULKER-CAN-OPEN" USING WS-A WS-B WS-RES
+     MOVE WS-RES TO WS-EDIT2
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE-SHULKER-CAN-OPEN" USING WS-A WS-B WS-RES
+     MOVE WS-RES TO WS-EDIT3
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-EDIT) FUNCTION TRIM(WS-EDIT2) FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "011" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 31-1§13 shulker: breaking in creative with contents drops the box with its contents; otherwise the loot table is unpacked" TO TL-CASE
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE-SHULKER-BREAK" USING WS-A WS-B WS-RES
+     MOVE WS-RES TO WS-EDIT
+     MOVE 1 TO WS-B
+     CALL "BE-SHULKER-BREAK" USING WS-A WS-B WS-RES
+     MOVE WS-RES TO WS-EDIT2
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE-SHULKER-BREAK" USING WS-A WS-B WS-RES
+     MOVE WS-RES TO WS-EDIT3
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-EDIT) FUNCTION TRIM(WS-EDIT2) FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "122" TO TL-EXPECTED
+     PERFORM CHECK
+     GOBACK.
+
+ FX-TEXT.
+     MOVE BE-OPEN-COUNT(WS-BOX) TO WS-EDIT
+     MOVE FX-SOUND TO WS-EDIT2
+     MOVE FX-EVENT TO WS-EDIT3
+     MOVE FX-BLOCK-EVENT TO WS-EDIT4
+     STRING "c" FUNCTION TRIM(WS-EDIT) " s" FUNCTION TRIM(WS-EDIT2) " e" FUNCTION TRIM(WS-EDIT3) " b" FUNCTION TRIM(WS-EDIT4) " | "
+         DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR.
+
+ CHECK.
+     MOVE "T" TO TL-MODE
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-BE-31-1-13.
+
+ COPY CORETEST.

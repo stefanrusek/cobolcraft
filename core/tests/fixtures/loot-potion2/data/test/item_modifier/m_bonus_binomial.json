@@ -1,0 +1,9 @@
+{
+ "type": "minecraft:apply_bonus",
+ "enchantment": "minecraft:efficiency",
+ "formula": "minecraft:binomial_with_bonus_count",
+ "parameters": {
+  "extra": 2,
+  "probability": 0.5
+ }
+}

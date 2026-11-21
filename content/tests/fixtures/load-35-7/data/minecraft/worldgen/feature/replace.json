@@ -1,0 +1,1 @@
+{"type":"minecraft:replace_single_block","targets":[{"target":{"predicate_type":"minecraft:block_match","block":"minecraft:stone"},"state":{"id":"minecraft:dirt"}}]}

@@ -1,0 +1,126 @@
+*> Acceptance test, the attack animation event 4 of a hoglin, zoglin and ravager hit (docs/protocol/21 section 5.6, 20 section 13.6; lane 002-lane-mobsb5, T8907): the viewers get
+*> Entity Event 0x22 with event id 4 when the mob hits a player; a zombie sends none.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US15-ATTACK-EVENT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BRWORLD.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-MOB                 BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-DAMAGE              BINARY-LONG VALUE 3.
+ 01 WS-WANTED              BINARY-LONG VALUE 34.
+ 01 WS-EXPECTED            PIC X(1024).
+ 01 WS-HEX                 PIC X(8).
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
+ 01 WS-CH                  PIC X.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-NAME                PIC X(24).
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "N" TO TL-MODE
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE PL-CONN(WS-PLAYER) TO WS-CONN
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         EVALUATE WS-I
+             WHEN 1 MOVE "minecraft:hoglin" TO WS-KEY
+             WHEN 2 MOVE "minecraft:zoglin" TO WS-KEY
+             WHEN 3 MOVE "minecraft:ravager" TO WS-KEY
+             WHEN 4 MOVE "minecraft:zombie" TO WS-KEY
+         END-EVALUATE
+         CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+         CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-MOB
+         MOVE "none" TO WS-EXPECTED
+         MOVE "acceptance US15 20§13.6 no entity event before the hit" TO TL-CASE
+         CALL "AE-CHECK-HEX" USING WS-CONN TL-CASE WS-WANTED WS-EXPECTED
+         MOVE EN-ID(WS-MOB) TO WS-ID
+         MOVE 0 TO PL-HURT-COOLDOWN(WS-PLAYER)
+         CALL "HEALTH-MOB-HIT" USING WS-PLAYER WS-DAMAGE WS-MOB
+         MOVE SPACES TO WS-EXPECTED
+         MOVE SPACES TO WS-HEX
+         IF WS-I < 4
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                 COMPUTE WS-BYTE = FUNCTION MOD(FUNCTION INTEGER(WS-ID / (256 ** (4 - WS-K))), 256)
+                 MOVE FUNCTION CHAR(WS-BYTE + 1) TO WS-CH
+                 MOVE FUNCTION LOWER-CASE(FUNCTION HEX-OF(WS-CH)) TO WS-HEX(WS-K * 2 - 1:2)
+             END-PERFORM
+             STRING WS-HEX "04" DELIMITED BY SIZE INTO WS-EXPECTED
+             MOVE "acceptance US15 20§13.6 the hit sends entity event 4" TO TL-CASE
+         ELSE
+             MOVE "none" TO WS-EXPECTED
+             MOVE "acceptance US15 20§4 a zombie hit sends no entity event" TO TL-CASE
+         END-IF
+         CALL "AE-CHECK-HEX" USING WS-CONN TL-CASE WS-WANTED WS-EXPECTED
+     END-PERFORM
+     STOP RUN.
+ END PROGRAM ACC-US15-ATTACK-EVENT.
+
+ COPY CORETEST.
+ COPY MOBSPTEST.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. AE-CHECK-HEX.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-AREA                PIC X(65536) BASED.
+ 01 WS-COPY                PIC X(512).
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-TEXT                PIC X(4096).
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-CASE                 PIC X(240).
+ 01 L-WANTED               BINARY-LONG.
+ 01 L-EXPECTED             PIC X(1024).
+ PROCEDURE DIVISION USING L-ID L-CASE L-WANTED L-EXPECTED.
+     MOVE "none" TO WS-HEX
+     MOVE 0 TO WS-FOUND WS-OUTCOME
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID = L-WANTED AND WS-FOUND = 0
+             MOVE 1 TO WS-FOUND
+             SET ADDRESS OF WS-AREA TO PK-ADDR
+             COMPUTE WS-COUNT = PK-LENGTH - PK-POS
+             MOVE SPACES TO WS-COPY
+             MOVE WS-AREA(PK-POS + 1:WS-COUNT) TO WS-COPY
+             CALL "TEST-HEX-OF" USING WS-COPY WS-COUNT WS-HEX
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     MOVE WS-HEX TO WS-TEXT
+     MOVE L-CASE TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE L-EXPECTED TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     GOBACK.
+ END PROGRAM AE-CHECK-HEX.

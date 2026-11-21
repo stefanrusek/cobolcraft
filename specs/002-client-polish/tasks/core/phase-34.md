@@ -1,0 +1,6 @@
+#### Phase 34: US11-core (a) — chunk generation queue and the cost measurement
+
+- [x] T0405 [US11-core] Write test `core/tests/test_gen_queue.cob`: the chunk generation queue orders wanted chunks nearest first and obeys the per-tick budget (R12)
+- [x] T0406 [US11-core] Implement the generation queue in `core/src/gen-queue.cob` and run it from `CORE-TICK` in `core/src/api.cob`
+- [x] T0407 [US11-core] Measure one generated chunk with the `cc_f64` noise path (Risk R-P, first US11 task): add `core/tests/test_gen_cost.cob` that prints the elapsed time of one chunk and fails when it exceeds the per-tick budget recorded in `specs/002-client-polish/research.md` R12 (a result above the budget goes back to the plan, not to a hack). Re-done per the orchestrator decision (an atomic chunk cannot fit a 50 ms tick, one chunk's noise path alone measured 473 ms): generation is resumable and time-sliced (`core/src/gen-job.cob`, `gen-stages.cob`, `gen-queue.cob` `GEN-QUEUE-STEPS`); the test asserts a step-count budget per tick, completion after ceil(236 / 4) = 59 ticks and byte equality with the atomic reference, and prints the measured per-stage cost as evidence
+- [x] T0408 [US11-core] Gate: run `make gate-core` and record the command and real output

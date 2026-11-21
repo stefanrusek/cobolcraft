@@ -1,0 +1,2 @@
+{"type": "minecraft:sub", "left": 1.0, "right": {"type": "minecraft:from_int", "input": {"type": "minecraft:score",
+ "target": {"type": "minecraft:fixed", "name": "x"}, "score": "s", "fallback": 3}}}

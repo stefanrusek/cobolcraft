@@ -1,0 +1,58 @@
+# Fixture: Container Set Content, crafting bench menu (10 + 36 = 46 slots)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x12 (18).
+# Doc refs: 05a 0x12; 00 section 12.1; 13 section 3.5 (bench: 0 result, 1-9 grid, 10-36 main, 37-45 hotbar); 09 section 3.5
+# Stated inputs:
+#   container 1, state id 1, 46 slots, all empty except slot 0 (result) = 1 x cobblestone, slot 1 = 1 x oak_planks,
+#   slot 5 = 1 x oak_planks, slot 37 (first hotbar) = 64 x stone; carried item empty
+
+12                                               # packet id: VarInt 0x12
+01                                               # Container id: VarInt 1
+01                                               # State id: VarInt 1
+2e                                               # Slots: VarInt count 46
+01 3e 00 00                                      # slot 0: 1 x item 62
+01 3f 00 00                                      # slot 1: 1 x item 63
+00                                               # slot 2: empty (Count 0)
+00                                               # slot 3: empty (Count 0)
+00                                               # slot 4: empty (Count 0)
+01 3f 00 00                                      # slot 5: 1 x item 63
+00                                               # slot 6: empty (Count 0)
+00                                               # slot 7: empty (Count 0)
+00                                               # slot 8: empty (Count 0)
+00                                               # slot 9: empty (Count 0)
+00                                               # slot 10: empty (Count 0)
+00                                               # slot 11: empty (Count 0)
+00                                               # slot 12: empty (Count 0)
+00                                               # slot 13: empty (Count 0)
+00                                               # slot 14: empty (Count 0)
+00                                               # slot 15: empty (Count 0)
+00                                               # slot 16: empty (Count 0)
+00                                               # slot 17: empty (Count 0)
+00                                               # slot 18: empty (Count 0)
+00                                               # slot 19: empty (Count 0)
+00                                               # slot 20: empty (Count 0)
+00                                               # slot 21: empty (Count 0)
+00                                               # slot 22: empty (Count 0)
+00                                               # slot 23: empty (Count 0)
+00                                               # slot 24: empty (Count 0)
+00                                               # slot 25: empty (Count 0)
+00                                               # slot 26: empty (Count 0)
+00                                               # slot 27: empty (Count 0)
+00                                               # slot 28: empty (Count 0)
+00                                               # slot 29: empty (Count 0)
+00                                               # slot 30: empty (Count 0)
+00                                               # slot 31: empty (Count 0)
+00                                               # slot 32: empty (Count 0)
+00                                               # slot 33: empty (Count 0)
+00                                               # slot 34: empty (Count 0)
+00                                               # slot 35: empty (Count 0)
+00                                               # slot 36: empty (Count 0)
+40 01 00 00                                      # slot 37: 64 x item 1
+00                                               # slot 38: empty (Count 0)
+00                                               # slot 39: empty (Count 0)
+00                                               # slot 40: empty (Count 0)
+00                                               # slot 41: empty (Count 0)
+00                                               # slot 42: empty (Count 0)
+00                                               # slot 43: empty (Count 0)
+00                                               # slot 44: empty (Count 0)
+00                                               # slot 45: empty (Count 0)
+00                                               # Carried item: empty

@@ -1,0 +1,485 @@
+*> Test of 31-5 section 3, Conduit (core/src/be-31-5.cob; T0925): the frame offsets, the 40-tick pulse with its sounds, the effect range, the target rules, the client bob and the saved key.
+*> Each case runs its statements and shows the items joined by single spaces ("n" integers, "f" floats x 1e6, "t" text up to a stored length).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-5-3.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY CITEMS.
+ 01 WS-SHOW                PIC -(10)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-OUT                 PIC X(8192).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-T10                 BINARY-LONG VALUE 10.
+ 01 WS-FORM                BINARY-LONG VALUE 1.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-NM                  PIC X(32).
+ 01 WS-NML                 BINARY-LONG.
+ 01 WS-SV                  PIC X(256).
+ 01 WS-SVL                 BINARY-LONG.
+ 01 WS-NV                  BINARY-LONG.
+ 01 WS-LV                  BINARY-DOUBLE.
+ 01 WS-IA.
+    05 WS-IAV              BINARY-LONG OCCURS 8 TIMES.
+ 01 WS-LT                  BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG VALUE 0.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-A                 BINARY-LONG.
+ 01 WS-B                 BINARY-LONG.
+ 01 WS-C                 BINARY-LONG.
+ 01 WS-E                 BINARY-LONG.
+ 01 WS-F                 BINARY-LONG.
+ 01 WS-G                 BINARY-LONG.
+ 01 WS-H                 BINARY-LONG.
+ 01 WS-EV                BINARY-LONG.
+ 01 WS-O1                 BINARY-LONG.
+ 01 WS-O2                 BINARY-LONG.
+ 01 WS-O3                 BINARY-LONG.
+ 01 WS-O4                 BINARY-LONG.
+ 01 WS-O5                 BINARY-LONG.
+ 01 WS-O6                 BINARY-LONG.
+ 01 WS-O7                 BINARY-LONG.
+ 01 WS-FA                FLOAT-LONG.
+ 01 WS-FB                FLOAT-LONG.
+ 01 WS-FC                FLOAT-LONG.
+ 01 WS-FD                FLOAT-LONG.
+ 01 WS-FE                FLOAT-LONG.
+ 01 WS-FF                FLOAT-LONG.
+ 01 WS-N24                PIC X(24).
+ 01 WS-N32                PIC X(32).
+ 01 WS-PK                 PIC X(32).
+ 01 WS-SK                 PIC X(32).
+ 01 WS-PASSES.
+    05 WS-PASS            BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-OFFS.
+    05 WS-OFF             OCCURS 64 TIMES.
+       10 WS-OX           BINARY-LONG.
+       10 WS-OY           BINARY-LONG.
+       10 WS-OZ           BINARY-LONG.
+ 01 WS-TX                 PIC X(64).
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "acceptance US12 31-5§3 Conduit: frame scan (3.2): the kept offsets of the three rings, in the order dx, dy, dz, are 42 (first and second shown, and the last); a checksum over all 42 offsets matches the list of the doc" TO TL-CASE
+     PERFORM BEGIN-CASE
+     CALL "BE5-CONDUIT-OFFSETS" USING WS-OFFS WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-OX(1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-OY(1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-OZ(1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-OX(2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-OY(2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-OZ(2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-OX(42) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-OY(42) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-OZ(42) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-B
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 42
+     COMPUTE WS-B = WS-B + WS-OX(WS-J) * 3 + WS-OY(WS-J) * 7 + WS-OZ(WS-J) * 11 + FUNCTION ABS(WS-OX(WS-J)) * WS-J
+     END-PERFORM
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "42 -2 -2 0 -2 -1 0 2 2 0 946" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§3 Conduit: effects range (3.4, worked example 4): range = (n / 7) * 16 with integer division (16 frame blocks give 32, 42 give 96); the shape is active from 16" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     CALL "BE5-CONDUIT-RANGE" USING WS-A WS-B WS-C
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 15 TO WS-A
+     CALL "BE5-CONDUIT-RANGE" USING WS-A WS-B WS-C
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 16 TO WS-A
+     CALL "BE5-CONDUIT-RANGE" USING WS-A WS-B WS-C
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 41 TO WS-A
+     CALL "BE5-CONDUIT-RANGE" USING WS-A WS-B WS-C
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 42 TO WS-A
+     CALL "BE5-CONDUIT-RANGE" USING WS-A WS-B WS-C
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0 32 0 32 1 80 1 96 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§3 Conduit: server tick (3.3): the shape scan, effects and attack run only when the game time is divisible by 40: becoming active plays conduit.activate (1), becoming inactive conduit.deactivate (2); isHunting" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 25 TO WS-A
+     MOVE "minecraft:conduit" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-A WS-KEY WS-SVL WS-IDX
+     MOVE 39 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE5-CONDUIT-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-O1 WS-O2 WS-O3 WS-O4 WS-O5 WS-O6
+     MOVE WS-O1 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O2 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O3 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O4 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O5 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O6 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 40 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 42 TO WS-C
+     MOVE 5 TO WS-E
+     CALL "BE5-CONDUIT-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-O1 WS-O2 WS-O3 WS-O4 WS-O5 WS-O6
+     MOVE WS-O1 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O2 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O3 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O4 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O5 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O6 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 41 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 42 TO WS-C
+     MOVE 5 TO WS-E
+     CALL "BE5-CONDUIT-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-O1 WS-O2 WS-O3 WS-O4 WS-O5 WS-O6
+     MOVE WS-O1 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O2 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O3 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O4 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O5 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O6 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 80 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 42 TO WS-C
+     MOVE 10 TO WS-E
+     CALL "BE5-CONDUIT-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-O1 WS-O2 WS-O3 WS-O4 WS-O5 WS-O6
+     MOVE WS-O1 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O2 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O3 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O4 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O5 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O6 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 120 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 16 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE5-CONDUIT-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-O1 WS-O2 WS-O3 WS-O4 WS-O5 WS-O6
+     MOVE WS-O1 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O2 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O3 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O4 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O5 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O6 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 160 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE5-CONDUIT-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-O1 WS-O2 WS-O3 WS-O4 WS-O5 WS-O6
+     MOVE WS-O1 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O2 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O3 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O4 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O5 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O6 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 200 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE5-CONDUIT-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-O1 WS-O2 WS-O3 WS-O4 WS-O5 WS-O6
+     MOVE WS-O1 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O2 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O3 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O4 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O5 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-O6 TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0 0 0 0 0 0 0 1 1 1 1 0 1 1 1 0 0 0 0 0 0 1 1 0 1 1 1 1 0 1 1 0 1 1 0 0 1 1 0 2 0 0 0 0 0 0 0 0 0 " &
+         "0 0 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§3 Conduit: hunting target (3.5): without can kill no target; no current target selects one of the candidates by one index draw (none when there are no candidates); a current target is kept only while it is" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 3 TO WS-E
+     MOVE 1 TO WS-F
+     CALL "BE5-CONDUIT-TARGET" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 0 TO WS-F
+     CALL "BE5-CONDUIT-TARGET" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 3 TO WS-E
+     MOVE 2 TO WS-F
+     CALL "BE5-CONDUIT-TARGET" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 3 TO WS-E
+     MOVE 2 TO WS-F
+     CALL "BE5-CONDUIT-TARGET" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 3 TO WS-E
+     MOVE 2 TO WS-F
+     CALL "BE5-CONDUIT-TARGET" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0 0 0 2 2 1 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§3 Conduit: client particle origin (3.6): h = Mth.sin((tickCount + 35) * 0.1) / 2 + 0.5 and the height offset b = (h * h + h) * 0.3" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     CALL "BE5-CONDUIT-BOB" USING WS-A WS-FA
+     COMPUTE WS-SHOW ROUNDED = (WS-FA) * 1000000
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     CALL "BE5-CONDUIT-BOB" USING WS-A WS-FA
+     COMPUTE WS-SHOW ROUNDED = (WS-FA) * 1000000
+     PERFORM ADD-N
+     MOVE 25 TO WS-A
+     CALL "BE5-CONDUIT-BOB" USING WS-A WS-FA
+     COMPUTE WS-SHOW ROUNDED = (WS-FA) * 1000000
+     PERFORM ADD-N
+     MOVE 100 TO WS-A
+     CALL "BE5-CONDUIT-BOB" USING WS-A WS-FA
+     COMPUTE WS-SHOW ROUNDED = (WS-FA) * 1000000
+     PERFORM ADD-N
+     MOVE "129001 106938 147024 514588" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§3 Conduit: saved key (3.1): Target is an entity reference stored as an Int Array of 4; present sets the target, absent leaves none; nothing else is saved" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 25 TO WS-A
+     MOVE "minecraft:conduit" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-A WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "Target" TO WS-NM
+     MOVE 6 TO WS-NML
+     MOVE 1 TO WS-IAV(1)
+     MOVE -2 TO WS-IAV(2)
+     MOVE 3 TO WS-IAV(3)
+     MOVE -4 TO WS-IAV(4)
+     MOVE 4 TO WS-LC
+     PERFORM NB-IA
+     PERFORM LOAD-BUFFER
+     PERFORM SAVE-RENDER
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 25 TO WS-A
+     MOVE "minecraft:conduit" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-A WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "Target" TO WS-NM
+     MOVE 6 TO WS-NML
+     MOVE "x" TO WS-SV
+     MOVE 1 TO WS-SVL
+     PERFORM NB-S
+     PERFORM LOAD-BUFFER
+     PERFORM SAVE-RENDER
+     MOVE "{} {Target:I[1,-2,3,-4]} 1 {}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ ADD-N.
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> Saves entity WS-IDX in form WS-FORM, renders the compound and appends it to TL-OBSERVED.
+ SAVE-RENDER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-IDX WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> The NBT builders of the cases (name WS-NM and length WS-NML, text WS-SV and length WS-SVL, number WS-NV, list type WS-LT and count WS-LC).
+ NB-S.
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NM WS-NML WS-SV WS-SVL
+     .
+ NB-I.
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-LONG.
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WS-NM WS-NML WS-LV
+     .
+ NB-IA.
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WS-NM WS-NML WS-LC WS-IA
+     .
+ NB-B.
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-C.
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NM WS-NML
+     .
+ NB-E.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     .
+ NB-STACK.
+     MOVE 0 TO WS-KP
+     CALL "PNBT-STACK-WRITE" USING PB-BUFFER WS-ITEM WS-NV WS-KP
+     .
+ NB-L.
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NM WS-NML WS-LT WS-LC
+     .
+
+*> Loads entity WS-IDX from the compound the case built in PB-BUFFER (the closing End tag is written here).
+ LOAD-BUFFER.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-IDX PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     .
+ END PROGRAM TEST-BE-31-5-3.
+
+ COPY CORETEST.

@@ -1,0 +1,292 @@
+*> The End's rules for entering, leaving, the void, the end city hooks and the sky (docs/protocol/38-end.md sections 9 to 11; T1737 to T1742).
+*>
+*> Entry points:
+*>   END-ARRIVAL USING is player (1 or 0), x, y, z, yaw out (FLOAT-LONG): 9.1 items 2 to 5: a player arrives at (100.5, 49, 0.5), any other entity at (100.5, 50, 0.5), yaw 90.
+*>   END-ARRIVE-BUILD USING dim, dropped out: the platform of 9.1 item 3 rebuilt in the world of the dimension (every entry), DROPPED blocks to drop as items.
+*>   END-LEAVE USING is player, seen credits, result out: 9.2: 1 the credits screen (a player who has not seen them), 2 the player's own respawn, 3 the level respawn.
+*>   END-BELOW-WORLD USING y, living (1 or 0), result out: 9.3: 0 nothing, 1 discard (a plain entity below y -64), 2 4.0 fell_out_of_world damage (living).
+*>   END-SPREAD-CANDIDATE USING level seed (BINARY-DOUBLE signed), spacing, separation, salt, spread (0 linear, 1 triangular), chunk x, chunk z, candidate x out, candidate z out,
+*>     flag out: the potential structure chunk of the cell (36-1 section 4.3).   END-CITY-CANDIDATE USING seed, chunk x, chunk z, cand x, cand z, flag: the end_cities set (10).
+*>   END-CITY-BIOME USING biome index (END-BIOME-OF order), allowed out: has_structure/end_city holds end_highlands and end_midlands.
+*>   END-FLASH-PARAMS USING window, offset out, duration out, x angle out, y angle out (FLOAT-LONG): 11 item 1.   END-FLASH-INTENSITY USING clock ticks, intensity out: 11 item 2.
+*>   END-SKY-VERTEX USING vertex (1 to 4), x, y, z, u, v out (FLOAT-LONG): the vertices of the first face of the end sky box.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. END-ARRIVAL.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-X L-Y L-Z L-YAW.
+     MOVE 100.5 TO L-X
+     MOVE 0.5 TO L-Z
+     MOVE 90 TO L-YAW
+     IF L-PLAYER = 1
+         MOVE 49 TO L-Y
+     ELSE
+         MOVE 50 TO L-Y
+     END-IF
+     GOBACK.
+ END PROGRAM END-ARRIVAL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. END-ARRIVE-BUILD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-MODE                BINARY-LONG VALUE 1.
+ 01 WS-X                   BINARY-LONG VALUE 100.
+ 01 WS-Y                   BINARY-LONG VALUE 49.
+ 01 WS-Z                   BINARY-LONG VALUE 0.
+ 01 WS-DROP                BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-DROPPED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-DROPPED.
+     CALL "END-PLATFORM-PLACE" USING WS-MODE L-DIM WS-X WS-Y WS-Z WS-DROP L-DROPPED
+     GOBACK.
+ END PROGRAM END-ARRIVE-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. END-LEAVE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-SEEN                 BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-SEEN L-RESULT.
+     EVALUATE TRUE
+         WHEN L-PLAYER = 1 AND L-SEEN = 0
+             MOVE 1 TO L-RESULT
+         WHEN L-PLAYER = 1
+             MOVE 2 TO L-RESULT
+         WHEN OTHER
+             MOVE 3 TO L-RESULT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM END-LEAVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. END-BELOW-WORLD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-LIVING               BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-Y L-LIVING L-RESULT.
+     MOVE 0 TO L-RESULT
+     IF L-Y < -64
+         IF L-LIVING = 1
+             MOVE 2 TO L-RESULT
+         ELSE
+             MOVE 1 TO L-RESULT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM END-BELOW-WORLD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. END-SPREAD-CANDIDATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-M64                 PIC 9(20) VALUE 18446744073709551616.
+ 01 WS-RX                  BINARY-LONG.
+ 01 WS-RZ                  BINARY-LONG.
+ 01 WS-LIMIT               BINARY-LONG.
+ 01 WS-U                   BINARY-DOUBLE UNSIGNED.
+ 01 WS-S                   BINARY-DOUBLE UNSIGNED.
+ 01 WS-STATE               BINARY-DOUBLE UNSIGNED.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-OFF-X               BINARY-LONG.
+ 01 WS-OFF-Z               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SEED                 BINARY-DOUBLE.
+ 01 L-SPACING              BINARY-LONG.
+ 01 L-SEPARATION           BINARY-LONG.
+ 01 L-SALT                 BINARY-LONG.
+ 01 L-SPREAD               BINARY-LONG.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-CAND-X               BINARY-LONG.
+ 01 L-CAND-Z               BINARY-LONG.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-SEED L-SPACING L-SEPARATION L-SALT L-SPREAD L-CX L-CZ L-CAND-X L-CAND-Z L-FLAG.
+     COMPUTE WS-RX = FUNCTION INTEGER(L-CX / L-SPACING)
+     COMPUTE WS-RZ = FUNCTION INTEGER(L-CZ / L-SPACING)
+     IF L-SEED < 0
+         COMPUTE WS-U = L-SEED + 18446744073709551616
+     ELSE
+         MOVE L-SEED TO WS-U
+     END-IF
+     COMPUTE WS-S = FUNCTION MOD(WS-RX * 341873128712 + WS-RZ * 132897987541 + WS-U + L-SALT, WS-M64)
+     CALL "JRAND-SET-SEED" USING WS-STATE WS-S
+     COMPUTE WS-LIMIT = L-SPACING - L-SEPARATION
+     CALL "JRAND-NEXT-INT-BOUND" USING WS-STATE WS-LIMIT WS-OFF-X
+     IF L-SPREAD = 1
+         CALL "JRAND-NEXT-INT-BOUND" USING WS-STATE WS-LIMIT WS-A
+         COMPUTE WS-OFF-X = (WS-OFF-X + WS-A) / 2
+         CALL "JRAND-NEXT-INT-BOUND" USING WS-STATE WS-LIMIT WS-OFF-Z
+         CALL "JRAND-NEXT-INT-BOUND" USING WS-STATE WS-LIMIT WS-B
+         COMPUTE WS-OFF-Z = (WS-OFF-Z + WS-B) / 2
+     ELSE
+         CALL "JRAND-NEXT-INT-BOUND" USING WS-STATE WS-LIMIT WS-OFF-Z
+     END-IF
+     COMPUTE L-CAND-X = WS-RX * L-SPACING + WS-OFF-X
+     COMPUTE L-CAND-Z = WS-RZ * L-SPACING + WS-OFF-Z
+     MOVE 0 TO L-FLAG
+     IF L-CAND-X = L-CX AND L-CAND-Z = L-CZ
+         MOVE 1 TO L-FLAG
+     END-IF
+     GOBACK.
+ END PROGRAM END-SPREAD-CANDIDATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. END-CITY-CANDIDATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SPACING             BINARY-LONG VALUE 20.
+ 01 WS-SEPARATION          BINARY-LONG VALUE 11.
+ 01 WS-SALT                BINARY-LONG VALUE 10387313.
+ 01 WS-SPREAD              BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ 01 L-SEED                 BINARY-DOUBLE.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-CAND-X               BINARY-LONG.
+ 01 L-CAND-Z               BINARY-LONG.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-SEED L-CX L-CZ L-CAND-X L-CAND-Z L-FLAG.
+     CALL "END-SPREAD-CANDIDATE" USING L-SEED WS-SPACING WS-SEPARATION WS-SALT WS-SPREAD L-CX L-CZ L-CAND-X L-CAND-Z L-FLAG
+     GOBACK.
+ END PROGRAM END-CITY-CANDIDATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. END-CITY-BIOME.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-ALLOWED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-ALLOWED.
+     MOVE 0 TO L-ALLOWED
+     IF L-INDEX = 2 OR L-INDEX = 3
+         MOVE 1 TO L-ALLOWED
+     END-IF
+     GOBACK.
+ END PROGRAM END-CITY-BIOME.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. END-FLASH-PARAMS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-OP-ADD              BINARY-LONG VALUE 1.
+ 01 WS-OP-MUL              BINARY-LONG VALUE 3.
+ 01 WS-U                   BINARY-DOUBLE UNSIGNED.
+ 01 WS-R                   BINARY-DOUBLE UNSIGNED.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-K70                 FLOAT-LONG VALUE 70.
+ 01 WS-K360                FLOAT-LONG VALUE 360.
+ 01 WS-M60                 FLOAT-LONG VALUE -60.
+ 01 WS-M180                FLOAT-LONG VALUE -180.
+ 01 WS-N                   BINARY-LONG VALUE 201.
+ 01 WS-LIM                 BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-WINDOW               BINARY-LONG.
+ 01 L-OFFSET               BINARY-LONG.
+ 01 L-DURATION             BINARY-LONG.
+ 01 L-XA                   FLOAT-LONG.
+ 01 L-YA                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-WINDOW L-OFFSET L-DURATION L-XA L-YA.
+     MOVE L-WINDOW TO WS-U
+     CALL "JRAND-SET-SEED" USING WS-R WS-U
+     CALL "JRAND-NEXT-FLOAT" USING WS-R WS-F
+     CALL "JRAND-NEXT-INT-BOUND" USING WS-R WS-N L-OFFSET
+     COMPUTE WS-LIM = FUNCTION MIN(380, 600 - L-OFFSET) - 99
+     CALL "JRAND-NEXT-INT-BOUND" USING WS-R WS-LIM WS-D
+     COMPUTE L-DURATION = 100 + WS-D
+     CALL "JRAND-NEXT-FLOAT" USING WS-R WS-F
+     CALL "DENSITY-F32" USING WS-OP-MUL WS-F WS-K70 WS-T
+     CALL "DENSITY-F32" USING WS-OP-ADD WS-T WS-M60 L-XA
+     CALL "JRAND-NEXT-FLOAT" USING WS-R WS-F
+     CALL "DENSITY-F32" USING WS-OP-MUL WS-F WS-K360 WS-T
+     CALL "DENSITY-F32" USING WS-OP-ADD WS-T WS-M180 L-YA
+     GOBACK.
+ END PROGRAM END-FLASH-PARAMS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. END-FLASH-INTENSITY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-OP-MUL              BINARY-LONG VALUE 3.
+ 01 WS-OP-DIV              BINARY-LONG VALUE 4.
+ 01 WS-WINDOW              BINARY-LONG.
+ 01 WS-PHASE               BINARY-LONG.
+ 01 WS-OFF                 BINARY-LONG.
+ 01 WS-DUR                 BINARY-LONG.
+ 01 WS-XA                  FLOAT-LONG.
+ 01 WS-YA                  FLOAT-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-PI-TEXT             FLOAT-LONG VALUE 3.1415927.
+ 01 WS-PIF                 FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-T                    BINARY-LONG.
+ 01 L-RESULT               FLOAT-LONG.
+ PROCEDURE DIVISION USING L-T L-RESULT.
+     MOVE 0 TO L-RESULT
+     DIVIDE L-T BY 600 GIVING WS-WINDOW REMAINDER WS-PHASE
+     IF WS-WINDOW = 0
+         GOBACK
+     END-IF
+     CALL "END-FLASH-PARAMS" USING WS-WINDOW WS-OFF WS-DUR WS-XA WS-YA
+     IF WS-PHASE >= WS-OFF AND WS-PHASE <= WS-OFF + WS-DUR
+         COMPUTE WS-I = WS-PHASE - WS-OFF
+         CALL STATIC "cc_f64_i32_to_f32" USING BY REFERENCE WS-I WS-A
+         CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-PI-TEXT WS-PIF
+         CALL "DENSITY-F32" USING WS-OP-MUL WS-A WS-PIF WS-T
+         CALL STATIC "cc_f64_i32_to_f32" USING BY REFERENCE WS-DUR WS-B
+         CALL "DENSITY-F32" USING WS-OP-DIV WS-T WS-B WS-A
+         CALL STATIC "cc_f64_sin_tab" USING BY REFERENCE WS-A L-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM END-FLASH-INTENSITY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. END-SKY-VERTEX.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ LINKAGE SECTION.
+ 01 L-I                    BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-U                    FLOAT-LONG.
+ 01 L-V                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-I L-X L-Y L-Z L-U L-V.
+     MOVE -100 TO L-Y
+     MOVE -100 TO L-X
+     MOVE -100 TO L-Z
+     MOVE 0 TO L-U L-V
+     EVALUATE L-I
+         WHEN 2
+             MOVE 100 TO L-Z
+             MOVE 16 TO L-V
+         WHEN 3
+             MOVE 100 TO L-X L-Z
+             MOVE 16 TO L-U L-V
+         WHEN 4
+             MOVE 100 TO L-X
+             MOVE 16 TO L-U
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM END-SKY-VERTEX.

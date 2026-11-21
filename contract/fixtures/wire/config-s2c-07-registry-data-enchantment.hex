@@ -1,0 +1,73 @@
+# Fixture: Registry Data (minecraft:enchantment), cobolcraft world type
+# Phase: configuration. Direction: clientbound (S->C). Packet id 0x07 (7).
+# Doc refs: 04 Registry Data and section 6 enchantment; docs/design/cobolcraft-standard-core.md section 3.7 (CORE-14)
+# Stated inputs:
+#   1 entry: id 0 minecraft:efficiency (CORE section 3.7 row); the effects shape is inferred (CORE Open question 4);
+#   field order is the order of the CORE row; Float for the amount; supported_items is the tag string
+
+07                                               # packet id: VarInt 0x07
+15 6d 69 6e 65 63 72 61 66 74 3a 65 6e 63 68 61  # Registry: Identifier
+6e 74 6d 65 6e 74                                #   (continued)
+01                                               # Entries: VarInt count 1
+# ---- entry 0: minecraft:efficiency ----
+14 6d 69 6e 65 63 72 61 66 74 3a 65 66 66 69 63  # Entry[0].Id: Identifier
+69 65 6e 63 79                                   #   (continued)
+01                                               # Entry[0].Data present: Boolean true
+0a                                               # Entry[0].Data: root Compound (type 0a), unnamed
+0a 00 0b 64 65 73 63 72 69 70 74 69 6f 6e        #   NBT Compound (type 0a) name "description"
+08 00 09 74 72 61 6e 73 6c 61 74 65              #     NBT String (type 08) name "translate"
+00 20 65 6e 63 68 61 6e 74 6d 65 6e 74 2e 6d 69  #       String 'enchantment.minecraft.efficiency'
+6e 65 63 72 61 66 74 2e 65 66 66 69 63 69 65 6e  #   (continued)
+63 79                                            #   (continued)
+00                                               #   NBT End: end of the compound
+08 00 0f 73 75 70 70 6f 72 74 65 64 5f 69 74 65  #   NBT String (type 08) name "supported_items"
+6d 73                                            #   (continued)
+00 1d 23 6d 69 6e 65 63 72 61 66 74 3a 65 6e 63  #     String '#minecraft:enchantable/mining'
+68 61 6e 74 61 62 6c 65 2f 6d 69 6e 69 6e 67     #   (continued)
+03 00 06 77 65 69 67 68 74                       #   NBT Int (type 03) name "weight"
+00 00 00 0a                                      #     Int 10
+03 00 09 6d 61 78 5f 6c 65 76 65 6c              #   NBT Int (type 03) name "max_level"
+00 00 00 05                                      #     Int 5
+0a 00 08 6d 69 6e 5f 63 6f 73 74                 #   NBT Compound (type 0a) name "min_cost"
+03 00 04 62 61 73 65                             #     NBT Int (type 03) name "base"
+00 00 00 01                                      #       Int 1
+03 00 15 70 65 72 5f 6c 65 76 65 6c 5f 61 62 6f  #     NBT Int (type 03) name "per_level_above_first"
+76 65 5f 66 69 72 73 74                          #   (continued)
+00 00 00 0a                                      #       Int 10
+00                                               #   NBT End: end of the compound
+0a 00 08 6d 61 78 5f 63 6f 73 74                 #   NBT Compound (type 0a) name "max_cost"
+03 00 04 62 61 73 65                             #     NBT Int (type 03) name "base"
+00 00 00 33                                      #       Int 51
+03 00 15 70 65 72 5f 6c 65 76 65 6c 5f 61 62 6f  #     NBT Int (type 03) name "per_level_above_first"
+76 65 5f 66 69 72 73 74                          #   (continued)
+00 00 00 0a                                      #       Int 10
+00                                               #   NBT End: end of the compound
+03 00 0a 61 6e 76 69 6c 5f 63 6f 73 74           #   NBT Int (type 03) name "anvil_cost"
+00 00 00 01                                      #     Int 1
+09 00 05 73 6c 6f 74 73                          #   NBT List (type 09) name "slots"
+08 00 00 00 01                                   #     list element type 08, count 1
+00 08 6d 61 69 6e 68 61 6e 64                    #     [0] String 'mainhand'
+0a 00 07 65 66 66 65 63 74 73                    #   NBT Compound (type 0a) name "effects"
+09 00 14 6d 69 6e 65 63 72 61 66 74 3a 61 74 74  #     NBT List (type 09) name "minecraft:attributes"
+72 69 62 75 74 65 73                             #   (continued)
+0a 00 00 00 01                                   #       list element type 0a, count 1
+#       [0] Compound
+08 00 09 61 74 74 72 69 62 75 74 65              #           NBT String (type 08) name "attribute"
+00 1b 6d 69 6e 65 63 72 61 66 74 3a 6d 69 6e 69  #             String 'minecraft:mining_efficiency'
+6e 67 5f 65 66 66 69 63 69 65 6e 63 79           #   (continued)
+08 00 02 69 64                                   #           NBT String (type 08) name "id"
+00 20 6d 69 6e 65 63 72 61 66 74 3a 65 6e 63 68  #             String 'minecraft:enchantment.efficiency'
+61 6e 74 6d 65 6e 74 2e 65 66 66 69 63 69 65 6e  #   (continued)
+63 79                                            #   (continued)
+08 00 09 6f 70 65 72 61 74 69 6f 6e              #           NBT String (type 08) name "operation"
+00 09 61 64 64 5f 76 61 6c 75 65                 #             String 'add_value'
+0a 00 06 61 6d 6f 75 6e 74                       #           NBT Compound (type 0a) name "amount"
+08 00 04 74 79 70 65                             #             NBT String (type 08) name "type"
+00 18 6d 69 6e 65 63 72 61 66 74 3a 6c 65 76 65  #               String 'minecraft:levels_squared'
+6c 73 5f 73 71 75 61 72 65 64                    #   (continued)
+05 00 05 61 64 64 65 64                          #             NBT Float (type 05) name "added"
+3f 80 00 00                                      #               Float 1.0
+00                                               #           NBT End: end of the compound
+00                                               #         NBT End: end of the compound
+00                                               #   NBT End: end of the compound
+00                                               # NBT End: end of the root compound

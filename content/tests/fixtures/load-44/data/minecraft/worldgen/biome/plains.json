@@ -1,0 +1,8 @@
+{"temperature": 0.8, "downfall": 0.4, "has_precipitation": true,
+ "attributes": {"minecraft:gameplay/natural_mob_spawns": {"modifier": "overlay", "argument": {
+  "spawns_by_category": {
+   "creature": [{"type": "minecraft:sheep", "weight": 12, "count": 4},
+                {"type": "minecraft:horse", "weight": 5, "count": {"type": "minecraft:uniform", "min_inclusive": 2, "max_inclusive": 6}}],
+   "monster": [{"type": "minecraft:zombie", "weight": 95, "count": {"type": "minecraft:constant", "value": 4}}],
+   "ambient": []},
+  "spawn_costs": {}}}}}

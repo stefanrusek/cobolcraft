@@ -89,7 +89,7 @@ The id is the registration order of `DataComponents.<clinit>` (122 types, read a
 | 27 | `damage_resistant` | netherite items, `netherite_ingot`, `netherite_scrap` | 17 §1.3 |
 | 31, 32, 33 | `enchantable`, `equippable`, `repairable` | armor, tools, `bow` | 17 §1.2 |
 | 44 | `villager_food` | `bread` | record of one int (the villager food points, 4 for `bread`); wire layout not read (VarInt inferred) |
-| 64 | `provides_trim_material` | nine materials of section 5 | a trim material holder (a key in the data registry `trim_material`, 23); wire not read |
+| 64 | `provides_trim_material` | nine materials of section 5 | a trim material holder (a key in the data registry `trim_material`, 23); wire and NBT layout in 54 §18.1 |
 | 78 | `block_state` | `test_block` | map of block property name to value; `BlockItemStateProperties` (29 §9.6 step 6.1) |
 | 83 | `break_sound` | all (default `item.break`), `wolf_armor` (wolf armor break) | sound holder |
 | 84, 85 | `compostable`, `cooking_fuel` | section 11 | records of provider references; layouts in section 11 |

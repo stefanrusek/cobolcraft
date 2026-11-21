@@ -1,0 +1,144 @@
+*> The crit burst of evoker fangs (34-3 section 4.8, 42-7 section 6.12): on the client tick in which lifeTicks, after the decrement, equals 14, twelve crit particles
+*> are spawned at the fangs (x and z within width x 0.5 of the position, y 1.05 to 2.05 above it, velocity (+-0.3, 0.3 to 0.6, +-0.3)) into the live particle store.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTITY-FX.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY CLPSTORE.
+ COPY CLPCL.
+ COPY TESTLIB.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ROW-AREA            PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG VALUE 10.5.
+ 01 WS-Y                   FLOAT-LONG VALUE 64.
+ 01 WS-Z                   FLOAT-LONG VALUE 10.5.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-EV                  BINARY-LONG.
+ 01 WS-CRIT                BINARY-LONG.
+ 01 WS-NAME                PIC X(32).
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "CL-INIT" USING CLIENT-STATE
+     CALL "PARTICLES-CLEAR" USING CLIENT-STATE
+     MOVE "crit" TO WS-NAME
+     CALL "PART-TYPE-ID" USING WS-NAME WS-CRIT
+     MOVE 1 TO CT-OPEN
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE "evoker_fangs" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 1 TO WS-ID
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+*>   Before the bite starts lifeTicks stay and nothing is spawned, even at 15.
+     MOVE 15 TO EN-FL(1)
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     MOVE "acceptance fangs burst none before the bite" TO TL-CASE
+     MOVE PQ-LIVE TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     MOVE 4 TO WS-EV
+     CALL "ENTITY-EVENT" USING CLIENT-STATE WS-ID WS-EV
+*>   lifeTicks 16 -> 15: no burst.
+     MOVE 16 TO EN-FL(1)
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     MOVE "acceptance fangs burst none at lifeTicks 15" TO TL-CASE
+     MOVE PQ-LIVE TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+*>   15 -> 14: twelve crit particles.
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     MOVE "acceptance fangs burst lifeTicks 14" TO TL-CASE
+     MOVE EN-FL(1) TO TL-OBSERVED-N
+     MOVE 14 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     MOVE "acceptance fangs burst twelve particles" TO TL-CASE
+     MOVE PQ-LIVE TO TL-OBSERVED-N
+     MOVE 12 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+         IF PQ-USED(WS-I) NOT = 1 OR PQ-TYPE(WS-I) NOT = WS-CRIT
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE "acceptance fangs burst all crit" TO TL-CASE
+     MOVE WS-BAD TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+         MOVE PQ-DATA(WS-I) TO PCL
+         IF PC-XO < 10.25 OR PC-XO > 10.75 OR PC-ZO < 10.25 OR PC-ZO > 10.75 OR PC-YO < 65.05 OR PC-YO > 66.05
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE "acceptance fangs burst positions in the box" TO TL-CASE
+     MOVE WS-BAD TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+*>   14 -> 13: no second burst.
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     MOVE "acceptance fangs burst once" TO TL-CASE
+     MOVE PQ-LIVE TO TL-OBSERVED-N
+     MOVE 12 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     STOP RUN.
+ CHECK-N.
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-ENTITY-FX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MM-SPAWN.
+*> USING CLIENT-STATE, entity id, type (registry id), x y z (FLOAT-LONG), yaw (FLOAT-SHORT, also the head yaw): Add Entity.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-ADD                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-UUID                PIC X(16) VALUE LOW-VALUES.
+ 01 WS-V0                  FLOAT-LONG VALUE 0.
+ 01 WS-V1                  FLOAT-LONG VALUE 0.
+ 01 WS-V2                  FLOAT-LONG VALUE 0.
+ 01 WS-A0                  FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ID L-TYPE L-X L-Y L-Z L-YAW.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-V0 WS-V1 WS-V2
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER WS-A0
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-PACKET" USING CLIENT-STATE PB-BUFFER WS-ADD
+     GOBACK.
+ END PROGRAM MM-SPAWN.
+
+

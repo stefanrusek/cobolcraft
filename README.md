@@ -121,7 +121,7 @@ does not stop the server; use `shutdown`.
 ## Running the client
 
 ```sh
-build/bin/cobolcraft --name <name> [--gamedir <path>]
+build/bin/cobolcraft --name <name> [--gamedir <path>] [--world <save folder>] [--camera <x,y,z,yaw,pitch>] [--screenshot-after-frames <N>] [--screenshot-then-exit]
 ```
 
 `--name` is required: your player name, 1 to 16 letters, digits or `_`. `--gamedir` is where the client
@@ -130,14 +130,39 @@ keeps its data (default `~/.cobolcraft`, created if absent):
 | Path | Contents |
 |---|---|
 | `servers.dat` | the server list |
-| `options.dat` | the enabled resource packs, in order |
+| `options.txt` | the options (`version:5023`) and the enabled resource packs, in order |
 | `resourcepacks/` | your resource packs: `<name>.zip` files and `<name>/` folders |
 | `saves/<folder>/` | single-player worlds |
 | `downloads/` | resource packs downloaded from servers (a cache) |
+| `screenshots/` | PNG screenshots, `YYYY-MM-DD_HH.MM.SS.png` (`_1`, `_2` after a name that exists) |
 
 From the title screen, **Multiplayer** opens the server list: add a server by its address (`host` or
 `host:port`, default port 25565); each entry shows its description and players online; select one and
 join. **Single-player** lists your worlds. **Resource Packs** opens the pack screen.
+
+### Opening a world from the command line
+
+```sh
+build/bin/cobolcraft --name <name> --world "<save folder name>"
+```
+
+`--world` (or the environment variable `CC_WORLD`; the option wins) opens that single-player save, the
+folder name under `<gamedir>/saves/`, straight after start-up, exactly as selecting it in the world list
+and pressing Play does (a standard world and a cobolcraft world are told apart the same way, with the same
+refusals). If there is no such folder, or the world is refused (for example a standard world while the
+generated packs are not ok), the reason is printed to standard error and the client stays on the title
+screen. Combined with the screenshot options (`--screenshot-after-frames <N>` and `--screenshot-then-exit`,
+an agent can capture a real world frame without touching the window:
+
+```sh
+build/bin/cobolcraft --name Agent --gamedir <scratch gamedir> --generated-dir <generated> \
+  --world "New World (9)" --screenshot-after-frames 300 --screenshot-then-exit
+```
+
+`--camera <x,y,z,yaw,pitch>` (or the environment variable `CC_CAMERA`; the option wins) fixes the view of every frame: the eye
+at that position in blocks, looking along that yaw and pitch in degrees (yaw 0 faces +Z, 90 faces -X; pitch positive looks
+down), in every perspective and whatever the player does. A screenshot run can use it to aim at something: for example
+`--camera 12.5,70,3.5,90,15`. Fewer or more than five numbers, or a field that is no number, are ignored.
 
 ### Controls
 
@@ -157,10 +182,28 @@ join. **Single-player** lists your worlds. **Resource Packs** opens the pack scr
 | Throw one / throw the stack | Q / Ctrl+Q (in the inventory screen: from the slot under the pointer) |
 | Throw what you carry (inventory screen) | Drag or click it outside the window (right click: one item) |
 | Chat / command | T / `/` (opens chat with `/` typed) |
+| Debug overlay | F3 |
+| Camera: first person, behind, in front | F5 |
+| Swap the held item with the off hand / the hovered slot | F |
 | Pause menu | Escape |
+| Screenshot (the `key.screenshot` binding) | F2: saves the whole frame as shown to `<gamedir>/screenshots/` and says `Saved screenshot as <file>` in the chat |
 
 While chat is closed, the 10 most recent messages show for 10 seconds each; with chat open, the scroll
 wheel moves back through the last 100.
+
+### Screenshots for debugging and automated runs
+
+`--screenshot-after-frames <N>` (or the environment variable `CC_SCREENSHOT_AT_FRAME=N`) saves one screenshot
+by itself once frame N has been shown, exactly as F2 does, and prints `screenshot: Saved screenshot as <file>`.
+Add `--screenshot-then-exit` (or `CC_SCREENSHOT_THEN_EXIT=1`) to end the run once it is saved. The window
+opens as usual; use a scratch `--gamedir` so nothing of yours is touched:
+
+```sh
+CC_SCREENSHOT_AT_FRAME=900 CC_SCREENSHOT_THEN_EXIT=1 build/bin/cobolcraft --name Dev --gamedir /tmp/dev-gamedir
+```
+
+The shim calls behind it (`cc_vk_screenshot`, `cc_vk_screenshot_result`, `cc_png_write`) are in
+`specs/002-client-polish/contracts/shim-delta.md`.
 
 ### Single-player and opening to others
 
@@ -178,11 +221,30 @@ is disconnected.
 A single-player world folder (`saves/<folder>`) can be copied to a server directory as `world/` and served,
 and a server's `world/` can be copied into `saves/` and played: the format is the same.
 
+### World types and the extraction tool
+
+A world has one **world type** for its whole life. The **cobolcraft** type is the invented content of
+`docs/design/standin-content.md` and needs no jar. The **standard** type is Minecraft 26.3 content (its
+registries, blocks, items, mobs, recipes, loot, tags and worldgen) and needs the generated packs that the
+extraction tool builds from your own client jar. The server setting `world-type` is `auto`, `standard` or
+`cobolcraft`; the client's create-world screen offers both types, and Create is refused for the standard type
+with an explanation while the generated directory is missing or stale.
+
+```sh
+build/bin/cobolcraft-extract --jar <minecraft-26.3-client.jar> --game-dir <gamedir>
+```
+
+It writes `<gamedir>/generated/` (a data pack and a resource pack). Other options: `--generated-dir <path>`,
+`--force` (rebuild), `--verify` (check an existing directory), `--dry-run` and `--quiet`. No jar and no generated
+file is ever committed: the repository's test runs that need real inputs read them from `tmp/` (the client jar
+and a resource pack, both git-ignored; see `specs/002-client-polish/quickstart.md`), and every other test
+runs with the built-in pack alone.
+
 ### Resource packs
 
 Put a pack in `<gamedir>/resourcepacks/`, as a folder or a `.zip`, with a `pack.mcmeta` at its top
 (format 97). The **Resource Packs** screen lists the packs; enable them and order them there (the top
-pack wins). A pack replaces textures, models, fonts and texts by path; anything it leaves out comes from
+pack wins); **Open Pack Folder** opens `resourcepacks/` in your file manager. A pack replaces textures, models, fonts and texts by path; anything it leaves out comes from
 the packs below it and the built-in pack. A pack that cannot be used is listed with the reason.
 
 When a server offers a pack you are asked whether to use it (or the server list entry's choice applies);

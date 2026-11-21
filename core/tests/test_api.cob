@@ -142,8 +142,8 @@
 
 *> ---------------------------------------------------------------------------------------------
  TICK-CASES.
-     MOVE "test api CORE-TICK counts ticks and wraps the time of day from 29999 to 0" TO TL-CASE
-     MOVE 29998 TO CW-TIME
+     MOVE "test api CORE-TICK counts ticks and wraps the time of day from 23999 to 0" TO TL-CASE
+     MOVE 23998 TO CW-TIME
      MOVE 0 TO CW-TICKS
      PERFORM START-ROW
      CALL "CORE-TICK"
@@ -151,7 +151,7 @@
      CALL "CORE-TICK"
      MOVE CW-TIME TO WS-NUM PERFORM ADD-NUM
      MOVE CW-TICKS TO WS-NUM PERFORM ADD-NUM
-     MOVE "29999 0 2" TO TL-EXPECTED
+     MOVE "23999 0 2" TO TL-EXPECTED
      PERFORM ASSERT-ROW.
 
 *> ---------------------------------------------------------------------------------------------

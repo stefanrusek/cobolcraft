@@ -1,0 +1,282 @@
+ *> Acceptance test, spells and vexes (docs/protocol/20 sections 13.3 and 13.4; lane 002-lane-mobsb7, T9511 to T9513): the spell id as entity metadata 17 (BYTE, 0 when the spell ends), the fang
+*> column scan (the highest block between minY and maxY with a solid block below), the wololo spell (a blue sheep within (16, 4, 16) turns red at the cast), and the vex: charging flag
+*> (metadata 16 bit 0), the contact attack of 4 damage that ends the charge.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US15-EVOKER-MORE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BRWORLD.
+ COPY EVKSTATE.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ETYPE               BINARY-LONG.
+ 01 WS-STYPE               BINARY-LONG.
+ 01 WS-VTYPE               BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-SH                  BINARY-LONG.
+ 01 WS-SH2                 BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-FX                  BINARY-LONG.
+ 01 WS-FY                  BINARY-LONG.
+ 01 WS-FZ                  BINARY-LONG.
+ 01 WS-X0                  BINARY-LONG.
+ 01 WS-Z0                  BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG VALUE 24.
+ 01 WS-KIND                BINARY-LONG VALUE 1.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-RY                  BINARY-LONG.
+ 01 WS-MINY                FLOAT-LONG.
+ 01 WS-MAXY                FLOAT-LONG.
+ 01 WS-SPELL               BINARY-LONG.
+ 01 WS-WANTED              BINARY-LONG VALUE 101.
+ 01 WS-EXPECTED            PIC X(1024).
+ 01 WS-HEX                 PIC X(8).
+ 01 WS-BYTE                BINARY-LONG.
+ 01 WS-CH                  PIC X.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-DAMAGE              BINARY-LONG VALUE 4.
+ 01 WS-DRAINID             BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "N" TO TL-MODE
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE PL-CONN(WS-PLAYER) TO WS-CONN
+     MOVE 2 TO BW-DIFFICULTY
+     MOVE "minecraft:evoker" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ETYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:sheep" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-STYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:vex" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-VTYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-X0 = FUNCTION INTEGER(PL-X(WS-PLAYER)) - 12
+     COMPUTE WS-Z0 = FUNCTION INTEGER(PL-Z(WS-PLAYER)) - 12
+     COMPUTE WS-FY = FUNCTION INTEGER(PL-Y(WS-PLAYER)) - 1
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-X0 WS-Z0 WS-SIZE WS-FY WS-KIND
+     COMPUTE WS-X = WS-X0 + 12.5
+     COMPUTE WS-Y = WS-FY + 1
+     COMPUTE WS-Z = WS-Z0 + 12.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-ETYPE WS-X WS-Y WS-Z WS-YAW WS-E
+*>   The spawn queued the new mob's own health pair (metadata 9, 18 section 9.3: a non-default value of the first pairing); drain it so the check below sees only what the step sends.
+     MOVE -1 TO WS-WANTED
+     MOVE "none" TO WS-EXPECTED
+     MOVE "acceptance US15 20§13.3 the queue holds no packet of the unused id before the step" TO TL-CASE
+     CALL "RC-CHECK-HEX" USING WS-CONN TL-CASE WS-WANTED WS-EXPECTED
+     MOVE 101 TO WS-WANTED
+*>   Metadata 17: the spell id while casting, 0 after.
+     MOVE 2 TO WS-SPELL
+     CALL "EVK-BEGIN" USING WS-E WS-SPELL
+     MOVE EN-ID(WS-E) TO WS-BYTE
+     MOVE FUNCTION CHAR(WS-BYTE + 1) TO WS-CH
+     MOVE FUNCTION LOWER-CASE(FUNCTION HEX-OF(WS-CH)) TO WS-HEX(1:2)
+     MOVE SPACES TO WS-EXPECTED
+     STRING WS-HEX(1:2) "110002ff" DELIMITED BY SIZE INTO WS-EXPECTED
+     MOVE "acceptance US15 20§13.3 metadata 17 carries the spell id (2 fangs)" TO TL-CASE
+     CALL "RC-CHECK-HEX" USING WS-CONN TL-CASE WS-WANTED WS-EXPECTED
+     MOVE WS-PLAYER TO EN-TARGET(WS-E)
+     MOVE PL-ENTITY-ID(WS-PLAYER) TO EN-TARGET-ID(WS-E)
+     PERFORM 45 TIMES
+         CALL "EVK-STEP" USING WS-E
+     END-PERFORM
+     MOVE SPACES TO WS-EXPECTED
+     STRING WS-HEX(1:2) "110000ff" DELIMITED BY SIZE INTO WS-EXPECTED
+     MOVE "acceptance US15 20§13.3 and 0 when the spell is over" TO TL-CASE
+     CALL "RC-CHECK-HEX" USING WS-CONN TL-CASE WS-WANTED WS-EXPECTED
+*>   The fang column: the floor at FY gives the fang at FY + 1; a stone step at FY + 1 lifts it to FY + 2; a pit gives none.
+     COMPUTE WS-FX = WS-X0 + 4
+     COMPUTE WS-FZ = WS-Z0 + 4
+     COMPUTE WS-X = WS-FX + 0.5
+     COMPUTE WS-Z = WS-FZ + 0.5
+     COMPUTE WS-MINY = WS-FY + 1
+     COMPUTE WS-MAXY = WS-FY + 2
+     CALL "EVK-FANG-COLUMN" USING WS-DIM WS-X WS-Z WS-MINY WS-MAXY WS-FOUND WS-RY
+     MOVE "acceptance US15 20§13.3 a flat floor: the fang stands on it" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 1000 + WS-FY + 1
+     COMPUTE TL-OBSERVED-N = WS-FOUND * 1000 + WS-RY
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
+     COMPUTE WS-RY = WS-FY + 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-RY WS-FZ WS-STATE
+     CALL "EVK-FANG-COLUMN" USING WS-DIM WS-X WS-Z WS-MINY WS-MAXY WS-FOUND WS-RY
+     MOVE "acceptance US15 20§13.3 a stone step: the fang is lifted onto it" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 1000 + WS-FY + 2
+     COMPUTE TL-OBSERVED-N = WS-FOUND * 1000 + WS-RY
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-RY = WS-FY + 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-RY WS-FZ WS-AIR
+     PERFORM VARYING WS-I FROM -1 BY 1 UNTIL WS-I > 0
+         COMPUTE WS-RY = WS-FY + WS-I
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-RY WS-FZ WS-AIR
+     END-PERFORM
+     CALL "EVK-FANG-COLUMN" USING WS-DIM WS-X WS-Z WS-MINY WS-MAXY WS-FOUND WS-RY
+     MOVE "acceptance US15 20§13.3 a pit under the whole span: no fang" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-FOUND TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Wololo: of two sheep within the box one is blue (colour 11); it turns red (14) at the cast, the other stays white.
+     COMPUTE WS-X = WS-X0 + 15.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-STYPE WS-X WS-Y WS-Z WS-YAW WS-SH
+     COMPUTE WS-X = WS-X0 + 9.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-STYPE WS-X WS-Y WS-Z WS-YAW WS-SH2
+     MOVE 11 TO EN-WOOL(WS-SH)
+     MOVE 0 TO EN-WOOL(WS-SH2)
+     MOVE 3 TO WS-SPELL
+     CALL "EVK-BEGIN" USING WS-E WS-SPELL
+     PERFORM 45 TIMES
+         CALL "EVK-STEP" USING WS-E
+     END-PERFORM
+     MOVE "acceptance US15 20§13.3 wololo turns the blue sheep red" TO TL-CASE
+     MOVE 14 TO TL-EXPECTED-N
+     MOVE EN-WOOL(WS-SH) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 20§13.3 and leaves the white one" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-WOOL(WS-SH2) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   With no blue sheep the spell finds none and changes nothing; a sheep out of the (16, 4, 16) box is not chosen.
+     MOVE 11 TO EN-WOOL(WS-SH2)
+     COMPUTE EN-Y(WS-SH2) = EN-Y(WS-E) + 6
+     CALL "EVK-BEGIN" USING WS-E WS-SPELL
+     PERFORM 45 TIMES
+         CALL "EVK-STEP" USING WS-E
+     END-PERFORM
+     MOVE "acceptance US15 20§13.3 a blue sheep 6 blocks above is outside the box" TO TL-CASE
+     MOVE 11 TO TL-EXPECTED-N
+     MOVE EN-WOOL(WS-SH2) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The vex: charging sets metadata 16 bit 0; touching the target hurts it for 4 and ends the charge.
+     COMPUTE WS-X = PL-X(WS-PLAYER) + 0.1
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     CALL "MOB-SPAWN" USING WS-DIM WS-VTYPE WS-X WS-Y WS-Z WS-YAW WS-V
+     MOVE WS-PLAYER TO EN-TARGET(WS-V)
+     MOVE PL-ENTITY-ID(WS-PLAYER) TO EN-TARGET-ID(WS-V)
+     MOVE EN-ID(WS-V) TO VX-ID(1)
+     MOVE EN-ID(WS-E) TO VX-OWNER(1)
+     MOVE 0 TO VX-CHARGING(1)
+     MOVE 300 TO VX-LIFE(1)
+     MOVE "none" TO WS-EXPECTED
+     MOVE "acceptance US15 20§13.4 (drain) no spell packet is pending" TO TL-CASE
+     MOVE 255 TO WS-DRAINID
+     CALL "RC-CHECK-HEX" USING WS-CONN TL-CASE WS-DRAINID WS-EXPECTED
+     CALL "VEX-CHARGE" USING WS-V
+     MOVE EN-ID(WS-V) TO WS-BYTE
+     MOVE FUNCTION CHAR(WS-BYTE + 1) TO WS-CH
+     MOVE FUNCTION LOWER-CASE(FUNCTION HEX-OF(WS-CH)) TO WS-HEX(1:2)
+     MOVE SPACES TO WS-EXPECTED
+     STRING WS-HEX(1:2) "100001ff" DELIMITED BY SIZE INTO WS-EXPECTED
+     MOVE "acceptance US15 20§13.4 the charging flag is metadata 16 bit 0" TO TL-CASE
+     CALL "RC-CHECK-HEX" USING WS-CONN TL-CASE WS-WANTED WS-EXPECTED
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-PLAYER)
+     CALL "VEX-CONTACT" USING WS-V
+     MOVE "acceptance US15 20§13.4 touching the target hurts it (4 points)" TO TL-CASE
+     MOVE 16 TO TL-EXPECTED-N
+     MOVE PL-HEALTH(WS-PLAYER) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO WS-EXPECTED
+     STRING WS-HEX(1:2) "100000ff" DELIMITED BY SIZE INTO WS-EXPECTED
+     MOVE "acceptance US15 20§13.4 and the charge ends (flag false)" TO TL-CASE
+     CALL "RC-CHECK-HEX" USING WS-CONN TL-CASE WS-WANTED WS-EXPECTED
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-PLAYER)
+     CALL "VEX-CONTACT" USING WS-V
+     MOVE "acceptance US15 20§13.4 not charging: no contact attack" TO TL-CASE
+     MOVE 20 TO TL-EXPECTED-N
+     MOVE PL-HEALTH(WS-PLAYER) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "VEX-CHARGE" USING WS-V
+     COMPUTE EN-X(WS-V) = PL-X(WS-PLAYER) + 5
+     CALL "VEX-CONTACT" USING WS-V
+     MOVE "acceptance US15 20§13.4 charging but not touching: no hit" TO TL-CASE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   VEX-STEP: a vex with a distant target starts charging within 100 steps (1 in 7), one next to it does not start but hits when charging.
+     MOVE 0 TO VX-CHARGING(1)
+*>   The charge goal needs a move control without a wish (13.4): the VEX-CHARGE above left one, the vex has not flown here.
+     MOVE 0 TO EN-FLY-ON(WS-V)
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 100 OR WS-FOUND = 1
+         CALL "VEX-STEP" USING WS-V
+         IF VX-CHARGING(1) = 1
+             MOVE 1 TO WS-FOUND
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 20§13.4 a vex 5 blocks from its target starts a charge" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-FOUND TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM ACC-US15-EVOKER-MORE.
+
+ COPY CORETEST.
+ COPY MOBSPTEST.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RC-CHECK-HEX.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-INDEX-BYTE          BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-AREA                PIC X(65536) BASED.
+ 01 WS-COPY                PIC X(512).
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-TEXT                PIC X(4096).
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-CASE                 PIC X(240).
+ 01 L-WANTED               BINARY-LONG.
+ 01 L-EXPECTED             PIC X(1024).
+ PROCEDURE DIVISION USING L-ID L-CASE L-WANTED L-EXPECTED.
+     MOVE "none" TO WS-HEX
+     MOVE 0 TO WS-FOUND WS-OUTCOME
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         *>       The health slot (index 9) sent at the pairing (18 section 9.3) is not the packet looked for.
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID = L-WANTED AND WS-FOUND = 0
+             MOVE 1 TO WS-FOUND
+             SET ADDRESS OF WS-AREA TO PK-ADDR
+             MOVE FUNCTION ORD(WS-AREA(PK-POS + 2:1)) TO WS-INDEX-BYTE
+             IF WS-INDEX-BYTE = 10
+                 MOVE 0 TO WS-FOUND
+             ELSE
+                 COMPUTE WS-COUNT = PK-LENGTH - PK-POS
+                 MOVE SPACES TO WS-COPY
+                 MOVE WS-AREA(PK-POS + 1:WS-COUNT) TO WS-COPY
+                 CALL "TEST-HEX-OF" USING WS-COPY WS-COUNT WS-HEX
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     MOVE WS-HEX TO WS-TEXT
+     MOVE L-CASE TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE L-EXPECTED TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     GOBACK.
+ END PROGRAM RC-CHECK-HEX.

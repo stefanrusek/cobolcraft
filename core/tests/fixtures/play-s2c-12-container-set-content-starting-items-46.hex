@@ -1,0 +1,59 @@
+# Fixture: play-s2c-12-container-set-content-starting-items-46
+# Container Set Content (ClientboundContainerSetContentPacket), 46-slot inventory menu numbering
+# Phase: play. Direction: clientbound (S->C). Packet id 0x12 (18).
+# Core-local fixture of T0376 (the 36-slot play-s2c-12-container-set-content-empty/-starting-items fixtures of the
+# contract are the pre-menu numbering; a contract-owned 46-slot copy replaces this file at the merge).
+# Doc refs: 05a 0x12; 00 section 12.1; 13 section 3.5 (0 result, 1-4 grid, 5-8 armor, 9-35 main, 36-44 hotbar, 45 off-hand).
+# Stated inputs: container 0, state id 1, 46 slots: 36-43 = 64 x items 2-9, 44 = 1 x item 10, 9 = 1 x item 11, others empty; carried empty
+
+12                  # packet id: VarInt 0x12
+00                  # Container id: VarInt 0
+01                  # State id: VarInt 1
+2e                  # Slots: VarInt count 46
+  00                # Slots[0]: empty
+  00                # Slots[1]: empty
+  00                # Slots[2]: empty
+  00                # Slots[3]: empty
+  00                # Slots[4]: empty
+  00                # Slots[5]: empty
+  00                # Slots[6]: empty
+  00                # Slots[7]: empty
+  00                # Slots[8]: empty
+  01 0b 00 00         # Slots[9]: 1 x item 11
+  00                # Slots[10]: empty
+  00                # Slots[11]: empty
+  00                # Slots[12]: empty
+  00                # Slots[13]: empty
+  00                # Slots[14]: empty
+  00                # Slots[15]: empty
+  00                # Slots[16]: empty
+  00                # Slots[17]: empty
+  00                # Slots[18]: empty
+  00                # Slots[19]: empty
+  00                # Slots[20]: empty
+  00                # Slots[21]: empty
+  00                # Slots[22]: empty
+  00                # Slots[23]: empty
+  00                # Slots[24]: empty
+  00                # Slots[25]: empty
+  00                # Slots[26]: empty
+  00                # Slots[27]: empty
+  00                # Slots[28]: empty
+  00                # Slots[29]: empty
+  00                # Slots[30]: empty
+  00                # Slots[31]: empty
+  00                # Slots[32]: empty
+  00                # Slots[33]: empty
+  00                # Slots[34]: empty
+  00                # Slots[35]: empty
+  40 02 00 00         # Slots[36]: 64 x item 2
+  40 03 00 00         # Slots[37]: 64 x item 3
+  40 04 00 00         # Slots[38]: 64 x item 4
+  40 05 00 00         # Slots[39]: 64 x item 5
+  40 06 00 00         # Slots[40]: 64 x item 6
+  40 07 00 00         # Slots[41]: 64 x item 7
+  40 08 00 00         # Slots[42]: 64 x item 8
+  40 09 00 00         # Slots[43]: 64 x item 9
+  01 0a 00 00         # Slots[44]: 1 x item 10
+  00                # Slots[45]: empty
+00                  # Carried item: empty

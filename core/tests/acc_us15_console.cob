@@ -29,21 +29,21 @@
 
      MOVE "acceptance US15-1 given a running world when the player-list command is passed to "
          & "CORE-CONSOLE then its result is drained as a console line" TO TL-CASE
-     MOVE Z"roster" TO WS-LINE
+     MOVE Z"list" TO WS-LINE
      CALL "CORE-CONSOLE" USING WS-LINE
      PERFORM DRAIN
-     MOVE "Online (1): Alice" TO TL-EXPECTED
+     MOVE "There are 1 of a max of 64 players online: Alice" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US15-1 given a running world when an operator command is passed to "
          & "CORE-CONSOLE then it runs with operator permission (the clock is set) and its "
          & "confirmation is drained" TO TL-CASE
-     MOVE Z"clock 1000" TO WS-LINE
+     MOVE Z"time set 1000" TO WS-LINE
      CALL "CORE-CONSOLE" USING WS-LINE
      PERFORM DRAIN
      MOVE CW-TIME TO WS-EDIT
      STRING " | time " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
-     MOVE "The clock now reads 1000 | time 1000" TO TL-EXPECTED
+     MOVE "Set cobolcraft:daylight to 1000 tick(s) | time 1000" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US15-1 a console command's reply goes to the console only (the player is "
@@ -53,31 +53,31 @@
      PERFORM CHECK
 
      MOVE "acceptance US15-3 given a running world when an unknown command is passed to "
-         & "CORE-CONSOLE then the §16 unknown error with the help hint is drained" TO TL-CASE
+         & "CORE-CONSOLE then the standard unknown-command error is drained" TO TL-CASE
      MOVE Z"frobnicate now" TO WS-LINE
      CALL "CORE-CONSOLE" USING WS-LINE
      PERFORM DRAIN
-     MOVE "Unknown command frobnicate (howto lists the commands)" TO TL-EXPECTED
+     MOVE "Unknown or incomplete command. See below for error" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US15-3 a missing argument drains the §16 error with the usage and help hint "
+     MOVE "acceptance US15-3 a missing argument drains the standard error "
          & "and changes nothing" TO TL-CASE
-     MOVE Z"clock" TO WS-LINE
+     MOVE Z"time set" TO WS-LINE
      CALL "CORE-CONSOLE" USING WS-LINE
      PERFORM DRAIN
      MOVE CW-TIME TO WS-EDIT
      STRING " | time " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
-     MOVE "Missing argument. Usage: clock <ticks> (see howto) | time 1000" TO TL-EXPECTED
+     MOVE "Unknown or incomplete command. See below for error | time 1000" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US15-3 an invalid argument drains the §16 error with the usage and help "
          & "hint and changes nothing" TO TL-CASE
-     MOVE Z"clock soon" TO WS-LINE
+     MOVE Z"time set soon" TO WS-LINE
      CALL "CORE-CONSOLE" USING WS-LINE
      PERFORM DRAIN
      MOVE CW-TIME TO WS-EDIT
      STRING " | time " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
-     MOVE "Invalid argument soon. Usage: clock <ticks> (see howto) | time 1000" TO TL-EXPECTED
+     MOVE "Time marker minecraft:soon does not exist for clock cobolcraft:daylight | time 1000" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
 

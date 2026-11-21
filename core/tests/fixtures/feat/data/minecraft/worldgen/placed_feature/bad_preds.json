@@ -1,0 +1,92 @@
+{
+ "feature": {
+  "type": "no_op"
+ },
+ "placement": [
+  {
+   "type": "minecraft:block_predicate_filter",
+   "predicate": {
+    "type": "minecraft:all_of",
+    "predicates": [
+     {
+      "type": "minecraft:matching_blocks"
+     },
+     {
+      "type": "minecraft:matching_blocks",
+      "blocks": [
+       "minecraft:nope"
+      ]
+     },
+     {
+      "type": "minecraft:matching_blocks",
+      "blocks": "#minecraft:nope"
+     },
+     {
+      "type": "minecraft:matching_blocks",
+      "blocks": 5
+     },
+     {
+      "type": "minecraft:matching_blocks",
+      "blocks": [
+       7
+      ]
+     },
+     {
+      "type": "minecraft:matching_fluids",
+      "fluids": [
+       "minecraft:bogus"
+      ]
+     },
+     {
+      "type": "minecraft:height_range"
+     },
+     {
+      "type": "minecraft:volume_match"
+     },
+     {
+      "type": "minecraft:not"
+     },
+     {
+      "type": "minecraft:any_of"
+     },
+     {
+      "type": "solid"
+     },
+     {
+      "x": 1
+     },
+     {
+      "type": "minecraft:matching_block_tag"
+     },
+     {
+      "type": "minecraft:matching_block_tag",
+      "tag": "minecraft:nope"
+     },
+     {
+      "type": "minecraft:volume_match",
+      "min": [
+       1,
+       1
+      ],
+      "max": [
+       0,
+       0,
+       0
+      ],
+      "match": {
+       "type": "minecraft:true"
+      }
+     },
+     {
+      "type": "minecraft:matching_fluids",
+      "fluids": [
+       "minecraft:lava",
+       "minecraft:flowing_water",
+       "minecraft:flowing_lava"
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

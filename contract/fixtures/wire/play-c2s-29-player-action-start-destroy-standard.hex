@@ -1,0 +1,11 @@
+# Fixture: Player Action 0 START_DESTROY_BLOCK
+# Phase: play. Direction: serverbound (C->S). Packet id 0x29 (41).
+# Doc refs: 05c 0x29; 00 section 4.1; 13 section 2.3 (sequence ids), section 4 (swap)
+# Stated inputs:
+#   action 0 START_DESTROY_BLOCK; location (-12, -60, 40); face 1; sequence 41
+
+29                                               # packet id: VarInt 0x29
+00                                               # Action: VarInt 0 START_DESTROY_BLOCK
+ff ff fd 00 00 02 8f c4                          # Location: Position (-12, -60, 40)
+01                                               # Face: UByte 1
+29                                               # Sequence: VarInt 41

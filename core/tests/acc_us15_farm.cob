@@ -1,0 +1,689 @@
+*> Acceptance test (US15; docs/protocol/19-mobs-land-friendly-and-neutral.md section 2 and 25.1, 25.5): the farm animals through the real play path (Interact 0x1A in):
+*> shearing a sheep, milking a cow, shearing and bowling a mooshroom, the egg of a chicken, a sheep eating grass, the colour and type of a baby. The world is a stone floor
+*> of 9 x 9 blocks above the player, as in acc_us15_breeding.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US15-FARM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CONTENT.
+ COPY CITEMS.
+ COPY PROTO.
+ COPY BRWORLD.
+ COPY XORO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-STATE-TEXT          PIC X(5).
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-FLOOR               BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-XLO                BINARY-LONG.
+ 01 WS-XHI                BINARY-LONG.
+ 01 WS-ZLO                BINARY-LONG.
+ 01 WS-ZHI                BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-NEEDLE              PIC X(40).
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-COW-TYPE            BINARY-LONG.
+ 01 WS-WANT-KEY            PIC X(112).
+ 01 WS-WANT-TYPE           BINARY-LONG.
+ 01 WS-ITEM-ID             BINARY-LONG.
+ 01 WS-ITEM-KEY            PIC X(112).
+ 01 WS-GIVE-COUNT          BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-ROW-A               BINARY-LONG.
+ 01 WS-ROW-B               BINARY-LONG.
+ 01 WS-ROW-C               BINARY-LONG.
+ 01 WS-BABY                BINARY-LONG.
+ 01 WS-BABIES              BINARY-LONG.
+ 01 WS-ORBS                BINARY-LONG.
+ 01 WS-ORB-TYPE            BINARY-LONG.
+ 01 WS-COUNT-ITEM          BINARY-LONG.
+ 01 WS-COUNT-TOTAL         BINARY-LONG.
+ 01 WS-ID-A                BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-HAND0               BINARY-LONG VALUE 0.
+ 01 WS-SNEAK0              BINARY-LONG VALUE 0.
+ 01 WS-CASE                PIC X(240).
+ 01 WS-EXPECT              BINARY-DOUBLE.
+ 01 WS-OBSERVE             BINARY-DOUBLE.
+ 01 WS-SLOT-ITEM           BINARY-LONG.
+ 01 WS-WHEAT               BINARY-LONG.
+ 01 WS-HX                  FLOAT-LONG.
+ 01 WS-HZ                  FLOAT-LONG.
+ 01 WS-WALK                BINARY-LONG.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-COLOR               BINARY-LONG.
+ 01 WS-IDS                 PIC X(1024).
+ 01 WS-MOOSH-TYPE          BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-KEEP                BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     MOVE 0 TO CS-HOSTILE-MOBS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-STANDARD-TABLES"
+     CALL "BR-WORLD-READY"
+     MOVE 2 TO BW-DIFFICULTY
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-PLAYER
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE 0 TO PL-HELD(WS-PLAYER)
+     MOVE 6000 TO CW-TIME
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-STATE = FUNCTION NUMVAL(WS-STATE-TEXT)
+     COMPUTE WS-CX = FUNCTION INTEGER(PL-X(WS-PLAYER))
+     COMPUTE WS-CZ = FUNCTION INTEGER(PL-Z(WS-PLAYER))
+     COMPUTE WS-FLOOR = FUNCTION INTEGER(PL-Y(WS-PLAYER)) + 40
+     COMPUTE WS-XLO = WS-CX - 4
+     COMPUTE WS-XHI = WS-CX + 4
+     COMPUTE WS-ZLO = WS-CZ - 4
+     COMPUTE WS-ZHI = WS-CZ + 4
+     PERFORM VARYING WS-X FROM WS-XLO BY 1 UNTIL WS-X > WS-XHI
+         PERFORM VARYING WS-Z FROM WS-ZLO BY 1 UNTIL WS-Z > WS-ZHI
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-FLOOR WS-Z WS-STATE
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+                 COMPUTE WS-E = WS-FLOOR + WS-I
+                 CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-E WS-Z WS-AIR
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     COMPUTE PL-X(WS-PLAYER) = WS-CX + 0.5
+     COMPUTE PL-Y(WS-PLAYER) = WS-FLOOR + 1
+     COMPUTE PL-Z(WS-PLAYER) = WS-CZ + 0.5
+     MOVE "minecraft:experience_orb" TO WS-WANT-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-WANT-KEY WS-ORB-TYPE WS-ENTITY-ROW WS-STATUS
+     CALL "TEST-DRAIN-HUNGER" USING WS-CONN WS-TEXT
+
+
+*> Shearing a sheep (19 section 2.4): 1 to 3 wool of its colour, the sheared flag, the shears wear
+     MOVE "shears" TO WS-ITEM-KEY
+     MOVE 1 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     MOVE "sheep" TO WS-WANT-KEY
+     MOVE 2 TO WS-DX
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-A
+     MOVE 5 TO EN-WOOL(WS-ROW-A)
+     MOVE 0 TO EN-VARIANT(WS-ROW-A)
+     MOVE "lime_wool" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     MOVE EN-ID(WS-ROW-A) TO WS-ID-A
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 19§2.4 Shearing: a lime sheep gives 1 to 3 lime wool" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF WS-COUNT-ITEM >= 1 AND WS-COUNT-ITEM <= 3
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§2.4 Shearing: the sheep is sheared, its colour kept (byte 16 + 5)" TO WS-CASE
+     MOVE 21 TO WS-EXPECT
+     MOVE EN-WOOL(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§2.4 Shearing: the shears lose durability (the stack carries a patch)" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF PL-SLOT-VAR(WS-PLAYER, 1) NOT = 0
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     MOVE 0 TO WS-HITS
+     INSPECT WS-IDS TALLYING WS-HITS FOR ALL "101"
+     MOVE "acceptance US15 19§2.4 Shearing: Set Entity Data with the sheared byte reaches the viewer" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF WS-HITS > 0
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE WS-COUNT-ITEM TO WS-KEEP
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 19§2.4 Shearing: a sheared sheep gives nothing more" TO WS-CASE
+     MOVE WS-KEEP TO WS-EXPECT
+     MOVE WS-COUNT-ITEM TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 1 TO EN-VARIANT(WS-ROW-A)
+     MOVE 5 TO EN-WOOL(WS-ROW-A)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§2.4 Shearing: a baby sheep cannot be sheared" TO WS-CASE
+     MOVE 5 TO WS-EXPECT
+     MOVE EN-WOOL(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+
+*> Milking (19 section 2.2)
+     MOVE "bucket" TO WS-ITEM-KEY
+     MOVE 2 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     MOVE "milk_bucket" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     MOVE WS-ITEM-ID TO WS-SLOT-ITEM
+     MOVE "cow" TO WS-WANT-KEY
+     MOVE -2 TO WS-DX
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-B
+     MOVE EN-ID(WS-ROW-B) TO WS-ID-A
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§2.2 Milking: an empty bucket on an adult cow: one bucket taken, one milk bucket added" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF PL-SLOT-COUNT(WS-PLAYER, 1) = 1 AND PL-SLOT-ITEM(WS-PLAYER, 2) = WS-SLOT-ITEM AND PL-SLOT-COUNT(WS-PLAYER, 2) = 1
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§2.2 Milking: the last bucket of a stack turns into the milk bucket in its slot" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF PL-SLOT-ITEM(WS-PLAYER, 1) = WS-SLOT-ITEM AND PL-SLOT-COUNT(WS-PLAYER, 1) = 1
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE "bucket" TO WS-ITEM-KEY
+     MOVE 1 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     MOVE WS-ITEM-ID TO WS-SLOT-ITEM
+     MOVE 1 TO PL-MODE(WS-PLAYER)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE "acceptance US15 19§2.2 Milking: a creative player keeps the bucket" TO WS-CASE
+     MOVE WS-SLOT-ITEM TO WS-EXPECT
+     MOVE PL-SLOT-ITEM(WS-PLAYER, 1) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 1 TO EN-VARIANT(WS-ROW-B)
+     MOVE -100 TO EN-MOBAGE(WS-ROW-B)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§2.2 Milking: a baby cow gives no milk" TO WS-CASE
+     MOVE WS-SLOT-ITEM TO WS-EXPECT
+     MOVE PL-SLOT-ITEM(WS-PLAYER, 1) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 1 TO PL-SLOT-COUNT(WS-PLAYER, 2)
+     MOVE 64 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     MOVE 0 TO EN-VARIANT(WS-ROW-B) EN-MOBAGE(WS-ROW-B)
+     PERFORM VARYING WS-I FROM 3 BY 1 UNTIL WS-I > 36
+         MOVE WS-SLOT-ITEM TO PL-SLOT-ITEM(WS-PLAYER, WS-I)
+         MOVE 16 TO PL-SLOT-COUNT(WS-PLAYER, WS-I)
+     END-PERFORM
+     MOVE "stone" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     MOVE WS-ITEM-ID TO PL-SLOT-ITEM(WS-PLAYER, 2)
+     MOVE 64 TO PL-SLOT-COUNT(WS-PLAYER, 2)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§2.2 Milking: with a full inventory the milk bucket lands on the ground at the player" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE "milk_bucket" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     PERFORM COUNT-ITEMS
+     MOVE WS-COUNT-ITEM TO WS-OBSERVE
+     PERFORM CHECK-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
+         MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, WS-I) PL-SLOT-ITEM(WS-PLAYER, WS-I)
+     END-PERFORM
+
+*> Mooshroom (19 section 2.3): shears give five mushrooms of its type and it becomes a cow; a bowl gives stew
+     MOVE "shears" TO WS-ITEM-KEY
+     MOVE 1 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     MOVE "mooshroom" TO WS-WANT-KEY
+     MOVE 0 TO WS-DX
+     MOVE 2 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-C
+     MOVE WS-WANT-TYPE TO WS-MOOSH-TYPE
+     MOVE 1 TO EN-WOOL(WS-ROW-C)
+     MOVE 7 TO EN-HEALTH(WS-ROW-C)
+     MOVE EN-ID(WS-ROW-C) TO WS-ID-A
+     MOVE "brown_mushroom" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 19§2.3 Mooshroom: shearing a brown mooshroom drops five brown mushrooms" TO WS-CASE
+     MOVE 5 TO WS-EXPECT
+     MOVE WS-COUNT-ITEM TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "cow" TO WS-WANT-KEY
+     PERFORM FIND-TYPE
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-WANT-TYPE AND EN-X(WS-I) = WS-FX AND EN-Z(WS-I) = WS-FZ
+                 AND EN-HEALTH(WS-I) = 7
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 19§2.3 Mooshroom: and it became a cow at the same place with its health" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-N TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§2.3 Mooshroom: the mooshroom is gone" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF EN-USED(WS-ROW-C) = 1 AND EN-TYPE(WS-ROW-C) = WS-MOOSH-TYPE
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE "mooshroom" TO WS-WANT-KEY
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-C
+     MOVE 0 TO EN-WOOL(WS-ROW-C)
+     MOVE EN-ID(WS-ROW-C) TO WS-ID-A
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "red_mushroom" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 19§2.3 Mooshroom: a red mooshroom drops five red mushrooms" TO WS-CASE
+     MOVE 5 TO WS-EXPECT
+     MOVE WS-COUNT-ITEM TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "mooshroom" TO WS-WANT-KEY
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-C
+     MOVE EN-ID(WS-ROW-C) TO WS-ID-A
+     MOVE "bowl" TO WS-ITEM-KEY
+     MOVE 1 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     MOVE "mushroom_stew" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§2.3 Mooshroom: a bowl on an adult mooshroom turns into mushroom stew" TO WS-CASE
+     MOVE WS-ITEM-ID TO WS-EXPECT
+     MOVE PL-SLOT-ITEM(WS-PLAYER, 1) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "shears" TO WS-ITEM-KEY
+     MOVE 1 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     MOVE 1 TO EN-VARIANT(WS-ROW-C)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§2.3 Mooshroom: a baby mooshroom cannot be sheared" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF EN-USED(WS-ROW-C) = 1 AND EN-TYPE(WS-ROW-C) = WS-MOOSH-TYPE
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+
+*> A zombie is no animal: Interact does nothing
+     MOVE "zombie" TO WS-WANT-KEY
+     MOVE 0 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE EN-ID(WS-E) TO WS-ID-A
+     MOVE 3 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 18§8.1 Love mode and breeding: Interact on a monster does nothing" TO WS-CASE
+     MOVE 3 TO WS-EXPECT
+     MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE EN-ID(WS-ROW-A) TO WS-ID-A
+     MOVE 0 TO EN-HEALTH(WS-ROW-A)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 18§8.1 Love mode and breeding: Interact on a dying animal does nothing" TO WS-CASE
+     MOVE 3 TO WS-EXPECT
+     MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-OBSERVE
+     PERFORM CHECK-N
+
+*> Chickens (19 section 2.5): a new chicken has an egg timer of 6000 to 11999; an adult lays an egg when it runs out
+     MOVE "chicken" TO WS-WANT-KEY
+     MOVE 0 TO WS-DX
+     MOVE -2 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-A
+     MOVE "acceptance US15 19§2.5 Eggs: a new chicken's egg timer is 6000 + nextInt(6000)" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF EN-EGG(WS-ROW-A) >= 6000 AND EN-EGG(WS-ROW-A) <= 11999
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE 1 TO EN-EGG(WS-ROW-A)
+     MOVE "egg" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     ADD 1 TO CW-TIME
+     CALL "MOB-STEP" USING WS-ROW-A
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 19§2.5 Eggs: the timer running out lays one egg and restarts at 6000 or more" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF WS-COUNT-ITEM = 1 AND EN-EGG(WS-ROW-A) >= 6000
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE 1 TO EN-EGG(WS-ROW-A)
+     MOVE 1 TO EN-VARIANT(WS-ROW-A)
+     MOVE -50 TO EN-MOBAGE(WS-ROW-A)
+     ADD 1 TO CW-TIME
+     CALL "MOB-STEP" USING WS-ROW-A
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 19§2.5 Eggs: a baby chicken lays no egg" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-COUNT-ITEM TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 0 TO EN-VARIANT(WS-ROW-A) EN-MOBAGE(WS-ROW-A)
+     MOVE 2 TO EN-WOOL(WS-ROW-A)
+     MOVE 1 TO EN-EGG(WS-ROW-A)
+     MOVE "brown_egg" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     ADD 1 TO CW-TIME
+     CALL "MOB-STEP" USING WS-ROW-A
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 19§2.5 Eggs: a warm chicken lays a brown egg" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-COUNT-ITEM TO WS-OBSERVE
+     PERFORM CHECK-N
+
+*> Sheep eating (19 section 2.4): the goal starts on draw 0 over a grass block or a fern, at 4 the block is eaten, the wool regrows
+     MOVE "sheep" TO WS-WANT-KEY
+     MOVE 3 TO WS-DX
+     MOVE 3 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-A
+     MOVE 19 TO EN-WOOL(WS-ROW-A)
+     MOVE "grass_block" TO WS-KEY
+     PERFORM FIND-BLOCK-STATE
+     COMPUTE WS-X = WS-CX + 3
+     COMPUTE WS-Z = WS-CZ + 3
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-FLOOR WS-Z WS-STATE
+     MOVE 1 TO WS-DRAW
+     CALL "MOB-SHEEP-EAT-START" USING WS-ROW-A WS-DRAW
+     MOVE "acceptance US15 19§2.4 Eating: a draw other than 0 does not start the goal" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE EN-EAT(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 0 TO WS-DRAW
+     CALL "MOB-SHEEP-EAT-START" USING WS-ROW-A WS-DRAW
+     MOVE "acceptance US15 19§2.4 Eating: on draw 0 over a grass block the eating timer is 40" TO WS-CASE
+     MOVE 40 TO WS-EXPECT
+     MOVE EN-EAT(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 35
+         CALL "MOB-SHEEP-EAT-TICK" USING WS-ROW-A
+     END-PERFORM
+     MOVE "acceptance US15 19§2.4 Eating: the grass is still there with 5 ticks left" TO WS-CASE
+     MOVE WS-STATE TO WS-EXPECT
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-FLOOR WS-Z WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "MOB-SHEEP-EAT-TICK" USING WS-ROW-A
+     MOVE "dirt" TO WS-KEY
+     PERFORM FIND-BLOCK-STATE
+     MOVE "acceptance US15 19§2.4 Eating: at 4 the grass block becomes dirt" TO WS-CASE
+     MOVE WS-STATE TO WS-EXPECT
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-FLOOR WS-Z WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§2.4 Eating: and the sheared sheep's wool grows back (colour 3, not sheared)" TO WS-CASE
+     MOVE 3 TO WS-EXPECT
+     MOVE EN-WOOL(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "fern" TO WS-KEY
+     PERFORM FIND-BLOCK-STATE
+     COMPUTE WS-Y = WS-FLOOR + 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE 1 TO EN-VARIANT(WS-ROW-A)
+     MOVE -1000 TO EN-MOBAGE(WS-ROW-A)
+     MOVE 0 TO EN-EAT(WS-ROW-A)
+     CALL "MOB-SHEEP-EAT-START" USING WS-ROW-A WS-DRAW
+     MOVE 5 TO EN-EAT(WS-ROW-A)
+     CALL "MOB-SHEEP-EAT-TICK" USING WS-ROW-A
+     MOVE "acceptance US15 19§2.4 Eating: a fern at the feet is destroyed (air)" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§2.4 Eating: a baby that eats ages up 60 ticks" TO WS-CASE
+     MOVE -940 TO WS-EXPECT
+     MOVE EN-MOBAGE(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 0 TO EN-EAT(WS-ROW-A)
+     MOVE 0 TO EN-VARIANT(WS-ROW-A)
+     MOVE 0 TO EN-MOBAGE(WS-ROW-A)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3000 OR EN-EAT(WS-ROW-A) > 0
+         ADD 1 TO CW-TIME
+         CALL "MOB-STEP" USING WS-ROW-A
+     END-PERFORM
+     MOVE "acceptance US15 19§2.4 Eating: nothing to eat (air at the feet, stone below): the goal never starts" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE EN-EAT(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+
+*> Babies: two sheep give the mixed colour of the dye recipe (blue + green = cyan); two mooshrooms a type of a parent; the entity data of a baby sheep reaches a viewer
+     MOVE "sheep" TO WS-WANT-KEY
+     MOVE -3 TO WS-DX
+     MOVE 3 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-A
+     MOVE -3 TO WS-DX
+     MOVE 2 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-B
+     MOVE 11 TO EN-WOOL(WS-ROW-A)
+     MOVE 13 TO EN-WOOL(WS-ROW-B)
+     CALL "MOB-BREED" USING WS-ROW-A WS-ROW-B
+     PERFORM COUNT-BABIES
+     MOVE "acceptance US15 25.1 Sheep colour: a blue and a green sheep have a cyan lamb" TO WS-CASE
+     MOVE 9 TO WS-EXPECT
+     MOVE EN-WOOL(WS-BABY) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 0 TO EN-MOBAGE(WS-BABY) EN-VARIANT(WS-BABY)
+     MOVE 1 TO EN-VARIANT(WS-ROW-A)
+     MOVE 3 TO EN-WOOL(WS-ROW-A)
+     MOVE SPACE TO VW-SEEN(WS-PLAYER)(WS-ROW-A:1)
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     CALL "ENTITY-TRACK" USING WS-ROW-A
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     MOVE "acceptance US15 9.3 Entity data: a baby sheep with a colour seen for the first time gets Add Entity then Set Entity Data" TO WS-CASE
+     MOVE "1 101" TO WS-NEEDLE
+     MOVE 0 TO WS-HITS
+     INSPECT WS-IDS TALLYING WS-HITS FOR ALL FUNCTION TRIM(WS-NEEDLE)
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-HITS TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "mooshroom" TO WS-WANT-KEY
+     MOVE 3 TO WS-DX
+     MOVE -3 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-A
+     MOVE 2 TO WS-DX
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-B
+     MOVE 1 TO EN-WOOL(WS-ROW-A)
+     MOVE 0 TO EN-WOOL(WS-ROW-B)
+     CALL "MOB-BREED" USING WS-ROW-A WS-ROW-B
+     PERFORM COUNT-BABIES
+     MOVE "acceptance US15 25.5 Mooshroom breeding: a red and a brown parent give a red or brown baby" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF EN-WOOL(WS-BABY) = 0 OR EN-WOOL(WS-BABY) = 1
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE 0 TO EN-MOBAGE(WS-BABY) EN-VARIANT(WS-BABY)
+     MOVE "pig" TO WS-WANT-KEY
+     MOVE -1 TO WS-DX
+     MOVE 3 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-A
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-B
+     MOVE 1 TO EN-WOOL(WS-ROW-A)
+     MOVE 2 TO EN-WOOL(WS-ROW-B)
+     CALL "MOB-BREED" USING WS-ROW-A WS-ROW-B
+     PERFORM COUNT-BABIES
+     MOVE "acceptance US15 19§1.6 Variants: a pig takes the variant of one of its parents" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF EN-WOOL(WS-BABY) = 1 OR EN-WOOL(WS-BABY) = 2
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 30
+         MOVE "sheep" TO WS-WANT-KEY
+         PERFORM SPAWN-MOB
+         IF EN-WOOL(WS-E) >= 0 AND EN-WOOL(WS-E) <= 15
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 19§2.4 Sheep colour: new sheep have a colour of the 16 and are not sheared" TO WS-CASE
+     MOVE 30 TO WS-EXPECT
+     MOVE WS-N TO WS-OBSERVE
+     PERFORM CHECK-N
+*> More 8.1 cases: a dropped item is no animal; a mule takes food but never falls in love; a baby horse grown up by wheat; a partner that left love is dropped
+     MOVE "egg" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     MOVE 0 TO WS-KEEP
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT OR WS-KEEP > 0
+         IF EN-USED(WS-N) = 1 AND EN-TYPE(WS-N) = CR-LOOSE-ITEM
+             MOVE EN-ID(WS-N) TO WS-KEEP
+             MOVE 5 TO EN-HEALTH(WS-N)
+         END-IF
+     END-PERFORM
+     MOVE "wheat" TO WS-ITEM-KEY
+     MOVE 2 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     CALL "TEST-INTERACT" USING WS-CONN WS-KEEP WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 18§8.1 Love mode and breeding: Interact on a living entity of no standard mob row (here a dropped item given health) does nothing" TO WS-CASE
+     MOVE 2 TO WS-EXPECT
+     MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "mule" TO WS-WANT-KEY
+     MOVE 1 TO WS-DX
+     MOVE 1 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-B
+     MOVE "apple" TO WS-ITEM-KEY
+     MOVE 2 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     MOVE EN-ID(WS-ROW-B) TO WS-ID-A
+     MOVE 1 TO EN-TAMED(WS-ROW-B)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 18§8.1 Love mode and breeding: a mule is not fed apples for love: nothing used, no love" TO WS-CASE
+     COMPUTE WS-EXPECT = 2 * 10
+     COMPUTE WS-OBSERVE = PL-SLOT-COUNT(WS-PLAYER, 1) * 10 + EN-LOVE(WS-ROW-B)
+     PERFORM CHECK-N
+     MOVE "horse" TO WS-WANT-KEY
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-C
+     MOVE -100 TO EN-MOBAGE(WS-ROW-C)
+     MOVE 1 TO EN-VARIANT(WS-ROW-C)
+     MOVE "wheat" TO WS-ITEM-KEY
+     MOVE 2 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     MOVE EN-ID(WS-ROW-C) TO WS-ID-A
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 18§8.1 Love mode and breeding: wheat (20 s) for a foal with 5 s to grow makes it an adult at once" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = PL-SLOT-COUNT(WS-PLAYER, 1) * 100 + EN-MOBAGE(WS-ROW-C) * 10 + EN-VARIANT(WS-ROW-C)
+     COMPUTE WS-EXPECT = 100
+     PERFORM CHECK-N
+     MOVE "cow" TO WS-WANT-KEY
+     MOVE 0 TO WS-DX
+     MOVE 3 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-A
+     MOVE -3 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-B
+     MOVE 600 TO EN-LOVE(WS-ROW-A) EN-LOVE(WS-ROW-B)
+     ADD 1 TO CW-TIME
+     CALL "MOB-STEP" USING WS-ROW-A
+     MOVE "acceptance US15 18§8.1 Love mode and breeding: an animal in love finds the other cow in love as its partner" TO WS-CASE
+     MOVE WS-ROW-B TO WS-EXPECT
+     MOVE EN-LOVE-PARTNER(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE 0 TO EN-LOVE(WS-ROW-B)
+     ADD 1 TO CW-TIME
+     CALL "MOB-STEP" USING WS-ROW-A
+     MOVE "acceptance US15 18§8.1 Love mode and breeding: a partner that is no longer in love is dropped" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE EN-LOVE-PARTNER(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+     STOP RUN.
+
+ SPAWN-MOB.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-WANT-KEY) DELIMITED BY SIZE INTO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-WANT-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-FX = WS-CX + 0.5 + WS-DX
+     COMPUTE WS-FY = WS-FLOOR + 1
+     COMPUTE WS-FZ = WS-CZ + 0.5 + WS-DZ
+     CALL "MOB-SPAWN" USING WS-DIM WS-WANT-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-E.
+
+ FIND-TYPE.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-WANT-KEY) DELIMITED BY SIZE INTO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-WANT-TYPE WS-ENTITY-ROW WS-STATUS.
+
+ FIND-ITEM.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-ITEM-KEY) DELIMITED BY SIZE INTO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM-ID WS-ITEM-ROW WS-STATUS.
+
+ FIND-BLOCK-STATE.
+     MOVE SPACES TO WS-WANT-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-KEY) DELIMITED BY SIZE INTO WS-WANT-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-WANT-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-STATE = FUNCTION NUMVAL(WS-STATE-TEXT).
+
+ GIVE-HELD.
+     PERFORM FIND-ITEM
+     MOVE WS-ITEM-ID TO PL-SLOT-ITEM(WS-PLAYER, 1)
+     MOVE WS-GIVE-COUNT TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     MOVE 0 TO PL-SLOT-VAR(WS-PLAYER, 1).
+
+ COUNT-ITEMS.
+     MOVE 0 TO WS-COUNT-ITEM
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+         IF EN-USED(WS-N) = 1 AND EN-TYPE(WS-N) = CR-LOOSE-ITEM AND EN-ITEM(WS-N) = WS-ITEM-ID
+             ADD EN-ITEM-COUNT(WS-N) TO WS-COUNT-ITEM
+         END-IF
+     END-PERFORM.
+
+ COUNT-BABIES.
+     MOVE 0 TO WS-BABIES
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+         IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-MOBAGE(WS-N) < 0 AND EN-VARIANT(WS-N) = 1 AND WS-N NOT = WS-ROW-A
+             ADD 1 TO WS-BABIES
+             MOVE WS-N TO WS-BABY
+         END-IF
+     END-PERFORM.
+
+ CHECK-N.
+     MOVE "N" TO TL-MODE
+     MOVE WS-CASE TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED-N
+     MOVE WS-OBSERVE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM ACC-US15-FARM.
+ COPY CORETEST.

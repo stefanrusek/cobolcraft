@@ -1,0 +1,238 @@
+*> Hoglin spawn facts (docs/protocol/44-residual-mob-questions-6-nether.md section 6.2 "Other hoglin facts" and 6.3; lane 002-lane-p49l): checkHoglinSpawnRules (no nether wart block
+*> below), finalizeSpawn (a baby with probability 0.2, hoglin and zoglin) and getWalkTargetValue (-1 within 8 blocks of a repellent, 10 on crimson nylium, else 0).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-Q44-44-6-6S.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BRWORLD.
+ COPY STDMOBS.
+ COPY XORO.
+ COPY XORO REPLACING LEADING ==XR-== BY ==RB-==.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X0                  FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z0                  FLOAT-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-FY                  BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-ZM                  BINARY-LONG.
+ 01 WS-K24                 PIC X(24).
+ 01 WS-NO                  BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-SEED                BINARY-DOUBLE UNSIGNED.
+ 01 WS-REASON              BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-EXPECT              BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-BABIES              BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-PX                  BINARY-LONG.
+ 01 WS-PY                  BINARY-LONG.
+ 01 WS-PZ                  BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "N" TO TL-MODE
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE PL-X(WS-PLAYER) TO WS-X0
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z0
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X0) - 20
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-Y) - 1
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z0) - 20
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-BX WS-BZ 40 WS-BY 1
+     MOVE 1000 TO CW-TICKS
+     CALL "T-CLEAR"
+     MOVE "hoglin" TO WS-K24
+     CALL "T-SPAWN" USING WS-DIM WS-K24 WS-X0 WS-Y WS-Z0 WS-A
+     CALL "STDMOB-INDEX" USING EN-TYPE(WS-A) WS-M
+     MOVE "zoglin" TO WS-K24
+     CALL "T-SPAWN" USING WS-DIM WS-K24 WS-X0 WS-Y WS-Z0 WS-A
+     CALL "STDMOB-INDEX" USING EN-TYPE(WS-A) WS-ZM
+*>   checkHoglinSpawnRules: the block below must not be a nether wart block (it passes on Peaceful too: only the floor test).
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X0) + 6
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-Y)
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z0)
+     COMPUTE WS-FY = WS-BY - 1
+     MOVE 6000 TO CW-TIME
+     MOVE 2 TO BW-DIFFICULTY
+     MOVE 1 TO WS-SEED
+     CALL "XORO-SEED" USING WS-SEED XR-STATE
+     MOVE 0 TO WS-REASON
+     CALL "MS6-RULE-AT" USING XR-STATE WS-DIM WS-M WS-BX WS-BY WS-BZ WS-REASON WS-OK
+     MOVE "acceptance 44-6§6.2 a hoglin may spawn on a stone floor" TO TL-CASE
+     MOVE WS-ONE TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "minecraft:nether_wart_block" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-FY WS-BZ WS-STATE
+     CALL "MS6-RULE-AT" USING XR-STATE WS-DIM WS-M WS-BX WS-BY WS-BZ WS-REASON WS-OK
+     MOVE "acceptance 44-6§6.2 not on a nether wart block" TO TL-CASE
+     MOVE WS-NO TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "MS6-RULE-AT" USING XR-STATE WS-DIM WS-ZM WS-BX WS-BY WS-BZ WS-REASON WS-OK
+     MOVE "acceptance 44-6§6.3 a zoglin has no such rule (its own any-light rule passes)" TO TL-CASE
+     MOVE WS-ONE TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   finalizeSpawn: baby with probability 0.2 (nextFloat() < 0.2), checked for 300 seeds against the same draw taken independently.
+     MOVE 0 TO WS-BAD WS-BABIES
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 300
+         MOVE "hoglin" TO WS-K24
+         CALL "T-SPAWN" USING WS-DIM WS-K24 WS-X0 WS-Y WS-Z0 WS-A
+         MOVE 0 TO EN-MOBAGE(WS-A)
+         MOVE WS-I TO WS-SEED
+         CALL "XORO-SEED" USING WS-SEED XR-STATE
+         CALL "XORO-SEED" USING WS-SEED RB-STATE
+         CALL "XORO-NEXT-DOUBLE" USING RB-STATE WS-D
+         MOVE 0 TO WS-EXPECT
+         IF WS-D < 0.2
+             MOVE 1 TO WS-EXPECT
+         END-IF
+         CALL "STDMOB-FINALIZE" USING XR-STATE WS-A
+         MOVE 0 TO WS-FLAG
+         IF EN-MOBAGE(WS-A) < 0
+             MOVE 1 TO WS-FLAG
+         END-IF
+         ADD WS-FLAG TO WS-BABIES
+         IF WS-FLAG NOT = WS-EXPECT
+             ADD 1 TO WS-BAD
+         END-IF
+         CALL "ENTITY-REMOVE" USING WS-A
+     END-PERFORM
+     MOVE "acceptance 44-6§6.2 finalizeSpawn: the baby flag follows nextFloat() < 0.2 for 300 seeds" TO TL-CASE
+     MOVE WS-NO TO TL-EXPECTED-N
+     MOVE WS-BAD TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-FLAG
+     IF WS-BABIES >= 40 AND WS-BABIES <= 80
+         MOVE 1 TO WS-FLAG
+     END-IF
+     MOVE "acceptance 44-6§6.2 about a fifth of 300 hoglins are babies" TO TL-CASE
+     MOVE WS-ONE TO TL-EXPECTED-N
+     MOVE WS-FLAG TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "zoglin" TO WS-K24
+     CALL "T-SPAWN" USING WS-DIM WS-K24 WS-X0 WS-Y WS-Z0 WS-A
+     MOVE 0 TO EN-MOBAGE(WS-A)
+     MOVE 1 TO WS-SEED
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 300
+         MOVE WS-I TO WS-SEED
+         CALL "XORO-SEED" USING WS-SEED XR-STATE
+         CALL "XORO-SEED" USING WS-SEED RB-STATE
+         CALL "XORO-NEXT-DOUBLE" USING RB-STATE WS-D
+         MOVE 0 TO WS-EXPECT
+         IF WS-D < 0.2
+             MOVE 1 TO WS-EXPECT
+         END-IF
+         MOVE 0 TO EN-MOBAGE(WS-A)
+         CALL "STDMOB-FINALIZE" USING XR-STATE WS-A
+         MOVE 0 TO WS-FLAG
+         IF EN-MOBAGE(WS-A) < 0
+             MOVE 1 TO WS-FLAG
+         END-IF
+         IF WS-FLAG NOT = WS-EXPECT
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE "acceptance 44-6§6.3 the zoglin's finalizeSpawn takes the same draw" TO TL-CASE
+     MOVE WS-NO TO TL-EXPECTED-N
+     MOVE WS-BAD TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   getWalkTargetValue: -1 within 8 blocks of the nearest repellent, 10 above crimson nylium, else 0.
+     CALL "T-CLEAR"
+     MOVE "hoglin" TO WS-K24
+     CALL "T-SPAWN" USING WS-DIM WS-K24 WS-X0 WS-Y WS-Z0 WS-A
+     MOVE "minecraft:warped_fungus" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X0) + 3
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-Y)
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z0)
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     COMPUTE WS-PX = FUNCTION INTEGER(WS-X0) - 4
+     MOVE WS-BY TO WS-PY
+     MOVE WS-BZ TO WS-PZ
+     CALL "HOGLIN-WALK-VALUE" USING WS-A WS-PX WS-PY WS-PZ WS-VALUE
+     MOVE "acceptance 44-6§6.2 getWalkTargetValue: 7 blocks from the fungus is -1" TO TL-CASE
+     MOVE -1 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-PX = FUNCTION INTEGER(WS-X0) - 6
+     CALL "HOGLIN-WALK-VALUE" USING WS-A WS-PX WS-PY WS-PZ WS-VALUE
+     MOVE "acceptance 44-6§6.2 9 blocks from the fungus is 0" TO TL-CASE
+     MOVE WS-NO TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "minecraft:crimson_nylium" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
+     COMPUTE WS-BY = WS-PY - 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-PX WS-BY WS-PZ WS-STATE
+     CALL "HOGLIN-WALK-VALUE" USING WS-A WS-PX WS-PY WS-PZ WS-VALUE
+     MOVE "acceptance 44-6§6.2 above crimson nylium (no repellent near) is 10" TO TL-CASE
+     MOVE 10 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE WS-PX = FUNCTION INTEGER(WS-X0) + 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-PX WS-BY WS-PZ WS-STATE
+     CALL "HOGLIN-WALK-VALUE" USING WS-A WS-PX WS-PY WS-PZ WS-VALUE
+     MOVE "acceptance 44-6§6.2 the repellent comes first: nylium 2 blocks from the fungus is -1" TO TL-CASE
+     MOVE -1 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-Q44-44-6-6S.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. T-CLEAR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-I                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-PLAYER(WS-I) = 0
+             CALL "ENTITY-REMOVE" USING WS-I
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM T-CLEAR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. T-SPAWN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-KEY                  PIC X(24).
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-KEY L-X L-Y L-Z L-ROW.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE L-KEY DELIMITED BY SPACE INTO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     CALL "MOB-SPAWN" USING L-DIM WS-TYPE L-X L-Y L-Z WS-YAW L-ROW
+     GOBACK.
+ END PROGRAM T-SPAWN.
+
+ COPY CORETEST.
+ COPY MOBSPTEST.

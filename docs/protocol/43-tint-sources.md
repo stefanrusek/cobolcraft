@@ -3,7 +3,7 @@
 | Item | Value |
 |---|---|
 | Covers | Every colour that the client multiplies into a face or an item layer, and where it comes from: the block tint sources (`BlockColors`, `BlockTintSources`) with their exact constants, the stem and redstone-wire formulas, the biome colour resolvers (grass, foliage, dry foliage, water), the grass colour modifiers, the biome blend average and its cache, the colormap lookup, the water fluid tint, the terrain-particle tint, the item tint sources (`ItemTintSources`: constant, dye, grass, firework, potion, team, custom model data) with their defaults, leather dye mixing, the 16 dye colours, the 40 mob effect colours used by potions, the 16 team colours, the biome JSON fields that carry colours and the colour attributes (fog, water fog, sky), banner layer colour, and the map colour pipeline (brightness choice per pixel, packed id, texture colour) |
-| Does not cover | Rows of data: which item definition lists which tint (item definitions are data, a shipped sample is cited only as a cross-check, 22), the per-biome values (biome JSON, data), the colormap PNG pixels, the per-block map colour (code, in 24), the `MapColor` base table (24-1 §8.1). The attribute layering and fog maths that consume the fog, water fog and sky colours (12 §3). Entity colour layers (sheep wool, collars, shulker, tropical fish, wolf armour dye use the dye table of section 8 but their rendering belongs to the entity documents) |
+| Does not cover | Rows of data: which item definition lists which tint (item definitions are data, a shipped sample is cited only as a cross-check, 22), the per-biome values beyond the shipped table of 5.1 (biome JSON is data), the colormap PNG pixels, the per-block map colour (code, in 24), the `MapColor` base table (24-1 §8.1). The attribute layering and fog maths that consume the fog, water fog and sky colours (12 §3). Entity colour layers (sheep wool, collars, shulker, tropical fish, wolf armour dye use the dye table of section 8 but their rendering belongs to the entity documents) |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (already recorded in [README.md](README.md); version 26.3) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`) and of data files with `unzip -p`, with no execution. Files counted with `unzip -Z1 ... \| grep -v '/$' \| wc -l`. Colours that the bytecode holds as signed 32-bit integers are given here as ARGB hex (the conversion was done by arithmetic, not by running the game) |
 | Status | Round RS25 (GAP-29 of [../design/README.md](../design/README.md)). Operator decisions "Vanilla assets and data" and "Vanilla client" in `tickets/CC-0001-client-polish.md` |
@@ -164,6 +164,87 @@ A biome file (`data/minecraft/worldgen/biome/*.json`, 67 files) has `temperature
 Colour field syntax (`ExtraCodecs.STRING_RGB_COLOR`, used by `effects`): a string `#RRGGBB` (six hex digits, parsed and made opaque), or an integer (kept as written), or a list of three floats [r, g, b] in 0..1 (converted with floor(v x 255) per channel, alpha 255). Item tint colours (`RGB_COLOR_CODEC`) accept the integer and the float-list forms (same floor rule, alpha 255). `ARGB_COLOR_CODEC` accepts an integer or a list of four floats [r, g, b, a] (alpha from the fourth element, same floor rule). The statics `RGB_COLOR_VEC3_CODEC` and `ARGB_COLOR_VEC4_CODEC` prefer the list form with the integer as alternative. In an `ARGB` string field (`STRING_ARGB_COLOR`) `#AARRGGBB` or an integer is read. The values of `attributes` that are colours use the same attribute colour codecs of 12 §3.1; their defaults, spatial blend and consumers are in 12 §3.1 and §5. The attribute defaults: fog `#000000`, water fog `#050533`, sky `#000000` (12 §3.1).
 
 The dimension type's own attributes (overworld fog `#c0d8ff`, sky `#78a7ff`; Nether and End values) are in 12 §3.1 and are not repeated.
+
+### 5.1 Per-biome colour values of the shipped data (round TINT, 67 biomes)
+
+Read from the 67 files `data/minecraft/worldgen/biome/*.json` of the same artifact (count: `unzip -Z1 | grep -v '/$'`), plus the three colormap PNGs (`textures/colormap/grass.png`, `foliage.png`, `dry_foliage.png`, each 256 x 256 RGB). A client that takes biome data from the registry sync (04) needs no table; this one lets a client or a generated pack be checked without the jar, and gives the shipped values of the biome fields of section 5. Columns: `T` temperature and `D` downfall as written in the JSON (the colormap lookup clamps each to 0..1 first, 3.2, so 2.0 acts as 1.0 and -0.7 as 0.0); `Water` the `water_color`; `Grass`, `Foliage`, `Dry` the effective base colour. A value marked `*` is not in the JSON: it is the colormap lookup at the clamped (T, D) by the rule of 3.1, computed from the PNG pixels using the float-widened inputs of 3.2 (a plain-double recomputation of the inputs differs by 1 in some channel for `birch_forest`, `old_growth_birch_forest` and `meadow`). An unmarked value is the biome's override. `-` means the field is absent; it appears only in the attribute columns (Sky, Fog, WFog), since Grass, Foliage and Dry always resolve. `Mod` is `grass_color_modifier`; the Grass column is the **base**, before the modifier: for `dark_forest` the base is transformed by 3.3, for `swamp` and `mangrove_swamp` the base is discarded and the result is `FF4C763C` or `FF6A7039` by the noise of 3.3. `Sky`, `Fog`, `WFog` are the attributes `minecraft:visual/sky_color`, `fog_color`, `water_fog_color` (RGB, absent means the dimension type's or the attribute default of 12 §3.1).
+
+Climate and colour rules that the table shows: every biome has an effective water colour (default `3F76E4`; other values below); `temperature_modifier` is present only on `frozen_ocean` and `deep_frozen_ocean` (value `frozen`) and does not enter any colormap lookup (5); `water_fog_end_distance` (multiply, 0.85) is set only by `swamp` and `mangrove_swamp`; ten biomes set no sky colour: the five end biomes (`the_end`, `end_barrens`, `end_highlands`, `end_midlands`, `small_end_islands`) and the five Nether biomes (`nether_wastes`, `crimson_forest`, `warped_forest`, `soul_sand_valley`, `basalt_deltas`); `the_void` does set one.
+
+| Biome | T | D | Water | Grass | Foliage | Dry | Mod | Sky | Fog | WFog |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `badlands` | 2.0 | 0.0 | 3F76E4 | 90814D | 9E814D | A38046* | none | 6EB1FF | - | - |
+| `bamboo_jungle` | 0.95 | 0.9 | 3F76E4 | 59C93C* | 30BB0B* | A36346* | none | 77A8FF | - | - |
+| `basalt_deltas` | 2.0 | 0.0 | 3F76E4 | BFB755* | AEA42A* | A38046* | none | - | 685F70 | - |
+| `beach` | 0.8 | 0.4 | 3F76E4 | 91BD59* | 77AB2F* | A37546* | none | 78A7FF | - | - |
+| `birch_forest` | 0.6 | 0.6 | 3F76E4 | 88BB66* | 6BA940* | A37246* | none | 7AA5FF | - | - |
+| `cherry_grove` | 0.5 | 0.8 | 5DB7EF | B6DB61 | B6DB61 | A17148* | none | 7BA4FF | - | 5DB7EF |
+| `cold_ocean` | 0.5 | 0.5 | 3D57D6 | 8EB971* | 71A74D* | A17448* | none | 7BA4FF | - | - |
+| `crimson_forest` | 2.0 | 0.0 | 3F76E4 | BFB755* | AEA42A* | A38046* | none | - | 330303 | - |
+| `dappled_forest` | 0.6 | 0.6 | 375154 | DF6827 | E68E30 | 8C3A04 | none | 7CA3FF | CCD8E2 | 375154 |
+| `dark_forest` | 0.7 | 0.8 | 3F76E4 | 79C05A* | 59AE30* | 7B5334 | dark_forest | 79A6FF | - | - |
+| `deep_cold_ocean` | 0.5 | 0.5 | 3D57D6 | 8EB971* | 71A74D* | A17448* | none | 7BA4FF | - | - |
+| `deep_dark` | 0.8 | 0.4 | 3F76E4 | 91BD59* | 77AB2F* | A37546* | none | 78A7FF | - | - |
+| `deep_frozen_ocean` | 0.5 | 0.5 | 3938C9 | 8EB971* | 71A74D* | A17448* | none | 7BA4FF | - | - |
+| `deep_lukewarm_ocean` | 0.5 | 0.5 | 45ADF2 | 8EB971* | 71A74D* | A17448* | none | 7BA4FF | - | 041633 |
+| `deep_ocean` | 0.5 | 0.5 | 3F76E4 | 8EB971* | 71A74D* | A17448* | none | 7BA4FF | - | - |
+| `desert` | 2.0 | 0.0 | 3F76E4 | BFB755* | AEA42A* | A38046* | none | 6EB1FF | - | - |
+| `dripstone_caves` | 0.8 | 0.4 | 3F76E4 | 91BD59* | 77AB2F* | A37546* | none | 78A7FF | - | - |
+| `end_barrens` | 0.5 | 0.5 | 3F76E4 | 8EB971* | 71A74D* | A17448* | none | - | - | - |
+| `end_highlands` | 0.5 | 0.5 | 3F76E4 | 8EB971* | 71A74D* | A17448* | none | - | - | - |
+| `end_midlands` | 0.5 | 0.5 | 3F76E4 | 8EB971* | 71A74D* | A17448* | none | - | - | - |
+| `eroded_badlands` | 2.0 | 0.0 | 3F76E4 | 90814D | 9E814D | A38046* | none | 6EB1FF | - | - |
+| `flower_forest` | 0.7 | 0.8 | 3F76E4 | 79C05A* | 59AE30* | A36D46* | none | 79A6FF | - | - |
+| `forest` | 0.7 | 0.8 | 3F76E4 | 79C05A* | 59AE30* | A36D46* | none | 79A6FF | - | - |
+| `frozen_ocean` | 0.0 | 0.5 | 3938C9 | 80B497* | 60A17B* | 8F7A5A* | none | 7FA1FF | - | - |
+| `frozen_peaks` | -0.7 | 0.9 | 3F76E4 | 80B497* | 60A17B* | 8F7A5A* | none | 859DFF | - | - |
+| `frozen_river` | 0.0 | 0.5 | 3938C9 | 80B497* | 60A17B* | 8F7A5A* | none | 7FA1FF | - | - |
+| `grove` | -0.2 | 0.8 | 3F76E4 | 80B497* | 60A17B* | 8F7A5A* | none | 81A0FF | - | - |
+| `ice_spikes` | 0.0 | 0.5 | 3F76E4 | 80B497* | 60A17B* | 8F7A5A* | none | 7FA1FF | - | - |
+| `jagged_peaks` | -0.7 | 0.9 | 3F76E4 | 80B497* | 60A17B* | 8F7A5A* | none | 859DFF | - | - |
+| `jungle` | 0.95 | 0.9 | 3F76E4 | 59C93C* | 30BB0B* | A36346* | none | 77A8FF | - | - |
+| `lukewarm_ocean` | 0.5 | 0.5 | 45ADF2 | 8EB971* | 71A74D* | A17448* | none | 7BA4FF | - | 041633 |
+| `lush_caves` | 0.5 | 0.5 | 3F76E4 | 8EB971* | 71A74D* | A17448* | none | 7BA4FF | - | - |
+| `mangrove_swamp` | 0.8 | 0.9 | 3A7A6A | 6AC44E* | 8DB127 | 7B5334 | swamp | 78A7FF | C0D8FF | 4D7A60 |
+| `meadow` | 0.5 | 0.8 | 0E4ECF | 83BB6D* | 63A948* | A17148* | none | 7BA4FF | - | - |
+| `mushroom_fields` | 0.9 | 1.0 | 3F76E4 | 55C93F* | 2BBB0F* | A36246* | none | 77A8FF | - | - |
+| `nether_wastes` | 2.0 | 0.0 | 3F76E4 | BFB755* | AEA42A* | A38046* | none | - | 330808 | - |
+| `ocean` | 0.5 | 0.5 | 3F76E4 | 8EB971* | 71A74D* | A17448* | none | 7BA4FF | - | - |
+| `old_growth_birch_forest` | 0.6 | 0.6 | 3F76E4 | 88BB66* | 6BA940* | A37246* | none | 7AA5FF | - | - |
+| `old_growth_pine_taiga` | 0.3 | 0.8 | 3F76E4 | 86B87F* | 68A55F* | 9C754D* | none | 7CA3FF | - | - |
+| `old_growth_spruce_taiga` | 0.25 | 0.8 | 3F76E4 | 86B783* | 68A464* | 9A764F* | none | 7DA3FF | - | - |
+| `pale_garden` | 0.7 | 0.8 | 76889D | 778272 | 878D76 | A0A69C | none | B9B9B9 | 817770 | 556980 |
+| `plains` | 0.8 | 0.4 | 3F76E4 | 91BD59* | 77AB2F* | A37546* | none | 78A7FF | - | - |
+| `river` | 0.5 | 0.5 | 3F76E4 | 8EB971* | 71A74D* | A17448* | none | 7BA4FF | - | - |
+| `savanna` | 2.0 | 0.0 | 3F76E4 | BFB755* | AEA42A* | A38046* | none | 6EB1FF | - | - |
+| `savanna_plateau` | 2.0 | 0.0 | 3F76E4 | BFB755* | AEA42A* | A38046* | none | 6EB1FF | - | - |
+| `small_end_islands` | 0.5 | 0.5 | 3F76E4 | 8EB971* | 71A74D* | A17448* | none | - | - | - |
+| `snowy_beach` | 0.05 | 0.3 | 3D57D6 | 83B593* | 64A278* | 917958* | none | 7FA1FF | - | - |
+| `snowy_plains` | 0.0 | 0.5 | 3F76E4 | 80B497* | 60A17B* | 8F7A5A* | none | 7FA1FF | - | - |
+| `snowy_slopes` | -0.3 | 0.9 | 3F76E4 | 80B497* | 60A17B* | 8F7A5A* | none | 829FFF | - | - |
+| `snowy_taiga` | -0.5 | 0.4 | 3D57D6 | 80B497* | 60A17B* | 8F7A5A* | none | 839EFF | - | - |
+| `soul_sand_valley` | 2.0 | 0.0 | 3F76E4 | BFB755* | AEA42A* | A38046* | none | - | 1B4745 | - |
+| `sparse_jungle` | 0.95 | 0.8 | 3F76E4 | 64C73F* | 3EB80F* | A36646* | none | 77A8FF | - | - |
+| `stony_peaks` | 1.0 | 0.3 | 3F76E4 | 9ABE4B* | 82AC1E* | A37946* | none | 76A8FF | - | - |
+| `stony_shore` | 0.2 | 0.3 | 3F76E4 | 8AB689* | 6DA36B* | 967753* | none | 7DA2FF | - | - |
+| `sulfur_caves` | 0.8 | 0.4 | 34BF89 | ABA64F | 77AB2F* | A37546* | none | 78A7FF | 8CB831 | 17543C |
+| `sunflower_plains` | 0.8 | 0.4 | 3F76E4 | 91BD59* | 77AB2F* | A37546* | none | 78A7FF | - | - |
+| `swamp` | 0.8 | 0.9 | 617B64 | 6AC44E* | 6A7039 | 7B5334 | swamp | 78A7FF | - | 232317 |
+| `taiga` | 0.25 | 0.8 | 3F76E4 | 86B783* | 68A464* | 9A764F* | none | 7DA3FF | - | - |
+| `the_end` | 0.5 | 0.5 | 3F76E4 | 8EB971* | 71A74D* | A17448* | none | - | - | - |
+| `the_void` | 0.5 | 0.5 | 3F76E4 | 8EB971* | 71A74D* | A17448* | none | 7BA4FF | - | - |
+| `warm_ocean` | 0.5 | 0.5 | 43D5EE | 8EB971* | 71A74D* | A17448* | none | 7BA4FF | - | 041F33 |
+| `warped_forest` | 2.0 | 0.0 | 3F76E4 | BFB755* | AEA42A* | A38046* | none | - | 1A051A | - |
+| `windswept_forest` | 0.2 | 0.3 | 3F76E4 | 8AB689* | 6DA36B* | 967753* | none | 7DA2FF | - | - |
+| `windswept_gravelly_hills` | 0.2 | 0.3 | 3F76E4 | 8AB689* | 6DA36B* | 967753* | none | 7DA2FF | - | - |
+| `windswept_hills` | 0.2 | 0.3 | 3F76E4 | 8AB689* | 6DA36B* | 967753* | none | 7DA2FF | - | - |
+| `windswept_savanna` | 2.0 | 0.0 | 3F76E4 | BFB755* | AEA42A* | A38046* | none | 6EB1FF | - | - |
+| `wooded_badlands` | 2.0 | 0.0 | 3F76E4 | 90814D | 9E814D | A38046* | none | 6EB1FF | - | - |
+
+Distinct water colours (12 values, counts read): `3F76E4` (50 biomes), `3D57D6` (4: cold ocean, deep cold ocean, snowy beach, snowy taiga), `3938C9` (3: frozen ocean, deep frozen ocean, frozen river), `45ADF2` (2: lukewarm, deep lukewarm), and one biome each: `43D5EE` warm ocean, `617B64` swamp, `3A7A6A` mangrove swamp, `5DB7EF` cherry grove, `0E4ECF` meadow, `375154` dappled forest, `76889D` pale garden, `34BF89` sulfur caves.
+
+Worked checks (against the table and 3.1): plains (0.8, 0.4) gives grass 91BD59, foliage 77AB2F (section 11); `taiga` (0.25, 0.8) gives 86B783 / 68A464 / 9A764F; `frozen_peaks` T = -0.7 clamps to 0.0, so d' = 0 and the lookup is at x = 255, y = 255 (the same pixel as snowy plains, 80B497 for grass); `badlands` T = 2.0 clamps to 1.0 and D 0.0 so d' = 0, y = 255, x = 0 gives the dry foliage A38046 while grass and foliage are the overrides 90814D and 9E814D; a swamp column far from -0.1 noise uses `FF6A7039` as grass whatever the table's 6AC44E* base says.
+
 
 ---
 

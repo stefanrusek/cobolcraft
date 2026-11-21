@@ -1,0 +1,12 @@
+{
+ "feature": {
+  "type": "minecraft:simple_block",
+  "to_place": {
+   "type": "minecraft:simple",
+   "state": {
+    "Name": "minecraft:nope"
+   }
+  }
+ },
+ "placement": []
+}

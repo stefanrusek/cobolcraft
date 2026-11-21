@@ -1,0 +1,20 @@
+*> Helpers of the coverage-lane tests (test_cova_*; COPY after the test program, touch the test after changing it).
+*>   CA-N USING case (PIC X(240)), expected, observed (BINARY-DOUBLE): one numeric assertion.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CA-N.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ LINKAGE SECTION.
+ 01 L-CASE                 PIC X(240).
+ 01 L-EXPECTED             BINARY-DOUBLE.
+ 01 L-OBSERVED             BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-CASE L-EXPECTED L-OBSERVED.
+     MOVE "N" TO TL-MODE
+     MOVE L-CASE TO TL-CASE
+     MOVE L-EXPECTED TO TL-EXPECTED-N
+     MOVE L-OBSERVED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     GOBACK.
+ END PROGRAM CA-N.
+

@@ -1,0 +1,7 @@
+{
+ "type": "minecraft:set_enchantments",
+ "enchantments": {
+  "minecraft:efficiency": 300
+ },
+ "add": true
+}

@@ -21,19 +21,19 @@
 
      MOVE "acceptance US4-8 given a first-time survival player when they join then their "
          & "inventory holds the standin §2 starting items (Container Set Content equal to "
-         & "play-s2c-12-container-set-content-starting-items.hex)" TO TL-CASE
+         & "play-s2c-12-container-set-content-starting-items-46.hex)" TO TL-CASE
      CALL "TEST-JOIN-UNDRAINED" USING WS-NAME WS-NAME-LENGTH WS-CONN
-     MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-starting-items.hex"
+     MOVE "core/tests/fixtures/play-s2c-12-container-set-content-starting-items-46.hex"
          TO WS-PATH
      CALL "STARTING-CONTENT-CASE" USING WS-CONN WS-PATH TESTLIB-ASSERT
 
      MOVE "acceptance US4-8 given a player who has been in the world and left with an empty "
          & "inventory when they join again then they are not given the starting items again "
-         & "(Container Set Content equal to play-s2c-12-container-set-content-empty.hex)" TO TL-CASE
+         & "(Container Set Content equal to play-s2c-12-container-set-content-empty-46.hex)" TO TL-CASE
      INITIALIZE PL-INVENTORY(CN-PLAYER(WS-CONN))
      CALL "CORE-CONN-CLOSED" USING WS-CONN
      CALL "TEST-JOIN-UNDRAINED" USING WS-NAME WS-NAME-LENGTH WS-CONN
-     MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-empty.hex" TO WS-PATH
+     MOVE "core/tests/fixtures/play-s2c-12-container-set-content-empty-46.hex" TO WS-PATH
      CALL "STARTING-CONTENT-CASE" USING WS-CONN WS-PATH TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM ACC-US4-STARTING-ITEMS.

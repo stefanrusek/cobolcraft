@@ -1,0 +1,95 @@
+*> Test of 40-1 section 4 (Synchronisation between server and client; T0995): the container id cycle 1 to 100, the state id (+1 and 32767),
+*> the desync test of a click (a stale state id still applies the click and resends everything).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MENU-40-1-4.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ 01 WS-TEXT                PIC X(8192).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-EDIT2               PIC -(9)9.
+ 01 WS-EDIT3               PIC -(9)9.
+ 01 WS-EDIT4               PIC -(9)9.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-TYPE10              BINARY-LONG VALUE 10.
+ 01 WS-E1 PIC -(9)9.
+ 01 WS-E2 PIC -(9)9.
+ 01 WS-E3 PIC -(9)9.
+ 01 WS-E4 PIC -(9)9.
+ 01 WS-E5 PIC -(9)9.
+ 01 WS-E6 PIC -(9)9.
+ 01 WS-E7 PIC -(9)9.
+ 01 WS-E8 PIC -(9)9.
+ 01 WS-E9 PIC -(9)9.
+ 01 WS-E10 PIC -(9)9.
+ 01 WS-E11 PIC -(9)9.
+ 01 WS-E12 PIC -(9)9.
+ 01 WS-A BINARY-LONG.
+ 01 WS-B BINARY-LONG.
+ 01 WS-C BINARY-LONG.
+ 01 WS-D BINARY-LONG.
+ 01 WS-F BINARY-LONG.
+ 01 WS-G BINARY-LONG.
+ 01 WS-H BINARY-LONG.
+ 01 WS-J BINARY-LONG.
+ 01 WS-K BINARY-LONG.
+ 01 WS-K32 PIC X(32).
+ 01 WS-KEY2 PIC X(32).
+ PROCEDURE DIVISION.
+     MOVE "acceptance US12 40-1§4 sync: the container id cycles 1, 2, ..., 100, 1 (0 gives 1, 99 gives 100, 100 gives 1)" TO TL-CASE
+     MOVE 0 TO WS-A
+     CALL "MENU-ID-NEXT" USING WS-A WS-B
+     MOVE 99 TO WS-A
+     CALL "MENU-ID-NEXT" USING WS-A WS-C
+     MOVE 100 TO WS-A
+     CALL "MENU-ID-NEXT" USING WS-A WS-D
+     MOVE WS-B TO WS-E1
+     MOVE WS-C TO WS-E2
+     MOVE WS-D TO WS-E3
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "1 100 1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 40-1§4 sync: the state id is (id + 1) and 32767: 5 gives 6, 32767 gives 0 (worked example 11.5)" TO TL-CASE
+     MOVE 5 TO WS-A
+     CALL "MENU-STATE-NEXT" USING WS-A WS-B
+     MOVE 32767 TO WS-A
+     CALL "MENU-STATE-NEXT" USING WS-A WS-C
+     MOVE WS-B TO WS-E1
+     MOVE WS-C TO WS-E2
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "6 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 40-1§4 sync: a click whose state id differs from the server menu state id is a desync (applied, then a full resend); equal ids are not" TO TL-CASE
+     MOVE 32767 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "MENU-DESYNC" USING WS-A WS-B WS-C
+     MOVE 7 TO WS-A
+     MOVE 7 TO WS-B
+     CALL "MENU-DESYNC" USING WS-A WS-B WS-D
+     MOVE WS-C TO WS-E1
+     MOVE WS-D TO WS-E2
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "1 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     GOBACK.
+
+ CHECK.
+     MOVE "T" TO TL-MODE
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-MENU-40-1-4.
+
+ COPY CORETEST.

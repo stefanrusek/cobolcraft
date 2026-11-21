@@ -1,0 +1,339 @@
+*> Acceptance test of docs/protocol/34-entity-models-9-non-living-entities.md section 3.2 step 5 through the renderer: a furnace, spawner, command block or TNT minecart carries the cube of its block (default display offset 6)
+*> posed by the cart's operations (shift of the entity id, Y rotation, Z rotation, translate 0.375) and then scale 0.75, translate (-0.5, (offset - 8) / 16, 0.5), Y rotation 90; the chest and hopper carts (no cube model) and the plain cart draw no block.
+*> Only the faces that face the eye are in the mesh; the extents are computed by gen/rt9.py.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTITY-CART-BLOCKS-9.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY CLMODELS.
+ COPY TESTLIB.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ROW-AREA            PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG VALUE 7.
+ 01 WS-X                   FLOAT-LONG VALUE 10.5.
+ 01 WS-Y                   FLOAT-LONG VALUE 64.
+ 01 WS-Z                   FLOAT-LONG VALUE 10.5.
+ 01 WS-YAW                 FLOAT-SHORT.
+ 01 WS-PITCH               FLOAT-SHORT.
+ 01 WS-FIRST               BINARY-LONG VALUE 1.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-RANGE.
+    05 WS-R                BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-ROW                 BINARY-LONG VALUE 1.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-SER                 BINARY-LONG.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-FLOAT               FLOAT-SHORT.
+ 01 WS-EYE-TABLE.
+    05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION.
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE 0 TO PK-COUNT
+     CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
+     MOVE 256 TO PL-HEIGHT
+     MOVE 0 TO SK-U
+     MOVE 10 TO WS-EYE(1) WS-EYE(3)
+     MOVE 64 TO WS-EYE(2)
+     MOVE 1 TO CT-OPEN
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     MOVE "N" TO TL-MODE
+     CALL "PACK-STACK-INIT" USING CLIENT-STATE
+     ADD 1 TO PK-COUNT
+     INITIALIZE PK-PACK(PK-COUNT)
+     MOVE 1 TO PK-KIND(PK-COUNT)
+     MOVE 3 TO PK-LEVEL(PK-COUNT)
+     MOVE "generated/vanilla" TO PK-ID(PK-COUNT)
+     MOVE 17 TO PK-ID-LENGTH(PK-COUNT)
+     MOVE "client/tests/fixtures/mini-vanilla" TO PK-ROOT(PK-COUNT)
+     MOVE 34 TO PK-ROOT-LENGTH(PK-COUNT)
+     CALL "PACK-STACK-OPEN" USING CLIENT-STATE
+     CALL "PACK-SOURCE-FILES" USING CLIENT-STATE PK-COUNT
+     CALL "ATLAS-BUILD" USING CLIENT-STATE
+     CALL "CONTENT-SET-COUNTS"
+     MOVE 1 TO WS-FIRST
+     MOVE 12 TO WS-EYE(1)
+     MOVE 67 TO WS-EYE(2)
+     MOVE 13 TO WS-EYE(3)
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 0 TO EA-MT-COUNT
+     MOVE SPACES TO WS-KEY
+     MOVE "furnace_minecart" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 8 TO WS-ID
+     MOVE 0 TO WS-YAW
+     MOVE 0 TO WS-PITCH
+     CALL "E9-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-PITCH
+     CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE RL-GI-COUNT TO WS-LAST
+     CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
+     MOVE "acceptance US15 34-9§3 furnace_minecart id 8 yaw 0 pitch 0 block vertices" TO TL-CASE
+     MOVE 18 TO TL-EXPECTED-N
+     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 furnace_minecart id 8 yaw 0 pitch 0 block min x (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(1) - (-1874)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 furnace_minecart id 8 yaw 0 pitch 0 block max x (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(2) - (-1124)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 furnace_minecart id 8 yaw 0 pitch 0 block min y (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(3) - (-2719)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 furnace_minecart id 8 yaw 0 pitch 0 block max y (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(4) - (-1969)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 furnace_minecart id 8 yaw 0 pitch 0 block min z (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(5) - (-2875)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 furnace_minecart id 8 yaw 0 pitch 0 block max z (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(6) - (-2125)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 0 TO EA-MT-COUNT
+     MOVE SPACES TO WS-KEY
+     MOVE "spawner_minecart" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 100 TO WS-ID
+     MOVE 90 TO WS-YAW
+     MOVE 0 TO WS-PITCH
+     CALL "E9-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-PITCH
+     CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE RL-GI-COUNT TO WS-LAST
+     CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
+     MOVE "acceptance US15 34-9§3 spawner_minecart id 100 yaw 90 pitch 0 block vertices" TO TL-CASE
+     MOVE 18 TO TL-EXPECTED-N
+     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 spawner_minecart id 100 yaw 90 pitch 0 block min x (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(1) - (-1874)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 spawner_minecart id 100 yaw 90 pitch 0 block max x (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(2) - (-1124)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 spawner_minecart id 100 yaw 90 pitch 0 block min y (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(3) - (-2719)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 spawner_minecart id 100 yaw 90 pitch 0 block max y (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(4) - (-1969)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 spawner_minecart id 100 yaw 90 pitch 0 block min z (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(5) - (-2876)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 spawner_minecart id 100 yaw 90 pitch 0 block max z (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(6) - (-2126)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 0 TO EA-MT-COUNT
+     MOVE SPACES TO WS-KEY
+     MOVE "command_block_minecart" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 2 TO WS-ID
+     MOVE 45 TO WS-YAW
+     MOVE 20 TO WS-PITCH
+     CALL "E9-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-PITCH
+     CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE RL-GI-COUNT TO WS-LAST
+     CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
+     MOVE "acceptance US15 34-9§3 command_block_minecart id 2 yaw 45 pitch 20 block vertices" TO TL-CASE
+     MOVE 18 TO TL-EXPECTED-N
+     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 command_block_minecart id 2 yaw 45 pitch 20 block min x (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(1) - (-1945)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 command_block_minecart id 2 yaw 45 pitch 20 block max x (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(2) - (-735)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 command_block_minecart id 2 yaw 45 pitch 20 block min y (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(3) - (-2865)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 command_block_minecart id 2 yaw 45 pitch 20 block max y (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(4) - (-1904)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 command_block_minecart id 2 yaw 45 pitch 20 block min z (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(5) - (-3263)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 command_block_minecart id 2 yaw 45 pitch 20 block max z (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(6) - (-2053)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 0 TO EA-MT-COUNT
+     MOVE SPACES TO WS-KEY
+     MOVE "tnt_minecart" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 3 TO WS-ID
+     MOVE -135 TO WS-YAW
+     MOVE -10 TO WS-PITCH
+     CALL "E9-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-PITCH
+     CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE RL-GI-COUNT TO WS-LAST
+     CALL "E9-GIRANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
+     MOVE "acceptance US15 34-9§3 tnt_minecart id 3 yaw -135 pitch -10 block vertices" TO TL-CASE
+     MOVE 18 TO TL-EXPECTED-N
+     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 tnt_minecart id 3 yaw -135 pitch -10 block min x (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(1) - (-1993)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 tnt_minecart id 3 yaw -135 pitch -10 block max x (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(2) - (-848)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 tnt_minecart id 3 yaw -135 pitch -10 block min y (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(3) - (-2787)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 tnt_minecart id 3 yaw -135 pitch -10 block max y (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(4) - (-1919)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 tnt_minecart id 3 yaw -135 pitch -10 block min z (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(5) - (-3152)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 34-9§3 tnt_minecart id 3 yaw -135 pitch -10 block max z (thousandths) (within 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF FUNCTION ABS(WS-R(6) - (-2007)) <= 1
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 0 TO EA-MT-COUNT
+     MOVE SPACES TO WS-KEY
+     MOVE "minecart" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 60 TO WS-ID
+     MOVE 0 TO WS-YAW
+     MOVE 0 TO WS-PITCH
+     CALL "E9-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-PITCH
+     CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "acceptance US15 34-9§3 minecart carries no cube" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 0 TO EA-MT-COUNT
+     MOVE SPACES TO WS-KEY
+     MOVE "chest_minecart" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 60 TO WS-ID
+     MOVE 0 TO WS-YAW
+     MOVE 0 TO WS-PITCH
+     CALL "E9-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-PITCH
+     CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "acceptance US15 34-9§3 chest_minecart carries no cube" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 0 TO EA-MT-COUNT
+     MOVE SPACES TO WS-KEY
+     MOVE "hopper_minecart" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 60 TO WS-ID
+     MOVE 0 TO WS-YAW
+     MOVE 0 TO WS-PITCH
+     CALL "E9-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-PITCH
+     CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE "acceptance US15 34-9§3 hopper_minecart carries no cube" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE RL-GI-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-ENTITY-CART-BLOCKS-9.
+ COPY ENT9TEST.
+ COPY CLTEST.

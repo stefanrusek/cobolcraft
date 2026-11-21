@@ -1,0 +1,125 @@
+*> Implementation test (lane fixa, A3; 18 section 3.2): a standard mob on ground of friction 0.98 (BSH-SLIP of its floor, ice) keeps a push (EN-VX) with
+*> a decay of 0.98 x 0.91 a tick; on an ordinary block it decays by 0.546 as before.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-STDMOB-ICE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CONTENT.
+ COPY CITEMS.
+ COPY BRWORLD.
+ COPY CTBSHAPE.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-LOOT-DIR            PIC X(1100) VALUE "core/tests/fixtures/stdmob-loot".
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-STATE-TEXT          PIC X(5).
+ 01 WS-STONE               BINARY-LONG.
+ 01 WS-SPIDER-TYPE         BINARY-LONG.
+ 01 WS-SPIDER              BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-S1                  BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-X0                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-STANDARD-TABLES"
+     CALL "BR-WORLD-READY"
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-PLAYER
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:spider" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-SPIDER-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-STONE = FUNCTION NUMVAL(WS-STATE-TEXT)
+     MOVE "N" TO TL-MODE
+     MOVE "test stdmob spider: the spider is row 7 with 16 health" TO TL-CASE
+     MOVE 7 TO TL-EXPECTED-N
+     CALL "STDMOB-INDEX" USING WS-SPIDER-TYPE WS-INDEX
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test stdmob spider: a spider has 16 health" TO TL-CASE
+     MOVE 16 TO TL-EXPECTED-N
+     CALL "STDMOB-HEALTH" USING WS-SPIDER-TYPE WS-INDEX
+     MOVE WS-INDEX TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A stone floor under the spider at the player's place (open sky above it).
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X) + 4
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z)
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-Y) - 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STONE
+     COMPUTE WS-X0 = WS-BX + 0.5
+     COMPUTE WS-Y = FUNCTION INTEGER(WS-Y)
+     COMPUTE WS-Z = WS-BZ + 0.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-SPIDER-TYPE WS-X0 WS-Y WS-Z WS-YAW WS-SPIDER
+     MOVE 6000 TO CW-TIME
+     MOVE 0 TO EN-TARGET(WS-SPIDER)
+     MOVE WS-X0 TO EN-X(WS-SPIDER)
+     MOVE WS-Y TO EN-Y(WS-SPIDER)
+*>   A standard mob moves by its velocity first and then falls (18 section 3.2), so a mob put on the floor is on the ground after its second step.
+     CALL "MOB-STEP" USING WS-SPIDER
+     CALL "MOB-STEP" USING WS-SPIDER
+     MOVE "test stdmob ice: the mob stands on the floor" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE EN-ON-GROUND(WS-SPIDER) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Ordinary floor: a push of 0.2 decays to about 0.109.
+     MOVE 0.2 TO EN-VX(WS-SPIDER)
+     MOVE 0 TO EN-VZ(WS-SPIDER)
+     CALL "MOB-STEP" USING WS-SPIDER
+     COMPUTE WS-V = EN-VX(WS-SPIDER) * 1000
+     MOVE "test stdmob ice: on an ordinary block the push decays by 0.546 (below 0.12)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-V < 120
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Ice floor: it decays by 0.892 (above 0.17).
+     COMPUTE WS-S1 = WS-STONE + 1
+     MOVE 980 TO BSH-SLIP(WS-S1)
+     MOVE WS-X0 TO EN-X(WS-SPIDER)
+     MOVE WS-Y TO EN-Y(WS-SPIDER)
+     MOVE 1 TO EN-ON-GROUND(WS-SPIDER)
+     MOVE 0.2 TO EN-VX(WS-SPIDER)
+     MOVE 0 TO EN-VZ(WS-SPIDER)
+     CALL "MOB-STEP" USING WS-SPIDER
+     COMPUTE WS-V = EN-VX(WS-SPIDER) * 1000
+     MOVE "test stdmob ice: on ice the push decays by 0.892 (above 0.17)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-V > 170
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO BSH-SLIP(WS-S1)
+     STOP RUN.
+ END PROGRAM TEST-STDMOB-ICE.
+ COPY CORETEST.

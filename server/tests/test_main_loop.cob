@@ -1,6 +1,6 @@
 *> Implementation test of the server's main loop (server/src/loop.cob; research R6; contracts/
 *> operator-surface.md §1, §2): SV-START with the default settings opens ./world in the current
-*> directory and listens on port 25565; SV-ITERATE waits on cc_net_poll no longer than the time to
+*> directory and listens on the configured port (a free one, CC-0005); SV-ITERATE waits on cc_net_poll no longer than the time to
 *> the next tick, runs every due tick (one per elapsed 50 ms) and displays the drained console lines;
 *> SV-SHUTDOWN closes the connections and the listener. Runs in build/server-test-loop.
  IDENTIFICATION DIVISION.
@@ -19,7 +19,8 @@
  01 WS-WORLD-DIR           PIC X(16) VALUE "world".
  01 WS-FILE-INFO           PIC X(16).
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
- 01 WS-PORT                BINARY-LONG VALUE 25565.
+ 01 WS-PORT                BINARY-LONG.
+ 01 WS-CONF                PIC X(4096).
  01 WS-CLIENT              BINARY-LONG.
  01 WS-LATE                BINARY-LONG.
  01 WS-PATH                PIC X(256).
@@ -40,7 +41,7 @@
  01 WS-COMMAND             PIC X(64) VALUE Z"nosuchcommand".
  01 WS-EDIT                PIC -(9)9.
  01 WS-EDIT2               PIC -(9)9.
- 01 WS-DEFAULTS            PIC X(1707).
+ 01 WS-DEFAULTS            PIC X(3829).
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING ST-BUFFER WS-CAPACITY
      CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
@@ -56,14 +57,23 @@
      MOVE 1 TO CS-PLAYER-COMBAT CS-HOSTILE-MOBS CS-WEATHER-CHANGES CS-EXTRA-DIMENSIONS
      MOVE 0 TO CS-ALLOW-LIST-ENFORCED CS-PACK-OFFERED CS-PACK-REQUIRED CS-HOST-KIND
      MOVE "world" TO CS-NEW-WORLD-NAME
+     MOVE "auto" TO CS-WORLD-TYPE
+     MOVE "." TO CS-GAME-DIR
+     MOVE "./generated" TO CS-GENERATED-DIR
      MOVE CORE-SETTINGS TO WS-DEFAULTS
 
+*>   A free port, never the default (CC-0005; the default value itself is checked by test_default_port_free).
+     CALL "SVT-FREE-PORT" USING WS-PORT
+     MOVE WS-PORT TO WS-EDIT
+     MOVE SPACES TO WS-CONF
+     STRING "port=" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-CONF
+     CALL "SVT-WRITE-CONF" USING WS-CONF
      CALL "SV-START"
-     MOVE "test main loop SV-START uses the operator-surface §2 default settings and port 25565"
+     MOVE "test main loop SV-START uses the operator-surface §2 default settings and the configured port"
          TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE SPACES TO TL-EXPECTED TL-OBSERVED
-     STRING "port 25565 " WS-DEFAULTS(1:200) DELIMITED BY SIZE INTO TL-EXPECTED
+     STRING "port " FUNCTION TRIM(WS-EDIT) " " WS-DEFAULTS(1:200) DELIMITED BY SIZE INTO TL-EXPECTED
      MOVE SV-PORT TO WS-EDIT
      STRING "port " FUNCTION TRIM(WS-EDIT) " " SV-SETTINGS(1:200) DELIMITED BY SIZE
          INTO TL-OBSERVED
@@ -78,10 +88,12 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "SVT-CONNECT" USING WS-PORT WS-CLIENT
      CALL STATIC "cc_net_status" USING BY VALUE WS-CLIENT RETURNING WS-RC
-     MOVE "test main loop SV-START opens ./world in the current directory and listens on 25565"
+     MOVE "test main loop SV-START opens ./world in the current directory and listens on the configured port"
          TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "world port 25565 accepting" TO TL-EXPECTED
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-PORT TO WS-EDIT
+     STRING "world port " FUNCTION TRIM(WS-EDIT) " accepting" DELIMITED BY SIZE INTO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      CALL "CBL_CHECK_FILE_EXIST" USING WS-WORLD-DIR WS-FILE-INFO
      IF RETURN-CODE = 0
@@ -183,7 +195,7 @@
      CALL "SVT-UNSTAMP" USING WS-CAPTURED
      MOVE "test main loop SV-ITERATE displays the drained console lines" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "Unknown command nosuchcommand (howto lists the commands)" TO TL-EXPECTED
+     MOVE "Unknown or incomplete command. See below for error" TO TL-EXPECTED
      MOVE WS-CAPTURED TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

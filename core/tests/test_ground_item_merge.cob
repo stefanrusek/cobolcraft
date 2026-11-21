@@ -1,8 +1,8 @@
-*> Implementation test of the merge rule (core/src/ground-items.cob; tasks T475; standin-content
-*> §9.2 "Ground items never merge"; RULES.cpy RULE-GI-MERGES 0): two identical ground items (one
-*> greystone each) spawned at the same position, and two lying side by side, stay separate entities
-*> with their own counts however long they lie there. No player is in the world (nothing picks
-*> them up); the items rest on greystone at (20, 98, 20) and (21, 98, 20) of cobolcraft:main.
+*> Implementation test of the merge rule (core/src/ground-items.cob, itemphys-41.cob IP-MERGE; tasks T475;
+*> docs/protocol/41 section 4.4, which replaces the stand-in rule "ground items never merge"): two identical ground
+*> items (one greystone each) spawned at the same position merge into one entity of two, an identical item one block
+*> away (outside the 0.5 merge range) stays separate. No player is in the world (nothing picks them up); the items
+*> rest on greystone at (20, 98, 20) and (21, 98, 20) of cobolcraft:main. The cases of 41 section 4.4 are in test_itemphys_41_4.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-GROUND-ITEM-MERGE.
  DATA DIVISION.
@@ -43,25 +43,26 @@
      MOVE 21 TO WS-BX
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
 
-     MOVE "test ground item merge two identical items at the same position stay two entities "
-         & "of one item each (standin §9.2: ground items never merge)" TO TL-CASE
+     MOVE "test ground item merge two identical items at the same position merge on the first "
+         & "merge pass (41 section 4.4): the equal-count rule makes the other one the receiver" TO TL-CASE
      MOVE 20.5 TO WS-X
      PERFORM SPAWN
      PERFORM SPAWN
      CALL "TEST-TICKS" USING WS-TICKS
      MOVE 1 TO WS-ENTITY
      PERFORM DESCRIBE
-     MOVE "1:2x1 2:2x1" TO TL-EXPECTED
+     MOVE "1:none 2:2x2" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "test ground item merge two identical items lying side by side stay two entities"
+     MOVE "test ground item merge an identical item one block away (outside the 0.5 merge range of "
+         & "41 section 4.4) stays a separate entity"
          TO TL-CASE
      MOVE 21.5 TO WS-X
      PERFORM SPAWN
      CALL "TEST-TICKS" USING WS-TICKS
      MOVE 2 TO WS-ENTITY
      PERFORM DESCRIBE
-     MOVE "2:2x1 3:2x1" TO TL-EXPECTED
+     MOVE "2:2x2 3:2x1" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
 

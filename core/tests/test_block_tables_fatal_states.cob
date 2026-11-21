@@ -1,0 +1,15 @@
+*> Fatal path of BLOCKS-LIMITS-CHECK (T0326; constitution 5.6): a block whose states end beyond CB-MAX-STATES ends
+*> the run with "FATAL block tables: more states than the core holds". Expected outcome: the .expect file.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BLOCK-TABLES-FATAL-STATES.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-ID                  BINARY-LONG VALUE 3.
+ 01 WS-FIRST               BINARY-LONG VALUE 39998.
+ 01 WS-COUNT               BINARY-LONG VALUE 5.
+ PROCEDURE DIVISION.
+     CALL "BLOCKS-LIMITS-CHECK" USING WS-ID WS-FIRST WS-COUNT
+     DISPLAY "BLOCKS-LIMITS-CHECK returned"
+     STOP RUN.
+ END PROGRAM TEST-BLOCK-TABLES-FATAL-STATES.

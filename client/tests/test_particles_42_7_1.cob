@@ -1,0 +1,485 @@
+*> Acceptance test of docs/protocol/42-particles-7-emitters-entities-events-commands.md section 1 (Server routing: `ServerLevel.sendParticles` and the packet): the
+*> per-player range test and every emission site row of 1.4. Expected packets are computed independently by a script from the document's formulas.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PARTICLES-42-7-1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLP6EM.
+ COPY CLP7PK.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-CLASS               PIC X(24).
+ 01 WS-INT                 PIC X(300).
+ 01 WS-DRT                 PIC X(1500).
+ 01 WS-EXP                 PIC X(1600).
+ 01 WS-OBS                 PIC X(12000).
+ 01 WS-OBS2                PIC X(12000).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-IN.
+    05 WS-IV               FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-LIST.
+    05 WS-NUM              FLOAT-LONG OCCURS 400 TIMES.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-TEXT                PIC X(1500).
+ 01 WS-TOK                 PIC X(40).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-PTR2                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ED                  PIC -(5)9.99999.
+ 01 WS-EDN                 PIC -(9)9.
+ 01 WS-INLEVEL             BINARY-LONG.
+ 01 WS-OVR                 BINARY-LONG.
+ 01 WS-RAD                 BINARY-LONG.
+ 01 WS-SEES                BINARY-LONG.
+ 01 WS-PBA.
+    05 WS-PB               BINARY-LONG OCCURS 3 TIMES.
+ 01 WS-PTA.
+    05 WS-PT               FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION.
+     MOVE "player fall, 3 blocks" TO WS-NAME
+     MOVE "player_fall" TO WS-CLASS
+     MOVE "3.0 10.0 63.0 -3.0 9.0" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "block f=00 10.50000 64.00000 -2.50000 n=150 d=0.30000,0.30000,0.30000 v=0.15000,0.15000,0."
+         & "15000 m=0 st=9 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "player fall capped at 200" TO WS-NAME
+     MOVE "player_fall" TO WS-CLASS
+     MOVE "10.0 10.0 63.0 -3.0 9.0" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "block f=00 10.50000 64.00000 -2.50000 n=200 d=0.30000,0.30000,0.30000 v=0.15000,0.15000,0."
+         & "15000 m=0 st=9 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "player fall below one" TO WS-NAME
+     MOVE "player_fall" TO WS-CLASS
+     MOVE "0.01 10.0 63.0 -3.0 9.0" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "block f=00 10.50000 64.00000 -2.50000 n=0 d=0.30000,0.30000,0.30000 v=0.15000,0.15000,0.15"
+         & "000 m=0 st=9 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "player fall negative is clamped to zero" TO WS-NAME
+     MOVE "player_fall" TO WS-CLASS
+     MOVE "-2.0 10.0 63.0 -3.0 9.0" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "block f=00 10.50000 64.00000 -2.50000 n=0 d=0.30000,0.30000,0.30000 v=0.15000,0.15000,0.15"
+         & "000 m=0 st=9 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "bubble column" TO WS-NAME
+     MOVE "bubble_column" TO WS-CLASS
+     MOVE "10.0 64.0 -3.0" TO WS-INT
+     MOVE "0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8" TO WS-DRT
+     MOVE "splash f=00 10.10000 65.00000 -2.80000 n=1 d=0.00000,0.00000,0.00000 v=1.00000,1.00000,1.0"
+         & "0000 m=0 st=0 | bubble f=00 10.30000 65.00000 -2.60000 n=1 d=0.00000,0.01000,0.00000 v=0.2"
+         & "0000,0.20000,0.20000 m=0 st=0 | splash f=00 10.50000 65.00000 -2.40000 n=1 d=0.00000,0.000"
+         & "00,0.00000 v=1.00000,1.00000,1.00000 m=0 st=0 | bubble f=00 10.70000 65.00000 -2.20000 n=1"
+         & " d=0.00000,0.01000,0.00000 v=0.20000,0.20000,0.20000 m=0 st=0 (8)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "forced age" TO WS-NAME
+     MOVE "forced_age" TO WS-CLASS
+     MOVE "10.5 64.0 -2.5 0.6 1.8" TO WS-INT
+     MOVE "0.25 0.5 0.75" TO WS-DRT
+     MOVE "happy_villager f=00 10.20000 65.40000 -2.20000 n=1 d=0.00000,0.00000,0.00000 v=0.00000,0.0"
+         & "0000,0.00000 m=0 st=0 (3)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "age locked" TO WS-NAME
+     MOVE "age_locked" TO WS-CLASS
+     MOVE "10.5 64.0 -2.5 0.6 1.8 1.0" TO WS-INT
+     MOVE "0.25 0.5 0.75" TO WS-DRT
+     MOVE "pause_mob_growth f=00 10.20000 66.00000 -2.20000 n=1 d=0.00000,0.00000,0.00000 v=0.00000,0"
+         & ".00000,0.00000 m=0 st=0 (3)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "age unlocked" TO WS-NAME
+     MOVE "age_locked" TO WS-CLASS
+     MOVE "10.5 64.0 -2.5 0.6 1.8 0.0" TO WS-INT
+     MOVE "0.25 0.5 0.75" TO WS-DRT
+     MOVE "reset_mob_growth f=00 10.20000 65.80000 -2.20000 n=1 d=0.00000,0.00000,0.00000 v=0.00000,0"
+         & ".00000,0.00000 m=0 st=0 (3)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "damage indicator" TO WS-NAME
+     MOVE "damage_indicator" TO WS-CLASS
+     MOVE "6.0 10.5 64.0 -2.5 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "damage_indicator f=00 10.50000 64.90000 -2.50000 n=3 d=0.10000,0.00000,0.10000 v=0.20000,0"
+         & ".20000,0.20000 m=0 st=0 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "damage 2 is not enough" TO WS-NAME
+     MOVE "damage_indicator" TO WS-CLASS
+     MOVE "2.0 10.5 64.0 -2.5 1.8" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE " (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "sweep" TO WS-NAME
+     MOVE "sweep" TO WS-CLASS
+     MOVE "10.5 64.0 -2.5 1.8 0.5" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "sweep_attack f=00 10.02057 64.90000 -1.62242 n=0 d=-0.47943,0.00000,0.87758 v=0.00000,0.00"
+         & "000,0.00000 m=0 st=0 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "armor stand broken" TO WS-NAME
+     MOVE "armor_stand" TO WS-CLASS
+     MOVE "10.5 64.0 -2.5 0.6 1.8 7.0" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "block f=00 10.50000 65.20000 -2.50000 n=10 d=0.15000,0.45000,0.15000 v=0.05000,0.05000,0.0"
+         & "5000 m=0 st=7 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "creaking tear down" TO WS-NAME
+     MOVE "creaking_tear_down" TO WS-CLASS
+     MOVE "10.5 64.5 -2.5 0.6 1.9 0.6 11.0 12.0" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "block_crumble f=00 10.50000 64.50000 -2.50000 n=100 d=0.18000,0.57000,0.18000 v=0.00000,0."
+         & "00000,0.00000 m=0 st=11 | block_crumble f=00 10.50000 64.50000 -2.50000 n=10 d=0.18000,0.5"
+         & "7000,0.18000 v=0.00000,0.00000,0.00000 m=0 st=12 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "squid ink" TO WS-NAME
+     MOVE "squid_ink" TO WS-CLASS
+     MOVE "10.5 64.0 -2.5 0.0 -1.0 0.0 0.0" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "squid_ink f=00 10.50000 64.50000 -2.50000 n=0 d=0.00000,-1.00000,0.00000 v=0.10000,0.10000"
+         & ",0.10000 m=0 st=0 | squid_ink f=00 10.50000 64.50000 -2.50000 n=0 d=0.00000,-1.00000,0.000"
+         & "00 v=0.10000,0.10000,0.10000 m=0 st=0 | squid_ink f=00 10.50000 64.50000 -2.50000 n=0 d=0."
+         & "00000,-1.00000,0.00000 v=0.10000,0.10000,0.10000 m=0 st=0 | squid_ink f=00 10.50000 64.500"
+         & "00 -2.50000 n=0 d=0.00000,-1.00000,0.00000 v=0.10000,0.10000,0.10000 m=0 st=0 | squid_ink "
+         & "f=00 10.50000 64.50000 -2.5000...0 v=0.10000,0.10000,0.10000 m=0 st=0 | squid_ink f=00 10."
+         & "50000 64.50000 -2.50000 n=0 d=0.00000,-1.00000,0.00000 v=0.10000,0.10000,0.10000 m=0 st=0 "
+         & "| squid_ink f=00 10.50000 64.50000 -2.50000 n=0 d=0.00000,-1.00000,0.00000 v=0.10000,0.100"
+         & "00,0.10000 m=0 st=0 | squid_ink f=00 10.50000 64.50000 -2.50000 n=0 d=0.00000,-1.00000,0.0"
+         & "0000 v=0.10000,0.10000,0.10000 m=0 st=0 | squid_ink f=00 10.50000 64.50000 -2.50000 n=0 d="
+         & "0.00000,-1.00000,0.00000 v=0.10000,0.10000,0.10000 m=0 st=0 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "glow squid ink" TO WS-NAME
+     MOVE "squid_ink" TO WS-CLASS
+     MOVE "10.5 64.0 -2.5 0.5 0.0 0.5 1.0" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "glow_squid_ink f=00 10.50000 64.50000 -2.50000 n=0 d=0.50000,0.00000,0.50000 v=0.10000,0.1"
+         & "0000,0.10000 m=0 st=0 | glow_squid_ink f=00 10.50000 64.50000 -2.50000 n=0 d=0.50000,0.000"
+         & "00,0.50000 v=0.10000,0.10000,0.10000 m=0 st=0 | glow_squid_ink f=00 10.50000 64.50000 -2.5"
+         & "0000 n=0 d=0.50000,0.00000,0.50000 v=0.10000,0.10000,0.10000 m=0 st=0 | glow_squid_ink f=0"
+         & "0 10.50000 64.50000 -2.50000 n=0 d=0.50000,0.00000,0.50000 v=0.10000,0.10000,0.10000 m=0 s"
+         & "t=0 | glow_squid_ink f=00 10.5...000,0.10000 m=0 st=0 | glow_squid_ink f=00 10.50000 64.50"
+         & "000 -2.50000 n=0 d=0.50000,0.00000,0.50000 v=0.10000,0.10000,0.10000 m=0 st=0 | glow_squid"
+         & "_ink f=00 10.50000 64.50000 -2.50000 n=0 d=0.50000,0.00000,0.50000 v=0.10000,0.10000,0.100"
+         & "00 m=0 st=0 | glow_squid_ink f=00 10.50000 64.50000 -2.50000 n=0 d=0.50000,0.00000,0.50000"
+         & " v=0.10000,0.10000,0.10000 m=0 st=0 | glow_squid_ink f=00 10.50000 64.50000 -2.50000 n=0 d"
+         & "=0.50000,0.00000,0.50000 v=0.10000,0.10000,0.10000 m=0 st=0 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "mooshroom stew" TO WS-NAME
+     MOVE "mushroom_cow_stew" TO WS-CLASS
+     MOVE "10.5 64.0 -2.5 1.4" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "smoke f=00 10.50000 64.70000 -2.50000 n=2 d=0.50000,0.00000,0.50000 v=0.00000,0.20000,0.00"
+         & "000 m=2 st=0 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "mooshroom effect" TO WS-NAME
+     MOVE "mushroom_cow_effect" TO WS-CLASS
+     MOVE "10.5 64.0 -2.5 1.4" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "effect f=00 10.50000 64.70000 -2.50000 n=4 d=0.50000,0.00000,0.50000 v=0.00000,0.20000,0.0"
+         & "0000 m=2 st=0 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "mooshroom shear" TO WS-NAME
+     MOVE "mushroom_cow_shear" TO WS-CLASS
+     MOVE "10.5 64.0 -2.5 1.4" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "explosion f=00 10.50000 64.70000 -2.50000 n=1 d=0.00000,0.00000,0.00000 v=0.00000,0.00000,"
+         & "0.00000 m=0 st=0 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "bucket water evaporates" TO WS-NAME
+     MOVE "bucket_evaporate" TO WS-CLASS
+     MOVE "10.0 64.0 -3.0" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "large_smoke f=00 10.00000 64.00000 -3.00000 n=8 d=1.00000,1.00000,1.00000 v=0.00000,0.0000"
+         & "0,0.00000 m=1 st=0 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "water bottle on mud" TO WS-NAME
+     MOVE "water_bottle" TO WS-CLASS
+     MOVE "10.0 64.0 -3.0" TO WS-INT
+     MOVE "0.3 0.7" TO WS-DRT
+     MOVE "splash f=00 10.30000 65.00000 -2.30000 n=5 d=0.00000,0.00000,0.00000 v=1.00000,1.00000,1.0"
+         & "0000 m=0 st=0 (2)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "jukebox note" TO WS-NAME
+     MOVE "jukebox" TO WS-CLASS
+     MOVE "10.0 64.0 -3.0" TO WS-INT
+     MOVE "0.6" TO WS-DRT
+     MOVE "note f=00 10.50000 65.20000 -2.50000 n=0 d=0.08333,0.00000,0.00000 v=1.00000,1.00000,1.000"
+         & "00 m=0 st=0 (1)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "egg eating" TO WS-NAME
+     MOVE "egg_eat" TO WS-CLASS
+     MOVE "10.0 64.0 -3.0" TO WS-INT
+     MOVE "0.1 0.5 0.9" TO WS-DRT
+     MOVE "item f=00 10.50000 64.70000 -2.50000 n=3 d=-0.03200,0.00000,0.03200 v=0.15000,0.15000,0.15"
+         & "000 m=0 st=0 (3)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "egg block removed" TO WS-NAME
+     MOVE "egg_poof" TO WS-CLASS
+     MOVE "10.0 64.0 -3.0" TO WS-INT
+     MOVE "0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0."
+         & "2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 "
+         & "0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3" TO WS-DRT
+     MOVE "poof f=00 10.50000 64.00000 -2.50000 n=1 d=0.00200,0.00400,0.00600 v=0.15000,0.15000,0.150"
+         & "00 m=0 st=0 | poof f=00 10.50000 64.00000 -2.50000 n=1 d=0.00200,0.00400,0.00600 v=0.15000"
+         & ",0.15000,0.15000 m=0 st=0 | poof f=00 10.50000 64.00000 -2.50000 n=1 d=0.00200,0.00400,0.0"
+         & "0600 v=0.15000,0.15000,0.15000 m=0 st=0 | poof f=00 10.50000 64.00000 -2.50000 n=1 d=0.002"
+         & "00,0.00400,0.00600 v=0.15000,0.15000,0.15000 m=0 st=0 | poof f=00 10.50000 64.00000 -2.500"
+         & "00 n=1 d=0.00200,0.00400,0.006...=0.00200,0.00400,0.00600 v=0.15000,0.15000,0.15000 m=0 st"
+         & "=0 | poof f=00 10.50000 64.00000 -2.50000 n=1 d=0.00200,0.00400,0.00600 v=0.15000,0.15000,"
+         & "0.15000 m=0 st=0 | poof f=00 10.50000 64.00000 -2.50000 n=1 d=0.00200,0.00400,0.00600 v=0."
+         & "15000,0.15000,0.15000 m=0 st=0 | poof f=00 10.50000 64.00000 -2.50000 n=1 d=0.00200,0.0040"
+         & "0,0.00600 v=0.15000,0.15000,0.15000 m=0 st=0 | poof f=00 10.50000 64.00000 -2.50000 n=1 d="
+         & "0.00200,0.00400,0.00600 v=0.15000,0.15000,0.15000 m=0 st=0 (60)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "wolf armor" TO WS-NAME
+     MOVE "wolf_armor" TO WS-CLASS
+     MOVE "10.5 64.0 -2.5" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "item f=00 10.50000 65.00000 -2.50000 n=20 d=0.20000,0.10000,0.20000 v=0.10000,0.10000,0.10"
+         & "000 m=0 st=0 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "shulker bullet hit" TO WS-NAME
+     MOVE "shulker_hit" TO WS-CLASS
+     MOVE "10.5 64.0 -2.5" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "explosion f=00 10.50000 64.00000 -2.50000 n=2 d=0.20000,0.20000,0.20000 v=0.00000,0.00000,"
+         & "0.00000 m=0 st=0 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "shulker bullet shot down" TO WS-NAME
+     MOVE "shulker_shot" TO WS-CLASS
+     MOVE "10.5 64.0 -2.5" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "crit f=00 10.50000 64.00000 -2.50000 n=15 d=0.20000,0.20000,0.20000 v=0.00000,0.00000,0.00"
+         & "000 m=0 st=0 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "sonic boom steps" TO WS-NAME
+     MOVE "sonic_boom" TO WS-CLASS
+     MOVE "10.5 66.0 -2.5 0.0 0.0 1.0 3.4" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "sonic_boom f=00 10.50000 66.00000 -1.50000 n=1 d=0.00000,0.00000,0.00000 v=0.00000,0.00000"
+         & ",0.00000 m=0 st=0 | sonic_boom f=00 10.50000 66.00000 -0.50000 n=1 d=0.00000,0.00000,0.000"
+         & "00 v=0.00000,0.00000,0.00000 m=0 st=0 | sonic_boom f=00 10.50000 66.00000 0.50000 n=1 d=0."
+         & "00000,0.00000,0.00000 v=0.00000,0.00000,0.00000 m=0 st=0 | sonic_boom f=00 10.50000 66.000"
+         & "00 1.50000 n=1 d=0.00000,0.00000,0.00000 v=0.00000,0.00000,0.00000 m=0 st=0 | sonic_boom f"
+         & "=00 10.50000 66.00000 2.50000 n=1 d=0.00000,0.00000,0.00000 v=0.00000,0.00000,0.00000 m=0 "
+         & "st=0 | sonic_boom f=00 10.50000 66.00000 3.50000 n=1 d=0.00000,0.00000,0.00000 v=0.00000,0"
+         & ".00000,0.00000 m=0 st=0 | sonic_boom f=00 10.50000 66.00000 4.50000 n=1 d=0.00000,0.00000,"
+         & "0.00000 v=0.00000,0.00000,0.00000 m=0 st=0 | sonic_boom f=00 10.50000 66.00000 5.50000 n=1"
+         & " d=0.00000,0.00000,0.00000 v=0.00000,0.00000,0.00000 m=0 st=0 | sonic_boom f=00 10.50000 6"
+         & "6.00000 6.50000 n=1 d=0.00000,0.00000,0.00000 v=0.00000,0.00000,0.00000 m=0 st=0 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "sonic boom short" TO WS-NAME
+     MOVE "sonic_boom" TO WS-CLASS
+     MOVE "10.5 66.0 -2.5 1.0 0.0 0.0 0.2" TO WS-INT
+     MOVE SPACES TO WS-DRT
+     MOVE "sonic_boom f=00 11.50000 66.00000 -2.50000 n=1 d=0.00000,0.00000,0.00000 v=0.00000,0.00000"
+         & ",0.00000 m=0 st=0 | sonic_boom f=00 12.50000 66.00000 -2.50000 n=1 d=0.00000,0.00000,0.000"
+         & "00 v=0.00000,0.00000,0.00000 m=0 st=0 | sonic_boom f=00 13.50000 66.00000 -2.50000 n=1 d=0"
+         & ".00000,0.00000,0.00000 v=0.00000,0.00000,0.00000 m=0 st=0 | sonic_boom f=00 14.50000 66.00"
+         & "000 -2.50000 n=1 d=0.00000,0.00000,0.00000 v=0.00000,0.00000,0.00000 m=0 st=0 | sonic_boom"
+         & " f=00 15.50000 66.00000 -2.50000 n=1 d=0.00000,0.00000,0.00000 v=0.00000,0.00000,0.00000 m"
+         & "=0 st=0 | sonic_boom f=00 16.50000 66.00000 -2.50000 n=1 d=0.00000,0.00000,0.00000 v=0.000"
+         & "00,0.00000,0.00000 m=0 st=0 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE 1 TO WS-INLEVEL
+     MOVE 0 TO WS-PB(1)
+     MOVE 64 TO WS-PB(2)
+     MOVE 0 TO WS-PB(3)
+     MOVE 0.5 TO WS-PT(1)
+     MOVE 64.5 TO WS-PT(2)
+     MOVE 0.5 TO WS-PT(3)
+     MOVE 0 TO WS-OVR
+     CALL "P7-PLAYER-SEES" USING WS-INLEVEL WS-PBA WS-PTA WS-OVR WS-SEES
+     MOVE "range: same block, normal" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-SEES TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-INLEVEL
+     MOVE 0 TO WS-PB(1)
+     MOVE 64 TO WS-PB(2)
+     MOVE 0 TO WS-PB(3)
+     MOVE 31.5 TO WS-PT(1)
+     MOVE 64.5 TO WS-PT(2)
+     MOVE 0.5 TO WS-PT(3)
+     MOVE 0 TO WS-OVR
+     CALL "P7-PLAYER-SEES" USING WS-INLEVEL WS-PBA WS-PTA WS-OVR WS-SEES
+     MOVE "range: 31 blocks away, normal" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-SEES TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-INLEVEL
+     MOVE 0 TO WS-PB(1)
+     MOVE 64 TO WS-PB(2)
+     MOVE 0 TO WS-PB(3)
+     MOVE 33.5 TO WS-PT(1)
+     MOVE 64.5 TO WS-PT(2)
+     MOVE 0.5 TO WS-PT(3)
+     MOVE 0 TO WS-OVR
+     CALL "P7-PLAYER-SEES" USING WS-INLEVEL WS-PBA WS-PTA WS-OVR WS-SEES
+     MOVE "range: 33 blocks away, normal" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-SEES TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-INLEVEL
+     MOVE 0 TO WS-PB(1)
+     MOVE 64 TO WS-PB(2)
+     MOVE 0 TO WS-PB(3)
+     MOVE 32.5 TO WS-PT(1)
+     MOVE 64.5 TO WS-PT(2)
+     MOVE 0.5 TO WS-PT(3)
+     MOVE 0 TO WS-OVR
+     CALL "P7-PLAYER-SEES" USING WS-INLEVEL WS-PBA WS-PTA WS-OVR WS-SEES
+     MOVE "range: exactly 32 blocks from the block centre is not closer" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-SEES TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-INLEVEL
+     MOVE 0 TO WS-PB(1)
+     MOVE 64 TO WS-PB(2)
+     MOVE 0 TO WS-PB(3)
+     MOVE 100.5 TO WS-PT(1)
+     MOVE 64.5 TO WS-PT(2)
+     MOVE 0.5 TO WS-PT(3)
+     MOVE 1 TO WS-OVR
+     CALL "P7-PLAYER-SEES" USING WS-INLEVEL WS-PBA WS-PTA WS-OVR WS-SEES
+     MOVE "range: 100 blocks away, forced" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-SEES TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-INLEVEL
+     MOVE 0 TO WS-PB(1)
+     MOVE 64 TO WS-PB(2)
+     MOVE 0 TO WS-PB(3)
+     MOVE 513.5 TO WS-PT(1)
+     MOVE 64.5 TO WS-PT(2)
+     MOVE 0.5 TO WS-PT(3)
+     MOVE 1 TO WS-OVR
+     CALL "P7-PLAYER-SEES" USING WS-INLEVEL WS-PBA WS-PTA WS-OVR WS-SEES
+     MOVE "range: 513 blocks away, forced" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-SEES TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-INLEVEL
+     MOVE 0 TO WS-PB(1)
+     MOVE 64 TO WS-PB(2)
+     MOVE 0 TO WS-PB(3)
+     MOVE 0.5 TO WS-PT(1)
+     MOVE 64.5 TO WS-PT(2)
+     MOVE 0.5 TO WS-PT(3)
+     MOVE 1 TO WS-OVR
+     CALL "P7-PLAYER-SEES" USING WS-INLEVEL WS-PBA WS-PTA WS-OVR WS-SEES
+     MOVE "range: another level" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-SEES TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-OVR
+     CALL "P7-RADIUS" USING WS-OVR WS-RAD
+     MOVE "radius: override 0" TO WS-NAME
+     MOVE 32 TO TL-EXPECTED-N
+     MOVE WS-RAD TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-OVR
+     CALL "P7-RADIUS" USING WS-OVR WS-RAD
+     MOVE "radius: override 1" TO WS-NAME
+     MOVE 512 TO TL-EXPECTED-N
+     MOVE WS-RAD TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE "no_such_site" TO WS-CLASS
+     MOVE 3 TO PS-COUNT
+     CALL "P7-SITE" USING WS-CLASS WS-IN P6-EMITS P7-PACKETS
+     MOVE "an unknown site sends nothing" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PS-COUNT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     STOP RUN.
+
+ RUN-CASE.
+     MOVE WS-INT TO WS-TEXT
+     PERFORM PARSE-LIST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         MOVE 0 TO WS-IV(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         MOVE WS-NUM(WS-I) TO WS-IV(WS-I)
+     END-PERFORM
+     MOVE WS-DRT TO WS-TEXT
+     PERFORM PARSE-LIST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2048
+         MOVE 0.5 TO EM-DRAW(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         MOVE WS-NUM(WS-I) TO EM-DRAW(WS-I)
+     END-PERFORM
+     MOVE 0 TO EM-COUNT EM-CUR EM-SOUND-COUNT
+     CALL "P7-SITE" USING WS-CLASS WS-IN P6-EMITS P7-PACKETS
+     PERFORM RENDER
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-OBS)) TO WS-LEN
+     IF WS-LEN > 1000
+         MOVE WS-OBS(1:480) TO WS-OBS2(1:480)
+         MOVE "..." TO WS-OBS2(481:3)
+         COMPUTE WS-START = WS-LEN - 479
+         MOVE WS-OBS(WS-START:480) TO WS-OBS2(484:480)
+         MOVE WS-OBS2 TO WS-OBS
+     END-IF
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-7§1 Server routing: `ServerLevel.sendParticles` and the packet: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE WS-EXP TO TL-EXPECTED
+     MOVE WS-OBS TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ PARSE-LIST.
+     MOVE 0 TO WS-COUNT
+     MOVE 1 TO WS-PTR
+     PERFORM UNTIL WS-PTR > 1500 OR WS-TEXT(WS-PTR:) = SPACES
+         MOVE SPACES TO WS-TOK
+         UNSTRING WS-TEXT DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-PTR
+         IF WS-TOK NOT = SPACES
+             ADD 1 TO WS-COUNT
+             COMPUTE WS-NUM(WS-COUNT) = FUNCTION NUMVAL(WS-TOK)
+         END-IF
+     END-PERFORM.
+
+ RENDER.
+     MOVE SPACES TO WS-OBS
+     MOVE 1 TO WS-PTR2
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PS-COUNT
+         IF WS-I > 1
+             STRING " | " DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         END-IF
+         STRING FUNCTION TRIM(PS-NAME(WS-I)) " f=" PS-FORCE(WS-I) PS-ALWAYS(WS-I) " " DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         COMPUTE WS-ED ROUNDED = PS-X(WS-I)
+         STRING FUNCTION TRIM(WS-ED) " " DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         COMPUTE WS-ED ROUNDED = PS-Y(WS-I)
+         STRING FUNCTION TRIM(WS-ED) " " DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         COMPUTE WS-ED ROUNDED = PS-Z(WS-I)
+         STRING FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         MOVE PS-COUNT-OF(WS-I) TO WS-EDN
+         STRING " n=" FUNCTION TRIM(WS-EDN) " d=" DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         COMPUTE WS-ED ROUNDED = PS-DX(WS-I)
+         STRING FUNCTION TRIM(WS-ED) "," DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         COMPUTE WS-ED ROUNDED = PS-DY(WS-I)
+         STRING FUNCTION TRIM(WS-ED) "," DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         COMPUTE WS-ED ROUNDED = PS-DZ(WS-I)
+         STRING FUNCTION TRIM(WS-ED) " v=" DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         COMPUTE WS-ED ROUNDED = PS-SX(WS-I)
+         STRING FUNCTION TRIM(WS-ED) "," DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         COMPUTE WS-ED ROUNDED = PS-SY(WS-I)
+         STRING FUNCTION TRIM(WS-ED) "," DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         COMPUTE WS-ED ROUNDED = PS-SZ(WS-I)
+         STRING FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         MOVE PS-MODE(WS-I) TO WS-EDN
+         STRING " m=" FUNCTION TRIM(WS-EDN) DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         MOVE PS-STATE(WS-I) TO WS-EDN
+         STRING " st=" FUNCTION TRIM(WS-EDN) DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+     END-PERFORM
+     MOVE EM-CUR TO WS-EDN
+     STRING " (" FUNCTION TRIM(WS-EDN) ")" DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2.
+
+ ASSERT-NUMBER.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-7§1 Server routing: `ServerLevel.sendParticles` and the packet: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-PARTICLES-42-7-1.

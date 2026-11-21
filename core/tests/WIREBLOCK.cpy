@@ -23,7 +23,7 @@
  01 WS-DIM                 BINARY-LONG VALUE 1.
  01 WS-ROW                 BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
- 01 WS-CHANGED             PIC X(16).
+ 01 WS-CHANGED             PIC X(24).
  01 WS-ENTRIES.
     05 WS-ENTRY OCCURS 3 TIMES.
        10 WS-EX            BINARY-LONG.
@@ -129,6 +129,31 @@
      MOVE "contract/fixtures/wire/play-s2c-05-block-destruction.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
 
+     MOVE "contract wire server play-s2c-05-block-destruction-standard equals the core's Block "
+         & "Destruction by entity 300 of (-12, -60, 40) at stage 9" TO TL-CASE
+     MOVE 300 TO WS-NUM
+     MOVE -12 TO WS-X
+     MOVE -60 TO WS-Y
+     MOVE 40 TO WS-Z
+     MOVE 9 TO WS-STATE
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "BLOCK-DESTRUCTION-BUILD" USING WS-NUM WS-X WS-Y WS-Z WS-STATE PB-BUFFER
+     MOVE "contract/fixtures/wire/play-s2c-05-block-destruction-standard.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+
+     MOVE "contract wire server play-s2c-05-block-destruction-standard-clear equals the core's "
+         & "Block Destruction by entity 1 of (7, 70, -3) with stage 255 (overlay removed)"
+         TO TL-CASE
+     MOVE 1 TO WS-NUM
+     MOVE 7 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE -3 TO WS-Z
+     MOVE 255 TO WS-STATE
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "BLOCK-DESTRUCTION-BUILD" USING WS-NUM WS-X WS-Y WS-Z WS-STATE PB-BUFFER
+     MOVE "contract/fixtures/wire/play-s2c-05-block-destruction-standard-clear.hex" TO WS-PATH
+     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
+
      MOVE "contract wire server play-s2c-14-container-set-slot equals the core's Container Set "
          & "Slot of container 0, state id 2, slot 0, 63 x item 2" TO TL-CASE
      MOVE 2 TO WS-NUM
@@ -156,7 +181,7 @@
      MOVE 59 TO WS-Y
      MOVE 14 TO WS-STATE
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
-     MOVE "0001100000000000" TO WS-CHANGED
+     MOVE "000110000000000000000000" TO WS-CHANGED
      CALL "PB-RESET" USING PB-BUFFER
      CALL "LIGHT-UPDATE-BUILD" USING WS-ROW WS-CHANGED PB-BUFFER
      MOVE "contract/fixtures/wire/play-s2c-31-light-update.hex" TO WS-PATH

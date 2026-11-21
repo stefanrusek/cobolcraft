@@ -1,0 +1,312 @@
+*> Test of the break speed and tier of a tool and of the correct tool for drops (17 section 1.3 and 1.4 rules, Appendix A tags;
+*> core/src/tools.cob), the two numbers the US8 formula (core/src/breaking.cob BREAK-RATE) takes: the first rule of the tool
+*> component that matches the block and carries a speed gives the speed (else the default speed), the first matching rule
+*> that carries correct_for_drops gives the answer (no match: false). A rule is an element key or a #tag of the block
+*> registry. The tags are put into the open content set with TAG-PUT.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-TOOL-SPEED.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY COREAPI.
+ COPY CONTENT.
+ COPY CBLOCKS.
+ COPY CORESTATE.
+ 01 WS-REGISTRY            PIC X(48) VALUE "block".
+ 01 WS-TAG                 PIC X(112).
+ 01 WS-MEMBERS.
+    05 WS-MEMBER           BINARY-LONG OCCURS 2 TIMES.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ITEM-ID             BINARY-LONG.
+ 01 WS-ROW                 PIC X(270).
+ 01 WS-BLOCK-KEY           PIC X(48).
+ 01 WS-BLOCK-ID            BINARY-LONG.
+ 01 WS-LONG-KEY            PIC X(112).
+ 01 WS-BROW                PIC X(819).
+ 01 WS-SPEED               BINARY-LONG.
+ 01 WS-CORRECT             BINARY-LONG.
+ 01 WS-EDIT                PIC -(11)9.
+ 01 WS-EDIT2               PIC -(11)9.
+ 01 WS-MATCHED             BINARY-LONG.
+ 01 WS-SET                 PIC X(100).
+ 01 WS-WANT                PIC X(40).
+ 01 WS-NAME                PIC X(16) VALUE "Alice".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-ROWNO               BINARY-LONG.
+ 01 WS-DIR                 PIC X(1100).
+ 01 WS-EFF-KEY             PIC X(112).
+ 01 WS-EFF-ID              BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-EFFICIENCY          BINARY-LONG.
+ 01 WS-HASTE               BINARY-LONG.
+ 01 WS-FATIGUE             BINARY-LONG.
+ 01 WS-WATER               BINARY-LONG.
+ 01 WS-WATER-KEY           PIC X(48).
+ 01 WS-HARDNESS            BINARY-LONG.
+ 01 WS-GROUND              BINARY-LONG VALUE 1.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-DIGIT               PIC 9.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-HOSTILE-MOBS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE 101 TO WS-MEMBER(1)
+     MOVE 102 TO WS-MEMBER(2)
+     MOVE "minecraft:mineable/pickaxe" TO WS-TAG
+     CALL "TAG-PUT" USING WS-REGISTRY WS-TAG WS-TWO WS-MEMBERS WS-STATUS
+     MOVE "minecraft:incorrect_for_wooden_tool" TO WS-TAG
+     MOVE 102 TO WS-MEMBER(1)
+     CALL "TAG-PUT" USING WS-REGISTRY WS-TAG WS-ONE WS-MEMBERS WS-STATUS
+     MOVE "minecraft:sword_efficient" TO WS-TAG
+     MOVE 103 TO WS-MEMBER(1)
+     CALL "TAG-PUT" USING WS-REGISTRY WS-TAG WS-ONE WS-MEMBERS WS-STATUS
+     MOVE "minecraft:sword_instantly_mines" TO WS-TAG
+     MOVE 104 TO WS-MEMBER(1)
+     CALL "TAG-PUT" USING WS-REGISTRY WS-TAG WS-ONE WS-MEMBERS WS-STATUS
+     MOVE "minecraft:shears_extreme_breaking_speed" TO WS-TAG
+     MOVE 105 TO WS-MEMBER(1)
+     CALL "TAG-PUT" USING WS-REGISTRY WS-TAG WS-ONE WS-MEMBERS WS-STATUS
+     MOVE "minecraft:shears_major_breaking_speed" TO WS-TAG
+     MOVE 106 TO WS-MEMBER(1)
+     CALL "TAG-PUT" USING WS-REGISTRY WS-TAG WS-ONE WS-MEMBERS WS-STATUS
+     MOVE "minecraft:shears_minor_breaking_speed" TO WS-TAG
+     MOVE 107 TO WS-MEMBER(1)
+     CALL "TAG-PUT" USING WS-REGISTRY WS-TAG WS-ONE WS-MEMBERS WS-STATUS
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+
+     MOVE "acceptance US14 iron_pickaxe break speed: a block of the mineable/pickaxe tag mines at the material speed 6 and is correct for drops" TO TL-CASE
+     MOVE "iron_pickaxe" TO WS-KEY
+     MOVE "minecraft:stone" TO WS-BLOCK-KEY
+     MOVE 101 TO WS-BLOCK-ID
+     MOVE "6000 1" TO WS-WANT
+     PERFORM CHECK-RULE
+
+     MOVE "acceptance US14 wooden_pickaxe tier gating: a block of the incorrect_for_wooden_tool tag keeps the speed 2 but is not correct for drops" TO TL-CASE
+     MOVE "wooden_pickaxe" TO WS-KEY
+     MOVE "minecraft:iron_ore" TO WS-BLOCK-KEY
+     MOVE 102 TO WS-BLOCK-ID
+     MOVE "2000 0" TO WS-WANT
+     PERFORM CHECK-RULE
+
+     MOVE "acceptance US14 golden_pickaxe a block outside the mineable tag mines at the default speed 1 and is not correct for drops" TO TL-CASE
+     MOVE "golden_pickaxe" TO WS-KEY
+     MOVE "minecraft:dirt" TO WS-BLOCK-KEY
+     MOVE 109 TO WS-BLOCK-ID
+     MOVE "1000 0" TO WS-WANT
+     PERFORM CHECK-RULE
+
+     MOVE "acceptance US14 iron_sword cobweb: the mine rule gives speed 15 and correct for drops, by element key" TO TL-CASE
+     MOVE "iron_sword" TO WS-KEY
+     MOVE "minecraft:cobweb" TO WS-BLOCK-KEY
+     MOVE 108 TO WS-BLOCK-ID
+     MOVE "15000 1" TO WS-WANT
+     PERFORM CHECK-RULE
+
+     MOVE "acceptance US14 iron_sword sword_efficient: speed 1.5, no drops answer" TO TL-CASE
+     MOVE "minecraft:oak_leaves" TO WS-BLOCK-KEY
+     MOVE 103 TO WS-BLOCK-ID
+     MOVE "1500 0" TO WS-WANT
+     PERFORM CHECK-RULE
+
+     MOVE "acceptance US14 iron_sword sword_instantly_mines: the speed 3.4028235E38 is capped at 2000000000" TO TL-CASE
+     MOVE "minecraft:bamboo" TO WS-BLOCK-KEY
+     MOVE 104 TO WS-BLOCK-ID
+     MOVE "2000000000 0" TO WS-WANT
+     PERFORM CHECK-RULE
+
+     MOVE "acceptance US14 shears cobweb 15, leaves 15, wool 5, vine 2, any other block 1" TO TL-CASE
+     MOVE "shears" TO WS-KEY
+     MOVE SPACES TO TL-OBSERVED
+     MOVE "minecraft:cobweb" TO WS-BLOCK-KEY
+     MOVE 108 TO WS-BLOCK-ID
+     PERFORM EVAL-ONE
+     MOVE "minecraft:oak_leaves" TO WS-BLOCK-KEY
+     MOVE 105 TO WS-BLOCK-ID
+     PERFORM EVAL-ONE
+     MOVE "minecraft:white_wool" TO WS-BLOCK-KEY
+     MOVE 106 TO WS-BLOCK-ID
+     PERFORM EVAL-ONE
+     MOVE "minecraft:vine" TO WS-BLOCK-KEY
+     MOVE 107 TO WS-BLOCK-ID
+     PERFORM EVAL-ONE
+     MOVE "minecraft:stone" TO WS-BLOCK-KEY
+     MOVE 101 TO WS-BLOCK-ID
+     PERFORM EVAL-ONE
+     MOVE "15000 1, 15000 0, 5000 0, 2000 0, 1000 0" TO TL-EXPECTED
+     MOVE FUNCTION TRIM(TL-OBSERVED) TO TL-OBSERVED
+     PERFORM CHECK-DONE
+
+     MOVE "acceptance US14 iron_ingot has no tool component: speed 1 and not correct for drops; the empty hand (item 0) too" TO TL-CASE
+     MOVE "iron_ingot" TO WS-KEY
+     MOVE "minecraft:stone" TO WS-BLOCK-KEY
+     MOVE 101 TO WS-BLOCK-ID
+     MOVE SPACES TO TL-OBSERVED
+     PERFORM EVAL-ONE
+     MOVE -1 TO WS-ITEM-ID
+     CALL "TOOL-RULE-EVAL" USING WS-ITEM-ID WS-BLOCK-KEY WS-BLOCK-ID WS-SPEED WS-CORRECT
+     MOVE WS-SPEED TO WS-EDIT
+     MOVE WS-CORRECT TO WS-EDIT2
+     STRING FUNCTION TRIM(TL-OBSERVED) ", " FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "1000 0, 1000 0" TO TL-EXPECTED
+     PERFORM CHECK-DONE
+
+     MOVE "acceptance US14 tool set match: an element key matches only that key, a tag only its members, a blank set nothing" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE "minecraft:cobweb" TO WS-SET
+     MOVE "minecraft:cobweb" TO WS-BLOCK-KEY
+     MOVE 108 TO WS-BLOCK-ID
+     CALL "TOOL-SET-MATCH" USING WS-SET WS-BLOCK-KEY WS-BLOCK-ID WS-MATCHED
+     MOVE WS-MATCHED TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "minecraft:stone" TO WS-SET
+     CALL "TOOL-SET-MATCH" USING WS-SET WS-BLOCK-KEY WS-BLOCK-ID WS-MATCHED
+     MOVE WS-MATCHED TO WS-EDIT
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "#minecraft:mineable/pickaxe" TO WS-SET
+     MOVE 101 TO WS-BLOCK-ID
+     CALL "TOOL-SET-MATCH" USING WS-SET WS-BLOCK-KEY WS-BLOCK-ID WS-MATCHED
+     MOVE WS-MATCHED TO WS-EDIT
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE 108 TO WS-BLOCK-ID
+     CALL "TOOL-SET-MATCH" USING WS-SET WS-BLOCK-KEY WS-BLOCK-ID WS-MATCHED
+     MOVE WS-MATCHED TO WS-EDIT
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE SPACES TO WS-SET
+     CALL "TOOL-SET-MATCH" USING WS-SET WS-BLOCK-KEY WS-BLOCK-ID WS-MATCHED
+     MOVE WS-MATCHED TO WS-EDIT
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "1 0 1 0 0" TO TL-EXPECTED
+     PERFORM CHECK-DONE
+
+     MOVE "acceptance US14 TOOL-BLOCK-SPEED reads the key of the block id from the block table; a block in none of the tags gets the default" TO TL-CASE
+     MOVE "iron_pickaxe" TO WS-KEY
+     MOVE CT-TYPE-COBOLCRAFT TO CT-SET-TYPE
+     MOVE "cobolcraft:greystone" TO WS-LONG-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-LONG-KEY WS-BLOCK-ID WS-BROW WS-STATUS
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM-ID WS-ROW WS-STATUS
+     CALL "TOOL-BLOCK-SPEED" USING WS-ITEM-ID WS-BLOCK-ID WS-SPEED WS-CORRECT
+     MOVE WS-SPEED TO WS-EDIT
+     MOVE WS-CORRECT TO WS-EDIT2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "1000 0" TO TL-EXPECTED
+     PERFORM CHECK-DONE
+
+     MOVE "acceptance US14 water: only the block minecraft:water counts as water for the eyes" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE "minecraft:water" TO WS-WATER-KEY
+     CALL "TOOL-IS-WATER" USING WS-WATER-KEY WS-WATER
+     MOVE WS-WATER TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "minecraft:water_cauldron" TO WS-WATER-KEY
+     CALL "TOOL-IS-WATER" USING WS-WATER-KEY WS-WATER
+     MOVE WS-WATER TO WS-EDIT
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "minecraft:stone" TO WS-WATER-KEY
+     CALL "TOOL-IS-WATER" USING WS-WATER-KEY WS-WATER
+     MOVE WS-WATER TO WS-EDIT
+     STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "1 0 0" TO TL-EXPECTED
+     PERFORM CHECK-DONE
+
+     MOVE "acceptance US14 break time with Efficiency (17 section 8 example 8): iron pickaxe, Efficiency III, stone 1.5: speed 16, 3 ticks; diamond axe on oak 2.0: 8 ticks, Efficiency V 2 ticks; shears on wool 0.8: 5 ticks" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1500 TO WS-HARDNESS
+     MOVE 6000 TO WS-SPEED
+     MOVE 1 TO WS-CORRECT
+     MOVE 3 TO WS-EFFICIENCY
+     PERFORM TICKS-OF
+     MOVE 2000 TO WS-HARDNESS
+     MOVE 8000 TO WS-SPEED
+     MOVE 0 TO WS-EFFICIENCY
+     PERFORM TICKS-OF
+     MOVE 5 TO WS-EFFICIENCY
+     PERFORM TICKS-OF
+     MOVE 800 TO WS-HARDNESS
+     MOVE 5000 TO WS-SPEED
+     MOVE 0 TO WS-EFFICIENCY
+     PERFORM TICKS-OF
+     MOVE "3 8 2 5" TO TL-EXPECTED
+     PERFORM CHECK-DONE
+
+     MOVE "acceptance US14 efficiency level: the held stack's Efficiency level is the break input; a bare hand has none; haste, fatigue and water are 0 here" TO TL-CASE
+     MOVE CT-TYPE-COBOLCRAFT TO CT-SET-TYPE
+     MOVE SPACES TO WS-DIR
+     MOVE "core/tests/fixtures/tools-registry" TO WS-DIR
+     CALL "REGISTRY-LOAD-ALL" USING WS-DIR WS-STATUS
+     MOVE "minecraft:efficiency" TO WS-EFF-KEY
+     CALL "TOOL-ENCHANT-ID" USING WS-EFF-KEY WS-EFF-ID
+     MOVE WS-EFF-ID TO WS-EDIT
+     MOVE SPACES TO TL-OBSERVED
+     STRING "id " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "minecraft:unbreaking" TO WS-EFF-KEY
+     CALL "TOOL-ENCHANT-ID" USING WS-EFF-KEY WS-EFF-ID
+     MOVE WS-EFF-ID TO WS-EDIT
+     STRING FUNCTION TRIM(TL-OBSERVED) " none " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE CN-PLAYER(WS-CONN) TO WS-ROWNO
+     MOVE 0 TO WS-SLOT
+     CALL "TEST-HELD" USING WS-CONN WS-SLOT
+     CALL "TOOL-BREAK-MODS" USING WS-ROWNO WS-EFFICIENCY WS-HASTE WS-FATIGUE WS-WATER
+     MOVE WS-EFFICIENCY TO WS-EDIT
+     MOVE WS-HASTE TO WS-EDIT2
+     STRING FUNCTION TRIM(TL-OBSERVED) " bare " FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE 0 TO WS-HANDLE
+     MOVE 0 TO WS-EFF-ID
+     MOVE 3 TO WS-LEVEL
+     CALL "SP-ADD-ENCHANT" USING WS-HANDLE WS-EFF-ID WS-LEVEL
+     MOVE WS-HANDLE TO PL-SLOT-VAR(WS-ROWNO, 1)
+     CALL "TOOL-BREAK-MODS" USING WS-ROWNO WS-EFFICIENCY WS-HASTE WS-FATIGUE WS-WATER
+     MOVE WS-EFFICIENCY TO WS-EDIT
+     MOVE WS-FATIGUE TO WS-EDIT2
+     MOVE WS-WATER TO WS-DIGIT
+     STRING FUNCTION TRIM(TL-OBSERVED) " held " FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2)
+         " water " WS-DIGIT DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "id 0 none -1 bare 0 0 held 3 0 water 0" TO TL-EXPECTED
+     PERFORM CHECK-DONE
+     STOP RUN.
+
+ TICKS-OF.
+     CALL "BREAK-TICKS" USING WS-HARDNESS WS-SPEED WS-CORRECT WS-EFFICIENCY WS-HASTE WS-FATIGUE WS-WATER
+         WS-GROUND WS-TICKS
+     MOVE WS-TICKS TO WS-EDIT
+     IF TL-OBSERVED = SPACES
+         STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     ELSE
+         STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF.
+
+ CHECK-RULE.
+     MOVE SPACES TO TL-OBSERVED
+     PERFORM EVAL-ONE
+     MOVE FUNCTION TRIM(TL-OBSERVED) TO TL-OBSERVED
+     MOVE WS-WANT TO TL-EXPECTED
+     PERFORM CHECK-DONE.
+
+ EVAL-ONE.
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM-ID WS-ROW WS-STATUS
+     CALL "TOOL-RULE-EVAL" USING WS-ITEM-ID WS-BLOCK-KEY WS-BLOCK-ID WS-SPEED WS-CORRECT
+     MOVE WS-SPEED TO WS-EDIT
+     MOVE WS-CORRECT TO WS-EDIT2
+     IF TL-OBSERVED = SPACES
+         STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE INTO TL-OBSERVED
+     ELSE
+         STRING FUNCTION TRIM(TL-OBSERVED) ", " FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2)
+             DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF.
+
+ CHECK-DONE.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-TOOL-SPEED.
+
+ COPY CORETEST.

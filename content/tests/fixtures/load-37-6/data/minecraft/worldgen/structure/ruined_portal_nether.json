@@ -1,0 +1,1 @@
+{"type":"minecraft:ruined_portal","biomes":"#minecraft:has_structure/ruined_portal_nether","step":"surface_structures","spawn_overrides":{},"setups":[{"placement":"in_nether","air_pocket_probability":0.0,"mossiness":0.0,"overgrown":false,"vines":false,"can_be_cold":false,"replace_with_blackstone":true,"weight":1.0}]}

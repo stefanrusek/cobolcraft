@@ -1,0 +1,476 @@
+*> Acceptance test, the cartography table as a live menu through the real play path (docs/protocol/40-menus-4 section 5, 25-5 section 8; lane p70c, T23501): Use Item On opens family 26 (3 own
+*> slots, result 2); the map slot refuses a stack without map_id, paper on an extendable map gives the map with map_post_processing SCALE and taking it makes a new saved map one scale up (the source map
+*> is unchanged), a glass pane gives a locked copy, the empty map gives two copies of the same id (a shift click of the result), a locked map, a map of scale 4 and a map outside extendable_maps get no
+*> paper result, closing returns the inputs.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-P70C-CARTO.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY CMENU.
+ COPY CBLOCKS.
+ COPY COREAPI.
+ COPY CONTENT.
+ COPY PLAYPKT.
+ 01 WS-DIR                 PIC X(1100) VALUE "core/tests/fixtures/anvil-registry".
+ 01 WS-REG-STATUS          BINARY-LONG.
+ 01 WS-NAME                PIC X(16).
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG VALUE 1.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-FACE                BINARY-LONG VALUE 1.
+ 01 WS-SEQ                 BINARY-LONG VALUE 0.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-STONE               BINARY-LONG.
+ 01 WS-TABLE               BINARY-LONG.
+ 01 WS-MAP                 BINARY-LONG.
+ 01 WS-PAPER               BINARY-LONG.
+ 01 WS-EMPTY               BINARY-LONG.
+ 01 WS-GLASS               BINARY-LONG.
+ 01 WS-ID0                 BINARY-LONG.
+ 01 WS-MAPID               BINARY-LONG.
+ 01 WS-HAS                 BINARY-LONG.
+ 01 WS-MODE                BINARY-LONG.
+ 01 WS-SCALE               BINARY-LONG.
+ 01 WS-LOCKED              BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-OK2                 BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ZERO2               BINARY-LONG VALUE 0.
+ 01 WS-ONE-SLOT            BINARY-LONG VALUE 1.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-DIRT                BINARY-LONG.
+ 01 WS-IDS                 PIC X(1024).
+ 01 WS-BUTTON              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-REGI                PIC X(48).
+ 01 WS-TAGKEY              PIC X(112).
+ 01 WS-TIDS.
+    05 WS-MEMBER           BINARY-LONG OCCURS 40 TIMES.
+ 01 WS-N2                  BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-WINDOW              BINARY-LONG.
+ 01 WS-X0                  BINARY-LONG.
+ 01 WS-X1                  BINARY-LONG.
+ 01 WS-Z0                  BINARY-LONG.
+ 01 WS-Z1                  BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ 01 WS-PATTERN             BINARY-LONG.
+ 01 WS-DYEID               BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-PLEN                BINARY-LONG.
+ 01 WS-PNAME               PIC X(32).
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(9)9.
+ 01 WS-E3                  PIC -(9)9.
+ 01 WS-E4                  PIC -(9)9.
+ 01 WS-E5                  PIC -(9)9.
+ 01 WS-E6                  PIC -(9)9.
+ 01 WS-TEXT                PIC X(256).
+
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-DEFAULT-MODE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE CT-TYPE-COBOLCRAFT TO CT-SET-TYPE
+     CALL "REGISTRY-LOAD-ALL" USING WS-DIR WS-REG-STATUS
+     MOVE "Alice" TO WS-NAME
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     CALL "TEST-STANDARD-TABLES"
+     MOVE CN-PLAYER(WS-CONN) TO WS-ROW
+     MOVE 0 TO PL-YAW(WS-ROW) PL-PITCH(WS-ROW)
+     COMPUTE WS-BX = FUNCTION INTEGER(PL-X(WS-ROW)) + 2
+     COMPUTE WS-BY = FUNCTION INTEGER(PL-Y(WS-ROW))
+     COMPUTE WS-BZ = FUNCTION INTEGER(PL-Z(WS-ROW))
+     MOVE "stone" TO WS-KEY
+     CALL "TEST-BLOCK-ID" USING WS-KEY WS-ID
+     MOVE CB-DEFAULT-STATE(WS-ID + 1) TO WS-STONE
+     MOVE "cartography_table" TO WS-KEY
+     CALL "TEST-BLOCK-ID" USING WS-KEY WS-ID
+     MOVE CB-DEFAULT-STATE(WS-ID + 1) TO WS-TABLE
+     MOVE "filled_map" TO WS-KEY
+     CALL "TEST-ITEM-ID" USING WS-KEY WS-MAP
+     MOVE "paper" TO WS-KEY
+     CALL "TEST-ITEM-ID" USING WS-KEY WS-PAPER
+     MOVE "map" TO WS-KEY
+     CALL "TEST-ITEM-ID" USING WS-KEY WS-EMPTY
+     MOVE "glass_pane" TO WS-KEY
+     CALL "TEST-ITEM-ID" USING WS-KEY WS-GLASS
+     MOVE "dirt" TO WS-KEY
+     CALL "TEST-ITEM-ID" USING WS-KEY WS-DIRT
+     MOVE "item" TO WS-REGI
+     MOVE WS-MAP TO WS-MEMBER(1)
+     MOVE 1 TO WS-N2
+     MOVE "minecraft:extendable_maps" TO WS-TAGKEY
+     CALL "TAG-PUT" USING WS-REGI WS-TAGKEY WS-N2 WS-TIDS WS-STATUS
+     PERFORM PREPARE-GROUND
+     MOVE "T" TO TL-MODE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
+         MOVE 0 TO PL-SLOT-COUNT(WS-ROW, WS-I) PL-SLOT-ITEM(WS-ROW, WS-I) PL-SLOT-VAR(WS-ROW, WS-I)
+     END-PERFORM
+     MOVE WS-TABLE TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     MOVE WS-BX TO WS-X
+     MOVE WS-BY TO WS-Y
+     MOVE WS-BZ TO WS-Z
+     PERFORM USE-BLOCK
+     MOVE MN-WINDOW(WS-ROW) TO WS-WINDOW
+*>   Map 0: scale 1 at (1000, -200), a stack of one filled map carrying it.
+     MOVE 1000 TO WS-X
+     MOVE -200 TO WS-Z
+     MOVE 1 TO WS-SCALE
+     CALL "MAP-NEW" USING WS-DIM WS-X WS-Z WS-SCALE WS-ID0
+     MOVE 0 TO WS-HANDLE
+     CALL "SC-MAPID-SET" USING WS-HANDLE WS-ID0
+     MOVE WS-HANDLE TO WS-A
+
+     MOVE "acceptance p70c carto open: Use Item On the table opens family 26 of 3 own slots, the result is slot 2, menu type 23" TO TL-CASE
+     MOVE MN-CFAMILY(WS-ROW) TO WS-E1
+     MOVE MN-CSIZE(WS-ROW) TO WS-E2
+     MOVE MN-WRES(WS-ROW) TO WS-E3
+     MOVE MN-TYPE(WS-ROW) TO WS-E4
+     MOVE SPACES TO WS-TEXT
+     STRING "family " FUNCTION TRIM(WS-E1) " size " FUNCTION TRIM(WS-E2) " result " FUNCTION TRIM(WS-E3) " type " FUNCTION TRIM(WS-E4)
+         DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "family 26 size 3 result 2 type 23" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance p70c carto slots: a filled map without map_id stays out of the map slot, a map with its id and paper go in by shift clicks, dirt does not go to slot 1" TO TL-CASE
+     MOVE WS-MAP TO PL-SLOT-ITEM(WS-ROW, 1)
+     MOVE 1 TO PL-SLOT-COUNT(WS-ROW, 1)
+     MOVE 0 TO PL-SLOT-VAR(WS-ROW, 1)
+     MOVE WS-DIRT TO PL-SLOT-ITEM(WS-ROW, 2)
+     MOVE 3 TO PL-SLOT-COUNT(WS-ROW, 2)
+     MOVE 0 TO WS-BUTTON
+     MOVE 1 TO WS-TYPE
+     MOVE 30 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     MOVE 31 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     MOVE MN-WSLOT-COUNT(WS-ROW, 1) TO WS-E1
+     MOVE MN-WSLOT-COUNT(WS-ROW, 2) TO WS-E2
+     MOVE SPACES TO WS-TEXT
+     STRING "inputs " FUNCTION TRIM(WS-E1) "/" FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "inputs 0/0" TO TL-EXPECTED
+     PERFORM CHECK
+     PERFORM CLEAR-INVENTORY
+
+     MOVE "acceptance p70c carto paper: a map of scale 1 and paper give one map with map_post_processing SCALE (1) and the same map id" TO TL-CASE
+     MOVE WS-MAP TO PL-SLOT-ITEM(WS-ROW, 1)
+     MOVE 1 TO PL-SLOT-COUNT(WS-ROW, 1)
+     MOVE WS-A TO PL-SLOT-VAR(WS-ROW, 1)
+     MOVE WS-PAPER TO PL-SLOT-ITEM(WS-ROW, 2)
+     MOVE 1 TO PL-SLOT-COUNT(WS-ROW, 2)
+     MOVE 0 TO PL-SLOT-VAR(WS-ROW, 2)
+     MOVE 30 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     MOVE 31 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     CALL "SC-MAPPOST-GET" USING MN-RESULT-VAR(WS-ROW) WS-MODE
+     CALL "SC-MAPID-GET" USING MN-RESULT-VAR(WS-ROW) WS-MAPID WS-HAS
+     MOVE MN-RESULT-COUNT(WS-ROW) TO WS-E1
+     MOVE WS-MODE TO WS-E2
+     MOVE WS-MAPID TO WS-E3
+     MOVE SPACES TO WS-TEXT
+     STRING "count " FUNCTION TRIM(WS-E1) " post " FUNCTION TRIM(WS-E2) " id " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "count 1 post 1 id 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance p70c carto take: the cursor holds the map with a new id 1, no post-processing component, scale 2 centred on (1216, -320); map 0 is still scale 1; both inputs are used up" TO TL-CASE
+     MOVE 0 TO WS-BUTTON WS-TYPE
+     MOVE 2 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     CALL "SC-MAPPOST-GET" USING PL-CARRIED-VAR(WS-ROW) WS-MODE
+     CALL "SC-MAPID-GET" USING PL-CARRIED-VAR(WS-ROW) WS-MAPID WS-HAS
+     CALL "MAP-FIND" USING WS-MAPID WS-SCALE WS-LOCKED WS-CX WS-CZ WS-D WS-FOUND
+     MOVE PL-CARRIED-COUNT(WS-ROW) TO WS-E1
+     MOVE WS-MODE TO WS-E2
+     MOVE WS-MAPID TO WS-E3
+     MOVE WS-SCALE TO WS-E4
+     MOVE WS-CX TO WS-E5
+     MOVE WS-CZ TO WS-E6
+     MOVE SPACES TO WS-TEXT
+     STRING "cursor " FUNCTION TRIM(WS-E1) " post " FUNCTION TRIM(WS-E2) " id " FUNCTION TRIM(WS-E3) " scale " FUNCTION TRIM(WS-E4)
+         " centre " FUNCTION TRIM(WS-E5) " " FUNCTION TRIM(WS-E6) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "cursor 1 post -1 id 1 scale 2 centre 1216 -320" TO TL-EXPECTED
+     PERFORM CHECK
+     MOVE WS-ID0 TO WS-ID
+     CALL "MAP-FIND" USING WS-ID WS-SCALE WS-LOCKED WS-CX WS-CZ WS-D WS-FOUND
+     MOVE "acceptance p70c carto take: the source map is untouched and the inputs are empty with an empty result" TO TL-CASE
+     MOVE WS-SCALE TO WS-E1
+     MOVE MN-WSLOT-COUNT(WS-ROW, 1) TO WS-E2
+     MOVE MN-WSLOT-COUNT(WS-ROW, 2) TO WS-E3
+     MOVE MN-RESULT-COUNT(WS-ROW) TO WS-E4
+     MOVE SPACES TO WS-TEXT
+     STRING "source " FUNCTION TRIM(WS-E1) " inputs " FUNCTION TRIM(WS-E2) "/" FUNCTION TRIM(WS-E3) " result " FUNCTION TRIM(WS-E4)
+         DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "source 1 inputs 0/0 result 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance p70c carto glass pane: two maps and a pane give one map with post LOCK (0); the take makes map 2 locked, scale 1, and one map and no pane are left in the table, result made again" TO TL-CASE
+     MOVE 0 TO PL-CARRIED-COUNT(WS-ROW) PL-CARRIED-ITEM(WS-ROW) PL-CARRIED-VAR(WS-ROW)
+     MOVE WS-MAP TO MN-WSLOT-ITEM(WS-ROW, 1)
+     MOVE 2 TO MN-WSLOT-COUNT(WS-ROW, 1)
+     MOVE WS-A TO MN-WSLOT-VAR(WS-ROW, 1)
+     MOVE WS-GLASS TO MN-WSLOT-ITEM(WS-ROW, 2)
+     MOVE 1 TO MN-WSLOT-COUNT(WS-ROW, 2)
+     MOVE 0 TO MN-WSLOT-VAR(WS-ROW, 2)
+     CALL "MENU-STATION-UPDATE" USING WS-ROW
+     CALL "SC-MAPPOST-GET" USING MN-RESULT-VAR(WS-ROW) WS-MODE
+     MOVE WS-MODE TO WS-E1
+     MOVE 0 TO WS-BUTTON WS-TYPE
+     MOVE 2 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     CALL "SC-MAPID-GET" USING PL-CARRIED-VAR(WS-ROW) WS-MAPID WS-HAS
+     CALL "MAP-FIND" USING WS-MAPID WS-SCALE WS-LOCKED WS-CX WS-CZ WS-D WS-FOUND
+     MOVE WS-MAPID TO WS-E2
+     MOVE WS-LOCKED TO WS-E3
+     MOVE WS-SCALE TO WS-E4
+     MOVE MN-WSLOT-COUNT(WS-ROW, 1) TO WS-E5
+     MOVE MN-WSLOT-COUNT(WS-ROW, 2) TO WS-E6
+     MOVE SPACES TO WS-TEXT
+     STRING "post " FUNCTION TRIM(WS-E1) " id " FUNCTION TRIM(WS-E2) " locked " FUNCTION TRIM(WS-E3) " scale " FUNCTION TRIM(WS-E4)
+         " left " FUNCTION TRIM(WS-E5) "/" FUNCTION TRIM(WS-E6) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "post 0 id 2 locked 1 scale 1 left 1/0" TO TL-EXPECTED
+     PERFORM CHECK
+     MOVE WS-MAPID TO WS-C
+
+     MOVE "acceptance p70c carto empty map: a map and an empty map give two copies of the same id and no post-processing; a shift click of the result puts both in the inventory" TO TL-CASE
+     MOVE 0 TO PL-CARRIED-COUNT(WS-ROW) PL-CARRIED-ITEM(WS-ROW) PL-CARRIED-VAR(WS-ROW)
+     MOVE WS-MAP TO MN-WSLOT-ITEM(WS-ROW, 1)
+     MOVE 1 TO MN-WSLOT-COUNT(WS-ROW, 1)
+     MOVE WS-A TO MN-WSLOT-VAR(WS-ROW, 1)
+     MOVE WS-EMPTY TO MN-WSLOT-ITEM(WS-ROW, 2)
+     MOVE 1 TO MN-WSLOT-COUNT(WS-ROW, 2)
+     MOVE 0 TO MN-WSLOT-VAR(WS-ROW, 2)
+     MOVE 0 TO MN-RESULT-COUNT(WS-ROW)
+     CALL "MENU-STATION-UPDATE" USING WS-ROW
+     MOVE MN-RESULT-COUNT(WS-ROW) TO WS-E1
+     CALL "SC-MAPPOST-GET" USING MN-RESULT-VAR(WS-ROW) WS-MODE
+     MOVE WS-MODE TO WS-E2
+     PERFORM CLEAR-INVENTORY
+     MOVE 1 TO WS-TYPE
+     MOVE 2 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     MOVE 0 TO WS-N
+     MOVE 0 TO WS-I
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
+         IF PL-SLOT-ITEM(WS-ROW, WS-S) = WS-MAP AND PL-SLOT-COUNT(WS-ROW, WS-S) > 0
+             ADD PL-SLOT-COUNT(WS-ROW, WS-S) TO WS-N
+             CALL "SC-MAPID-GET" USING PL-SLOT-VAR(WS-ROW, WS-S) WS-MAPID WS-HAS
+             IF WS-MAPID = WS-ID0
+                 ADD PL-SLOT-COUNT(WS-ROW, WS-S) TO WS-I
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE WS-N TO WS-E3
+     MOVE WS-I TO WS-E4
+     MOVE MN-WSLOT-COUNT(WS-ROW, 1) TO WS-E5
+     MOVE SPACES TO WS-TEXT
+     STRING "result " FUNCTION TRIM(WS-E1) " post " FUNCTION TRIM(WS-E2) " maps " FUNCTION TRIM(WS-E3) " same-id " FUNCTION TRIM(WS-E4)
+         " table " FUNCTION TRIM(WS-E5) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "result 2 post -1 maps 2 same-id 2 table 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance p70c carto no result: paper or a pane on a locked map, paper on a map of scale 4 or on a map outside extendable_maps, and a pane on an unsaved map give none" TO TL-CASE
+     MOVE 0 TO WS-N
+     MOVE WS-C TO WS-ID
+     PERFORM LOCKED-PAPER
+     PERFORM LOCKED-GLASS
+     PERFORM SCALE4-PAPER
+     PERFORM DIRT-PAPER
+     PERFORM UNSAVED-GLASS
+     MOVE WS-N TO WS-E1
+     MOVE SPACES TO WS-TEXT
+     STRING "results " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "results 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance p70c carto rules: the empty map and a glass pane fit the additional slot, the empty item is no additional item" TO TL-CASE
+     CALL "MENU-CARTO-MAYPLACE" USING WS-ONE-SLOT WS-EMPTY WS-ZERO WS-OK
+     CALL "MENU-CARTO-MAYPLACE" USING WS-ONE-SLOT WS-GLASS WS-ZERO WS-OK2
+     MOVE WS-OK TO WS-E1
+     MOVE WS-OK2 TO WS-E2
+     CALL "MENU-CARTO-MAYPLACE" USING WS-ONE-SLOT WS-ZERO WS-ZERO2 WS-OK
+     MOVE WS-OK TO WS-E3
+     MOVE SPACES TO WS-TEXT
+     STRING "map " FUNCTION TRIM(WS-E1) " glass " FUNCTION TRIM(WS-E2) " none " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "map 1 glass 1 none 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance p70c carto quick with a full inventory: the map stays in its slot, an empty slot does nothing, a result of 2 maps merges 1 into a stack of 63 and throws 1" TO TL-CASE
+     PERFORM FILL-DIRT
+     MOVE WS-MAP TO MN-WSLOT-ITEM(WS-ROW, 1)
+     MOVE 1 TO MN-WSLOT-COUNT(WS-ROW, 1)
+     MOVE WS-A TO MN-WSLOT-VAR(WS-ROW, 1)
+     MOVE 0 TO MN-WSLOT-COUNT(WS-ROW, 2) MN-RESULT-COUNT(WS-ROW)
+     MOVE 1 TO WS-TYPE
+     MOVE 0 TO WS-BUTTON
+     MOVE 0 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     MOVE 1 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     MOVE MN-WSLOT-COUNT(WS-ROW, 1) TO WS-E1
+     MOVE WS-MAP TO PL-SLOT-ITEM(WS-ROW, 1)
+     MOVE 63 TO PL-SLOT-COUNT(WS-ROW, 1)
+     MOVE WS-A TO PL-SLOT-VAR(WS-ROW, 1)
+     MOVE WS-EMPTY TO MN-WSLOT-ITEM(WS-ROW, 2)
+     MOVE 1 TO MN-WSLOT-COUNT(WS-ROW, 2)
+     MOVE 0 TO MN-WSLOT-VAR(WS-ROW, 2)
+     CALL "MENU-STATION-UPDATE" USING WS-ROW
+     MOVE 2 TO WS-S
+     CALL "TEST-CLICK-WIN" USING WS-CONN WS-S WS-BUTTON WS-TYPE
+     MOVE PL-SLOT-COUNT(WS-ROW, 1) TO WS-E2
+     MOVE MN-WSLOT-COUNT(WS-ROW, 1) TO WS-E3
+     MOVE SPACES TO WS-TEXT
+     STRING "stays " FUNCTION TRIM(WS-E1) " stack " FUNCTION TRIM(WS-E2) " table " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "stays 1 stack 64 table 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance p70c carto stale result: a result stays when its inputs change while it is set and both inputs remain" TO TL-CASE
+     PERFORM CLEAR-INVENTORY
+     MOVE WS-MAP TO MN-WSLOT-ITEM(WS-ROW, 1)
+     MOVE 1 TO MN-WSLOT-COUNT(WS-ROW, 1)
+     MOVE WS-A TO MN-WSLOT-VAR(WS-ROW, 1)
+     MOVE WS-PAPER TO MN-WSLOT-ITEM(WS-ROW, 2)
+     MOVE 1 TO MN-WSLOT-COUNT(WS-ROW, 2)
+     MOVE 0 TO MN-WSLOT-VAR(WS-ROW, 2) MN-RESULT-COUNT(WS-ROW)
+     CALL "MENU-STATION-UPDATE" USING WS-ROW
+     MOVE WS-GLASS TO MN-WSLOT-ITEM(WS-ROW, 2)
+     CALL "MENU-STATION-UPDATE" USING WS-ROW
+     CALL "SC-MAPPOST-GET" USING MN-RESULT-VAR(WS-ROW) WS-MODE
+     MOVE WS-MODE TO WS-E1
+     MOVE 0 TO MN-WSLOT-COUNT(WS-ROW, 2)
+     CALL "MENU-STATION-UPDATE" USING WS-ROW
+     MOVE MN-RESULT-COUNT(WS-ROW) TO WS-E2
+     MOVE SPACES TO WS-TEXT
+     STRING "post " FUNCTION TRIM(WS-E1) " after-empty " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "post 1 after-empty 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance p70c carto close: the map in the table goes back to the player and the window closes" TO TL-CASE
+     MOVE WS-MAP TO MN-WSLOT-ITEM(WS-ROW, 1)
+     MOVE 1 TO MN-WSLOT-COUNT(WS-ROW, 1)
+     MOVE WS-A TO MN-WSLOT-VAR(WS-ROW, 1)
+     PERFORM CLEAR-INVENTORY
+     CALL "TEST-CLOSE-WIN" USING WS-CONN
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 36
+         IF PL-SLOT-ITEM(WS-ROW, WS-S) = WS-MAP
+             ADD PL-SLOT-COUNT(WS-ROW, WS-S) TO WS-N
+         END-IF
+     END-PERFORM
+     MOVE WS-N TO WS-E1
+     MOVE MN-WINDOW(WS-ROW) TO WS-E2
+     MOVE SPACES TO WS-TEXT
+     STRING "maps " FUNCTION TRIM(WS-E1) " window " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "maps 1 window 0" TO TL-EXPECTED
+     PERFORM CHECK
+     STOP RUN.
+
+ FILL-DIRT.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
+         MOVE WS-DIRT TO PL-SLOT-ITEM(WS-ROW, WS-I)
+         MOVE 64 TO PL-SLOT-COUNT(WS-ROW, WS-I)
+         MOVE 0 TO PL-SLOT-VAR(WS-ROW, WS-I)
+     END-PERFORM.
+
+ CLEAR-INVENTORY.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
+         MOVE 0 TO PL-SLOT-COUNT(WS-ROW, WS-I) PL-SLOT-ITEM(WS-ROW, WS-I) PL-SLOT-VAR(WS-ROW, WS-I)
+     END-PERFORM.
+
+*> A stack of one map (handle in WS-HANDLE) and the additional item (WS-D) set as inputs; the result starts empty and WS-N counts a result that appears.
+ SET-INPUTS.
+     MOVE WS-MAP TO MN-WSLOT-ITEM(WS-ROW, 1)
+     MOVE 1 TO MN-WSLOT-COUNT(WS-ROW, 1)
+     MOVE WS-HANDLE TO MN-WSLOT-VAR(WS-ROW, 1)
+     MOVE WS-D TO MN-WSLOT-ITEM(WS-ROW, 2)
+     MOVE 1 TO MN-WSLOT-COUNT(WS-ROW, 2)
+     MOVE 0 TO MN-WSLOT-VAR(WS-ROW, 2) MN-RESULT-COUNT(WS-ROW)
+     CALL "MENU-STATION-UPDATE" USING WS-ROW
+     ADD MN-RESULT-COUNT(WS-ROW) TO WS-N
+     MOVE 0 TO MN-RESULT-COUNT(WS-ROW).
+
+ LOCKED-PAPER.
+     MOVE 0 TO WS-HANDLE
+     CALL "SC-MAPID-SET" USING WS-HANDLE WS-ID
+     MOVE WS-PAPER TO WS-D
+     PERFORM SET-INPUTS.
+
+ LOCKED-GLASS.
+     MOVE WS-GLASS TO WS-D
+     PERFORM SET-INPUTS.
+
+ SCALE4-PAPER.
+     MOVE 0 TO WS-X WS-Z
+     MOVE 4 TO WS-SCALE
+     CALL "MAP-NEW" USING WS-DIM WS-X WS-Z WS-SCALE WS-ID
+     MOVE 0 TO WS-HANDLE
+     CALL "SC-MAPID-SET" USING WS-HANDLE WS-ID
+     MOVE WS-PAPER TO WS-D
+     PERFORM SET-INPUTS.
+
+ DIRT-PAPER.
+     MOVE WS-ID0 TO WS-ID
+     MOVE 0 TO WS-HANDLE
+     CALL "SC-MAPID-SET" USING WS-HANDLE WS-ID
+     MOVE WS-PAPER TO WS-D
+     MOVE WS-DIRT TO WS-MAP
+     PERFORM SET-INPUTS
+     MOVE "filled_map" TO WS-KEY
+     CALL "TEST-ITEM-ID" USING WS-KEY WS-MAP.
+
+ UNSAVED-GLASS.
+     MOVE 5000 TO WS-ID
+     MOVE 0 TO WS-HANDLE
+     CALL "SC-MAPID-SET" USING WS-HANDLE WS-ID
+     MOVE WS-GLASS TO WS-D
+     PERFORM SET-INPUTS.
+
+ PREPARE-GROUND.
+     COMPUTE WS-Y = WS-BY - 1
+     COMPUTE WS-X0 = WS-BX - 3
+     COMPUTE WS-X1 = WS-BX + 3
+     COMPUTE WS-Z0 = WS-BZ - 3
+     COMPUTE WS-Z1 = WS-BZ + 3
+     PERFORM VARYING WS-X FROM WS-X0 BY 1 UNTIL WS-X > WS-X1
+         PERFORM VARYING WS-Z FROM WS-Z0 BY 1 UNTIL WS-Z > WS-Z1
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STONE
+             PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 2
+                 COMPUTE WS-S = WS-BY + WS-I
+                 CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-S WS-Z WS-AIR
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM.
+
+ USE-BLOCK.
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-CONN WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS.
+
+ CHECK.
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM ACC-P70C-CARTO.
+
+ COPY CORETEST.
+ COPY BETEST.

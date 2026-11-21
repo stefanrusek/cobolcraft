@@ -129,7 +129,7 @@
      MOVE 1 TO PL-STATE-ID(1)
      CALL "PB-RESET" USING PB-BUFFER
      CALL "PLAY-CONTENT-BUILD" USING WS-ROW PB-BUFFER
-     MOVE "contract/fixtures/wire/play-s2c-12-container-set-content-empty.hex" TO WS-PATH
+     MOVE "core/tests/fixtures/play-s2c-12-container-set-content-empty-46.hex" TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
      INITIALIZE PL-ENTRY(1)
 

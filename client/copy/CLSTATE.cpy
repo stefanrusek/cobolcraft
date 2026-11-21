@@ -15,16 +15,88 @@
     05 CL-NAME-LENGTH        BINARY-LONG.
     05 CL-GAME-DIR           PIC X(1024).
     05 CL-GAME-DIR-LENGTH    BINARY-LONG.
+    05 CL-GUI-SCALE          BINARY-LONG.     *> window pixels per GUI pixel, 1 to CL-MAX-GUI-SCALE (SCREEN-BUILD)
+    05 CL-SWING-AT           BINARY-DOUBLE.   *> the clock when the hand last began to swing (0 = never)
+    05 CL-HAND-ITEM          BINARY-LONG.     *> the stack the hand shows: item id + 1, 0 none (equip animation, hand.cob; 12 section 6.2)
+    05 CL-HAND-H             FLOAT-LONG.      *> the equip height 0 to 1 and its value one client tick (50 ms) earlier
+    05 CL-HAND-OH            FLOAT-LONG.
+    05 CL-HAND-KEY-ITEM      BINARY-LONG.     *> what the vertices in RL-HAND-VERTEX were built for (hand.cob reuses them while it is unchanged and no swing runs)
+    05 CL-HAND-KEY-SPRITE    BINARY-LONG.
+    05 CL-HAND-KEY-E         FLOAT-LONG.
+    05 CL-HAND-KEY-LIGHT     FLOAT-LONG.
+    05 CL-HAND-KEY-YAW       FLOAT-LONG.      *> the view angles it was shaded for (held items are lit in world orientation, 12 section 6.10)
+    05 CL-HAND-KEY-PITCH     FLOAT-LONG.
+    05 CL-HAND-NOCULL        BINARY-LONG.     *> 1 keeps the quads that face away from the eye (tests and diagnostics only; 0 = back faces are dropped, 12 section 6.9)
+    05 CL-HAND-KEY-COUNT     BINARY-LONG.     *> vertex count of that mesh, 0 = none to reuse
+    05 CL-HAND-TICK-MS       BINARY-DOUBLE.   *> the clock of the last equip tick (0 = not started)
+    05 CL-OHAND-ITEM         BINARY-LONG.     *> the off hand's shown stack (item id + 1, 0 none), equip height and previous height (hand.cob)
+    05 CL-OHAND-H            FLOAT-LONG.
+    05 CL-OHAND-OH           FLOAT-LONG.
+    05 CL-ATK-TICKER         BINARY-LONG.     *> attackStrengthTicker (17 section 4.1): +1 per client tick, 0 on an attack or a change of the held stack
+    05 CL-ATK-LAST           BINARY-LONG.     *> the held stack (item id + 1) of the last tick
+    05 CL-BOB-INIT           BINARY-LONG.     *> 1 once the lagging view angles below are set (HAND-TICK)
+    05 CL-XBOB               FLOAT-LONG.      *> the smoothed pitch and yaw that lag the view (53 section 15.3), and their values one tick earlier
+    05 CL-XBOB-O             FLOAT-LONG.
+    05 CL-YBOB               FLOAT-LONG.
+    05 CL-YBOB-O             FLOAT-LONG.
+    05 CL-HAND-KEY-GCOUNT    BINARY-LONG.     *> vertex count of the cached hand glint mesh (RL-HG-VERTEX)
+    05 CL-HAND-KEY-P         FLOAT-LONG.      *> a digest of the view pose (bob and sway) and of the off hand the cached mesh was built for
+    05 CL-CAMERA             BINARY-LONG.     *> F5 camera: 0 first person, 1 behind, 2 in front (camera.cob)
+    05 CL-DEBUG              PIC 9.           *> 1 = the F3 overlay is shown (debug-overlay.cob)
+    05 CL-HITBOXES           PIC 9.           *> 1 = the entity hitboxes are drawn (F3+B, 13 section 5.1; hitbox-mesh.cob)
+    05 CL-F3-HELD            PIC 9.           *> 1 = F3 went down and has not been released yet (13 section 5.1: the release toggles the overlay)
+    05 CL-F3-USED            PIC 9.           *> 1 = a combination key was used while F3 was held (the release then does not toggle the overlay)
+    05 CL-FPS                BINARY-LONG.     *> frames in the last whole second
+    05 CL-FPS-AT             BINARY-DOUBLE.   *> the clock when CL-FPS was last measured
+    05 CL-FPS-FRAMES         BINARY-DOUBLE.   *> CL-FRAMES then
+    05 CL-SPEED              FLOAT-LONG.      *> blocks moved in the last client tick
+    05 CL-GUI-OPTION         BINARY-LONG.     *> the guiScale option (0 = automatic), applied by SCREEN-BUILD
+    05 CL-FOV-DEG            FLOAT-SHORT.     *> the vertical field of view in degrees (fov option; 70 by default)
+    05 CL-FOV-EFFECT         FLOAT-LONG.      *> the fovEffectScale option squared (53 section 8.1): 1 by default, 0 no effect
+    05 CL-LEAVES-CULL        BINARY-LONG.     *> the cutoutLeaves option off (OPTIONS-APPLY): 1 = a leaf face against any leaves block is skipped (13 section 7.5); 0 = every leaf face is drawn (the default, Fancy)
+    05 CL-TURN               FLOAT-SHORT.     *> degrees of turn per mouse pixel (mouseSensitivity; 0.15 by default)
+    05 CL-KEYS.                                *> the GLFW key code of each key binding, KB-* of CLCONST.cpy (OPTIONS-APPLY)
+       10 KB-CODE            BINARY-LONG OCCURS 25 TIMES.
+    05 CL-GENERATED-DIR      PIC X(1024).     *> generated directory (22 section 5.1): --generated-dir
+    05 CL-GENERATED-DIR-LENGTH BINARY-LONG.   *> or <game directory>/generated
+    05 CL-SET-OWNED          PIC 9.           *> 1 = the client built the content set of the game connection (WT-16)
+    05 CL-WORLD              PIC X(80).       *> --world <save folder> / CC_WORLD: opened right after start-up (WORLD-OPEN-ARG)
+    05 CL-WORLD-LENGTH       BINARY-LONG.     *> 0 = none
+    05 CL-OPENER             PIC X(256).      *> the program that opens a folder (US4): /usr/bin/open, one argument
+    05 CL-OPENER-LENGTH      BINARY-LONG.
+    05 CL-OPEN-FAILED        PIC 9.           *> 1 = the last Open Pack Folder could not start the opener
+    05 CL-WORLD-TYPE         BINARY-LONG.     *> CT-TYPE-* the game connection's content set was opened as (WT-16)
+    05 CL-PACKS-STATUS       BINARY-LONG.     *> CT-PACKS-* of the start-up check (CORE-PACKS-STATUS)
+    05 CL-PACKS-REASON       PIC X(128).      *> its reason text (a log line, not shown)
 *>  ---- run control ----
     05 CL-QUIT               PIC 9.          *> 1 = the run ends (quit control or close request)
     05 CL-NOW-MS             BINARY-DOUBLE.  *> the frame's clock (CL-STEP argument)
     05 CL-NEXT-TICK          BINARY-DOUBLE.  *> clock of the next client tick (Client Tick End)
+    05 CL-INTERP             PIC 9.          *> 1 = frames between client ticks show positions interpolated by the partial tick (smooth.cob; CL-RUN sets it, tests leave 0)
+    05 CL-PARTIAL            FLOAT-LONG.     *> the part of the client tick the frame is in, 0 to 1 (SMOOTH-PARTIAL; 1 = the tick's own state, CL-INIT)
     05 CL-FRAMES             BINARY-DOUBLE.
+*>  ---- screenshot (screenshot.cob; --screenshot-after-frames N, --screenshot-then-exit, CC_SCREENSHOT_AT_FRAME, CC_SCREENSHOT_THEN_EXIT) ----
+    05 CL-CMD-AT             BINARY-DOUBLE.   *> the frame from which CL-CMD-TEXT (console commands separated by ;, CC_COMMANDS) runs once (0 = none)
+    05 CL-CMD-TEXT           PIC X(1024).
+    05 CL-SHOT-AT            BINARY-DOUBLE.   *> the frame number at which one screenshot is taken by itself (0 = none)
+    05 CL-SHOT-EXIT          PIC 9.           *> 1 = the run ends once that screenshot is served
+    05 CL-CAM-SET            PIC 9.           *> 1 = --camera / CC_CAMERA fixes the view: eye (CL-CAM-X, -Y, -Z), yaw and pitch in degrees
+    05 CL-CAM-X              FLOAT-LONG.
+    05 CL-CAM-Y              FLOAT-LONG.
+    05 CL-CAM-Z              FLOAT-LONG.
+    05 CL-CAM-YAW            FLOAT-LONG.
+    05 CL-CAM-PITCH          FLOAT-LONG.
+    05 CL-SHOT-AUTO          PIC 9.           *> 1 = the screenshot waiting is the automatic one
+    05 CL-SHOT-PENDING       PIC 9.           *> 1 = a screenshot waits for its frame (cc_vk_screenshot)
+    05 CL-SHOT-NAME          PIC X(40).       *> its file name (YYYY-MM-DD_HH.MM.SS.png, _1, _2 ... after a clash)
+    05 CL-SHOT-NAME-LENGTH   BINARY-LONG.
 *>  ---- input state (shim-abi §8 events) ----
     05 IN-STATE.
        10 IN-KEY-DOWN        PIC 9 OCCURS 400 TIMES.   *> GLFW key code + 1
        10 IN-KEY-PRESSED-AREA.
           15 IN-KEY-PRESSED  PIC 9 OCCURS 400 TIMES.   *> went down during this frame
+       10 IN-KEY-REPEAT-AREA.
+          15 IN-KEY-REPEAT   PIC 9 OCCURS 400 TIMES.   *> the frame's down event was the window system's key repeat
        10 IN-MODS            BINARY-LONG.
        10 IN-TEXT-COUNT      BINARY-LONG.
        10 IN-TEXT            BINARY-LONG OCCURS 32 TIMES.   *> code points typed this frame
@@ -50,7 +122,7 @@
     05 SM-STATE.
        10 SM-SCREEN          BINARY-LONG.
        10 SM-WIDGET-COUNT    BINARY-LONG.
-       10 SM-WIDGET OCCURS 48 TIMES.
+       10 SM-WIDGET OCCURS 512 TIMES.
           15 SM-W-KIND       BINARY-LONG.
           15 SM-W-ACTION     BINARY-LONG.
           15 SM-W-ARG        BINARY-LONG.
@@ -58,9 +130,20 @@
           15 SM-W-Y          BINARY-LONG.
           15 SM-W-W          BINARY-LONG.
           15 SM-W-H          BINARY-LONG.
+          15 SM-W-SPRITE     BINARY-LONG.    *> WK-IMAGE: the GSP row drawn
           15 SM-W-STATE      BINARY-LONG.    *> 0 normal, 1 selected or focused, 2 disabled
           15 SM-W-LENGTH     BINARY-LONG.
           15 SM-W-TEXT       PIC X(256).
+          15 SM-W-COLOUR     BINARY-LONG.    *> text colour as an RGB integer; 0 = white (black is 1); drawn as its grey luminance (the vertex has one brightness)
+*>     The tooltip layer (12 section 5.8): the lines of the tooltip to draw this frame, the mouse in GUI pixels, the item-tooltip title gap.
+       10 TT-COUNT           BINARY-LONG.
+       10 TT-X               BINARY-LONG.
+       10 TT-Y               BINARY-LONG.
+       10 TT-TITLE-GAP       BINARY-LONG.
+       10 TT-LINE OCCURS 8 TIMES.
+          15 TT-L-LEN        BINARY-LONG.
+          15 TT-L-RGB        BINARY-LONG.
+          15 TT-L-TEXT       PIC X(120).
        10 SM-SELECTED        BINARY-LONG.    *> server list: selected entry, 0 none
        10 SM-FOCUS           BINARY-LONG.    *> edit server: 1 name field, 2 address field
        10 SM-EDIT-INDEX      BINARY-LONG.    *> edit server: entry edited, 0 = a new entry
@@ -68,12 +151,21 @@
        10 SM-EDIT-NAME-LENGTH BINARY-LONG.
        10 SM-EDIT-ADDR       PIC X(256).
        10 SM-EDIT-ADDR-LENGTH BINARY-LONG.
+       10 SM-EDIT-SEED       PIC X(64).      *> create-world: the optional seed text (UTF-8, max 64 bytes; empty = random seed); SM-FOCUS 1 name, 2 seed
+       10 SM-EDIT-SEED-LENGTH BINARY-LONG.
        10 SM-CONNECT-ADDR    PIC X(256).     *> connecting screen: the address joined
        10 SM-CONNECT-ADDR-LENGTH BINARY-LONG.
+       10 SM-LOAD-CELLS      PIC X(1225).    *> the loading screen grid (docs/protocol/50 section 2.5): 35 x 35 cells, row by row, each one byte holding status code + 1 (GEN-LOAD-GRID)
+       10 SM-LOAD-SMOOTH     BINARY-LONG.    *> the loading bar's smoothed progress in millionths (0.2 of the gap per 50 ms tick, 50 section 2.2)
+       10 SM-LOAD-TICK-MS    BINARY-DOUBLE.  *> CL-NOW-MS of the last smoothing tick, 0 before the first
+       10 SM-LOAD-GRID-MS    BINARY-DOUBLE.  *> CL-NOW-MS of the last read of the grid
+       10 SM-LOAD-SHOWN      BINARY-LONG.    *> 1 once the loading screen has been shown for the hosted world being opened
        10 SM-MESSAGE         PIC X(512).     *> the last disconnect message, rendered
        10 SM-MESSAGE-LENGTH  BINARY-LONG.
        10 SM-DEATH-CAUSE     PIC X(512).     *> death screen: the Player Combat Kill message, rendered
        10 SM-DEATH-CAUSE-LENGTH BINARY-LONG.
+       10 SM-CX-TITLE        PIC X(64).      *> container screen: the Open Screen title, rendered
+       10 SM-CX-TITLE-LENGTH BINARY-LONG.
 *>  ---- server list (client-surface §2 servers.dat; US2-1, US2-2) ----
     05 SL-STATE.
        10 SL-COUNT           BINARY-LONG.
@@ -109,13 +201,18 @@
 *>  ---- single-player (US16; sp-host.cob, game-dir.cob, the world list screens) ----
     05 SP-STATE.
        10 SP-ACTIVE          PIC 9.          *> 1 while this client hosts a world (in-process core)
-       10 SP-SETTINGS        PIC X(1707).    *> the hosted world's CORE-SETTINGS (core-host-api §1)
+       10 SP-SETTINGS        PIC X(3829).    *> the hosted world's CORE-SETTINGS (core-host-api §1)
        10 SP-NEXT-TICK       BINARY-DOUBLE.  *> clock of the next core tick
        10 SP-TICKS           BINARY-DOUBLE.  *> core ticks run since the world was opened
        10 SP-PAUSED          PIC 9.          *> 1 while the single-player pause is in effect (US16-4)
        10 SP-FOLDER          PIC X(80).      *> the hosted world's folder under saves/
        10 SP-FOLDER-LENGTH   BINARY-LONG.
        10 SP-CREATE-MODE     BINARY-LONG.    *> create-world screen: 0 survival, 1 creative
+       10 SP-CREATE-TYPE     BINARY-LONG.    *> create-world screen: world type, CT-TYPE-* (0 standard,
+                                             *> the default; 1 cobolcraft; 2 the hidden debug type)
+       10 SP-CREATE-REFUSED  PIC 9.          *> 1 = Create (or Play) was refused: the packs are not ok
+       10 SP-FLAT-PRESET     PIC X(24).      *> create-world, superflat: the chosen preset id (56 3.2, classic_flat by default); the world's layers follow from it
+       10 SP-FLAT-WORK       PIC X(24).      *> the flat editor's working preset id (Done copies it to SP-FLAT-PRESET, Cancel drops it)
 *>     Opening to others (US17; sp-host.cob, screens/open-to-others.cob): the screen's choices
 *>     (guest mode 0 survival or 1 creative; 1 = guests may use operator commands), the listener
 *>     (0 = not opened) and its port, the local addresses shown, and the guest connections: the
@@ -144,6 +241,7 @@
           15 WL-NAME         PIC X(64).      *> level.dat LevelName (the folder name without one)
           15 WL-NAME-LENGTH  BINARY-LONG.
           15 WL-MODE         BINARY-LONG.    *> level.dat GameMode
+          15 WL-TYPE         PIC X(16).      *> level.dat WorldType (cobolcraft when absent)
 *>  ---- local player and the joined world (05a Login, 03 registries) ----
     05 PL-STATE.
        10 PL-ENTITY-ID       BINARY-LONG.
@@ -153,10 +251,248 @@
        10 PL-YAW             FLOAT-SHORT.
        10 PL-PITCH           FLOAT-SHORT.
        10 PL-MODE            BINARY-LONG.
+       10 PL-PERM            BINARY-LONG.    *> the permission level 0 to 4 (Entity Event 24 + level for the local player; 40-9 section 2.2)
        10 PL-HELD            BINARY-LONG.
        10 PL-SLOT OCCURS 36 TIMES.
           15 PL-SLOT-COUNT   BINARY-LONG.
           15 PL-SLOT-ITEM    BINARY-LONG.
+       10 PL-OFFHAND-COUNT   BINARY-LONG.    *> the off-hand stack (menu slot 45, player inventory index 40)
+       10 PL-OFFHAND-ITEM    BINARY-LONG.
+       10 PL-STACK-FOIL      BINARY-LONG.
+       10 PL-OFFHAND-FOIL    BINARY-LONG.
+       10 PL-SLOT-FOIL       BINARY-LONG OCCURS 36 TIMES.
+       10 PL-STACK-CHARGED   BINARY-LONG.    *> 1 when the item stack last decoded has charged_projectiles (51) that are not empty (a loaded crossbow), taken over by the slot it is set into like the foil
+       10 PL-OFFHAND-CHARGED BINARY-LONG.
+       10 PL-SLOT-CHARGED    BINARY-LONG OCCURS 36 TIMES.
+*>     banner_patterns 74 of the last item stack decoded (STACK-BANNER) and of each slot (1 to 36 the slots, 37 the off hand), taken over like the foil: the number of layers kept
+*>     (at most 16), each layer's pattern holder (the registry position + 1, 0 an inline pattern) and dye id (hand-banner.cob; 54 section 22).
+       10 PL-STACK-BN.
+          15 PL-STACK-BN-COUNT BINARY-LONG.
+          15 PL-STACK-BN-PAT   BINARY-LONG OCCURS 16 TIMES.
+          15 PL-STACK-BN-DYE   BINARY-LONG OCCURS 16 TIMES.
+          15 PL-STACK-BN-BASE  BINARY-LONG.    *> base_color 75 of the stack as the dye id + 1 (a shield's base colour, 54 section 22.1), 0 = absent
+       10 PL-SLOT-BN OCCURS 37 TIMES.
+          15 PL-SLOT-BN-COUNT  BINARY-LONG.
+          15 PL-SLOT-BN-PAT    BINARY-LONG OCCURS 16 TIMES.
+          15 PL-SLOT-BN-DYE    BINARY-LONG OCCURS 16 TIMES.
+          15 PL-SLOT-BN-BASE   BINARY-LONG.
+       10 PL-SLOT-DAMAGE     BINARY-LONG OCCURS 36 TIMES.  *> damage component (3) of each slot's stack, 0 = none
+       10 PL-OFFHAND-DAMAGE  BINARY-LONG.
+*>     Menu slots outside the player's 36 (12 section 5.6a, b; 13 section 3.5): the inventory menu's armour (IX 1 to 4: head,
+*>     chest, legs, feet), crafting result (IX 5) and 2 x 2 grid (IX 6 to 9), and the open bench menu's result (BX 5) and 3 x 3 grid
+*>     (BX 6 to 14); BM-ID is the bench's container id (0 = none open), BM-STATE-ID its state id.
+       10 IX-STACK OCCURS 16 TIMES.
+          15 IX-COUNT        BINARY-LONG.
+          15 IX-ITEM         BINARY-LONG.
+          15 IX-DAMAGE       BINARY-LONG.
+       10 BX-STACK OCCURS 64 TIMES.
+          15 BX-COUNT        BINARY-LONG.
+          15 BX-ITEM         BINARY-LONG.
+          15 BX-DAMAGE       BINARY-LONG.
+       10 MX-COUNT           BINARY-LONG.    *> max_damage components (2) the server's stacks carried: item and maximum, newest last
+       10 MX-ENTRY OCCURS 16 TIMES.
+          15 MX-ITEM         BINARY-LONG.
+          15 MX-MAX          BINARY-LONG.
+       10 BM-ID              BINARY-LONG.
+       10 BM-STATE-ID        BINARY-LONG.
+       10 BM-TYPE            BINARY-LONG.    *> menu type of the open bench (12) or container screen (args 401 to 464 are its own slots)
+       10 PL-XP-LEVEL        BINARY-LONG.    *> the player's experience level (Set Experience 05b 0x69)
+       10 PL-XP-PROGRESS     FLOAT-LONG.     *> its progress 0 to 1 and the total points (002-lane-mobs2)
+       10 PL-XP-TOTAL        BINARY-LONG.
+       10 PL-KB-X            FLOAT-LONG.     *> the horizontal push of an Explode packet's knockback, decaying each tick (physics.cob)
+       10 PL-KB-Z            FLOAT-LONG.
+       10 PL-SLIP-X          FLOAT-LONG.     *> the horizontal velocity kept on slippery ground (ice) and in the air after it, decaying by friction x 0.91 a tick (physics.cob)
+       10 PL-SLIP-Z          FLOAT-LONG.
+       10 BM-DATA            BINARY-LONG OCCURS 16 TIMES.  *> the data slots of the open menu (Container Set Data 0x13; 40-1 section 4.3)
+*>     The container screen's pointer (screens/pointer.cob; 40-1 section 5.5): the drag in progress (button, type 0 charitable, 1 greedy,
+*>     2 clone, the slots it has visited), the release the press already acted on, the last click (slot and time) for the double click.
+*>     The beacon screen's chosen powers (effect id + 1, 0 none; 40-5 section 3.7) and the merchant screen (40-5 section 2.10): the offers of Merchant Offers
+*>     (up to 32), the villager level and XP, the progress and restock flags, the scroll offset, the selected offer, the scroller drag and the stacks the
+*>     rows show this frame (argument 801 + 3 x row + 0 first cost, 1 second cost, 2 result).
+       10 BC-PRIMARY         BINARY-LONG.
+       10 BC-SECONDARY       BINARY-LONG.
+       10 MC-COUNT           BINARY-LONG.
+       10 MC-LEVEL           BINARY-LONG.
+       10 MC-XP              BINARY-LONG.
+       10 MC-PROGRESS        BINARY-LONG.
+       10 MC-RESTOCK         BINARY-LONG.
+       10 MC-SCROLL          BINARY-LONG.
+       10 MC-SELECTED        BINARY-LONG.
+       10 MC-DRAGGING        BINARY-LONG.
+       10 MC-OFFER OCCURS 32 TIMES.
+          15 MO-A-ITEM       BINARY-LONG.
+          15 MO-A-COUNT      BINARY-LONG.
+          15 MO-B-ITEM       BINARY-LONG.
+          15 MO-B-COUNT      BINARY-LONG.
+          15 MO-R-ITEM       BINARY-LONG.
+          15 MO-R-COUNT      BINARY-LONG.
+          15 MO-OUT          BINARY-LONG.
+          15 MO-USES         BINARY-LONG.
+          15 MO-MAX          BINARY-LONG.
+          15 MO-XP           BINARY-LONG.
+          15 MO-SPECIAL      BINARY-LONG.
+          15 MO-DEMAND       BINARY-LONG.
+          15 MO-MULT         FLOAT-SHORT.
+       10 MC-DISP OCCURS 21 TIMES.
+          15 MC-DISP-ITEM    BINARY-LONG.
+          15 MC-DISP-COUNT   BINARY-LONG.
+       10 SC-COUNT           BINARY-LONG.            *> the stonecutter list: the entries of the latest Update Recipes (core/src/menu-station.cob sends the ones of the input item)
+       10 SC-ENTRY OCCURS 32 TIMES.
+          15 SC-ITEM         BINARY-LONG.            *> the result item of the entry
+          15 SC-AMOUNT       BINARY-LONG.
+       10 SC-START           BINARY-LONG.            *> the index of the first visible entry (a multiple of 4)
+       10 CX-DRAG-ON         BINARY-LONG.
+       10 CX-DRAG-BUTTON     BINARY-LONG.
+       10 CX-DRAG-N          BINARY-LONG.
+       10 CX-DRAG-SLOT       BINARY-LONG OCCURS 64 TIMES.
+       10 CX-DRAG-ARG        BINARY-LONG OCCURS 64 TIMES.
+       10 CX-SKIP-RELEASE    BINARY-LONG.
+       10 CX-PREV-SLOT       BINARY-LONG.
+       10 CX-PREV-MS         BINARY-DOUBLE.
+       10 CX-DOUBLE          BINARY-LONG.
+       10 CX-LAST-X          BINARY-LONG.
+       10 CX-LAST-Y          BINARY-LONG.
+*>     The anvil name field (40-3 section 3.8): the container id it belongs to, the item of slot 0 last seen (-1 none), the field text (UTF-8) and its byte length, the name
+*>     last sent (itemName; AN-SENT-NULL 1 = none yet).
+*>     The mount inventory (40-6): the entity id, its kind (1 horse family, 2 nautilus), whether the saddle and body slots are shown and the body icon (1 horse armor, 2 llama, 3 nautilus).
+*>     The creative inventory engines (40-7): the selected tab (1 to 14), the scroll (0 to 1), the picker's stacks (item, count, 1 = the locked paper of the hotbar tab), the drop
+*>     throttler counter (9.3), the saved hotbars (9 x 9 stacks, 10).
+       10 CR-TAB             BINARY-LONG.
+       10 CR-SCROLL          FLOAT-SHORT.
+       10 CR-COUNT           BINARY-LONG.
+       10 CR-STACK OCCURS 2048 TIMES.
+          15 CR-STACK-ITEM   BINARY-LONG.
+          15 CR-STACK-COUNT  BINARY-LONG.
+          15 CR-STACK-LOCK   BINARY-LONG.
+       10 CR-THROTTLE        BINARY-LONG.
+       10 CR-SCROLLING       BINARY-LONG.
+       10 CR-QUERY-LEN       BINARY-LONG.
+       10 CR-QUERY           PIC X(64).
+       10 CY-LIST            BINARY-LONG OCCURS 3 TIMES.   *> the smithing table's cycling icon helpers (40-3 5.6): list id, tick counter, icon index
+       10 CY-TICK            BINARY-LONG OCCURS 3 TIMES.
+       10 CY-INDEX           BINARY-LONG OCCURS 3 TIMES.
+       10 CR-HB-LOADED      BINARY-LONG.    *> 1 once hotbar.nbt was read (lazily, 40-7 10)
+       10 CR-HB OCCURS 81 TIMES.
+          15 CR-HB-ITEM      BINARY-LONG.
+          15 CR-HB-COUNT     BINARY-LONG.
+*>     The text engines of 40-8: the page editor (BK: value, indexes 0 based, selection anchor, wrap width and the limits, a fixed advance for tests (0 = the font), the display
+*>     lines, the clipboard), the book (BE: the pages, the shown page, the hand, the sign title) and the sign line editor (SG: four lines, the line being edited, cursor and anchor,
+*>     the width limit, the sign position, side and clipboard).
+       10 BK-VALUE           PIC X(1100).
+       10 BK-LEN             BINARY-LONG.
+       10 BK-CURSOR          BINARY-LONG.
+       10 BK-ANCHOR          BINARY-LONG.
+       10 BK-SELECTING       BINARY-LONG.
+       10 BK-WIDTH           BINARY-LONG.
+       10 BK-ADVANCE         BINARY-LONG.
+       10 BK-CHAR-LIMIT      BINARY-LONG.
+       10 BK-LINE-LIMIT      BINARY-LONG.
+       10 BK-LINE-COUNT      BINARY-LONG.
+       10 BK-OVERFLOW        BINARY-LONG.
+       10 BK-LINE OCCURS 64 TIMES.
+          15 BK-LB           BINARY-LONG.
+          15 BK-LE           BINARY-LONG.
+       10 BK-CLIP            PIC X(1100).
+       10 BK-CLIP-LEN        BINARY-LONG.
+       10 BE-PAGE-COUNT      BINARY-LONG.
+       10 BE-CURRENT         BINARY-LONG.
+       10 BE-HAND            BINARY-LONG.
+       10 BE-ACTIVE          BINARY-LONG.
+       10 BE-MODE            BINARY-LONG.
+       10 BE-TITLE-LEN       BINARY-LONG.
+       10 BE-TITLE           PIC X(32).
+       10 BE-PAGE OCCURS 100 TIMES.
+          15 BE-PAGE-LEN     BINARY-LONG.
+          15 BE-PAGE-TEXT    PIC X(1024).
+       10 SG-LINE            BINARY-LONG.
+       10 SG-CURSOR          BINARY-LONG.
+       10 SG-ANCHOR          BINARY-LONG.
+       10 SG-MAXW            BINARY-LONG.
+       10 SG-X               BINARY-LONG.
+       10 SG-Y               BINARY-LONG.
+       10 SG-Z               BINARY-LONG.
+       10 SG-SIDE            BINARY-LONG.
+       10 SG-CLIP-LEN        BINARY-LONG.
+       10 SG-CLIP            PIC X(64).
+       10 SG-ROW OCCURS 4 TIMES.
+          15 SG-LEN          BINARY-LONG.
+          15 SG-LINE-TEXT    PIC X(64).
+*>     The sign texts the server sent (Block Entity Data of a sign or hanging sign, the block entities of a Level Chunk; client/src/screens/signtext.cob): SN-ENTRY a used row of a sign's
+*>     position and is_waxed, SN-SIDE(1) its back text and SN-SIDE(2) its front text (31-3 section 2.2): the dye id of the colour (15 black), the glow flag and the four lines (byte length
+*>     and text, at most 64 bytes). The editor of 40-8 starts from them.
+       10 SN-ENTRY OCCURS 256 TIMES.
+          15 SN-USED          BINARY-LONG.
+          15 SN-X             BINARY-LONG.
+          15 SN-Y             BINARY-LONG.
+          15 SN-Z             BINARY-LONG.
+          15 SN-WAXED         BINARY-LONG.
+          15 SN-SIDE OCCURS 2 TIMES.
+             20 SN-COLOR      BINARY-LONG.
+             20 SN-GLOW       BINARY-LONG.
+             20 SN-LINE OCCURS 4 TIMES.
+                25 SN-LEN     BINARY-LONG.
+                25 SN-TEXT    PIC X(64).
+*>     The block editors (40-9): the command block screen's target, mode (0 sequence, 1 auto, 2 redstone), conditional, automatic and track flags, and the command; the jigsaw and structure packet
+*>     sources (the screens for those are not drawn yet).
+*>     The form screens (test block and jigsaw editors of 40-9): the form (1 test block, 2 jigsaw), the focused box, the box texts, the test block mode (0 to 3), the jigsaw keep flag,
+*>     the levels of the slider and whether the jigsaw's front is vertical (the joint cycle shows).
+       10 EF-FOCUS           BINARY-LONG.
+       10 EF-TEXT            PIC X(256) OCCURS 12 TIMES.
+       10 EF-LEN             BINARY-LONG OCCURS 12 TIMES.
+       10 EB-FORM            BINARY-LONG.
+       10 EB-MC              BINARY-LONG.    *> 1 when the command screen edits a command block minecart (entity id EB-MC-ENTITY)
+       10 EB-MC-ENTITY       BINARY-LONG.
+       10 EB-TB-MODE         BINARY-LONG.
+       10 EB-JG-KEEP         BINARY-LONG.
+       10 EB-LEVELS          BINARY-LONG.
+       10 EB-VERTICAL        BINARY-LONG.
+       10 EB-X               BINARY-LONG.
+       10 EB-Y               BINARY-LONG.
+       10 EB-Z               BINARY-LONG.
+       10 EB-MODE            BINARY-LONG.
+       10 EB-COND            BINARY-LONG.
+       10 EB-AUTO            BINARY-LONG.
+       10 EB-TRACK           BINARY-LONG.
+       10 EB-CMD-LEN         BINARY-LONG.
+       10 EB-CMD             PIC X(1024).
+       10 EB-JG-TEXT         PIC X(256) OCCURS 4 TIMES.
+       10 EB-JG-LEN          BINARY-LONG OCCURS 4 TIMES.
+       10 EB-JG-JOINT        BINARY-LONG.
+       10 EB-JG-SELECTION    BINARY-LONG.
+       10 EB-JG-PLACEMENT    BINARY-LONG.
+       10 EB-ST-UPDATE       BINARY-LONG.
+       10 EB-ST-MODE         BINARY-LONG.
+       10 EB-ST-NAME         PIC X(128).
+       10 EB-ST-NAME-LEN     BINARY-LONG.
+       10 EB-ST-META         PIC X(128).
+       10 EB-ST-META-LEN     BINARY-LONG.
+       10 EB-ST-OFFSET       BINARY-LONG OCCURS 3 TIMES.
+       10 EB-ST-SIZE         BINARY-LONG OCCURS 3 TIMES.
+       10 EB-ST-MIRROR       BINARY-LONG.
+       10 EB-ST-ROTATION     BINARY-LONG.
+       10 EB-ST-INTEGRITY    FLOAT-SHORT.
+       10 EB-ST-SEED         BINARY-DOUBLE.
+       10 EB-ST-FLAGS        BINARY-LONG.
+       10 EB-TI-ROT          BINARY-LONG.    *> the test instance screen (40-x1 8): rotation id, include entities and the info text
+       10 EB-TI-ENT          BINARY-LONG.
+       10 EB-TI-INFO         PIC X(256).
+       10 EB-TI-INFO-LEN     BINARY-LONG.
+       10 EB-ST-INIT-MODE    BINARY-LONG.    *> the values at open that Cancel restores (40-x1 5.7)
+       10 EB-ST-INIT-MIRROR  BINARY-LONG.
+       10 EB-ST-INIT-ROT     BINARY-LONG.
+       10 EB-ST-INIT-FLAGS   BINARY-LONG.
+       10 MT-ENTITY          BINARY-LONG.
+       10 MT-KIND            BINARY-LONG.
+       10 MT-SADDLE          BINARY-LONG.
+       10 MT-BODY            BINARY-LONG.
+       10 MT-ICON            BINARY-LONG.
+       10 AN-ID              BINARY-LONG.
+       10 AN-ITEM            BINARY-LONG.
+       10 AN-NAME-LENGTH     BINARY-LONG.
+       10 AN-NAME            PIC X(256).
+       10 AN-SENT-LENGTH     BINARY-LONG.
+       10 AN-SENT-NULL       BINARY-LONG.
+       10 AN-SENT            PIC X(256).
        10 PL-CARRIED-COUNT   BINARY-LONG.    *> the stack on the inventory screen's cursor
        10 PL-CARRIED-ITEM    BINARY-LONG.
        10 PL-INV-STATE-ID    BINARY-LONG.    *> container 0's state id (Container Set Content/Slot)
@@ -174,8 +510,15 @@
        10 PL-MIN-Y           BINARY-LONG.
        10 PL-HEIGHT          BINARY-LONG.
        10 PL-HAS-SKY         PIC 9.
+       10 PL-FLAT            PIC 9.          *> the spawn info's Is flat flag (05b; 56 5.3): 1 on a superflat world
        10 PL-TIME            BINARY-DOUBLE.  *> time of day 0 to 29999 (standin-content §4.8)
+       10 PL-GAME-TIME       BINARY-DOUBLE.  *> the world's game time: the first field of Set Time, plus 1 each client tick (the clock of entity timers such as the wolf's anger end time)
+       10 PL-DAY-TICKS       BINARY-DOUBLE.  *> the clock's total ticks, never wrapped (the debug overlay's day count)
        10 PL-LOADED          PIC 9.          *> 1 after Player Loaded was sent
+       10 PL-WAIT            PIC 9.          *> the wait for the level after Login or Respawn (docs/protocol/50 section 7): 1 while the camera section is awaited after Game Event 13, 2 once it is ready (Player Loaded follows after PL-CLOSE-DELAY), else 0
+       10 PL-WAIT-START      BINARY-DOUBLE.  *> CL-NOW-MS of the Login or Respawn: the 30 s deadline counts from here
+       10 PL-READY-AT        BINARY-DOUBLE.  *> CL-NOW-MS at which the wait ended
+       10 PL-CLOSE-DELAY     BINARY-LONG.    *> ms between the end of the wait and Player Loaded: 500 for a newly created local world, else 0
        10 PL-POSITIONED      PIC 9.          *> 1 after the first Player Position
        10 PL-BATCHES         BINARY-LONG.    *> chunk batches finished
        10 PL-CENTER-CX       BINARY-LONG.    *> Set Chunk Cache Center
@@ -184,6 +527,7 @@
 *>     which the hurt indication shows (Damage Event or Hurt Animation for the local player).
        10 PL-HEALTH          FLOAT-SHORT.
        10 PL-FOOD            BINARY-LONG.
+       10 PL-SATURATION      FLOAT-SHORT.
        10 PL-HURT-UNTIL      BINARY-DOUBLE.
 *>     Hunger (US8; standin-content §11; controls.cob): sprinting as last told to the server
 *>     (Player Command), and eating: 1 from the Use Item of a food item until the button is
@@ -191,6 +535,14 @@
        10 PL-SPRINTING       PIC 9.
        10 PL-EATING          PIC 9.
        10 PL-EAT-START       BINARY-DOUBLE.
+*>     The use of a bow, crossbow, trident or shield (use-item.cob; 12 section 6.6, 17 sections 3.6, 3.9, 3.10): PL-USE-KIND the HAND-ARM pose kind (0 none, 2 bow, 3 crossbow
+*>     charging, 4 trident, 8 shield), PL-USE-HAND the hand (0 main, 1 off), PL-USE-START the clock of the Use Item, PL-USE-DURATION the milliseconds the charge lasts (a crossbow),
+*>     PL-USE-SLOT the held slot it began in.
+       10 PL-USE-KIND         BINARY-LONG.
+       10 PL-USE-HAND         BINARY-LONG.
+       10 PL-USE-START        BINARY-DOUBLE.
+       10 PL-USE-DURATION     BINARY-LONG.
+       10 PL-USE-SLOT         BINARY-LONG.
 *>     Weather (US11; standin-content §14): the rain and thunder levels of the last Game Events 7
 *>     and 8 (2 sets both to 0), and the kind they map to (WX-*).
        10 PL-RAIN            FLOAT-SHORT.
@@ -203,7 +555,22 @@
        10 PL-VY              FLOAT-LONG.
        10 PL-ON-GROUND       PIC 9.
        10 PL-COLLIDED        PIC 9.
+*>     Fluids (29a section 8; client/src/physics-fluid.cob): the box touches water or lava, the eye is inside one, the fluid's
+*>     height above the feet (0 none), and the horizontal speed in blocks per tick kept while in a fluid.
+       10 PL-IN-WATER        PIC 9.
+       10 PL-IN-LAVA         PIC 9.
+       10 PL-EYE-WATER       PIC 9.
+       10 PL-EYE-LAVA        PIC 9.
+       10 PL-WATER-H         FLOAT-LONG.
+       10 PL-LAVA-H          FLOAT-LONG.
+       10 PL-VX              FLOAT-LONG.
+       10 PL-VZ              FLOAT-LONG.
+       10 PL-PUSH-X          FLOAT-LONG.    *> the current's push of this tick (29a section 8.3)
+       10 PL-PUSH-Z          FLOAT-LONG.
        10 PL-FLYING          PIC 9.
+       10 PL-GLIDING         PIC 9.          *> elytra gliding (17 section 3.13; physics-glide.cob): PL-VX, PL-VY, PL-VZ then hold the glider's velocity in blocks per tick
+       10 PL-MOVE-X          FLOAT-LONG.     *> the horizontal step of the last walking tick: the velocity a glide starts with
+       10 PL-MOVE-Z          FLOAT-LONG.
        10 PL-JUMP            PIC 9.
        10 PL-SPACE-MS        BINARY-DOUBLE.
        10 PL-SENT-X          FLOAT-LONG.
@@ -212,6 +579,39 @@
        10 PL-SENT-YAW        FLOAT-SHORT.
        10 PL-SENT-PITCH      FLOAT-SHORT.
        10 PL-SENT-FLAGS      BINARY-LONG.
+       10 PL-POSE            BINARY-LONG.    *> the Pose enum id (docs/protocol/53 section 1): 0 standing, 3 swimming (also crawling), 5 crouching
+       10 PL-EYE             FLOAT-LONG.     *> the camera's eye height above the feet (53 section 7: half the gap to the pose's eye height a tick; 0 = not set)
+*>     The state one client tick ago (SMOOTH-STORE, smooth.cob): position, eye height and field of view modifier, lerped by CL-PARTIAL for the frame's
+*>     view (53 section 7, 12 section 7.2: lerp(partialTick, old, current)). PL-OSET 0 = no old state (a join, respawn or teleport): the frame uses the current one.
+       10 PL-OSET            PIC 9.
+       10 PL-OX              FLOAT-LONG.
+       10 PL-OY              FLOAT-LONG.
+       10 PL-OZ              FLOAT-LONG.
+       10 PL-OEYE            FLOAT-LONG.
+       10 PL-OFOV            FLOAT-LONG.
+*>     The view bobbing state (53 section 15.2; smooth.cob SMOOTH-STORE and SMOOTH-WALK): walkDist (0.6 x the horizontal distance moved, summed), the bob amount
+*>     (0 to 0.1, eased 0.4 a tick toward its target) and both one tick ago; the Hurt Animation yaw of the local player and deathTime, at most 20 (12 section 6.1).
+       10 PL-WALK            FLOAT-LONG.
+       10 PL-WALK-O          FLOAT-LONG.
+       10 PL-BOB             FLOAT-LONG.
+       10 PL-BOB-O           FLOAT-LONG.
+       10 PL-HURT-DIR        FLOAT-LONG.
+       10 PL-DEATH-TIME      BINARY-LONG.
+       10 PL-SNEAK-SENT      PIC 9.          *> the shift state the server last got in Player Input
+       10 PL-SWIM-AMOUNT     FLOAT-LONG.     *> the own model's swim amount (53 section 12)
+       10 PL-ANIM-INIT       PIC 9.          *> the own figure's walk animation (54 section 1): set once the previous position is known
+       10 PL-ANIM-SPEED      FLOAT-LONG.
+       10 PL-ANIM-POS        FLOAT-LONG.
+       10 PL-ANIM-OX         FLOAT-LONG.
+       10 PL-ANIM-OY         FLOAT-LONG.
+       10 PL-ANIM-OZ         FLOAT-LONG.
+       10 PL-ANIM-AGE        FLOAT-LONG.
+       10 PL-SWIMMING        PIC 9.          *> the swimming flag (53 section 4): sprinting in water, entered with the eyes under water
+       10 PL-SNEAK-FLAG      PIC 9.          *> the client's crouching flag (53 section 3.3): from the keys of the tick before
+       10 PL-FOV-MOD         FLOAT-LONG.     *> the camera's field of view modifier (53 section 8: 1, 1.15 while sprinting; 0 = not set)
+       10 PL-TAP-MS          BINARY-DOUBLE.  *> CL-NOW-MS of the last press of forward that may be the first of a double tap (0 none)
+       10 PL-FWD-PREV        PIC 9.          *> forward was down in the frame before
+       10 PL-SPRINT-KEY      PIC 9.          *> 1 when the sprint was started with the sprint key (it ends when the key is released), 0 by a double tap
        10 RG-DIM-COUNT       BINARY-LONG.    *> dimension_type registry entries received
        10 RG-DIM OCCURS 8 TIMES.
           15 RG-DIM-NAME     PIC X(64).
@@ -220,7 +620,37 @@
           15 RG-DIM-HAS-SKY  PIC 9.
        10 RG-REGISTRIES      BINARY-LONG.    *> Registry Data packets received
        10 RG-BIOMES          BINARY-LONG.    *> worldgen/biome registry entries
-       10 RG-BIOME-PRECIP    PIC 9 OCCURS 8 TIMES.   *> biome id + 1: has_precipitation
+       10 RG-BIOME-PRECIP    PIC 9 OCCURS 255 TIMES.   *> biome id + 1: has_precipitation
+*>  ---- status effects and the heart-row state (client/src/effects.cob, hearts.cob; docs/protocol/49) ----
+    05 EF-STATE.
+       10 EF-COUNT           BINARY-LONG.    *> active effects of the local player
+       10 EF-ENTRY OCCURS 40 TIMES.
+          15 EF-ID           BINARY-LONG.    *> the effect's registry id
+          15 EF-AMP          BINARY-LONG.
+          15 EF-DUR          BINARY-LONG.    *> remaining ticks, -1 infinite
+          15 EF-FLAGS        BINARY-LONG.    *> 0x01 ambient, 0x02 visible, 0x04 show icon, 0x08 blend
+       10 HB-TICK            BINARY-LONG.    *> the HUD tick count
+       10 HB-COOLDOWN        BINARY-LONG.    *> the local player's damage cooldown time
+       10 HB-FLASH-ARMED     PIC 9.          *> 1 once a Set Health reached this local player
+       10 HB-LAST-HEALTH     BINARY-LONG.
+       10 HB-DISPLAY-HEALTH  BINARY-LONG.
+       10 HB-BLINK-TIME      BINARY-LONG.
+       10 HB-LAST-TIME       BINARY-DOUBLE.
+       10 HB-BLINK           PIC 9.
+       10 HB-RNG             BINARY-DOUBLE.  *> the random source of the frame (a 48-bit Java LCG state)
+       10 PL-MAX-HEALTH      FLOAT-SHORT.    *> max_health attribute value
+       10 PL-ARMOR           BINARY-LONG.    *> armor attribute value
+       10 PL-ABSORPTION      FLOAT-SHORT.
+       10 PL-AIR             BINARY-LONG.
+       10 PL-ON-FIRE         PIC 9.          *> the on-fire bit (entry 0 bit 0 of Set Entity Data for the local player's entity id, 18 section 1.4): flames in the third-person view
+       10 PL-MAX-AIR         BINARY-LONG.
+       10 PL-EYES-WATER      PIC 9.
+       10 PL-TICKS-FROZEN    BINARY-LONG.
+       10 PL-HARDCORE        PIC 9.
+       10 PL-VEHICLE         BINARY-LONG.    *> entity id of the vehicle ridden, -1 none
+       10 PL-MOUNT-HEARTS    BINARY-LONG.
+       10 PL-MOUNT-HEALTH    BINARY-LONG.
+       10 LL-REASON          BINARY-LONG.    *> level-loading reason of the last Respawn: 0 none, 1 Nether portal, 2 End portal, 3 other (39 section 8.4)
 *>  ---- the target and the break, place and use controls (US4; raycast.cob, controls.cob) ----
     05 CT-STATE.
        10 TG-HIT             PIC 9.          *> 1 = a block within reach is aimed at
@@ -240,10 +670,13 @@
        10 CT-BREAK-Y         BINARY-LONG.
        10 CT-BREAK-Z         BINARY-LONG.
        10 CT-BREAK-FACE      BINARY-LONG.
+       10 CT-BREAK-HELD      BINARY-LONG.    *> the held slot when the break began (a change aborts it)
        10 CT-BREAK-START     BINARY-DOUBLE.  *> clock of the start destroy
        10 CT-BREAK-MS        BINARY-LONG.    *> break time, -1 = never (unbreakable)
+       10 CT-BREAK-LAST      BINARY-DOUBLE.  *> clock of the last frame of the break (airborne time counts a fifth)
        10 CT-DONE            PIC 9.          *> 1 = the block below was finished while held
        10 CT-DONE-X          BINARY-LONG.
+       10 CT-DONE-MS         BINARY-DOUBLE.  *> clock of that stop destroy (the 5-tick cooldown, 13 section 2.2)
        10 CT-DONE-Y          BINARY-LONG.
        10 CT-DONE-Z          BINARY-LONG.
        10 BD-ENTITY          BINARY-LONG.    *> the last Block Destruction (another player's break)
@@ -251,26 +684,51 @@
        10 BD-Y               BINARY-LONG.
        10 BD-Z               BINARY-LONG.
        10 BD-PROGRESS        BINARY-LONG.
+*>     Block break progress by breaker (12 §4.2; break-overlay.cob): one entry per breaker entity id.
+       10 BDS-COUNT          BINARY-LONG.
+       10 BDS-ENTRY OCCURS 16 TIMES.
+          15 BDS-ENTITY      BINARY-LONG.
+          15 BDS-X           BINARY-LONG.
+          15 BDS-Y           BINARY-LONG.
+          15 BDS-Z           BINARY-LONG.
+          15 BDS-STAGE       BINARY-LONG.    *> 0 to 9
+          15 BDS-AT-MS       BINARY-DOUBLE.  *> clock of the last update (an entry expires after 20 s)
 *>  ---- world replica (data-model §3 replica): one row per chunk ----
     05 WR-STATE.
        10 WR-COUNT           BINARY-LONG.    *> rows in use
+       10 WR-BLOCK-BITS      BINARY-LONG.    *> bits of the global block state palette of chunk
+                                             *> packets: 0 = derive (content set open: ceillog2 of
+                                             *> its state count, else 5, the 001 form)
        10 WR-CHUNK OCCURS 1089 TIMES.
           15 WR-USED         PIC 9.
           15 WR-CX           BINARY-LONG.
           15 WR-CZ           BINARY-LONG.
-          15 WR-ADDR         USAGE POINTER.  *> 3 x 65536 cells: states, sky light, block light
+          15 WR-ADDR         USAGE POINTER.  *> one CE-CHUNK (contract/copy/CELLS.cpy, CE-CHUNK-BYTES)
           15 WR-RELEASE      PIC 9.          *> 1 = forgotten: its mesh slots are to be freed
-          15 WR-SECTION OCCURS 16 TIMES.
+          15 WR-SURF-OK      PIC 9.          *> 1 = WR-SURF and WR-WTOP are current (SKY-STOPGAP-SURFACE, CC-0007 stopgap)
+          15 WR-SURF         BINARY-SHORT UNSIGNED OCCURS 256 TIMES.   *> first open y (from min_y) of column z * 16 + x + 1
+          15 WR-WTOP         BINARY-SHORT UNSIGNED OCCURS 256 TIMES.   *> one above the topmost fluid cell above WR-SURF, 0 = none
+          15 WR-SECTION OCCURS 24 TIMES.
              20 WR-DIRTY     PIC 9.          *> 1 = to be meshed
-             20 WR-OP-ADDR   USAGE POINTER.  *> opaque mesh vertices (28 bytes each)
+             20 WR-OP-ADDR   USAGE POINTER.  *> opaque mesh vertices (44 bytes each)
              20 WR-OP-COUNT  BINARY-LONG.
              20 WR-TR-ADDR   USAGE POINTER.  *> translucent mesh vertices
              20 WR-TR-COUNT  BINARY-LONG.
              20 WR-UPLOAD    PIC 9.          *> 1 = meshes changed since the last frame
+             20 WR-URGENT    PIC 9.          *> 1 = dirty because a block changed (WORLD-BLOCK-SET): meshed ahead of the credit (T5500)
+             20 WR-MESHED    PIC 9.          *> 1 = MESH-SECTION has run for this section since its chunk was (re)loaded (0: a section whose picture is a hole, meshed before any redo)
+             20 WR-KIND      PIC 9.          *> what MESH-DIRTY found while the section was dirty: 0 not looked at (set again by every marking), 1 only air, 2 holds blocks
 *>  ---- entity replica (data-model §3 replica; 05a Add Entity, Move Entity, Remove Entities) and
 *>       the player list (Player Info Update / Remove) ----
     05 EN-STATE.
        10 EN-COUNT           BINARY-LONG.    *> rows ever used
+*>        The ender dragon's flight history (34-7 8.1; one dragon per world): the entity id that owns it (0 none), the head index and 64 samples of y and yaw in degrees (the group
+*>        layout of EF7-HIST-*).
+       10 EN-DR-ID           BINARY-LONG.
+       10 EN-DR-HIST.
+          15 EN-DR-HEAD      BINARY-LONG.
+          15 EN-DR-HY        FLOAT-LONG OCCURS 64 TIMES.
+          15 EN-DR-HR        FLOAT-LONG OCCURS 64 TIMES.
        10 EN-ENTITY OCCURS 256 TIMES.
           15 EN-USED         PIC 9.
           15 EN-ID           BINARY-LONG.
@@ -290,12 +748,207 @@
           15 EN-VZ           FLOAT-LONG.
           15 EN-STACK-COUNT  BINARY-LONG.
           15 EN-STACK-ITEM   BINARY-LONG.
+*>        The registry key of EN-TYPE in a world of the standard set (EN-VANILLA 1; spaces when the id is outside the
+*>        registry) and the row of CL-MODELS (CLMODELS.cpy) that draws it (0 = no model). In a cobolcraft world EN-TYPE is the
+*>        stand-in type of standin-content §3 and EN-VANILLA is 0.
+          15 EN-VANILLA      PIC 9.
+          15 EN-KEY          PIC X(24).
+          15 EN-MODEL        BINARY-LONG.
+*>        The attack box of an entity of the standard set (EN-VANILLA 1; 21 section 2): 1 when the left button attacks it (a living entity, a player,
+*>        a boat, a minecart, an armor stand, an end crystal; not an item, an orb or a projectile), the half width and the height in blocks.
+          15 EN-BOX-ATTACK    PIC 9.
+          15 EN-BOX-HALF      FLOAT-LONG.
+          15 EN-BOX-HEIGHT    FLOAT-LONG.
+*>        Set Entity Data of the models: the value of an experience_orb (entry 8), the swell direction of a creeper (entry 16: -1 idle, 1
+*>        fusing), the swell counter at the moment the direction last changed and that moment (CL-NOW-MS); the counter then runs 1 a tick.
+          15 EN-VALUE        BINARY-LONG.
+          15 EN-SWELL-DIR    BINARY-LONG.
+          15 EN-SWELL-BASE   BINARY-LONG.
+          15 EN-SWELL-MS     BINARY-DOUBLE.
+*>        Set Entity Data of a player (docs/protocol/53 section 10): the shared flags byte (entry 0: 0x02 shift, 0x08 sprinting, 0x10 swimming) and
+*>        the Pose id (entry 6: 0 standing, 3 swimming, 5 crouching).
+          15 EN-FLAGS        BINARY-LONG.
+          15 EN-POSE         BINARY-LONG.
+          15 EN-LIVING       BINARY-LONG.   *> the living entity flags byte (entry 8: bit 0 uses an item, bit 1 with the off hand), 12 section 7.5
+          15 EN-SWIM         FLOAT-LONG.    *> the swim amount 0 to 1 (53 section 12: 0.09 a tick toward 1 while the pose is swimming)
+          15 EN-PARTS        BINARY-LONG.   *> a player's skin parts byte (entry 16, BYTE, 47 section 5.3: bit 0 cape, 1 jacket, 2 left sleeve, 3 right sleeve, 4 left pants leg, 5 right pants leg, 6 hat; 0 until set)
+*>        The walk animation of a living entity (docs/protocol/54 section 1.1): the speed one tick ago, the speed, the position, the position scale (3 for a
+*>        baby, else 1) and the position at the previous client tick (ENTITIES-ANIM-TICK). EN-MOB-FLAGS is the mob flags byte (Set Entity Data entry 15: 1 no AI,
+*>        2 left-handed, 4 aggressive), EN-BABY the ageable mob's baby flag (entry 16, BOOLEAN). The swing (54 section 2.1, 12 section 6.4): active, ticks, duration,
+*>        the hand (0 main, 1 off), the animation type (0 none, 1 whack, 2 stab) and the animation value 0 to 1.
+          15 EN-WALK-SPEED-OLD FLOAT-LONG.
+          15 EN-WALK-SPEED   FLOAT-LONG.
+          15 EN-WALK-POS     FLOAT-LONG.
+          15 EN-WALK-SCALE   FLOAT-LONG.
+          15 EN-ATTR-SCALE   FLOAT-LONG.   *> the scale attribute (18 section 3, id 30, range 0.0625 to 16, default 1): Update Attributes, state.scale of 34-1 6.3
+          15 EN-OX           FLOAT-LONG.
+          15 EN-OY           FLOAT-LONG.
+          15 EN-OZ           FLOAT-LONG.
+*>        The yaw, pitch and head yaw at the previous client tick (the rendered values lerp from them to the current ones by CL-PARTIAL, smooth.cob).
+          15 EN-OYAW         FLOAT-SHORT.
+          15 EN-OPITCH       FLOAT-SHORT.
+          15 EN-OHEAD        FLOAT-SHORT.
+          15 EN-MOB-FLAGS    BINARY-LONG.
+          15 EN-BABY         PIC 9.
+          15 EN-DARK         BINARY-LONG.   *> a glow squid's dark ticks remaining (entry 18, INT) when it was set at the clock EN-DARK-MS: the counter falls 1 a tick (34-8 section 2.2)
+          15 EN-DARK-MS      BINARY-DOUBLE.
+          15 EN-SW-ACTIVE    PIC 9.
+          15 EN-SW-TICKS     BINARY-LONG.
+          15 EN-SW-DUR       BINARY-LONG.
+          15 EN-SW-HAND      BINARY-LONG.
+          15 EN-SW-TYPE      BINARY-LONG.
+          15 EN-SW-ANIM      FLOAT-LONG.
+          15 EN-AGE          FLOAT-LONG.    *> ageInTicks: client ticks since the entity was added (34-2: arm bob and sway)
+*>        The squish of a slime or magma cube (34-6 7.4 AbstractCubeMob.tick, ENTITIES-ANIM-TICK): the squish, its value one tick ago, the target squish and the
+*>        was-on-ground flag.
+          15 EN-SQ           FLOAT-LONG.
+          15 EN-SQ-OLD       FLOAT-LONG.
+          15 EN-SQ-TGT       FLOAT-LONG.
+          15 EN-WOG          PIC 9.
+*>        Aquatic state (ENTITIES-ANIM-TICK, 34-8 sections 2 and 5): EN-DRY 1 when an aquatic mob's box middle is not in water (0 until a tick says so),
+*>        the squid's tentacle movement, speed (0.1 to 0.2 from the entity id), angle, rotate speed, xBodyRot and zBodyRot in degrees.
+          15 EN-DRY          PIC 9.
+          15 EN-TM           FLOAT-LONG.
+          15 EN-TS           FLOAT-LONG.
+          15 EN-TA           FLOAT-LONG.
+          15 EN-RS           FLOAT-LONG.
+          15 EN-XR           FLOAT-LONG.
+          15 EN-ZR           FLOAT-LONG.
+*>        Evoker fangs (34-3 4.8): the bite has started (Entity Event 4) and lifeTicks (22 at spawn, falling by 1 a tick once started).
+          15 EN-FA           PIC 9.
+          15 EN-FL           BINARY-LONG.
+*>        Guardian (34-6 11.4, ENTITIES-ANIM-TICK; the squid fields are reused: EN-TS tail speed, EN-TM tail animation, EN-TA spikes animation, EN-RS attack time; EN-X1 the
+*>        moving flag, entry 16): the active attack target's entity id (entry 17, 0 none).
+          15 EN-TGT          BINARY-LONG.
+*>        Axolotl (34-8 4.5, ENTITY-AXOLOTL-TICK): playing dead (entry 19, BOOLEAN), the ticks of the four BinaryAnimators (1 playing dead, 2 in water, 3 on the ground, 4 moving; 0 to 10)
+*>        and their value one tick earlier, and the rotation at the previous tick (the moving flag reads a change of it).
+          15 EN-AX-PD        BINARY-LONG.
+          15 EN-AX-T         BINARY-LONG OCCURS 4 TIMES.
+          15 EN-AX-O         BINARY-LONG OCCURS 4 TIMES.
+          15 EN-AX-XR        FLOAT-LONG.
+          15 EN-AX-YR        FLOAT-LONG.
+*>        A baby axolotl's animation state (4.5): 0 none (an adult), 1 swim, 2 walk, 3 walk underwater, 4 idle underwater, 5 idle underwater on the ground, 6 idle on the ground, 7 play dead,
+*>        and the tick count at which it started (AnimationState.startIfStopped).
+          15 EN-AX-BS        BINARY-LONG.
+          15 EN-AX-BT        BINARY-LONG.
+*>        The ender dragon and the end crystal (34-7 sections 7.3 and 8): EN-HP the health of entry 9 (FLOAT; 1 until told), EN-DD the death time dragonDeathTime (ticks while the health is 0 or less,
+*>        at most 200), EN-NCI the entity id of the nearest healing crystal (0 none, ENTITY-DRAGON-CRYSTAL); a crystal's beam target (entry 8, OPTIONAL_BLOCK_POS): EN-BP 1 when set, the block EN-BX, EN-BY, EN-BZ.
+          15 EN-HP           FLOAT-LONG.
+          15 EN-DD           BINARY-LONG.
+          15 EN-NCI          BINARY-LONG.
+          15 EN-BP           BINARY-LONG.
+          15 EN-BX           BINARY-LONG.
+          15 EN-BY           BINARY-LONG.
+          15 EN-BZ           BINARY-LONG.
+*>        An item frame (34-9 section 10): the direction (entry 8, DIRECTION: 0 down, 1 up, 2 north, 3 south, 4 west, 5 east; north until told) and the rotation of the item (entry 10, 0 to 7).
+*>        The block state id of the data field of Add Entity (a falling block, 34-9 13.1; entry 9 of a tnt is not kept).
+          15 EN-BSTATE       BINARY-LONG.
+          15 EN-FDIR         BINARY-LONG.
+          15 EN-FROT         BINARY-LONG.
+*>        Boat (34-8 7.3, ENTITY-BOAT-SET and ENTITIES-ANIM-TICK): hurt time (entry 8), hurt direction (9), damage (10, FLOAT), bubble time (13), the bubble multiplier
+*>        and angle in degrees, and 1 when the boat is under water.
+          15 EN-BHT          FLOAT-LONG.
+          15 EN-BHD          BINARY-LONG.
+          15 EN-BDM          FLOAT-LONG.
+          15 EN-BBT          BINARY-LONG.
+          15 EN-BBM          FLOAT-LONG.
+          15 EN-BBA          FLOAT-LONG.
+          15 EN-BUW          PIC 9.
+*>        Held-item poses: the enderman's carried block state (entry 16, 0 none) and creepy flag (17); the iron golem's attack tick (Entity Event 4: 10) and offer-flower
+*>        tick (event 11: 400, event 34: 0), both falling by 1 a tick.
+          15 EN-CARRY        BINARY-LONG.
+          15 EN-CREEPY       PIC 9.
+          15 EN-ATK          BINARY-LONG.
+          15 EN-FLW          BINARY-LONG.
+*>        The armadillo (34-5 10.3, ENTITY-ARMADILLO-SET and ENTITIES-ANIM-TICK): ARMADILLO_STATE (Set Entity Data entry 18, serializer 36: 0 idle, 1 rolling, 2 scared,
+*>        3 unrolling), inStateTicks (client ticks since the state changed), the start ticks of the roll-out, roll-up and peek animation states (-2147483648 is stopped)
+*>        and the "peek received" flag of Entity Event 64.
+          15 EN-ARMA         BINARY-LONG.
+          15 EN-ARMA-TICKS   BINARY-LONG.
+          15 EN-ARMA-OUT     BINARY-LONG.
+          15 EN-ARMA-UP      BINARY-LONG.
+          15 EN-ARMA-PEEK    BINARY-LONG.
+          15 EN-ARMA-RCV     BINARY-LONG.
+*>        The variant data of a mob of the standard set (Set Entity Data, ENTITY-VARIANT-SET: the entry that holds it depends on the type): the registry id
+*>        of its wolf, cat, frog, pig, cow, chicken variant, the mooshroom, rabbit, fox, llama, axolotl, parrot type, the horse colour and markings,
+*>        the panda main gene, the sheep colour byte (low nibble dye, 16 sheared), the slime size, the packed tropical fish variant, the salmon type, the
+*>        pufferfish puff state; for a villager its type, profession and level (VAR, VAR2, VAR3). -1 until the server sent it.
+          15 EN-VAR          BINARY-LONG.
+          15 EN-VAR2         BINARY-LONG.
+          15 EN-VAR3         BINARY-LONG.
+*>        More metadata of the overlay layers (ENTITY-VARIANT-SET): X1 the tamable flags byte of a wolf and cat (bit 4 tame) or the fox flags (bit 32 sleeping), X2 the
+*>        collar dye id (default 14, red), X3 the wolf's anger end time; EN-OVL the texture code of the overlay layer being drawn (0 none) and EN-OVN its index (1 to 4).
+          15 EN-X1           BINARY-LONG.
+          15 EN-X2           BINARY-LONG.
+          15 EN-X3           BINARY-DOUBLE.
+          15 EN-OVL          BINARY-LONG.
+          15 EN-OVN          BINARY-LONG.
+*>        Equipment (Set Equipment 0x68, slot ordinals 0 main hand, 1 off hand, 2 feet, 3 legs, 4 chest, 5 head, 6 body, 7 saddle; EN-EQ(row, slot + 1) the item registry id,
+*>        0 empty) and the hands of the model drawn this frame (ENTITY-MODEL-EMIT: 1 right arm, 2 left arm; OK 1 when found, the point of the hand and the direction from
+*>        the shoulder to the hand relative to the entity, ENTITY-HAND-FIND), where GROUND-ITEMS-MESH draws the held items.
+          15 EN-EQ           BINARY-LONG OCCURS 8 TIMES.
+          15 EN-HAND OCCURS 2 TIMES.
+             20 EN-HAND-OK    BINARY-LONG.
+             20 EN-HAND-V     FLOAT-LONG OCCURS 6 TIMES.
+*>           The frame of the arm part (ENTITY-HAND-FRAME; 1 in EN-HAND-FOK when found): its origin (the pivot of the part) and the images of its three axes, a block long,
+*>           in the entity-relative world: 12 values, origin then x, y and z axis. The held item of 34-1 section 8.3 is placed in it (ENTITY-HELD-POSED).
+             20 EN-HAND-FOK   BINARY-LONG.
+             20 EN-HAND-FG.
+                25 EN-HAND-F  FLOAT-LONG OCCURS 12 TIMES.
+*>        The item components of the equipment that the models draw (54 sections 17 to 19 and 22; ENTITY-EQ-COMPONENTS, per slot like EN-EQ): EN-EQ-DYE the
+*>        dyed_color RGB (low 24 bits, -1 none), EN-EQ-TRIM-MAT and -PAT the trim's material and pattern holders (registry position + 1, 0 none or an inline holder),
+*>        EN-EQ-FOIL 1 when the stack has the glint (the override, else a non-empty enchantments component). EN-HB, per hand (1 main, 2 off): the base_color dye
+*>        (-1 none), the number of banner_patterns layers (at most 16 kept) and the pattern holder (0 inline) and dye id of each.
+          15 EN-EQX OCCURS 8 TIMES.
+             20 EN-EQ-DYE      BINARY-LONG.
+             20 EN-EQ-TRIM-MAT BINARY-LONG.
+             20 EN-EQ-TRIM-PAT BINARY-LONG.
+             20 EN-EQ-FOIL     BINARY-LONG.
+          15 EN-HB OCCURS 2 TIMES.
+             20 EN-HB-BASE     BINARY-LONG.
+             20 EN-HB-COUNT    BINARY-LONG.
+             20 EN-HB-PAT      BINARY-LONG OCCURS 16 TIMES.
+             20 EN-HB-DYE      BINARY-LONG OCCURS 16 TIMES.
        10 PI-COUNT           BINARY-LONG.    *> rows ever used
        10 PI-ENTRY OCCURS 64 TIMES.
           15 PI-USED         PIC 9.
           15 PI-UUID         PIC X(16).
           15 PI-NAME         PIC X(16).
           15 PI-NAME-LENGTH  BINARY-LONG.
+*>  ---- bells (31-4 section 4; bell.cob): BL-IS(block id + 1) 1 for the bell block, built from the names of the state tables (BL-READY); BL-BELL the bells of the loaded chunks: BL-SID the state,
+*>       BL-SHAKING and BL-TICKS (the entity's `shaking` and `ticks`), BL-DIR the click direction in the Direction order (0 down, 1 up, 2 north, 3 south, 4 west, 5 east); BL-COUNT the bells in use ----
+    05 BL-DATA.
+       10 BL-READY           BINARY-LONG.
+       10 BL-IS              PIC 9 OCCURS 2048 TIMES.
+       10 BL-COUNT           BINARY-LONG.
+       10 BL-BELL OCCURS 32 TIMES.
+          15 BL-USED         BINARY-LONG.
+          15 BL-X            BINARY-LONG.
+          15 BL-Y            BINARY-LONG.
+          15 BL-Z            BINARY-LONG.
+          15 BL-SID          BINARY-LONG.
+          15 BL-SHAKING      BINARY-LONG.
+          15 BL-TICKS        BINARY-LONG.
+          15 BL-DIR          BINARY-LONG.
+*>  ---- shulker boxes (52 section 4, 31-1 section 13; shulker-box.cob): SB-IS(block id + 1) 1 for a shulker box block and SB-DYE its colour (0 to 15, 16 undyed), built from the names of the
+*>       state tables (SB-READY); SB-BOX the boxes of the loaded chunks: SB-SID the state, SB-COLOUR, SB-FACE (the facing in the Direction order: 0 down, 1 up, 2 north, 3 south, 4 west,
+*>       5 east), SB-STATUS (0 closed, 1 opening, 2 opened, 3 closing) and the lid in tenths: SB-T ticks 0 to 10 and SB-TOLD a tick earlier; SB-COUNT the boxes in use ----
+    05 SB-DATA.
+       10 SB-READY           BINARY-LONG.
+       10 SB-IS              PIC 9 OCCURS 2048 TIMES.
+       10 SB-DYE             BINARY-LONG OCCURS 2048 TIMES.
+       10 SB-COUNT           BINARY-LONG.
+       10 SB-BOX OCCURS 64 TIMES.
+          15 SB-USED         BINARY-LONG.
+          15 SB-X            BINARY-LONG.
+          15 SB-Y            BINARY-LONG.
+          15 SB-Z            BINARY-LONG.
+          15 SB-SID          BINARY-LONG.
+          15 SB-COLOUR       BINARY-LONG.
+          15 SB-FACE         BINARY-LONG.
+          15 SB-STATUS       BINARY-LONG.
+          15 SB-T            BINARY-LONG.
+          15 SB-TOLD         BINARY-LONG.
 *>  ---- chat (US6; client-surface §4; screens/chat.cob, screens/hud.cob): the line being typed
 *>       (UTF-8), the messages scrolled back while chat is open, and the messages received this
 *>       session, oldest first (the clock when each arrived, its rendered text) ----
@@ -315,20 +968,21 @@
     05 CM-STATE.
        10 CM-COUNT           BINARY-LONG.
        10 CM-ROOT            BINARY-LONG.
-       10 CM-NODE OCCURS 160 TIMES.
+       10 CM-NODE OCCURS 4096 TIMES.
           15 CM-FLAGS        BINARY-LONG.
           15 CM-GREEDY       PIC 9.
+          15 CM-PARSER       BINARY-LONG.    *> the parser id of an argument node, -1 for any other node
           15 CM-NAME         PIC X(32).
           15 CM-NAME-LENGTH  BINARY-LONG.
           15 CM-FIRST        BINARY-LONG.    *> the first child's CM-LINK row
           15 CM-CHILDREN     BINARY-LONG.
        10 CM-LINK-COUNT      BINARY-LONG.
-       10 CM-LINK            BINARY-LONG OCCURS 160 TIMES.
+       10 CM-LINK            BINARY-LONG OCCURS 8192 TIMES.
 *>     Suggestions shown under the chat line (CHAT-SUGGEST): the command names that complete the
 *>     word being typed; the last Command Suggestion sent (transaction id, the line it asked about,
 *>     0 length = none outstanding) and the texts of its answer; the rows shown in the last frame.
        10 CS-COUNT           BINARY-LONG.
-       10 CS-ENTRY OCCURS 10 TIMES.
+       10 CS-ENTRY OCCURS 128 TIMES.
           15 CS-TEXT         PIC X(32).
           15 CS-LENGTH       BINARY-LONG.
        10 CS-TRANSACTION     BINARY-LONG.
@@ -339,20 +993,59 @@
           15 CS-A-TEXT       PIC X(64).
           15 CS-A-LENGTH     BINARY-LONG.
        10 CS-SHOWN           BINARY-LONG.
-*>  ---- recipe book (US10; standin-content §13; 09 §3.3 Recipe Book Add; screens/crafting.cob):
-*>       the recipes of the Recipe Book Adds received, in the order first received: display id,
-*>       craftable (crafting requirements present), ingredients (item, count) and result ----
-    05 RB-STATE.
-       10 RB-COUNT           BINARY-LONG.
-       10 RB-RECIPE OCCURS 16 TIMES.
-          15 RB-ID           BINARY-LONG.
-          15 RB-CRAFTABLE    PIC 9.
-          15 RB-IN-COUNT     BINARY-LONG.
-          15 RB-IN OCCURS 9 TIMES.
-             20 RB-IN-ITEM   BINARY-LONG.
-             20 RB-IN-AMOUNT BINARY-LONG.
-          15 RB-RES-ITEM     BINARY-LONG.
-          15 RB-RES-AMOUNT   BINARY-LONG.
+       10 CS-FROZEN          PIC 9.            *> 1 while Tab cycles: the list is kept as it was
+       10 CS-SELECTED        BINARY-LONG.      *> the suggestion Tab last took (1 to CS-COUNT + CS-ANSWERS), 0 none
+       10 CS-WORD-START      BINARY-LONG.      *> where the word being typed starts on the line (1-based)
+*>  ---- the recipe book (13 section 3.9): the entries of Recipe Book Add, the settings, the panel's state ----
+    05 RK-STATE.
+       10 RK-COUNT           BINARY-LONG.
+       10 RK-ENTRY OCCURS 2048 TIMES.
+          15 RK-ID           BINARY-LONG.
+          15 RK-TYPE         BINARY-LONG.    *> 0 shapeless, 1 shaped, 2 to 4 other books (kept, not listed)
+          15 RK-CATEGORY     BINARY-LONG.    *> 46 section 9.3: 0 building, 1 redstone, 2 equipment, 3 misc for crafting
+          15 RK-GROUP        BINARY-LONG.    *> 0 none, else group index + 1
+          15 RK-WIDTH        BINARY-LONG.
+          15 RK-HEIGHT       BINARY-LONG.
+          15 RK-HIGHLIGHT    PIC 9.
+          15 RK-REQ-COUNT    BINARY-LONG.    *> crafting requirements (one item each); 0 and RK-REQ-PRESENT 0 = never craftable
+          15 RK-REQ-PRESENT  PIC 9.
+          15 RK-REQ-ITEM     BINARY-LONG OCCURS 9 TIMES.
+          15 RK-SLOTS        BINARY-LONG.    *> ingredient slots
+          15 RK-SLOT-ITEM    BINARY-LONG OCCURS 9 TIMES. *> the item each slot shows, -1 none
+          15 RK-RES-ITEM     BINARY-LONG.
+          15 RK-RES-COUNT    BINARY-LONG.
+          15 RK-CAN          PIC 9.          *> craftable now (RK-REFRESH)
+          15 RK-HEAD         BINARY-LONG.    *> the first entry of its collection (same category and group)
+          15 RK-MATCH        PIC 9.          *> 1 = the search text matches the result's name
+          15 RK-NDISP        BINARY-LONG.    *> head only: members that fit the grid
+          15 RK-NCAN         BINARY-LONG.    *> head only: members craftable now
+          15 RK-NMATCH       BINARY-LONG.    *> head only: members matching the search
+       10 RK-OPEN            PIC 9 OCCURS 4 TIMES.
+       10 RK-FILTERING       PIC 9 OCCURS 4 TIMES.
+       10 RK-TAB             BINARY-LONG.    *> 1 search, 2 equipment, 3 building, 4 misc, 5 redstone
+       10 RK-PAGE            BINARY-LONG.
+       10 RK-PAGES           BINARY-LONG.
+       10 RK-SEARCH          PIC X(50).
+       10 RK-SEARCH-LENGTH   BINARY-LONG.
+       10 RK-SEARCH-FOCUS    PIC 9.
+       10 RK-LAST-PLACED     BINARY-LONG.    *> display id of the last placed recipe, -1 none
+       10 RK-DIRTY           PIC 9.          *> 1 = craftability to be recomputed
+       10 RK-SDIRTY          PIC 9.          *> 1 = search matches to be recomputed
+       10 RK-TABHAS          PIC 9 OCCURS 5 TIMES.
+       10 RK-SIG             BINARY-LONG.    *> inventory signature of the last refresh
+       10 RK-GRID            BINARY-LONG.    *> grid size of the last refresh (2 or 3)
+       10 RK-CELL-COUNT      BINARY-LONG.
+       10 RK-CELL OCCURS 20 TIMES.
+          15 RK-CELL-ROW     BINARY-LONG.    *> the entry shown
+          15 RK-CELL-MANY    BINARY-LONG.    *> displayable recipes in the collection
+       10 RK-GHOST-CONTAINER BINARY-LONG.   *> -1 none
+       10 RK-GHOST-W         BINARY-LONG.
+       10 RK-GHOST-H         BINARY-LONG.
+       10 RK-GHOST-TYPE      BINARY-LONG.
+       10 RK-GHOST-SLOTS     BINARY-LONG.
+       10 RK-GHOST-ITEM      BINARY-LONG OCCURS 9 TIMES.
+       10 RK-TOAST-UNTIL     BINARY-DOUBLE.  *> CL-NOW-MS until which the toast shows, 0 none
+       10 RK-GHEAD           BINARY-LONG OCCURS 4096 TIMES.
 *>  ---- packs (08 §3, §10): stack, language, font ----
 *>  The stack (08 §3.1; stack.cob, source.cob): bottom first, the built-in pack at the bottom, then
 *>  the enabled local packs (user order), then the server packs (newest on top). A local or server
@@ -363,6 +1056,8 @@
        10 PK-COUNT           BINARY-LONG.    *> packs in the stack, bottom first
        10 PK-PACK OCCURS 16 TIMES.
           15 PK-KIND         BINARY-LONG.    *> 0 built-in, 1 folder, 2 zip
+          15 PK-LEVEL        BINARY-LONG.    *> level of the stack: 1 built-in, 2 skin, 3 generated vanilla,
+                                             *> 4 user packs, 5 server packs (faithful-pack-mapping 9.1)
           15 PK-SERVER       BINARY-LONG.    *> server pack: its RP-PACK row, else 0
           15 PK-ID           PIC X(80).      *> file/<name>, server/<8 hex>/<uuid>
           15 PK-ID-LENGTH    BINARY-LONG.
@@ -377,8 +1072,11 @@
        10 PK-ERROR OCCURS 8 TIMES.
           15 PK-ERROR-TEXT   PIC X(256).
           15 PK-ERROR-LENGTH BINARY-LONG.
+       10 LG-FILES           BINARY-LONG.
+       10 LG-FAILED          BINARY-LONG.
+       10 LG-OVERFLOW        BINARY-LONG.
        10 LG-COUNT           BINARY-LONG.
-       10 LG-ENTRY OCCURS 640 TIMES.
+       10 LG-ENTRY OCCURS 12000 TIMES.
           15 LG-KEY          PIC X(80).
           15 LG-KEY-LENGTH   BINARY-LONG.
           15 LG-TEXT         PIC X(200).
@@ -415,6 +1113,18 @@
        10 OP-ENABLED OCCURS 32 TIMES.
           15 OP-ID           PIC X(80).
           15 OP-ID-LENGTH    BINARY-LONG.
+*>     options.txt (options.cob; 13 §7): the options of the table CLOPTS.cpy by row, each in its stored form (OP-OPT-LEN 0 = the
+*>     empty string); the confirmed incompatible pack ids as the file's JSON list text; the optional fullscreen video mode line.
+       10 OP-OPT OCCURS 160 TIMES.
+          15 OP-OPT-VALUE    PIC X(64).
+          15 OP-OPT-LEN      BINARY-LONG.
+       10 OP-PAGE            BINARY-LONG.     *> the options screen: the page shown, from 0
+       10 OP-RETURN          BINARY-LONG.     *> the screen the options screen returns to
+       10 OP-REBIND          BINARY-LONG.     *> the key option row waiting for a key (0 = none)
+       10 OP-INCOMPAT        PIC X(512).
+       10 OP-INCOMPAT-LEN    BINARY-LONG.
+       10 OP-FULLSCREEN      PIC X(64).
+       10 OP-FULLSCREEN-LEN  BINARY-LONG.
        10 LP-CONFIRM         BINARY-LONG.    *> pack confirmation: the LP-ENTRY to enable
        10 LP-ICON-COUNT      BINARY-LONG.    *> icon cells in use
 *>  ---- server packs (US18-6 to US18-8; 08 §9; packs/download.cob, packs/cache.cob,
@@ -445,7 +1155,9 @@
        10 AT-H               BINARY-LONG.
        10 AT-ADDR            USAGE POINTER.  *> RGBA pixels, rows top to bottom
        10 AT-SPRITE-COUNT    BINARY-LONG.    *> sprite 1 is the missing texture
-       10 AT-SPRITE OCCURS 128 TIMES.
+       10 AT-PAD             BINARY-LONG.    *> padding around each sprite's slot, pixels (12 section 2.2)
+       10 AT-MIPS            BINARY-LONG.    *> mip levels of the atlas texture (levels below the first + 1)
+       10 AT-SPRITE OCCURS 4096 TIMES.
           15 AT-NAME         PIC X(80).      *> sprite id, e.g. cobolcraft:block/greystone
           15 AT-NAME-LENGTH  BINARY-LONG.
           15 AT-X            BINARY-LONG.
@@ -453,11 +1165,59 @@
           15 AT-SW           BINARY-LONG.
           15 AT-SH           BINARY-LONG.
           15 AT-TRANSLUCENT  PIC 9.          *> 1 = some pixel has alpha below 255 (08 §5.3)
+          15 AT-PACK         BINARY-LONG.    *> the pack that gave the image (0 = the missing texture)
+          15 AT-ANIM         BINARY-LONG.    *> its row of AN-ANIM, 0 = not animated
+*>     Animated sprites of the block atlas (packs/mcmeta.cob ANIM-PARSE, atlas.cob ANIM-TICK): the
+*>     frames of each (a vertical strip kept whole), the sequence, the frame shown (AN-CUR: its picture
+*>     and blend), and AN-OUT, the pixels last written into the atlas cell (AN-DIRTY 1 until submitted
+*>     with cc_vk_texture_update).
+       10 AN-COUNT            BINARY-LONG.
+       10 AN-START-MS         BINARY-DOUBLE.  *> clock of the first ANIM-TICK (0 = none yet)
+       10 AN-ANIM OCCURS 256 TIMES.
+          15 AN-SPRITE       BINARY-LONG.
+          15 AN-FRAME-W      BINARY-LONG.
+          15 AN-FRAME-H      BINARY-LONG.
+          15 AN-INTERPOLATE  PIC 9.
+          15 AN-ENTRIES      BINARY-LONG.
+          15 AN-TOTAL        BINARY-LONG.
+          15 AN-CUR          BINARY-LONG.
+          15 AN-DIRTY        PIC 9.
+          15 AN-PIXELS       USAGE POINTER.
+          15 AN-OUT          USAGE POINTER.
+          15 AN-SEQ OCCURS 32 TIMES.
+             20 AN-SEQ-INDEX BINARY-LONG.
+             20 AN-SEQ-TIME  BINARY-LONG.
        10 UA-W               BINARY-LONG.
        10 UA-H               BINARY-LONG.
        10 UA-ADDR            USAGE POINTER.
        10 UA-ICON-Y          BINARY-LONG.    *> first row of the pack icon cells (16 x 16 each)
-       10 AT-UPLOAD          PIC 9 OCCURS 4 TIMES.   *> texture id + 1 to be uploaded
+       10 UA-SPRITE-Y        BINARY-LONG.    *> first row of the GUI sprites (below the icon cells)
+*>     GUI sprites of the UI atlas (gui-sprites.cob; 12 §5.9): GSP-* rows. GS-W 0 = the pack gives none
+*>     (the swatch draws instead). GS-NINE 1 = a nine_slice .mcmeta: source size GS-LW x GS-LH, borders
+*>     left, top, right, bottom.
+       10 GS-TOTAL-H         BINARY-LONG.
+       10 GS-MAX-W           BINARY-LONG.
+       10 GS-ROW OCCURS 240 TIMES.
+          15 GS-X            BINARY-LONG.
+          15 GS-Y            BINARY-LONG.
+          15 GS-W            BINARY-LONG.
+          15 GS-H            BINARY-LONG.
+          15 GS-NINE         PIC 9.
+          15 GS-LW           BINARY-LONG.
+          15 GS-LH           BINARY-LONG.
+          15 GS-BL           BINARY-LONG.
+          15 GS-BT           BINARY-LONG.
+          15 GS-BR           BINARY-LONG.
+          15 GS-BB           BINARY-LONG.
+       10 AT-UPLOAD          PIC 9 OCCURS 7 TIMES.   *> texture id + 1 to be uploaded
+*>     The enchantment glint textures (textures 5 and 6, repeat wrapping; glint.cob GLINT-TEXTURES-BUILD; 54 section 19.3): the item glint and the armour glint,
+*>     RGBA, width and height 0 and the address NULL when the stack has no such image (nothing is drawn with the glint then).
+       10 GT-ITEM-W          BINARY-LONG.
+       10 GT-ITEM-H          BINARY-LONG.
+       10 GT-ITEM-ADDR       USAGE POINTER.
+       10 GT-ARMOR-W         BINARY-LONG.
+       10 GT-ARMOR-H         BINARY-LONG.
+       10 GT-ARMOR-ADDR      USAGE POINTER.
 *>     Entity atlas (texture 1; 08 §10.11): the entity images stacked from the top, left-aligned;
 *>     for entity type t row t + 1 its image's rectangle (loose_item, row 2, has none).
        10 EA-W               BINARY-LONG.
@@ -468,6 +1228,18 @@
           15 EA-IM-Y         BINARY-LONG.
           15 EA-IM-W         BINARY-LONG.
           15 EA-IM-H         BINARY-LONG.
+*>     The images of the entity models (entities-models.cob), stacked below the stand-ins in the order the replica first
+*>     showed them: slot k holds the CL-MODELS row EA-MT-MODEL and its image's rectangle.
+       10 EA-MT-COUNT        BINARY-LONG.
+       10 EA-MT OCCURS 64 TIMES.
+          15 EA-MT-MODEL     BINARY-LONG.
+          15 EA-MT-TEX       BINARY-LONG.    *> texture code of the slot (ENTITY-TEX-CODE; 0 the row's own image)
+          15 EA-MT-X         BINARY-LONG.
+          15 EA-MT-Y         BINARY-LONG.
+          15 EA-MT-W         BINARY-LONG.
+          15 EA-MT-H         BINARY-LONG.
+          15 EA-MT-USED      BINARY-LONG.    *> the value of EA-MT-STAMP when a mob last drew the slot (least recently used goes first when the atlas is full)
+       10 EA-MT-STAMP        BINARY-LONG.    *> the number of ENTITY-MODEL-SLOTS passes so far
 *>     Environment atlas (texture 3, repeat wrapping; 08 §10.11; weather-render.cob): row k
 *>     (1 drizzle, 2 hailstorm) is its image's columns (left column, size); the image is repeated
 *>     down its columns over the whole atlas height.
@@ -478,32 +1250,218 @@
           15 XA-IM-X         BINARY-LONG.
           15 XA-IM-W         BINARY-LONG.
           15 XA-IM-H         BINARY-LONG.
+*>     Particle atlas (texture 4; particles-live.cob PARTICLE-ATLAS-BUILD): the sprites of the wired particle
+*>     types stacked from the top, left-aligned. PRA-FIRST(t + 1) and PRA-COUNT(t + 1) are the first sprite and the
+*>     number of sprites of particle type t (registry id, 42-1 section 2); PRA-S-Y, PRA-S-W and PRA-S-H the
+*>     rectangle of a sprite (left 0).
+       10 PRA-W              BINARY-LONG.
+       10 PRA-H              BINARY-LONG.
+       10 PRA-ADDR           USAGE POINTER.
+       10 PRA-SPRITES        BINARY-LONG.
+       10 PRA-TYPE OCCURS 128 TIMES.
+          15 PRA-FIRST       BINARY-LONG.
+          15 PRA-COUNT       BINARY-LONG.
+       10 PRA-SPRITE OCCURS 256 TIMES.
+          15 PRA-S-Y         BINARY-LONG.
+          15 PRA-S-W         BINARY-LONG.
+          15 PRA-S-H         BINARY-LONG.
 *>     Item icons (08 §10.7, itemdefs.cob): for item id i, IT-SPRITE(i + 1) is the block-and-item
 *>     atlas sprite of its icon (1 = the missing texture).
        10 IT-SPRITE          BINARY-LONG OCCURS 18 TIMES.
+*>     The same for the items of a standard set, found on first use (ITEM-SPRITE-OF, models-lazy.cob): 0 = not looked up yet.
+       10 IS-SPRITE          BINARY-LONG OCCURS 2048 TIMES.
+*>     The faces of a block item's model (ITEM-FACE-SPRITE): IS-FACE-DONE(i + 1) = 1 when the item is a block model, and IS-FACE-SPRITE(i * 6 + d) is
+*>     the sprite of face d (DIR-DOWN to DIR-EAST) of its first element, the up sprite where the model has no such face.
+*>     The first person display transform of each item's model (ITEM-SPRITE-OF; 08 section 5.6, 12 section 8.2): IS-FP-STATE(i + 1) = 1 when its model chain
+*>     names `display.firstperson_righthand`, IS-FP-VAL(i * 9 + n) the rotation x y z, translation x y z (sixteenths) and scale x y z.
+       10 IS-FP-STATE        PIC 9 OCCURS 2048 TIMES.
+       10 IS-FP-VAL          FLOAT-SHORT OCCURS 18432 TIMES.
+*>     The same for the contexts thirdperson_righthand (1), thirdperson_lefthand (2) and fixed (3) (ITEM-DISPLAY): IS-DX-STATE(i * 3 + c) = 1 when named, IS-DX-VAL(i * 27 + (c - 1) * 9 + n).
+       10 IS-DX-STATE        PIC 9 OCCURS 6144 TIMES.
+       10 IS-DX-VAL          FLOAT-SHORT OCCURS 55296 TIMES.
+       10 IS-FACE-DONE       PIC 9 OCCURS 2048 TIMES.
+       10 IS-FACE-SPRITE     BINARY-LONG OCCURS 12288 TIMES.
+*>     The GUI icon of a block item whose model has elements (ITEM-GUI-BAKE, item-gui.cob; 12 section 8.1): the quads of its model after the gui display transform that face the viewer,
+*>     far to near, in a pool shared by the items: item i has IS-GUI-COUNT(i + 1) quads from IG-QUAD number IS-GUI-FIRST(i + 1) (0 = none: the flat icon of the item's sprite is
+*>     drawn). IG-USED quads of the pool are taken. A corner is in GUI pixels of the 16 pixel icon cell (x right, y down), u and v are sprite units 0 to 16.
+       10 IS-GUI-FIRST       BINARY-LONG OCCURS 2048 TIMES.
+       10 IS-GUI-COUNT       BINARY-LONG OCCURS 2048 TIMES.
+       10 IG-USED            BINARY-LONG.
+       10 IG-QUAD OCCURS 8192 TIMES.
+          15 IG-SPRITE       BINARY-LONG.
+          15 IG-BRIGHT       FLOAT-SHORT.
+          15 IG-CORNER OCCURS 4 TIMES.
+             20 IG-X         FLOAT-SHORT.
+             20 IG-Y         FLOAT-SHORT.
+             20 IG-U         FLOAT-SHORT.
+             20 IG-V         FLOAT-SHORT.
+*>  ---- per-state tables (client/src/state-tables.cob): built once at load from the content set ----
+    05 ST-STATE.
+       10 ST-READY           PIC 9.          *> 1 = built (0 after CL-INIT; the mesher builds on demand)
+       10 ST-COUNT           BINARY-LONG.    *> states known: the set's, else the stand-in table's
+       10 ST-OPAQUE          PIC 9 OCCURS 65536 TIMES.        *> state id + 1: occludes faces, blocks light
+       10 ST-BLOCK           BINARY-LONG OCCURS 65536 TIMES.  *> state id + 1: its block id
+       10 ST-BLOCK-NAME      PIC X(32) OCCURS 2048 TIMES.     *> block id + 1: its name without namespace (the tint sources of 43 section 2.1 key on it); spaces when unknown
+       10 ST-FLUID           PIC 9 OCCURS 65536 TIMES.        *> state id + 1: the fluid the cell holds (29a section 1.2): 0 none, 1 water, 2 lava (liquid blocks; always-wet blocks hold water)
+       10 ST-LEVEL           PIC 99 OCCURS 65536 TIMES.       *> state id + 1: the liquid block's level 0 to 15 (0 source; 1 to 7 amount 8 - level; 8 and over falling)
+       10 ST-OVERLAY         PIC 9 OCCURS 65536 TIMES.       *> state id + 1: 1 = beside water the side faces take the overlay sprite (29a 10.3: HalfTransparentBlock and leaves)
+*>     Face-level occlusion (12: Block.shouldRenderFace compares the face shapes). ST-SHAPED(s + 1) = 1 for a state that occludes by its shape (the full
+*>     cube, a slab, a stair, a carpet, a trapdoor ...); ST-OWN(s * 6 + d) the class of the face of state s that a quad with the cull direction d
+*>     (DIR-DOWN to DIR-EAST) must have covered to be hidden (the whole face for a state that does not occlude), ST-NB(s * 6 + d) the class of the
+*>     part of its face toward the viewer (looking in direction d) that state s covers wholly (class 2, none, for a state that does not occlude);
+*>     ST-COVER((nb - 1) * ST-CMAX + own) = 1 when the face class nb hides the face class own. The face classes are the distinct 16 x 16 masks.
+       10 ST-SHAPED          PIC 9 OCCURS 65536 TIMES.
+       10 ST-LIKE            PIC 9 OCCURS 65536 TIMES.        *> state id + 1: 1 = no occluder with a full cube outline (glass, leaves, ice): its faces are hidden by the same block
+       10 ST-LEAF            PIC 9 OCCURS 65536 TIMES.        *> state id + 1: 1 = a leaves block (LeavesBlock.skipRendering: hidden by any leaves block while CL-LEAVES-CULL is 1; hides nothing otherwise)
+       10 ST-OWN             BINARY-SHORT UNSIGNED OCCURS 393222 TIMES.
+       10 ST-NB              BINARY-SHORT UNSIGNED OCCURS 393222 TIMES.
+       10 ST-COVER           PIC 9 OCCURS 90000 TIMES.
 *>  ---- baked block models (08 §4, §5): quads per block state ----
-    05 BM-STATE OCCURS 18 TIMES.
+    05 BM-STATE OCCURS 2048 TIMES.   *> rows 1 to 320: the stand-in states (row = state + 1); in a standard world every row is a state baked on first use (MODEL-SLOT-OF)
        10 BM-QUAD-COUNT      BINARY-LONG.
        10 BM-QUAD OCCURS 24 TIMES.
           15 BM-CULL         BINARY-LONG.    *> DIR-* after the Variant rotation, DIR-NONE
           15 BM-SHADE        BINARY-LONG.    *> DIR-* the face is shaded and lit as
           15 BM-SPRITE       BINARY-LONG.
+          15 BM-TINT         BINARY-LONG.    *> tintindex of the face (08 5.5), -1 none
           15 BM-CORNER OCCURS 4 TIMES.       *> top-left, top-right, bottom-right, bottom-left
              20 BM-X         FLOAT-SHORT.    *> block units 0 to 1
              20 BM-Y         FLOAT-SHORT.
              20 BM-Z         FLOAT-SHORT.
              20 BM-U         FLOAT-SHORT.    *> sprite units 0 to 16
              20 BM-V         FLOAT-SHORT.
+*>       What the mesher needs per quad without arithmetic on floats (computed by STATE-BAKE from the corners above
+*>       and the atlas): per corner the position in sixteenths of a block (-1 when it is not a whole number of them,
+*>       or outside 0 to 16) and the atlas texture coordinates.
+       10 BM-FAST OCCURS 24 TIMES.
+          15 BM-OWNLIGHT     BINARY-LONG.    *> 1 = the quad takes the light of its own cell (12 1.3 step 2: it is not flat on the border of the block), else of the cell it looks into
+          15 BM-FCORNER OCCURS 4 TIMES.
+             20 BM-IX       BINARY-LONG.
+             20 BM-IY       BINARY-LONG.
+             20 BM-IZ       BINARY-LONG.
+             20 BM-AU       FLOAT-SHORT.
+             20 BM-AV       FLOAT-SHORT.
+*>  ---- lazily baked states of a standard world (client/src/models-lazy.cob) ----
+    05 BM-LAZY.
+       10 BM-MODE            PIC 9.          *> 0 = nothing baked, 1 = the stand-in table, 2 = the standard set (rows taken on demand)
+       10 BM-NEXT            BINARY-LONG.    *> the next free row in mode 2
+       10 BM-SLOT            BINARY-LONG OCCURS 65536 TIMES.   *> state id + 1: its row (0 = not baked yet)
 *>  ---- sky (standin-content §4.8) ----
     05 SK-STATE.
        10 SK-U               BINARY-LONG.    *> daylight in thousandths
-       10 SK-MESHED-U        BINARY-LONG.    *> daylight the meshes were built with
        10 SK-R               FLOAT-SHORT.    *> clear colour
        10 SK-G               FLOAT-SHORT.
        10 SK-B               FLOAT-SHORT.
+*>     The sky bodies, stars and clouds (12 section 3.4c, 3.6; client/src/sky-render.cob): the attribute values SKY-ANGLES derives from the clock and the weather,
+*>     the sun and moon quads (SK-BV rows 1 to 6 and 7 to 12, 11 floats a vertex as the shim's), the star mesh (allocated on first use) and the cloud
+*>     image and mesh.
+       10 SK-SUN-ANGLE       FLOAT-LONG.     *> visual/sun_angle, degrees
+       10 SK-MOON-ANGLE      FLOAT-LONG.     *> visual/moon_angle
+       10 SK-STAR-ANGLE      FLOAT-LONG.     *> visual/star_angle
+       10 SK-STAR-BRIGHT     FLOAT-LONG.     *> visual/star_brightness after the weather
+       10 SK-MOON-PHASE      BINARY-LONG.    *> visual/moon_phase 0 to 7 (full_moon first)
+       10 SK-BODY-ALPHA      FLOAT-LONG.     *> 1 - the rain level: the modulator alpha of the sun and the moon
+       10 SK-CLOUD-COLOUR    FLOAT-LONG OCCURS 4 TIMES.   *> visual/cloud_color r g b a after the day track and the weather
+       10 SK-CLOUD-HEIGHT    FLOAT-LONG.     *> visual/cloud_height
+       10 SK-SUN-TEX         BINARY-LONG.    *> the texture of the sun draw: 0 the block atlas (the sprite), 2 the UI atlas (the flat fallback)
+       10 SK-MOON-TEX        BINARY-LONG.
+       10 SK-BV OCCURS 12 TIMES.
+          15 SK-BV-X         FLOAT-SHORT.
+          15 SK-BV-Y         FLOAT-SHORT.
+          15 SK-BV-Z         FLOAT-SHORT.
+          15 SK-BV-U         FLOAT-SHORT.
+          15 SK-BV-V         FLOAT-SHORT.
+          15 SK-BV-B         FLOAT-SHORT.
+          15 SK-BV-A         FLOAT-SHORT.
+          15 SK-BV-SKY       FLOAT-SHORT.
+          15 SK-BV-R         FLOAT-SHORT.
+          15 SK-BV-G         FLOAT-SHORT.
+          15 SK-BV-BLUE      FLOAT-SHORT.
+       10 SK-ST-ADDR         USAGE POINTER.  *> the star mesh (1500 quads at most, 6 vertices each)
+       10 SK-ST-COUNT        BINARY-LONG.
+       10 SK-ST-LEVEL        BINARY-LONG.    *> the brightness in 64ths (1 to 64) the star vertices carry, 0 when they are not made
+       10 SK-ST-UA-W         BINARY-LONG.    *> the UI atlas size their swatch coordinates were made for
+       10 SK-ST-UA-H         BINARY-LONG.
+       10 SK-ST-UPLOAD       BINARY-LONG.    *> 1 when the star mesh is not uploaded yet
+       10 SK-CI-W            BINARY-LONG.    *> the cloud image's cells (0 = not loaded)
+       10 SK-CI-H            BINARY-LONG.
+       10 SK-CI-CELLS        PIC X(262144).  *> one byte a cell, "1" solid, row by row
+       10 SK-CM-ADDR         USAGE POINTER.  *> the cloud mesh (allocated on first use)
+       10 SK-CM-COUNT        BINARY-LONG.
+       10 SK-CM-VALID        BINARY-LONG.    *> 1 when the mesh holds the cells around SK-CM-X, SK-CM-Z for SK-CM-REL and SK-CM-MODE
+       10 SK-CM-X            BINARY-LONG.    *> the camera's cloud cell of the last build
+       10 SK-CM-Z            BINARY-LONG.
+       10 SK-CM-REL          BINARY-LONG.    *> the camera against the layer: 1 below it, 0 inside, -1 above
+       10 SK-CM-MODE         BINARY-LONG.    *> 1 fast, 2 fancy
+       10 SK-CM-RADIUS       BINARY-LONG.    *> the meshed radius in cells
+       10 SK-CM-UPLOAD       BINARY-LONG.    *> 1 when the mesh is not uploaded yet
+*>  ---- dimension presentation (client/src/dimfx.cob; 39 section 9, 37-3 section 7, 38 section 11) ----
+    05 DX-STATE.
+       10 DX-PORTAL          FLOAT-LONG.     *> the portal overlay intensity 0 to 1 (rises 0.0125 a tick inside a nether portal, falls 0.05)
+       10 DX-PORTAL-OLD      FLOAT-LONG.     *> the previous tick's, for the partial-tick lerp
+       10 DX-SOUND           BINARY-LONG.    *> 1 on the tick PORTAL_TRIGGER starts (local, volume DX-SOUND-VOLUME, pitch DX-SOUND-PITCH)
+       10 DX-SOUND-VOLUME    FLOAT-LONG.
+       10 DX-SOUND-PITCH     FLOAT-LONG.
+       10 DX-FOG-SET         PIC 9.          *> 1 when the dimension sets its own atmospheric fog (the Nether, the End)
+       10 DX-FOG-R           FLOAT-LONG.     *> the fog colour, which is also the clear colour (12 section 3.3)
+       10 DX-FOG-G           FLOAT-LONG.
+       10 DX-FOG-B           FLOAT-LONG.
+       10 DX-FOG-START       FLOAT-LONG.     *> visual/fog_start_distance, -1 when the dimension sets none
+       10 DX-FOG-END         FLOAT-LONG.     *> visual/fog_end_distance, -1 when the dimension sets none
+       10 DX-SKYBOX          BINARY-LONG.    *> 0 overworld disc, 1 none (the Nether), 2 end (38 section 11)
+       10 DX-AMBIENT-R       FLOAT-LONG.     *> visual/ambient_light_color of the dimension (0 when none is set)
+       10 DX-AMBIENT-G       FLOAT-LONG.
+       10 DX-AMBIENT-B       FLOAT-LONG.
+       10 DX-CLOCK           BINARY-LONG.    *> ticks of the End's world clock (the client counts them since the last dimension switch)
+       10 DX-FLASH-WINDOW    BINARY-LONG.    *> the 600-tick window the flash parameters belong to (0 at the start: window 0 never flashes)
+       10 DX-FLASH-OFFSET    BINARY-LONG.
+       10 DX-FLASH-DURATION  BINARY-LONG.
+       10 DX-FLASH-XA        FLOAT-LONG.     *> the flash's x and y angles in degrees (a float each)
+       10 DX-FLASH-YA        FLOAT-LONG.
+       10 DX-FLASH           FLOAT-LONG.     *> the end flash intensity of this tick, and the previous one
+       10 DX-FLASH-OLD       FLOAT-LONG.
+       10 DX-FLASH-SOUND     BINARY-LONG.    *> 1 on the tick a flash starts (its sound plays 30 ticks later)
+*>  ---- end portal and end gateway (client/src/portal-*.cob; 52 section 8) ----
+    05 EP-STATE.
+       10 EP-COUNT           BINARY-LONG.
+       10 EP-ENTRY OCCURS 1024 TIMES.     *> the block entities of type 14 and 22 (CL-MAX-PORTALS): created from the chunk list or a block change
+          15 EP-X            BINARY-LONG.
+          15 EP-Y            BINARY-LONG.
+          15 EP-Z            BINARY-LONG.
+          15 EP-TYPE         BINARY-LONG.    *> 14 end_portal, 22 end_gateway (the block entity type ids)
+          15 EP-AGE          BINARY-DOUBLE.  *> gateway: ticks since placement (the Age of the chunk list's tag, then one per client tick)
+          15 EP-COOLDOWN     BINARY-LONG.    *> gateway: teleport cooldown ticks left (0 none)
+       10 EP-BLOCKS-FOR      BINARY-LONG.    *> ST-COUNT the two block ids below were looked up for (0 = not yet)
+       10 EP-BLOCK-PORTAL    BINARY-LONG.    *> block id + 1 of end_portal (0 none)
+       10 EP-BLOCK-GATEWAY   BINARY-LONG.    *> block id + 1 of end_gateway (0 none)
+       10 EP-TEX             BINARY-LONG.    *> the texels below: 0 not read, 1 read, 2 missing
+       10 EP-SKY-W           BINARY-LONG.    *> textures/environment/end_sky.png (8.8: 128 x 128, at most 256 x 256), RGBA
+       10 EP-SKY-H           BINARY-LONG.
+       10 EP-SKY             PIC X(262144).
+       10 EP-PTX-W           BINARY-LONG.    *> textures/entity/end_portal/end_portal.png (256 x 256, at most 256 x 256), RGBA
+       10 EP-PTX-H           BINARY-LONG.
+       10 EP-PTX             PIC X(262144).
+       10 EP-BEAM-W          BINARY-LONG.    *> textures/entity/end_portal/end_gateway_beam.png (16 x 16, at most 64 x 64), RGBA
+       10 EP-BEAM-H          BINARY-LONG.
+       10 EP-BEAM            PIC X(16384).
+*>  ---- mesh frame budget (client/src/mesher.cob MESH-DIRTY) ----
+    05 MB-STATE.
+       10 MB-BUDGET-US       BINARY-LONG.    *> microseconds of meshing per frame (CL-INIT: CL-MESH-BUDGET-US)
+       10 MB-FAKE            BINARY-LONG.    *> 1 = the injected clock MB-FAKE-NOW (tests), 0 = the process clock
+       10 MB-FAKE-NOW        BINARY-DOUBLE.  *> the injected clock, microseconds
+       10 MB-FAKE-STEP       BINARY-LONG.    *> microseconds the injected clock advances per section meshed
+       10 MB-MESHED          BINARY-LONG.    *> sections meshed by the last MESH-DIRTY
+       10 MB-EMPTY           BINARY-LONG.    *> sections found all air (meshed at once, no vertices) since CL-INIT
+       10 MB-LIGHT-OFF       PIC 9.          *> 1 = MF-AT reads states only (MESH-FLUID's first look at a cell: most draw nothing)
+       10 MB-LAST-US         BINARY-DOUBLE.  *> microseconds the last MESH-DIRTY took
+       10 MB-CREDIT-ON       PIC 9.          *> 1 = meshing is paid for from a credit that each frame refills (CL-RUN sets it; 0 in tests)
+       10 MB-CREDIT          BINARY-DOUBLE.  *> microseconds of meshing the next frames may spend; below 0 the frame meshes nothing
+       10 MB-BOOSTED         PIC 9.          *> 1 = the last MESH-DIRTY found a section near the player that was never meshed (a hole): this frame's credit and budget are the larger ones
+       10 MB-WAITING         BINARY-LONG.    *> candidates of the last MESH-DIRTY that were never meshed (at most the candidate count: the list was full when it is that)
 *>  ---- render list (data-model §13): built each frame, submitted through cc_vk_* ----
     05 RL-STATE.
        10 RL-CLEAR OCCURS 4 TIMES FLOAT-SHORT.
+       10 RL-FOG OCCURS 13 TIMES FLOAT-SHORT.    *> the fog of the frame (cc_vk_fog): r g b strength start end p00 p11 up-x up-y up-z render-distance-start end
        10 RL-PROJ OCCURS 16 TIMES FLOAT-SHORT.    *> column-major
        10 RL-VIEW OCCURS 16 TIMES FLOAT-SHORT.    *> rotation only (camera at the origin)
        10 RL-DRAW-COUNT      BINARY-LONG.
@@ -519,7 +1477,12 @@
           15 RL-U-COUNT      BINARY-LONG.
        10 RL-EN-COUNT        BINARY-LONG.    *> entity vertices this frame (eye-relative)
        10 RL-EN-UPLOADED     BINARY-LONG.    *> entity vertices last uploaded
-       10 RL-EN-VERTEX OCCURS 9216 TIMES.
+       10 RL-EN-BAKES        BINARY-LONG.    *> running count of model bakes (ENTITY-MODEL-EMIT) and of cuboid corner shifts (the offset to the eye added to a cuboid's 8 corners); tests read the difference between two frames
+       10 RL-EN-SHIFTS       BINARY-LONG.
+       10 RL-CULL-ON         BINARY-LONG.    *> 1 when RL-CULL-PLANE holds this frame's view frustum (RENDER-LIST-BUILD)
+       10 RL-CULL-DISABLE    BINARY-LONG.    *> 1 keeps every entity figure whatever the view (tests of figure geometry from a fixed eye); 0 in the game
+       10 RL-CULL-PLANE OCCURS 12 TIMES FLOAT-LONG.    *> left, right, bottom, top: unit normals pointing inward (a point is inside when n . (p - eye) >= 0)
+       10 RL-EN-VERTEX OCCURS 49152 TIMES.
           15 RL-EN-X         FLOAT-SHORT.
           15 RL-EN-Y         FLOAT-SHORT.
           15 RL-EN-Z         FLOAT-SHORT.
@@ -527,12 +1490,65 @@
           15 RL-EN-V         FLOAT-SHORT.
           15 RL-EN-B         FLOAT-SHORT.
           15 RL-EN-A         FLOAT-SHORT.
+          15 RL-EN-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-EN-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-EN-G         FLOAT-SHORT.
+          15 RL-EN-BLUE      FLOAT-SHORT.
+*>     The armour glint mesh of the frame (eye-relative, texture 6, pipeline CC-PIPE-GLINT; glint.cob, ENTITIES-MESH): the glint layers 13 to 16 of ENTITY-OVERLAY,
+*>     vertices as RL-EN-VERTEX (brightness the glint strength, texture coordinates through GLINT-UV).
+       10 RL-GL-COUNT        BINARY-LONG.
+       10 RL-GL-UPLOADED     BINARY-LONG.
+       10 RL-GL-VERTEX OCCURS 8192 TIMES.
+          15 RL-GL-X         FLOAT-SHORT.
+          15 RL-GL-Y         FLOAT-SHORT.
+          15 RL-GL-Z         FLOAT-SHORT.
+          15 RL-GL-U         FLOAT-SHORT.
+          15 RL-GL-V         FLOAT-SHORT.
+          15 RL-GL-B         FLOAT-SHORT.
+          15 RL-GL-A         FLOAT-SHORT.
+          15 RL-GL-SKY       FLOAT-SHORT.
+          15 RL-GL-R         FLOAT-SHORT.
+          15 RL-GL-G         FLOAT-SHORT.
+          15 RL-GL-BLUE      FLOAT-SHORT.
+*>     The glint of the item in the hand (hand.cob; 54 section 19.3, texture 5, glint pipeline, the hand's projection): the quads of the hand mesh over the opaque
+*>     texels (a flat item: one quad per opaque texel on each face and the edge quads; a block: its faces) with the glint coordinates of the item scale 8.
+       10 RL-HG-COUNT        BINARY-LONG.
+       10 RL-HG-UPLOADED     BINARY-LONG.
+       10 RL-HG-VERTEX OCCURS 4096 TIMES.
+          15 RL-HG-X         FLOAT-SHORT.
+          15 RL-HG-Y         FLOAT-SHORT.
+          15 RL-HG-Z         FLOAT-SHORT.
+          15 RL-HG-U         FLOAT-SHORT.
+          15 RL-HG-V         FLOAT-SHORT.
+          15 RL-HG-B         FLOAT-SHORT.
+          15 RL-HG-A         FLOAT-SHORT.
+          15 RL-HG-SKY       FLOAT-SHORT.
+          15 RL-HG-R         FLOAT-SHORT.
+          15 RL-HG-G         FLOAT-SHORT.
+          15 RL-HG-BLUE      FLOAT-SHORT.
+*>     The glint of the item icons (glint.cob GLINT-ICON; UI-SLOT; texture 5, glint pipeline, the UI's matrix): quads over the opaque texels of the icon of each slot whose
+*>     stack has the foil, vertices as RL-IC-VERTEX with the glint coordinates of the item scale 8. PL-STACK-FOIL is the foil decision of the item stack last decoded
+*>     (STACK-FOIL), taken over by the slot the stack is set into; PL-SLOT-FOIL and PL-OFFHAND-FOIL the foil of the player slots 0 to 35 and the off hand.
+       10 RL-GC-COUNT        BINARY-LONG.
+       10 RL-GC-UPLOADED     BINARY-LONG.
+       10 RL-GC-VERTEX OCCURS 12288 TIMES.
+          15 RL-GC-X         FLOAT-SHORT.
+          15 RL-GC-Y         FLOAT-SHORT.
+          15 RL-GC-Z         FLOAT-SHORT.
+          15 RL-GC-U         FLOAT-SHORT.
+          15 RL-GC-V         FLOAT-SHORT.
+          15 RL-GC-B         FLOAT-SHORT.
+          15 RL-GC-A         FLOAT-SHORT.
+          15 RL-GC-SKY       FLOAT-SHORT.
+          15 RL-GC-R         FLOAT-SHORT.
+          15 RL-GC-G         FLOAT-SHORT.
+          15 RL-GC-BLUE      FLOAT-SHORT.
 *>     Item icons of the slot widgets (texture 0), the UI drawn over them (the slot counts,
 *>     texture 2; UI-QUAD writes there while RL-UI-LAYER is 1) and the target highlight
 *>     (eye-relative, texture 2); each with the vertex count last uploaded.
        10 RL-IC-COUNT        BINARY-LONG.
        10 RL-IC-UPLOADED     BINARY-LONG.
-       10 RL-IC-VERTEX OCCURS 1536 TIMES.
+       10 RL-IC-VERTEX OCCURS 6144 TIMES.
           15 RL-IC-X         FLOAT-SHORT.
           15 RL-IC-Y         FLOAT-SHORT.
           15 RL-IC-Z         FLOAT-SHORT.
@@ -540,10 +1556,14 @@
           15 RL-IC-V         FLOAT-SHORT.
           15 RL-IC-B         FLOAT-SHORT.
           15 RL-IC-A         FLOAT-SHORT.
+          15 RL-IC-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-IC-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-IC-G         FLOAT-SHORT.
+          15 RL-IC-BLUE      FLOAT-SHORT.
        10 RL-UI-LAYER        PIC 9.
        10 RL-UT-COUNT        BINARY-LONG.
        10 RL-UT-UPLOADED     BINARY-LONG.
-       10 RL-UT-VERTEX OCCURS 1536 TIMES.
+       10 RL-UT-VERTEX OCCURS 6144 TIMES.
           15 RL-UT-X         FLOAT-SHORT.
           15 RL-UT-Y         FLOAT-SHORT.
           15 RL-UT-Z         FLOAT-SHORT.
@@ -551,9 +1571,13 @@
           15 RL-UT-V         FLOAT-SHORT.
           15 RL-UT-B         FLOAT-SHORT.
           15 RL-UT-A         FLOAT-SHORT.
+          15 RL-UT-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-UT-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-UT-G         FLOAT-SHORT.
+          15 RL-UT-BLUE      FLOAT-SHORT.
        10 RL-HL-COUNT        BINARY-LONG.
        10 RL-HL-UPLOADED     BINARY-LONG.
-       10 RL-HL-VERTEX OCCURS 144 TIMES.
+       10 RL-HL-VERTEX OCCURS 1728 TIMES.
           15 RL-HL-X         FLOAT-SHORT.
           15 RL-HL-Y         FLOAT-SHORT.
           15 RL-HL-Z         FLOAT-SHORT.
@@ -561,10 +1585,74 @@
           15 RL-HL-V         FLOAT-SHORT.
           15 RL-HL-B         FLOAT-SHORT.
           15 RL-HL-A         FLOAT-SHORT.
+          15 RL-HL-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-HL-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-HL-G         FLOAT-SHORT.
+          15 RL-HL-BLUE      FLOAT-SHORT.
+*>     The entity hitboxes of the frame (F3+B; eye-relative, texture 2 white swatch; hitbox-mesh.cob): 64 boxes of 144 vertices.
+       10 RL-HB-COUNT        BINARY-LONG.
+       10 RL-HB-UPLOADED     BINARY-LONG.
+       10 RL-HB-VERTEX OCCURS 9216 TIMES.
+          15 RL-HB-X         FLOAT-SHORT.
+          15 RL-HB-Y         FLOAT-SHORT.
+          15 RL-HB-Z         FLOAT-SHORT.
+          15 RL-HB-U         FLOAT-SHORT.
+          15 RL-HB-V         FLOAT-SHORT.
+          15 RL-HB-B         FLOAT-SHORT.
+          15 RL-HB-A         FLOAT-SHORT.
+          15 RL-HB-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-HB-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-HB-G         FLOAT-SHORT.
+          15 RL-HB-BLUE      FLOAT-SHORT.
+*>     The end portal and end gateway faces of the frame (eye-relative, the white swatch of texture 2, a colour on every vertex, opaque; portal-mesh.cob)
+*>     and the gateway beam's glow (translucent).
+       10 RL-EP-COUNT        BINARY-LONG.
+       10 RL-EP-UPLOADED     BINARY-LONG.
+       10 RL-EP-VERTEX OCCURS 32768 TIMES.
+          15 RL-EP-X         FLOAT-SHORT.
+          15 RL-EP-Y         FLOAT-SHORT.
+          15 RL-EP-Z         FLOAT-SHORT.
+          15 RL-EP-U         FLOAT-SHORT.
+          15 RL-EP-V         FLOAT-SHORT.
+          15 RL-EP-B         FLOAT-SHORT.
+          15 RL-EP-A         FLOAT-SHORT.
+          15 RL-EP-SKY       FLOAT-SHORT.
+          15 RL-EP-R         FLOAT-SHORT.
+          15 RL-EP-G         FLOAT-SHORT.
+          15 RL-EP-BLUE      FLOAT-SHORT.
+       10 RL-EB-COUNT        BINARY-LONG.
+       10 RL-EB-UPLOADED     BINARY-LONG.
+       10 RL-EB-VERTEX OCCURS 8192 TIMES.
+          15 RL-EB-X         FLOAT-SHORT.
+          15 RL-EB-Y         FLOAT-SHORT.
+          15 RL-EB-Z         FLOAT-SHORT.
+          15 RL-EB-U         FLOAT-SHORT.
+          15 RL-EB-V         FLOAT-SHORT.
+          15 RL-EB-B         FLOAT-SHORT.
+          15 RL-EB-A         FLOAT-SHORT.
+          15 RL-EB-SKY       FLOAT-SHORT.
+          15 RL-EB-R         FLOAT-SHORT.
+          15 RL-EB-G         FLOAT-SHORT.
+          15 RL-EB-BLUE      FLOAT-SHORT.
+*>     The crack overlay of the frame (eye-relative, texture 0, alpha-blended; break-overlay.cob).
+       10 RL-BO-COUNT        BINARY-LONG.
+       10 RL-BO-UPLOADED     BINARY-LONG.
+       10 RL-BO-VERTEX OCCURS 576 TIMES.
+          15 RL-BO-X         FLOAT-SHORT.
+          15 RL-BO-Y         FLOAT-SHORT.
+          15 RL-BO-Z         FLOAT-SHORT.
+          15 RL-BO-U         FLOAT-SHORT.
+          15 RL-BO-V         FLOAT-SHORT.
+          15 RL-BO-B         FLOAT-SHORT.
+          15 RL-BO-A         FLOAT-SHORT.
+          15 RL-BO-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-BO-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-BO-G         FLOAT-SHORT.
+          15 RL-BO-BLUE      FLOAT-SHORT.
 *>     The ground items (eye-relative billboards, texture 0; entities-render.cob).
        10 RL-GI-COUNT        BINARY-LONG.
        10 RL-GI-UPLOADED     BINARY-LONG.
-       10 RL-GI-VERTEX OCCURS 1536 TIMES.
+       10 RL-GI-VERTEX OCCURS 6144 TIMES.
           15 RL-GI-X         FLOAT-SHORT.
           15 RL-GI-Y         FLOAT-SHORT.
           15 RL-GI-Z         FLOAT-SHORT.
@@ -572,6 +1660,43 @@
           15 RL-GI-V         FLOAT-SHORT.
           15 RL-GI-B         FLOAT-SHORT.
           15 RL-GI-A         FLOAT-SHORT.
+          15 RL-GI-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-GI-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-GI-G         FLOAT-SHORT.
+          15 RL-GI-BLUE      FLOAT-SHORT.
+*>     The hand (view space, texture 0; hand.cob).
+       10 RL-HAND-COUNT      BINARY-LONG.
+       10 RL-HAND-UPLOADED   BINARY-LONG.
+       10 RL-HAND-SAME       BINARY-LONG.    *> 1 when this frame's hand mesh is the one already uploaded (no upload needed)
+       10 RL-NO-UPLOAD       BINARY-LONG.    *> 1 while RENDER-MESH-ADD only draws a mesh (set around the hand's call)
+       10 RL-HAND-VERTEX OCCURS 2048 TIMES.
+          15 RL-HAND-X       FLOAT-SHORT.
+          15 RL-HAND-Y       FLOAT-SHORT.
+          15 RL-HAND-Z       FLOAT-SHORT.
+          15 RL-HAND-U       FLOAT-SHORT.
+          15 RL-HAND-V       FLOAT-SHORT.
+          15 RL-HAND-B       FLOAT-SHORT.
+          15 RL-HAND-A         FLOAT-SHORT.
+          15 RL-HAND-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-HAND-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-HAND-G         FLOAT-SHORT.
+          15 RL-HAND-BLUE      FLOAT-SHORT.
+*>     The empty hand's arm (view space, entity atlas texture 1, the hand's projection; hand-arm.cob; 12 section 6.5): the arm and sleeve cuboids of the player model, drawn
+*>     after the hand mesh (and its depth clear) when the main hand shows no item.
+       10 RL-HA-COUNT        BINARY-LONG.
+       10 RL-HA-UPLOADED     BINARY-LONG.
+       10 RL-HA-VERTEX OCCURS 1024 TIMES.
+          15 RL-HA-X         FLOAT-SHORT.
+          15 RL-HA-Y         FLOAT-SHORT.
+          15 RL-HA-Z         FLOAT-SHORT.
+          15 RL-HA-U         FLOAT-SHORT.
+          15 RL-HA-V         FLOAT-SHORT.
+          15 RL-HA-B         FLOAT-SHORT.
+          15 RL-HA-A         FLOAT-SHORT.
+          15 RL-HA-SKY       FLOAT-SHORT.
+          15 RL-HA-R         FLOAT-SHORT.
+          15 RL-HA-G         FLOAT-SHORT.
+          15 RL-HA-BLUE      FLOAT-SHORT.
 *>     The weather quads (eye-relative, texture 3; weather-render.cob).
        10 RL-WX-COUNT        BINARY-LONG.
        10 RL-WX-UPLOADED     BINARY-LONG.
@@ -583,7 +1708,29 @@
           15 RL-WX-V         FLOAT-SHORT.
           15 RL-WX-B         FLOAT-SHORT.
           15 RL-WX-A         FLOAT-SHORT.
+          15 RL-WX-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-WX-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-WX-G         FLOAT-SHORT.
+          15 RL-WX-BLUE      FLOAT-SHORT.
+*>     The particle quads of the frame (eye-relative, texture 4, particles-live.cob PARTICLES-MESH): six vertices
+*>     per particle, 2048 particles (PQ-MAX of CLPSTORE.cpy).
+       10 RL-PT-COUNT        BINARY-LONG.
+       10 RL-PT-UPLOADED     BINARY-LONG.
+       10 RL-PT-VERTEX OCCURS 12288 TIMES.
+          15 RL-PT-X         FLOAT-SHORT.
+          15 RL-PT-Y         FLOAT-SHORT.
+          15 RL-PT-Z         FLOAT-SHORT.
+          15 RL-PT-U         FLOAT-SHORT.
+          15 RL-PT-V         FLOAT-SHORT.
+          15 RL-PT-B         FLOAT-SHORT.
+          15 RL-PT-A         FLOAT-SHORT.
+          15 RL-PT-SKY       FLOAT-SHORT.
+          15 RL-PT-R         FLOAT-SHORT.
+          15 RL-PT-G         FLOAT-SHORT.
+          15 RL-PT-BLUE      FLOAT-SHORT.
        10 RL-UI-COUNT        BINARY-LONG.    *> UI vertices this frame
+       10 RL-UI-TINT         BINARY-LONG.    *> RGB integer multiplied into the next UI quads (0 none): the loading screen's status colours and bar
+       10 RL-UI-FADE         FLOAT-SHORT.    *> alpha taken off the next UI quads (0 opaque; a sprite widget's state)
        10 RL-UI-VERTEX OCCURS 24576 TIMES.
           15 RL-UI-X         FLOAT-SHORT.
           15 RL-UI-Y         FLOAT-SHORT.
@@ -592,4 +1739,8 @@
           15 RL-UI-V         FLOAT-SHORT.
           15 RL-UI-B         FLOAT-SHORT.
           15 RL-UI-A         FLOAT-SHORT.
+          15 RL-UI-SKY       FLOAT-SHORT.   *> brightness term scaled by the daylight at draw time (0 = none)
+          15 RL-UI-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
+          15 RL-UI-G         FLOAT-SHORT.
+          15 RL-UI-BLUE      FLOAT-SHORT.
 

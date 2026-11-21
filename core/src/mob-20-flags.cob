@@ -1,0 +1,131 @@
+*> Entity metadata of the species flags of 002-lane-p49n (docs/protocol/20: spider 7.1, pillager 13.2, enderman 8.1, sulfur cube 18.2), one Set Entity Data packet per mob.
+*> State: P49NSTATE.cpy. A species with no entry here gets no packet from these programs (STDMOB-VARIANT-BUILD holds the older ones).
+*>
+*>   STDMOB-FLAGS-BUILD USING tracker row, PB-BUFFER (empty): Set Entity Data (0x65) of the flags of the row: spider and cave spider index 16 BYTE (bit 0 climbing); pillager 17 charging, sulfur cube 19 max fuse, enderman 16 carried block,
+*>     17 creepy, 18 stared at; nothing for another row.
+*>   STDMOB-FLAGS-NEEDED USING tracker row, needed out: some flag is not at its default (a new viewer needs the packet).
+*>   STDMOB-FLAGS-SEND USING tracker row: STDMOB-FLAGS-BUILD to the viewers of the row.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-FLAGS-BUILD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ COPY P49NSTATE.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 101.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ENTRIES.
+    05 WS-ENTRY            OCCURS 4 TIMES.
+       10 WS-INDEX         BINARY-LONG.
+       10 WS-SERIALIZER    BINARY-LONG.
+       10 WS-VALUE         BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ COPY PROTO.
+ PROCEDURE DIVISION USING L-ROW PB-BUFFER.
+     MOVE 0 TO WS-N
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF WS-M > 0 AND PN-ID(L-ROW) = EN-ID(L-ROW)
+         EVALUATE SM-KEY(WS-M)
+             WHEN "spider"
+             WHEN "cave_spider"
+*>               The spider flags byte (20 section 7.1): index 16, bit 0 climbing.
+                 ADD 1 TO WS-N
+                 MOVE 16 TO WS-INDEX(WS-N)
+                 MOVE MD-MDS-BYTE TO WS-SERIALIZER(WS-N)
+                 MOVE PN-CLIMB(L-ROW) TO WS-VALUE(WS-N)
+             WHEN "pillager"
+*>               Charging the crossbow (index 17, BOOLEAN, 20 section 13.2).
+                 ADD 1 TO WS-N
+                 MOVE 17 TO WS-INDEX(WS-N)
+                 MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER(WS-N)
+                 MOVE PN-CHARGE(L-ROW) TO WS-VALUE(WS-N)
+             WHEN "sulfur_cube"
+*>               MAX_FUSE (index 19, INT, default -1) of a primed cube (20 section 18.2).
+                 IF PN-MAXFUSE(L-ROW) > 0
+                     ADD 1 TO WS-N
+                     MOVE 19 TO WS-INDEX(WS-N)
+                     MOVE MD-MDS-INT TO WS-SERIALIZER(WS-N)
+                     MOVE PN-MAXFUSE(L-ROW) TO WS-VALUE(WS-N)
+                 END-IF
+             WHEN "enderman"
+*>               The carried block (index 16, OPTIONAL_BLOCK_STATE, serializer 15: 0 absent, else the block state id) and the two flags (20 section 8.1).
+                 ADD 1 TO WS-N
+                 MOVE 16 TO WS-INDEX(WS-N)
+                 MOVE 15 TO WS-SERIALIZER(WS-N)
+                 MOVE PN-CARRY(L-ROW) TO WS-VALUE(WS-N)
+                 ADD 1 TO WS-N
+                 MOVE 17 TO WS-INDEX(WS-N)
+                 MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER(WS-N)
+                 MOVE PN-CREEPY(L-ROW) TO WS-VALUE(WS-N)
+                 ADD 1 TO WS-N
+                 MOVE 18 TO WS-INDEX(WS-N)
+                 MOVE MD-MDS-BOOLEAN TO WS-SERIALIZER(WS-N)
+                 MOVE PN-STARED(L-ROW) TO WS-VALUE(WS-N)
+         END-EVALUATE
+     END-IF
+     IF WS-N > 0
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+         CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+             IF WS-SERIALIZER(WS-I) = 15
+                 CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-INDEX(WS-I)
+                 CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SERIALIZER(WS-I)
+                 CALL "PB-PUT-VARINT" USING PB-BUFFER WS-VALUE(WS-I)
+             ELSE
+                 INITIALIZE MD-METADATA-ENTRY
+                 MOVE WS-INDEX(WS-I) TO MD-MD-INDEX
+                 MOVE WS-SERIALIZER(WS-I) TO MD-MD-SERIALIZER
+                 MOVE WS-VALUE(WS-I) TO MD-MD-INT
+                 CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+             END-IF
+         END-PERFORM
+         MOVE MD-MD-END TO MD-MD-INDEX
+         CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-FLAGS-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-FLAGS-SEND.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "STDMOB-FLAGS-BUILD" USING L-ROW PB-BUFFER
+     IF PB-LENGTH > 0
+         CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     END-IF
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM STDMOB-FLAGS-SEND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STDMOB-FLAGS-NEEDED.
+*> USING tracker row, needed out: 1 when the row's flags differ from the defaults a client assumes (a climbing spider, an enderman that carries a block or has a target, a pillager that is
+*> charging, a primed sulfur cube), so that a viewer who starts to track it is sent them (ENTITY-VIEW-UPDATE).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY P49NSTATE.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-NEEDED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-NEEDED.
+     MOVE 0 TO L-NEEDED
+     IF PN-ID(L-ROW) = EN-ID(L-ROW)
+         IF PN-CLIMB(L-ROW) NOT = 0 OR PN-CARRY(L-ROW) NOT = 0 OR PN-CREEPY(L-ROW) NOT = 0 OR PN-STARED(L-ROW) NOT = 0
+                 OR PN-CHARGE(L-ROW) NOT = 0 OR PN-MAXFUSE(L-ROW) > 0
+             MOVE 1 TO L-NEEDED
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM STDMOB-FLAGS-NEEDED.

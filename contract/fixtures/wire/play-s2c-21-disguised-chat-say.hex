@@ -1,0 +1,11 @@
+# Fixture: Disguised Chat, chat type minecraft:say_command
+# Phase: play. Direction: clientbound (S->C). Packet id 0x21 (33).
+# Doc refs: 05a 0x21, ChatTypeBound; 16 section 8.1; chat_type ids of config-s2c-07-registry-data-chat-type-standard (say_command = 1)
+# Stated inputs:
+#   message plain String "restart soon"; chat type id 1 (Holder VarInt 2); sender name plain String "Server"; no target
+
+21                                               # packet id: VarInt 0x21
+08 00 0c 72 65 73 74 61 72 74 20 73 6f 6f 6e     # Message: TextComponent plain String "restart soon"
+02                                               # Chat type: Holder reference VarInt 2 (registry id 1 + 1)
+08 00 06 53 65 72 76 65 72                       # Sender name: TextComponent plain String "Server"
+00                                               # Target name: Optional absent

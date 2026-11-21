@@ -1,0 +1,995 @@
+*> Block entities, part 5: beacon, conduit, end portal, end gateway, piston moving block entity, creaking heart (docs/protocol/31-block-entities-5-beacon-conduit-end-piston-creaking.md;
+*> US12 phase 44). The data of the types lives in the BE-XI cells of the entity (roles in BESTATE.cpy). The programs are the rules of the sections; what needs the world (the blocks of the
+*> base and beam scans, the players and mobs the effects reach, the portal travel, the gateway destination search, the creaking mob and the resin spread) is done by the caller from the
+*> results. Not here: the beacon menu's data slots (registry ids of the mob effects, 46 section 4.1), the gateway destination of 4.4, spawning the protector (6.4) and the resin spread (6.6).
+*> The average colour of two beam sections is taken per channel (the doc marks ARGB.average as inferred, Open question 6).
+*>
+*>   BE5-REGISTRATION USING type, server ticker out, client ticker out                       1
+*>   BE5-BEACON-REQUIRED USING effect key (X(32), with or without minecraft:), length, required levels out (0 none, 2147483647 not a beacon effect)
+*>   BE5-BEACON-VALIDATE USING primary key, its length, secondary key, its length, levels, valid out                                      2.5 validateEffects
+*>   BE5-BEACON-EFFECTS USING levels, primary equals secondary, primary set, secondary set, range out, duration out, primary amplifier out, secondary applies out   2.4
+*>   BE5-BEACON-BASE USING beacon y, world minimum y, the four layer results (1 when every cell of layer i is in beacon_base_blocks), levels out    2.3
+*>   BE5-BEACON-CELL USING index, cell kind (1 beam block, 2 other and transparent, 3 other and light dampening 15, 4 bedrock), dye texture colour, blocked out         2.2 step 3
+*>   BE5-BEACON-PULSE USING game time, beam open, levels after the rescan, recompute out, apply out; BE5-BEACON-SOUND USING levels before, levels now, sound out      2.2
+*>   BE5-CONDUIT-OFFSETS USING table (64 x 3 BINARY-LONG), count out; BE5-CONDUIT-RANGE USING frame blocks, range out, active out            3.2, 3.4
+*>   BE5-CONDUIT-TICK USING index, game time, shape active, frame blocks, nextInt(40), sound out (1 activate, 2 deactivate), effects out, attack out, can kill out, ambient out, short ambient out    3.3
+*>   BE5-CONDUIT-TARGET USING can kill, has current, current valid, candidates, index draw, action out (0 none, 1 keep, 2 new), index out           3.5
+*>   BE5-CONDUIT-BOB USING tickCount, height offset out (FLOAT-LONG)                         3.6
+*>   BE5-PORTAL-FACE USING direction, rendered out; BE5-GATEWAY-TICK USING index, side (0 server, 1 client), block event out, changed out; BE5-GATEWAY-EVENT USING index, event, handled out;
+*>   BE5-GATEWAY-PERCENT USING age, cooldown, partial tick, spawn percent out, cooldown percent out; BE5-GATEWAY-USE USING can use portals, server, has entity, cooling, trigger out        4
+*>   BE5-HEART-*: ACTIVE, LOGS, BLOCK-STATE, ENTITY-STATE, COMPARATOR, TICK, LINK, DROP, SPAWN, HURT, XP                                     6
+*>   BE5-SAVE USING index, type, PB-BUFFER and BE5-LOAD-KEY USING index, name, tag, PB-BUFFER, handled out (BEX-SAVE and BEX-LOAD-KEY of be-31-3.cob)
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-REGISTRATION.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-SERVER               BINARY-LONG.
+ 01 L-CLIENT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-SERVER L-CLIENT.
+     MOVE 0 TO L-SERVER L-CLIENT
+     EVALUATE L-TYPE
+         WHEN 15
+             MOVE 1 TO L-SERVER L-CLIENT
+         WHEN 25
+             MOVE 3 TO L-SERVER
+             MOVE 2 TO L-CLIENT
+         WHEN 22
+             MOVE 5 TO L-SERVER
+             MOVE 4 TO L-CLIENT
+         WHEN 11
+             MOVE 6 TO L-SERVER L-CLIENT
+         WHEN 10
+             MOVE 7 TO L-SERVER
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BE5-REGISTRATION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-BEACON-REQUIRED.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(14) VALUE "speed       1".
+    05 FILLER PIC X(14) VALUE "haste       1".
+    05 FILLER PIC X(14) VALUE "resistance  2".
+    05 FILLER PIC X(14) VALUE "jump_boost  2".
+    05 FILLER PIC X(14) VALUE "strength    3".
+    05 FILLER PIC X(14) VALUE "regeneration4".
+ 01 FILLER REDEFINES WS-ROWS.
+    05 WS-ROW OCCURS 6 TIMES.
+       10 WS-NAME            PIC X(12).
+       10 WS-LEVEL           PIC 9.
+       10 FILLER             PIC X.
+ 01 WS-PROBE               PIC X(12).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(32).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-REQUIRED             BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-LENGTH L-REQUIRED.
+     MOVE 0 TO L-REQUIRED
+     IF L-LENGTH = 0
+         GOBACK
+     END-IF
+     MOVE 2147483647 TO L-REQUIRED
+     MOVE 1 TO WS-START
+     MOVE L-LENGTH TO WS-LEN
+     IF L-LENGTH > 10 AND L-KEY(1:10) = "minecraft:"
+         MOVE 11 TO WS-START
+         COMPUTE WS-LEN = L-LENGTH - 10
+     END-IF
+     IF WS-LEN > 12
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-PROBE
+     MOVE L-KEY(WS-START:WS-LEN) TO WS-PROBE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+         IF WS-NAME(WS-I) = WS-PROBE
+             MOVE WS-LEVEL(WS-I) TO L-REQUIRED
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BE5-BEACON-REQUIRED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-BEACON-VALIDATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-RP                  BINARY-LONG.
+ 01 WS-RS                  BINARY-LONG.
+ 01 WS-SAME                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PRIMARY              PIC X(32).
+ 01 L-PRIMARY-LENGTH       BINARY-LONG.
+ 01 L-SECONDARY            PIC X(32).
+ 01 L-SECONDARY-LENGTH     BINARY-LONG.
+ 01 L-LEVELS               BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ PROCEDURE DIVISION USING L-PRIMARY L-PRIMARY-LENGTH L-SECONDARY L-SECONDARY-LENGTH L-LEVELS L-VALID.
+     MOVE 0 TO L-VALID
+     IF L-SECONDARY-LENGTH > 0 AND L-LEVELS < 4
+         GOBACK
+     END-IF
+     CALL "BE5-BEACON-REQUIRED" USING L-PRIMARY L-PRIMARY-LENGTH WS-RP
+     CALL "BE5-BEACON-REQUIRED" USING L-SECONDARY L-SECONDARY-LENGTH WS-RS
+     IF WS-RP > L-LEVELS OR WS-RS > L-LEVELS OR WS-RP >= 4
+         GOBACK
+     END-IF
+     IF WS-RS NOT = 0 AND WS-RS < 4
+         MOVE 0 TO WS-SAME
+         IF L-PRIMARY-LENGTH = L-SECONDARY-LENGTH AND L-PRIMARY-LENGTH > 0
+             IF L-PRIMARY(1:L-PRIMARY-LENGTH) = L-SECONDARY(1:L-SECONDARY-LENGTH)
+                 MOVE 1 TO WS-SAME
+             END-IF
+         END-IF
+         IF WS-SAME = 0
+             GOBACK
+         END-IF
+     END-IF
+     MOVE 1 TO L-VALID
+     GOBACK.
+ END PROGRAM BE5-BEACON-VALIDATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-BEACON-EFFECTS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LEVELS               BINARY-LONG.
+ 01 L-SAME                 BINARY-LONG.
+ 01 L-PRIMARY              BINARY-LONG.
+ 01 L-SECONDARY            BINARY-LONG.
+ 01 L-RANGE                BINARY-LONG.
+ 01 L-DURATION             BINARY-LONG.
+ 01 L-AMPLIFIER            BINARY-LONG.
+ 01 L-SECONDARY-APPLIES    BINARY-LONG.
+ PROCEDURE DIVISION USING L-LEVELS L-SAME L-PRIMARY L-SECONDARY L-RANGE L-DURATION L-AMPLIFIER L-SECONDARY-APPLIES.
+     COMPUTE L-RANGE = L-LEVELS * 10 + 10
+     COMPUTE L-DURATION = (9 + 2 * L-LEVELS) * 20
+     MOVE 0 TO L-AMPLIFIER L-SECONDARY-APPLIES
+     IF L-PRIMARY = 1
+         IF L-LEVELS >= 4 AND L-SAME = 1
+             MOVE 1 TO L-AMPLIFIER
+         END-IF
+         IF L-LEVELS >= 4 AND L-SAME = 0 AND L-SECONDARY = 1
+             MOVE 1 TO L-SECONDARY-APPLIES
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-BEACON-EFFECTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-BEACON-BASE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-STOP                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-MIN-Y                BINARY-LONG.
+ 01 L-PASSES.
+    05 L-PASS              BINARY-LONG OCCURS 4 TIMES.
+ 01 L-LEVELS               BINARY-LONG.
+ PROCEDURE DIVISION USING L-Y L-MIN-Y L-PASSES L-LEVELS.
+     MOVE 0 TO L-LEVELS WS-STOP
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4 OR WS-STOP = 1
+         IF L-Y - WS-I < L-MIN-Y OR L-PASS(WS-I) = 0
+             MOVE 1 TO WS-STOP
+         ELSE
+             MOVE WS-I TO L-LEVELS
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BE5-BEACON-BASE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-BEACON-CELL.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-LAST-COLOR          BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-G                   BINARY-LONG.
+ 01 WS-BL                  BINARY-LONG.
+ 01 WS-COLOR               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-COLOR                BINARY-LONG.
+ 01 L-BLOCKED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-KIND L-COLOR L-BLOCKED.
+     GO TO MAIN-LINE.
+
+
+ APPEND.
+     IF WS-N < 20
+         ADD 1 TO BE-XI(L-INDEX, 5)
+         COMPUTE WS-LAST = 6 + 2 * WS-N
+         MOVE WS-COLOR TO BE-XI(L-INDEX, WS-LAST)
+         MOVE 1 TO BE-XI(L-INDEX, WS-LAST + 1)
+     END-IF
+     .
+
+ AVERAGE.
+     COMPUTE WS-A = WS-LAST-COLOR / 65536
+     COMPUTE WS-B = WS-COLOR / 65536
+     COMPUTE WS-R = (WS-A + WS-B) / 2
+     COMPUTE WS-A = FUNCTION MOD(WS-LAST-COLOR / 256, 256)
+     COMPUTE WS-B = FUNCTION MOD(WS-COLOR / 256, 256)
+     COMPUTE WS-G = (WS-A + WS-B) / 2
+     COMPUTE WS-A = FUNCTION MOD(WS-LAST-COLOR, 256)
+     COMPUTE WS-B = FUNCTION MOD(WS-COLOR, 256)
+     COMPUTE WS-BL = (WS-A + WS-B) / 2
+     COMPUTE WS-COLOR = WS-R * 65536 + WS-G * 256 + WS-BL
+     .
+
+ MAIN-LINE.
+     MOVE 0 TO L-BLOCKED
+     MOVE L-COLOR TO WS-COLOR
+     MOVE BE-XI(L-INDEX, 5) TO WS-N
+     COMPUTE WS-LAST = 6 + 2 * (WS-N - 1)
+     IF L-KIND = 1
+         IF WS-N <= 1
+             PERFORM APPEND
+         ELSE
+             MOVE BE-XI(L-INDEX, WS-LAST) TO WS-LAST-COLOR
+             IF WS-LAST-COLOR = WS-COLOR
+                 ADD 1 TO BE-XI(L-INDEX, WS-LAST + 1)
+             ELSE
+                 PERFORM AVERAGE
+                 PERFORM APPEND
+             END-IF
+         END-IF
+     ELSE
+         IF WS-N = 0 OR L-KIND = 3
+             MOVE 0 TO BE-XI(L-INDEX, 5)
+             MOVE 1 TO L-BLOCKED
+         ELSE
+             ADD 1 TO BE-XI(L-INDEX, WS-LAST + 1)
+         END-IF
+     END-IF
+     .
+ END PROGRAM BE5-BEACON-CELL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-BEACON-PULSE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TIME                 BINARY-LONG.
+ 01 L-BEAMS                BINARY-LONG.
+ 01 L-LEVELS               BINARY-LONG.
+ 01 L-RECOMPUTE            BINARY-LONG.
+ 01 L-APPLY                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TIME L-BEAMS L-LEVELS L-RECOMPUTE L-APPLY.
+     MOVE 0 TO L-RECOMPUTE L-APPLY
+     IF FUNCTION MOD(L-TIME, 80) = 0 AND L-BEAMS > 0
+         MOVE 1 TO L-RECOMPUTE
+         IF L-LEVELS > 0
+             MOVE 1 TO L-APPLY
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-BEACON-PULSE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-BEACON-SOUND.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-BEFORE               BINARY-LONG.
+ 01 L-NOW                  BINARY-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-BEFORE L-NOW L-SOUND.
+     MOVE 0 TO L-SOUND
+     IF L-BEFORE = 0 AND L-NOW > 0
+         MOVE 1 TO L-SOUND
+     END-IF
+     IF L-BEFORE > 0 AND L-NOW = 0
+         MOVE 2 TO L-SOUND
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-BEACON-SOUND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-CONDUIT-OFFSETS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-KEEP                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TABLE.
+    05 L-ENTRY OCCURS 64 TIMES.
+       10 L-OX             BINARY-LONG.
+       10 L-OY             BINARY-LONG.
+       10 L-OZ             BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TABLE L-COUNT.
+     MOVE 0 TO L-COUNT
+     PERFORM VARYING WS-X FROM -2 BY 1 UNTIL WS-X > 2
+         PERFORM VARYING WS-Y FROM -2 BY 1 UNTIL WS-Y > 2
+             PERFORM VARYING WS-Z FROM -2 BY 1 UNTIL WS-Z > 2
+                 MOVE 0 TO WS-KEEP
+                 IF WS-X = 0 AND (FUNCTION ABS(WS-Y) = 2 OR FUNCTION ABS(WS-Z) = 2)
+                     MOVE 1 TO WS-KEEP
+                 END-IF
+                 IF WS-Y = 0 AND (FUNCTION ABS(WS-X) = 2 OR FUNCTION ABS(WS-Z) = 2)
+                     MOVE 1 TO WS-KEEP
+                 END-IF
+                 IF WS-Z = 0 AND (FUNCTION ABS(WS-X) = 2 OR FUNCTION ABS(WS-Y) = 2)
+                     MOVE 1 TO WS-KEEP
+                 END-IF
+                 IF WS-KEEP = 1 AND (FUNCTION ABS(WS-X) = 2 OR FUNCTION ABS(WS-Y) = 2 OR FUNCTION ABS(WS-Z) = 2)
+                     ADD 1 TO L-COUNT
+                     MOVE WS-X TO L-OX(L-COUNT)
+                     MOVE WS-Y TO L-OY(L-COUNT)
+                     MOVE WS-Z TO L-OZ(L-COUNT)
+                 END-IF
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BE5-CONDUIT-OFFSETS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-CONDUIT-RANGE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FRAMES               BINARY-LONG.
+ 01 L-RANGE                BINARY-LONG.
+ 01 L-ACTIVE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-FRAMES L-RANGE L-ACTIVE.
+     COMPUTE L-RANGE = FUNCTION INTEGER-PART(L-FRAMES / 7) * 16
+     MOVE 0 TO L-ACTIVE
+     IF L-FRAMES >= 16
+         MOVE 1 TO L-ACTIVE
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-CONDUIT-RANGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-CONDUIT-TICK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-TIME                 BINARY-LONG.
+ 01 L-SHAPE                BINARY-LONG.
+ 01 L-FRAMES               BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ 01 L-EFFECTS              BINARY-LONG.
+ 01 L-ATTACK               BINARY-LONG.
+ 01 L-KILL                 BINARY-LONG.
+ 01 L-AMBIENT              BINARY-LONG.
+ 01 L-SHORT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-TIME L-SHAPE L-FRAMES L-DRAW L-SOUND L-EFFECTS L-ATTACK L-KILL L-AMBIENT L-SHORT.
+     MOVE 0 TO L-SOUND L-EFFECTS L-ATTACK L-KILL L-AMBIENT L-SHORT
+     ADD 1 TO BE-XI(L-INDEX, 1)
+     IF FUNCTION MOD(L-TIME, 40) = 0
+         IF L-SHAPE NOT = BE-XI(L-INDEX, 2)
+             MOVE 2 TO L-SOUND
+             IF L-SHAPE = 1
+                 MOVE 1 TO L-SOUND
+             END-IF
+         END-IF
+         MOVE L-SHAPE TO BE-XI(L-INDEX, 2)
+         MOVE L-FRAMES TO BE-XI(L-INDEX, 4)
+         MOVE 0 TO BE-XI(L-INDEX, 3)
+         IF L-FRAMES >= 42
+             MOVE 1 TO BE-XI(L-INDEX, 3)
+         END-IF
+         IF L-SHAPE = 1
+             MOVE 1 TO L-EFFECTS L-ATTACK
+             MOVE BE-XI(L-INDEX, 3) TO L-KILL
+         END-IF
+     END-IF
+     IF BE-XI(L-INDEX, 2) = 1
+         IF FUNCTION MOD(L-TIME, 80) = 0
+             MOVE 1 TO L-AMBIENT
+         END-IF
+         IF L-TIME > BE-XI(L-INDEX, 5)
+             COMPUTE BE-XI(L-INDEX, 5) = L-TIME + 60 + L-DRAW
+             MOVE 1 TO L-SHORT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-CONDUIT-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-CONDUIT-TARGET.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KILL                 BINARY-LONG.
+ 01 L-HAS                  BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ 01 L-CANDIDATES           BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KILL L-HAS L-VALID L-CANDIDATES L-DRAW L-ACTION L-INDEX.
+     MOVE 0 TO L-ACTION L-INDEX
+     IF L-KILL = 0
+         GOBACK
+     END-IF
+     IF L-HAS = 0
+         IF L-CANDIDATES > 0
+             MOVE 2 TO L-ACTION
+             MOVE L-DRAW TO L-INDEX
+         END-IF
+     ELSE
+         IF L-VALID = 1
+             MOVE 1 TO L-ACTION
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-CONDUIT-TARGET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-CONDUIT-BOB.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ARG                 FLOAT-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-TICKS                BINARY-LONG.
+ 01 L-BOB                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-TICKS L-BOB.
+     COMPUTE WS-ARG = (L-TICKS + 35) * 0.1
+     CALL "BE4-MTH-SIN" USING WS-ARG WS-H
+     COMPUTE WS-H = WS-H / 2 + 0.5
+     COMPUTE L-BOB = (WS-H * WS-H + WS-H) * 0.3
+     GOBACK.
+ END PROGRAM BE5-CONDUIT-BOB.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-PORTAL-FACE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DIRECTION            BINARY-LONG.
+ 01 L-RENDERED             BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIRECTION L-RENDERED.
+     MOVE 0 TO L-RENDERED
+     IF L-DIRECTION = 0 OR L-DIRECTION = 1
+         MOVE 1 TO L-RENDERED
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-PORTAL-FACE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-GATEWAY-TICK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WS-WAS-SPAWNING        BINARY-LONG.
+ 01 WS-WAS-COOLING         BINARY-LONG.
+ 01 WS-IS-SPAWNING         BINARY-LONG.
+ 01 WS-IS-COOLING          BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SIDE                 BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ 01 L-CHANGED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-SIDE L-EVENT L-CHANGED.
+     MOVE 0 TO L-EVENT L-CHANGED WS-WAS-SPAWNING WS-WAS-COOLING
+     IF BE-XI(L-INDEX, 1) < 200
+         MOVE 1 TO WS-WAS-SPAWNING
+     END-IF
+     IF BE-XI(L-INDEX, 7) > 0
+         MOVE 1 TO WS-WAS-COOLING
+     END-IF
+     ADD 1 TO BE-XI(L-INDEX, 1)
+     IF WS-WAS-COOLING = 1
+         SUBTRACT 1 FROM BE-XI(L-INDEX, 7)
+     END-IF
+     IF L-SIDE = 1
+         GOBACK
+     END-IF
+     IF WS-WAS-COOLING = 0 AND FUNCTION MOD(BE-XI(L-INDEX, 1), 2400) = 0
+         MOVE 40 TO BE-XI(L-INDEX, 7)
+         MOVE 1 TO L-EVENT
+     END-IF
+     MOVE 0 TO WS-IS-SPAWNING WS-IS-COOLING
+     IF BE-XI(L-INDEX, 1) < 200
+         MOVE 1 TO WS-IS-SPAWNING
+     END-IF
+     IF BE-XI(L-INDEX, 7) > 0
+         MOVE 1 TO WS-IS-COOLING
+     END-IF
+     IF WS-IS-SPAWNING NOT = WS-WAS-SPAWNING OR WS-IS-COOLING NOT = WS-WAS-COOLING
+         MOVE 1 TO L-CHANGED
+     END-IF
+     IF L-CHANGED = 1 OR L-EVENT = 1
+         CALL "BE-MARK-CHUNK" USING L-INDEX
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-GATEWAY-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-GATEWAY-EVENT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-EVENT                BINARY-LONG.
+ 01 L-HANDLED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-EVENT L-HANDLED.
+     MOVE 0 TO L-HANDLED
+     IF L-EVENT = 1
+         MOVE 40 TO BE-XI(L-INDEX, 7)
+         MOVE 1 TO L-HANDLED
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-GATEWAY-EVENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-GATEWAY-PERCENT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AGE                  BINARY-LONG.
+ 01 L-COOLDOWN             BINARY-LONG.
+ 01 L-PARTIAL              FLOAT-LONG.
+ 01 L-SPAWN                FLOAT-LONG.
+ 01 L-COOL                 FLOAT-LONG.
+ PROCEDURE DIVISION USING L-AGE L-COOLDOWN L-PARTIAL L-SPAWN L-COOL.
+     COMPUTE L-SPAWN = (L-AGE + L-PARTIAL) / 200
+     IF L-SPAWN < 0
+         MOVE 0 TO L-SPAWN
+     END-IF
+     IF L-SPAWN > 1
+         MOVE 1 TO L-SPAWN
+     END-IF
+     COMPUTE L-COOL = (L-COOLDOWN - L-PARTIAL) / 40
+     IF L-COOL < 0
+         MOVE 0 TO L-COOL
+     END-IF
+     IF L-COOL > 1
+         MOVE 1 TO L-COOL
+     END-IF
+     COMPUTE L-COOL = 1 - L-COOL
+     GOBACK.
+ END PROGRAM BE5-GATEWAY-PERCENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-GATEWAY-USE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-CAN                  BINARY-LONG.
+ 01 L-SERVER               BINARY-LONG.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-COOLING              BINARY-LONG.
+ 01 L-TRIGGER              BINARY-LONG.
+ PROCEDURE DIVISION USING L-CAN L-SERVER L-ENTITY L-COOLING L-TRIGGER.
+     MOVE 0 TO L-TRIGGER
+     IF L-CAN = 1 AND L-SERVER = 1 AND L-ENTITY = 1 AND L-COOLING = 0
+         MOVE 1 TO L-TRIGGER
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-GATEWAY-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-HEART-ACTIVE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DAY                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TIME                 BINARY-LONG.
+ 01 L-ACTIVE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TIME L-ACTIVE.
+     MOVE 0 TO L-ACTIVE
+     COMPUTE WS-DAY = FUNCTION MOD(L-TIME, 24000)
+     IF WS-DAY >= 12600 AND WS-DAY < 23401
+         MOVE 1 TO L-ACTIVE
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-HEART-ACTIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-HEART-LOGS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TAG1                 BINARY-LONG.
+ 01 L-AXIS1                BINARY-LONG.
+ 01 L-TAG2                 BINARY-LONG.
+ 01 L-AXIS2                BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TAG1 L-AXIS1 L-TAG2 L-AXIS2 L-RESULT.
+     MOVE 0 TO L-RESULT
+     IF L-TAG1 = 1 AND L-AXIS1 = 1 AND L-TAG2 = 1 AND L-AXIS2 = 1
+         MOVE 1 TO L-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-HEART-LOGS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-HEART-BLOCK-STATE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LOGS                 BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-ACTIVE               BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-LOGS L-STATE L-ACTIVE L-NEW.
+     MOVE L-STATE TO L-NEW
+     IF L-LOGS = 1 AND L-STATE = 0
+         MOVE 1 TO L-NEW
+         IF L-ACTIVE = 1
+             MOVE 2 TO L-NEW
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-HEART-BLOCK-STATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-HEART-ENTITY-STATE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-LOGS                 BINARY-LONG.
+ 01 L-LINK                 BINARY-LONG.
+ 01 L-ACTIVE               BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-LOGS L-LINK L-ACTIVE L-STATE.
+     MOVE 0 TO L-STATE
+     IF L-LOGS = 1 OR L-LINK = 1
+         MOVE 1 TO L-STATE
+         IF L-ACTIVE = 1
+             MOVE 2 TO L-STATE
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-HEART-ENTITY-STATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-HEART-COMPARATOR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-STEP                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-LINK                 BINARY-LONG.
+ 01 L-PROTECTOR            BINARY-LONG.
+ 01 L-DISTANCE             FLOAT-LONG.
+ 01 L-SIGNAL               BINARY-LONG.
+ PROCEDURE DIVISION USING L-LINK L-PROTECTOR L-DISTANCE L-SIGNAL.
+     MOVE 0 TO L-SIGNAL
+     IF L-LINK = 1 AND L-PROTECTOR = 1
+         MOVE L-DISTANCE TO WS-D
+         IF WS-D < 0
+             MOVE 0 TO WS-D
+         END-IF
+         IF WS-D > 32
+             MOVE 32 TO WS-D
+         END-IF
+         COMPUTE WS-STEP = FUNCTION INTEGER-PART(15 * WS-D / 32)
+         COMPUTE L-SIGNAL = 15 - WS-STEP
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-HEART-COMPARATOR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-HEART-TICK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-RUN                  BINARY-LONG.
+ 01 L-PASSES               BINARY-LONG.
+ 01 L-SOUND                BINARY-LONG.
+ 01 L-PITCH                FLOAT-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-DRAW L-RUN L-PASSES L-SOUND L-PITCH.
+     MOVE 0 TO L-RUN L-PASSES L-SOUND L-PITCH
+     ADD 1 TO BE-XI(L-INDEX, 2)
+     IF BE-XI(L-INDEX, 4) > 0
+         MOVE 1 TO L-PASSES
+         IF BE-XI(L-INDEX, 4) > 50
+             MOVE 2 TO L-PASSES
+         END-IF
+         IF FUNCTION MOD(BE-XI(L-INDEX, 4), 10) = 0
+             MOVE 1 TO L-SOUND
+             COMPUTE L-PITCH = 0.5 + (BE-XI(L-INDEX, 4) / 2) / 100
+         END-IF
+         SUBTRACT 1 FROM BE-XI(L-INDEX, 4)
+     END-IF
+     SUBTRACT 1 FROM BE-XI(L-INDEX, 3)
+     IF BE-XI(L-INDEX, 3) < 0
+         COMPUTE BE-XI(L-INDEX, 3) = 20 + L-DRAW
+         MOVE 1 TO L-RUN
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-HEART-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-HEART-LINK.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-REMOVED              BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-TICKS                BINARY-LONG.
+ 01 L-ACTION               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND L-REMOVED L-FOUND L-TICKS L-ACTION.
+     MOVE 0 TO L-ACTION
+     IF L-KIND = 0
+         GOBACK
+     END-IF
+     IF L-KIND = 1
+         IF L-REMOVED = 0
+             MOVE 1 TO L-ACTION
+             GOBACK
+         END-IF
+         MOVE 0 TO L-TICKS
+     END-IF
+     IF L-FOUND = 1
+         MOVE 1 TO L-ACTION
+     ELSE
+         IF L-TICKS >= 30
+             MOVE 2 TO L-ACTION
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-HEART-LINK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-HEART-DROP.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ACTIVE               BINARY-LONG.
+ 01 L-PERSISTENT           BINARY-LONG.
+ 01 L-DISTANCE             FLOAT-LONG.
+ 01 L-STUCK                BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ACTIVE L-PERSISTENT L-DISTANCE L-STUCK L-RESULT.
+     MOVE 0 TO L-RESULT
+     IF (L-ACTIVE = 0 AND L-PERSISTENT = 0) OR L-DISTANCE > 34 OR L-STUCK = 1
+         MOVE 1 TO L-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-HEART-DROP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-HEART-SPAWN.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-MONSTERS             BINARY-LONG.
+ 01 L-PEACEFUL             BINARY-LONG.
+ 01 L-NEAR                 BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-MONSTERS L-PEACEFUL L-NEAR L-RESULT.
+     MOVE 0 TO L-RESULT
+     IF L-STATE = 2 AND L-MONSTERS = 1 AND L-PEACEFUL = 0 AND L-NEAR = 1
+         MOVE 1 TO L-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-HEART-SPAWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-HEART-HURT.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-EMITTER              BINARY-LONG.
+ 01 L-PROTECTOR            BINARY-LONG.
+ 01 L-AWAKE                BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-PARTICLES            BINARY-LONG.
+ 01 L-RESIN                BINARY-LONG.
+ 01 L-NEW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-EMITTER L-PROTECTOR L-AWAKE L-DRAW L-PARTICLES L-RESIN L-NEW.
+     MOVE 0 TO L-PARTICLES L-RESIN
+     MOVE L-EMITTER TO L-NEW
+     IF L-PROTECTOR = 1 AND L-EMITTER = 0
+         MOVE 20 TO L-PARTICLES
+         IF L-AWAKE = 1
+             MOVE L-DRAW TO L-RESIN
+         END-IF
+         MOVE 100 TO L-NEW
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-HEART-HURT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-HEART-XP.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-PREVENTS             BINARY-LONG.
+ 01 L-SPECTATOR            BINARY-LONG.
+ 01 L-NATURAL              BINARY-LONG.
+ 01 L-SERVER               BINARY-LONG.
+ 01 L-DRAW                 BINARY-LONG.
+ 01 L-XP                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-PREVENTS L-SPECTATOR L-NATURAL L-SERVER L-DRAW L-XP.
+     MOVE 0 TO L-XP
+     IF L-PREVENTS = 0 AND L-SPECTATOR = 0 AND L-NATURAL = 1 AND L-SERVER = 1
+         COMPUTE L-XP = 20 + L-DRAW
+     END-IF
+     GOBACK.
+ END PROGRAM BE5-HEART-XP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-SAVE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-LIMIT-NAME          PIC X(32).
+ 01 WS-FOUR                BINARY-LONG VALUE 4.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-LONG                BINARY-DOUBLE.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-TYPE PB-BUFFER.
+     EVALUATE L-TYPE
+         WHEN 15
+             IF BE-XI(L-INDEX, 1) > 0
+                 MOVE "primary_effect" TO WN
+                 MOVE 14 TO WL
+                 CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL BE-XT(L-INDEX, 1) BE-XI(L-INDEX, 1)
+             END-IF
+             IF BE-XI(L-INDEX, 2) > 0
+                 MOVE "secondary_effect" TO WN
+                 MOVE 16 TO WL
+                 CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL BE-XT(L-INDEX, 2) BE-XI(L-INDEX, 2)
+             END-IF
+             MOVE "Levels" TO WN
+             MOVE 6 TO WL
+             CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL BE-XI(L-INDEX, 3)
+             IF BE-NAME-LENGTH(L-INDEX) > 0
+                 MOVE "CustomName" TO WN
+                 MOVE 10 TO WL
+                 CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL BE-NAME(L-INDEX) BE-NAME-LENGTH(L-INDEX)
+             END-IF
+             IF BE-LOCK-LENGTH(L-INDEX) > 0
+                 MOVE "lock" TO WN
+                 MOVE 4 TO WL
+                 CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+                 MOVE "items" TO WN
+                 MOVE 5 TO WL
+                 CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL BE-LOCK(L-INDEX) BE-LOCK-LENGTH(L-INDEX)
+                 CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+             END-IF
+         WHEN 25
+             IF BE-XI(L-INDEX, 6) = 1
+                 MOVE "Target" TO WN
+                 MOVE 6 TO WL
+                 CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-FOUR BE-XI(L-INDEX, 7)
+             END-IF
+         WHEN 22
+             MOVE "Age" TO WN
+             MOVE 3 TO WL
+             MOVE BE-XI(L-INDEX, 1) TO WS-LONG
+             CALL "NBT-WRITE-LONG" USING PB-BUFFER WN WL WS-LONG
+             IF BE-XI(L-INDEX, 2) = 1
+                 MOVE "exit_portal" TO WN
+                 MOVE 11 TO WL
+                 CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-THREE BE-XI(L-INDEX, 3)
+             END-IF
+             IF BE-XI(L-INDEX, 6) = 1
+                 MOVE "ExactTeleport" TO WN
+                 MOVE 13 TO WL
+                 CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-ONE
+             END-IF
+         WHEN 10
+             IF BE-XI(L-INDEX, 1) = 1
+                 MOVE "creaking" TO WN
+                 MOVE 8 TO WL
+                 CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-FOUR BE-XI(L-INDEX, 6)
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BE5-SAVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE5-LOAD-KEY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-CAP32               BINARY-LONG VALUE 32.
+ 01 WS-CAP64               BINARY-LONG VALUE 64.
+ 01 WS-CAP-INTS            BINARY-LONG VALUE 64.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-REQUIRED            BINARY-LONG.
+ 01 WS-TEXT                PIC X(64).
+ 01 WS-KEY32               PIC X(32).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-LONG                BINARY-DOUBLE.
+ 01 WS-INTS.
+    05 WS-INT              BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-NAME                 PIC X(32).
+ 01 L-TAG                  BINARY-LONG.
+ 01 L-HANDLED              BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-NAME L-TAG PB-BUFFER L-HANDLED.
+     MOVE 0 TO L-HANDLED
+     EVALUATE TRUE
+         WHEN BE-TYPE(L-INDEX) = 15 AND (L-NAME = "primary_effect" OR L-NAME = "secondary_effect") AND L-TAG = 8
+             MOVE 1 TO L-HANDLED
+             MOVE SPACES TO WS-TEXT
+             CALL "NBT-READ-STRING" USING PB-BUFFER WS-TEXT WS-CAP64 WS-LEN
+             MOVE WS-TEXT(1:32) TO WS-KEY32
+             CALL "BE5-BEACON-REQUIRED" USING WS-KEY32 WS-LEN WS-REQUIRED
+             IF WS-REQUIRED NOT = 2147483647
+                 IF L-NAME = "primary_effect"
+                     MOVE WS-TEXT TO BE-XT(L-INDEX, 1)
+                     MOVE WS-LEN TO BE-XI(L-INDEX, 1)
+                 ELSE
+                     MOVE WS-TEXT TO BE-XT(L-INDEX, 2)
+                     MOVE WS-LEN TO BE-XI(L-INDEX, 2)
+                 END-IF
+             END-IF
+         WHEN BE-TYPE(L-INDEX) = 15 AND L-NAME = "CustomName" AND L-TAG = 8
+             MOVE 1 TO L-HANDLED
+             CALL "NBT-READ-STRING" USING PB-BUFFER BE-NAME(L-INDEX) WS-CAP64 BE-NAME-LENGTH(L-INDEX)
+         WHEN BE-TYPE(L-INDEX) = 15 AND L-NAME = "lock" AND L-TAG = 10
+             MOVE 1 TO L-HANDLED
+             PERFORM UNTIL PB-ERROR = 1
+                 MOVE SPACES TO WN
+                 CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAP32 WL
+                 IF WS-TYPE = 0
+                     EXIT PERFORM
+                 END-IF
+                 IF WN = "items" AND WS-TYPE = 8
+                     MOVE SPACES TO BE-LOCK(L-INDEX)
+                     CALL "NBT-READ-STRING" USING PB-BUFFER BE-LOCK(L-INDEX) WS-CAP64 BE-LOCK-LENGTH(L-INDEX)
+                 ELSE
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                 END-IF
+             END-PERFORM
+         WHEN BE-TYPE(L-INDEX) = 25 AND L-NAME = "Target" AND L-TAG = 11
+             MOVE 1 TO L-HANDLED
+             CALL "NBT-READ-INT-ARRAY" USING PB-BUFFER WS-CAP-INTS WS-COUNT WS-INTS
+             IF WS-COUNT = 4
+                 MOVE 1 TO BE-XI(L-INDEX, 6)
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+                     MOVE WS-INT(WS-I) TO BE-XI(L-INDEX, 6 + WS-I)
+                 END-PERFORM
+             END-IF
+         WHEN BE-TYPE(L-INDEX) = 22 AND L-NAME = "Age" AND L-TAG = 4
+             MOVE 1 TO L-HANDLED
+             CALL "PB-GET-LONG" USING PB-BUFFER WS-LONG
+             MOVE WS-LONG TO BE-XI(L-INDEX, 1)
+         WHEN BE-TYPE(L-INDEX) = 22 AND L-NAME = "exit_portal" AND L-TAG = 11
+             MOVE 1 TO L-HANDLED
+             CALL "NBT-READ-INT-ARRAY" USING PB-BUFFER WS-CAP-INTS WS-COUNT WS-INTS
+             IF WS-COUNT = 3
+                 MOVE 1 TO BE-XI(L-INDEX, 2)
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+                     MOVE WS-INT(WS-I) TO BE-XI(L-INDEX, 2 + WS-I)
+                 END-PERFORM
+             END-IF
+         WHEN BE-TYPE(L-INDEX) = 22 AND L-NAME = "ExactTeleport" AND L-TAG = 1
+             MOVE 1 TO L-HANDLED
+             CALL "PB-GET-BYTE" USING PB-BUFFER BE-XI(L-INDEX, 6)
+         WHEN BE-TYPE(L-INDEX) = 10 AND L-NAME = "creaking" AND L-TAG = 11
+             MOVE 1 TO L-HANDLED
+             CALL "NBT-READ-INT-ARRAY" USING PB-BUFFER WS-CAP-INTS WS-COUNT WS-INTS
+             IF WS-COUNT = 4
+                 MOVE 1 TO BE-XI(L-INDEX, 1)
+                 MOVE 0 TO BE-XI(L-INDEX, 2)
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+                     MOVE WS-INT(WS-I) TO BE-XI(L-INDEX, 5 + WS-I)
+                 END-PERFORM
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BE5-LOAD-KEY.

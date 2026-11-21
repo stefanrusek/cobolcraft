@@ -1,0 +1,124 @@
+*> Entity models part 7 section 3 (Ghast): the mesh through the 4.5 scaling transformer (3.1), setupAnim (3.2), texture, shadow radius and the tentacle lengths from the generator seeded 1660.
+*> Entry points for the integrator (inputs; the table programs take IN (16 FLOAT-LONG) and OUT (64 FLOAT-LONG)):
+*>   EF7-GHAST-ANIM EMM-MODEL state(1 ageInTicks): reset first, tentacle i xRot = 0.2 sin(age x 0.3 + i) + 0.4; EF7-GHAST-LENGTHS IN() OUT(nine lengths nextInt(7) + 8 from setSeed(1660), via EF7-RANDOM-SEQ);
+*>   EF7-GHAST-TEXTURE IN(charging) path(out X(120)); EF7-GHAST-SHADOW IN() OUT(radius).
+
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF7-M-GHAST.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS1.
+    05 FILLER PIC X(100) VALUE "P body root 0 17.6 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C body 0 0 -8 -8 -8 16 16 16 0 0".
+    05 FILLER PIC X(100) VALUE "P tentacle0 root -3.75 24.6 -5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C tentacle0 0 0 -1 0 -1 2 8 2 0 0".
+    05 FILLER PIC X(100) VALUE "P tentacle1 root 1.25 24.6 -5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C tentacle1 0 0 -1 0 -1 2 13 2 0 0".
+    05 FILLER PIC X(100) VALUE "P tentacle2 root 6.25 24.6 -5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C tentacle2 0 0 -1 0 -1 2 9 2 0 0".
+    05 FILLER PIC X(100) VALUE "P tentacle3 root -6.25 24.6 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C tentacle3 0 0 -1 0 -1 2 11 2 0 0".
+    05 FILLER PIC X(100) VALUE "P tentacle4 root -1.25 24.6 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C tentacle4 0 0 -1 0 -1 2 11 2 0 0".
+    05 FILLER PIC X(100) VALUE "P tentacle5 root 3.75 24.6 0 0 0 0".
+    05 FILLER PIC X(100) VALUE "C tentacle5 0 0 -1 0 -1 2 10 2 0 0".
+    05 FILLER PIC X(100) VALUE "P tentacle6 root -3.75 24.6 5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C tentacle6 0 0 -1 0 -1 2 12 2 0 0".
+    05 FILLER PIC X(100) VALUE "P tentacle7 root 1.25 24.6 5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C tentacle7 0 0 -1 0 -1 2 9 2 0 0".
+    05 FILLER PIC X(100) VALUE "P tentacle8 root 6.25 24.6 5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C tentacle8 0 0 -1 0 -1 2 12 2 0 0".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 60 TIMES.
+ 01 WS-ROWS1-R REDEFINES WS-ROWS1.
+    05 WS-ROW1             PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N1                  BINARY-LONG VALUE 20.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CALL "EMM-INIT" USING EMM-MODEL
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS1-R WS-N1 WS-ZERO
+     MOVE 64 TO MM-TEXW
+     MOVE 32 TO MM-TEXH
+     GOBACK.
+ END PROGRAM EF7-M-GHAST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF7-GHAST-ANIM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAME                PIC X(24).
+ 01 WS-DIG                 PIC 9.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ PROCEDURE DIVISION USING EMM-MODEL L-IN.
+     CALL "EMM-RESET" USING EMM-MODEL
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 8
+         MOVE WS-I TO WS-DIG
+         MOVE SPACES TO WS-NAME
+         STRING "tentacle" WS-DIG DELIMITED BY SIZE INTO WS-NAME
+         CALL "EMM-FIND" USING EMM-MODEL WS-NAME WS-P
+         COMPUTE MM-CXROT(WS-P) = 0.2 * FUNCTION SIN(L-I(1) * 0.3 + WS-I) + 0.4
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EF7-GHAST-ANIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF7-GHAST-LENGTHS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-IN-G.
+    05 WS-IN              FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-K                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 3 TO WS-IN(1)
+     MOVE 1660 TO WS-IN(2)
+     MOVE 7 TO WS-IN(3)
+     MOVE 0 TO WS-IN(4)
+     MOVE 9 TO WS-IN(5)
+     CALL "EF7-RANDOM-SEQ" USING WS-IN-G L-OUT
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 9
+         COMPUTE L-O(WS-K) = L-O(WS-K) + 8
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EF7-GHAST-LENGTHS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF7-GHAST-SHADOW.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 1.5 TO L-O(1)
+     GOBACK.
+ END PROGRAM EF7-GHAST-SHADOW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF7-GHAST-TEXTURE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-PATH                 PIC X(120).
+ PROCEDURE DIVISION USING L-IN L-PATH.
+     IF L-I(1) NOT = 0
+         MOVE "textures/entity/ghast/ghast_shooting.png" TO L-PATH
+     ELSE
+         MOVE "textures/entity/ghast/ghast.png" TO L-PATH
+     END-IF
+     GOBACK.
+ END PROGRAM EF7-GHAST-TEXTURE.
+

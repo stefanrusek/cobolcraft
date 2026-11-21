@@ -1,0 +1,22 @@
+# Fixture: Level Particles, dust
+# Phase: play. Direction: clientbound (S->C). Packet id 0x30 (48).
+# Doc refs: 05a 0x30 and Particle (dust: Int colour, Float scale); 46 section 5.1 and worked example 5 (dust = 21)
+# Stated inputs:
+#   particle dust colour 0xff0000 scale 2.0; override limiter false; always show true; position (0.5, 65.0, 0.5);
+#   distance (0.25, 0.5, 0.25); max speed 0.0 on each axis (three floats); count 7; randomization 1 (ALTERNATIVE)
+
+30                                               # packet id: VarInt 0x30
+15 00 ff 00 00 40 00 00 00                       # Particle: type VarInt 21 (dust), Int colour 0xff0000, Float scale 2.0
+00                                               # Override limiter: Boolean false
+01                                               # Always show: Boolean true
+3f e0 00 00 00 00 00 00                          # X: Double 0.5
+40 50 40 00 00 00 00 00                          # Y: Double 65.0
+3f e0 00 00 00 00 00 00                          # Z: Double 0.5
+3e 80 00 00                                      # X distance: Float 0.25
+3f 00 00 00                                      # Y distance: Float 0.5
+3e 80 00 00                                      # Z distance: Float 0.25
+00 00 00 00                                      # X max speed: Float 0.0
+00 00 00 00                                      # Y max speed: Float 0.0
+00 00 00 00                                      # Z max speed: Float 0.0
+07                                               # Count: VarInt 7
+01                                               # Randomization: VarInt 1

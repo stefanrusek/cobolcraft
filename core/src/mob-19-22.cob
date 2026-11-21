@@ -1,0 +1,701 @@
+*> The villager (docs/protocol/19-mobs-land-friendly-and-neutral.md sections 22 to 24; lane 002-lane-mobsb). Programs of plain numbers: the caller reads the
+*> facts (rows, counts, flags, drawn random numbers) and takes the decision or the arithmetic of the section. The trade data is the copybook TRADES.cpy
+*> (generated from section 24 by a script, 397 trades) with the pick counts of TRADESETS.cpy; the biome table is VILBIOME.cpy.
+*>
+*>   VIL-TRADE-SET USING profession (X(16)), level, first row out, trade count out, pick amount out        24 the rows of a trade set (0 rows: no set)
+*>   VIL-OFFER-PICK USING profession, level, villager type (0 to 6), salt, rows out (5 BINARY-LONG), count out   22.4 selection without replacement
+*>   VIL-XP-THRESHOLD USING level, threshold out; VIL-LEVEL-UP USING level, xp, levels up out              22.2
+*>   VIL-DEMAND USING uses, max uses, demand, new demand out                                               22.4 updateDemand
+*>   VIL-SPECIAL USING reputation, multiplier milli, base count, hero amplifier (-1 none), diff out         22.4 updateSpecialPrices
+*>   VIL-GOSSIP-ADD USING type (1 to 5), existing, added, new out; VIL-GOSSIP-DECAY USING type, value, new out   22.5
+*>   VIL-REPUTATION USING five values (major_negative ... trading), reputation out                          22.5
+*>   VIL-RESTOCK USING game time, last restock, restocks today, needs restock, allowed out                   22.4 allowedToRestock
+*>   VIL-ACTIVITY USING day tick, baby, activity out (1 idle 2 work 3 meet 4 rest 5 play)                   22.3 schedule
+*>   VIL-BIOME-TYPE USING biome key (X(32)), type out                                                      22.1
+*>   VIL-FOOD USING item key (X(24)), nutrition out; VIL-CAN-BREED USING food level, food in inventory, sleeping, age, yes out   22.6
+*>   VIL-OFFSPRING USING roll x 1000, biome type, own type, other type, type out                           22.6
+*>   VIL-PROFESSION USING workstation block key (X(32)), profession key out (X(16))                         22.2
+*>   VIL-GOLEM-WANTS USING game time, last slept (-1 none), golem detected, yes out                         22.10
+*>   VIL-WANDER-CHANCE USING chance, new chance out                                                        23 the spawn chance after the timer ran out
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-TRADE-SET.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TRADES.
+ 01 WS-TR REDEFINES TRADE-DATA.
+    05 WS-ROW OCCURS 397 TIMES.
+       10 WS-PROF               PIC X(16).
+       10 WS-LEVEL              BINARY-LONG.
+       10 FILLER                PIC X(32).
+       10 FILLER                BINARY-LONG.
+       10 FILLER                PIC X(32).
+       10 FILLER                BINARY-LONG.
+       10 FILLER                PIC X(32).
+       10 FILLER                BINARY-LONG OCCURS 6 TIMES.
+ COPY TRADESETS.
+ 01 WS-SETS REDEFINES TRADE-SET-DATA.
+    05 WS-SET OCCURS 68 TIMES.
+       10 WS-SPROF              PIC X(16).
+       10 WS-SLEVEL             BINARY-LONG.
+       10 WS-SPICK              BINARY-LONG.
+ 01 WS-I                    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PROF                  PIC X(16).
+ 01 L-LEVEL                 BINARY-LONG.
+ 01 L-FIRST                 BINARY-LONG.
+ 01 L-COUNT                 BINARY-LONG.
+ 01 L-PICK                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-PROF L-LEVEL L-FIRST L-COUNT L-PICK.
+     MOVE 0 TO L-FIRST L-COUNT L-PICK
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > TR-COUNT
+         IF WS-PROF(WS-I) = L-PROF AND WS-LEVEL(WS-I) = L-LEVEL
+             IF L-FIRST = 0
+                 MOVE WS-I TO L-FIRST
+             END-IF
+             ADD 1 TO L-COUNT
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > TR-SET-COUNT
+         IF WS-SPROF(WS-I) = L-PROF AND WS-SLEVEL(WS-I) = L-LEVEL
+             MOVE WS-SPICK(WS-I) TO L-PICK
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM VIL-TRADE-SET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-OFFER-PICK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TRADES.
+ 01 WS-TR REDEFINES TRADE-DATA.
+    05 WS-ROW OCCURS 397 TIMES.
+       10 FILLER                PIC X(16).
+       10 FILLER                BINARY-LONG.
+       10 FILLER                PIC X(32).
+       10 FILLER                BINARY-LONG.
+       10 FILLER                PIC X(32).
+       10 FILLER                BINARY-LONG.
+       10 FILLER                PIC X(32).
+       10 FILLER                BINARY-LONG OCCURS 4 TIMES.
+       10 WS-MASK               BINARY-LONG.
+       10 FILLER                BINARY-LONG.
+ 01 WS-FIRST                BINARY-LONG.
+ 01 WS-N                    BINARY-LONG.
+ 01 WS-PICK                 BINARY-LONG.
+ 01 WS-CAND.
+    05 WS-C                 BINARY-LONG OCCURS 100 TIMES.
+ 01 WS-NC                   BINARY-LONG.
+ 01 WS-I                    BINARY-LONG.
+ 01 WS-J                    BINARY-LONG.
+ 01 WS-BIT                  BINARY-LONG.
+ 01 WS-OK                   BINARY-LONG.
+ 01 WS-DRAW                 BINARY-LONG.
+ 01 WS-SALT                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PROF                  PIC X(16).
+ 01 L-LEVEL                 BINARY-LONG.
+ 01 L-TYPE                  BINARY-LONG.
+ 01 L-SALT                  BINARY-LONG.
+ 01 L-ROWS.
+    05 L-ROW                BINARY-LONG OCCURS 5 TIMES.
+ 01 L-COUNT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PROF L-LEVEL L-TYPE L-SALT L-ROWS L-COUNT.
+     MOVE 0 TO L-COUNT
+     CALL "VIL-TRADE-SET" USING L-PROF L-LEVEL WS-FIRST WS-N WS-PICK
+     COMPUTE WS-BIT = 2 ** L-TYPE
+     MOVE 0 TO WS-NC
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-N
+         COMPUTE WS-J = WS-FIRST + WS-I
+         COMPUTE WS-OK = FUNCTION MOD(WS-MASK(WS-J) / WS-BIT, 2)
+         IF WS-MASK(WS-J) = 0 OR WS-OK = 1
+             ADD 1 TO WS-NC
+             MOVE WS-J TO WS-C(WS-NC)
+         END-IF
+     END-PERFORM
+     MOVE L-SALT TO WS-SALT
+     PERFORM UNTIL L-COUNT >= WS-PICK OR WS-NC = 0
+         ADD 1 TO WS-SALT
+         CALL "XP-RANDOM" USING WS-SALT WS-NC WS-DRAW
+         ADD 1 TO WS-DRAW
+         ADD 1 TO L-COUNT
+         MOVE WS-C(WS-DRAW) TO L-ROW(L-COUNT)
+         MOVE WS-C(WS-NC) TO WS-C(WS-DRAW)
+         SUBTRACT 1 FROM WS-NC
+     END-PERFORM
+     GOBACK.
+ END PROGRAM VIL-OFFER-PICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-XP-THRESHOLD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-T.
+    05 FILLER               BINARY-LONG VALUE 0.
+    05 FILLER               BINARY-LONG VALUE 10.
+    05 FILLER               BINARY-LONG VALUE 70.
+    05 FILLER               BINARY-LONG VALUE 150.
+    05 FILLER               BINARY-LONG VALUE 250.
+ 01 WS-TV REDEFINES WS-T.
+    05 WS-V                 BINARY-LONG OCCURS 5 TIMES.
+ LINKAGE SECTION.
+ 01 L-LEVEL                 BINARY-LONG.
+ 01 L-THRESHOLD             BINARY-LONG.
+ PROCEDURE DIVISION USING L-LEVEL L-THRESHOLD.
+     MOVE 0 TO L-THRESHOLD
+     IF L-LEVEL >= 1 AND L-LEVEL <= 5
+         MOVE WS-V(L-LEVEL) TO L-THRESHOLD
+     END-IF
+     GOBACK.
+ END PROGRAM VIL-XP-THRESHOLD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-LEVEL-UP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NEXT                 BINARY-LONG.
+ 01 WS-NEXT-LEVEL           BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-LEVEL                 BINARY-LONG.
+ 01 L-XP                    BINARY-LONG.
+ 01 L-UP                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-LEVEL L-XP L-UP.
+     MOVE 0 TO L-UP
+     COMPUTE WS-NEXT-LEVEL = L-LEVEL + 1
+     CALL "VIL-XP-THRESHOLD" USING WS-NEXT-LEVEL WS-NEXT
+     IF L-LEVEL >= 1 AND L-LEVEL <= 4 AND L-XP >= WS-NEXT
+         MOVE 1 TO L-UP
+     END-IF
+     GOBACK.
+ END PROGRAM VIL-LEVEL-UP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-DEMAND.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-USES                  BINARY-LONG.
+ 01 L-MAX                   BINARY-LONG.
+ 01 L-DEMAND                BINARY-LONG.
+ 01 L-NEW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-USES L-MAX L-DEMAND L-NEW.
+     COMPUTE L-NEW = L-DEMAND + L-USES - (L-MAX - L-USES)
+     GOBACK.
+ END PROGRAM VIL-DEMAND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-SPECIAL.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-A                    BINARY-LONG.
+ 01 WS-H                    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-REP                   BINARY-LONG.
+ 01 L-MULT                  BINARY-LONG.
+ 01 L-BASE                  BINARY-LONG.
+ 01 L-HERO                  BINARY-LONG.
+ 01 L-DIFF                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-REP L-MULT L-BASE L-HERO L-DIFF.
+     MOVE 0 TO L-DIFF
+     IF L-REP NOT = 0
+         COMPUTE WS-A = FUNCTION INTEGER(L-REP * L-MULT / 1000)
+         SUBTRACT WS-A FROM L-DIFF
+     END-IF
+     IF L-HERO >= 0
+         COMPUTE WS-H = FUNCTION INTEGER((300 + 62.5 * L-HERO) * L-BASE / 1000)
+         IF WS-H < 1
+             MOVE 1 TO WS-H
+         END-IF
+         SUBTRACT WS-H FROM L-DIFF
+     END-IF
+     GOBACK.
+ END PROGRAM VIL-SPECIAL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-GOSSIP-ADD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-MAX.
+    05 FILLER               BINARY-LONG VALUE 100.
+    05 FILLER               BINARY-LONG VALUE 200.
+    05 FILLER               BINARY-LONG VALUE 25.
+    05 FILLER               BINARY-LONG VALUE 20.
+    05 FILLER               BINARY-LONG VALUE 25.
+ 01 WS-MV REDEFINES WS-MAX.
+    05 WS-M                 BINARY-LONG OCCURS 5 TIMES.
+ LINKAGE SECTION.
+ 01 L-TYPE                  BINARY-LONG.
+ 01 L-EXISTING              BINARY-LONG.
+ 01 L-ADDED                 BINARY-LONG.
+ 01 L-NEW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-EXISTING L-ADDED L-NEW.
+     COMPUTE L-NEW = L-EXISTING + L-ADDED
+     IF L-NEW > WS-M(L-TYPE)
+         MOVE FUNCTION MAX(WS-M(L-TYPE), L-EXISTING) TO L-NEW
+     END-IF
+     IF L-NEW < 2
+         MOVE 0 TO L-NEW
+     END-IF
+     GOBACK.
+ END PROGRAM VIL-GOSSIP-ADD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-GOSSIP-DECAY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DEC.
+    05 FILLER               BINARY-LONG VALUE 10.
+    05 FILLER               BINARY-LONG VALUE 20.
+    05 FILLER               BINARY-LONG VALUE 1.
+    05 FILLER               BINARY-LONG VALUE 0.
+    05 FILLER               BINARY-LONG VALUE 2.
+ 01 WS-DV REDEFINES WS-DEC.
+    05 WS-D                 BINARY-LONG OCCURS 5 TIMES.
+ LINKAGE SECTION.
+ 01 L-TYPE                  BINARY-LONG.
+ 01 L-VALUE                 BINARY-LONG.
+ 01 L-NEW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-VALUE L-NEW.
+     COMPUTE L-NEW = L-VALUE - WS-D(L-TYPE)
+     IF L-NEW < 2
+         MOVE 0 TO L-NEW
+     END-IF
+     GOBACK.
+ END PROGRAM VIL-GOSSIP-DECAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-REPUTATION.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-W.
+    05 FILLER               BINARY-LONG VALUE -5.
+    05 FILLER               BINARY-LONG VALUE -1.
+    05 FILLER               BINARY-LONG VALUE 1.
+    05 FILLER               BINARY-LONG VALUE 5.
+    05 FILLER               BINARY-LONG VALUE 1.
+ 01 WS-WV REDEFINES WS-W.
+    05 WS-WT                BINARY-LONG OCCURS 5 TIMES.
+ 01 WS-I                    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-VALUES.
+    05 L-VALUE              BINARY-LONG OCCURS 5 TIMES.
+ 01 L-REP                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-VALUES L-REP.
+     MOVE 0 TO L-REP
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         COMPUTE L-REP = L-REP + L-VALUE(WS-I) * WS-WT(WS-I)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM VIL-REPUTATION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-RESTOCK.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TIME                  BINARY-LONG.
+ 01 L-LAST                  BINARY-LONG.
+ 01 L-TODAY                 BINARY-LONG.
+ 01 L-NEEDS                 BINARY-LONG.
+ 01 L-ALLOWED               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TIME L-LAST L-TODAY L-NEEDS L-ALLOWED.
+     MOVE 0 TO L-ALLOWED
+     IF L-NEEDS = 1 AND (L-TODAY = 0 OR (L-TODAY < 2 AND L-TIME > L-LAST + 2400))
+         MOVE 1 TO L-ALLOWED
+     END-IF
+     GOBACK.
+ END PROGRAM VIL-RESTOCK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-ACTIVITY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-T                    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TICK                  BINARY-LONG.
+ 01 L-BABY                  BINARY-LONG.
+ 01 L-ACT                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-TICK L-BABY L-ACT.
+     COMPUTE WS-T = FUNCTION MOD(L-TICK, 24000)
+     MOVE 4 TO L-ACT
+     EVALUATE TRUE
+         WHEN WS-T >= 12000 OR WS-T < 10
+             MOVE 4 TO L-ACT
+         WHEN L-BABY = 1 AND ((WS-T >= 3000 AND WS-T < 6000) OR (WS-T >= 10000 AND WS-T < 12000))
+             MOVE 5 TO L-ACT
+         WHEN L-BABY = 1
+             MOVE 1 TO L-ACT
+         WHEN WS-T >= 11000
+             MOVE 1 TO L-ACT
+         WHEN WS-T >= 9000
+             MOVE 3 TO L-ACT
+         WHEN WS-T >= 2000
+             MOVE 2 TO L-ACT
+         WHEN OTHER
+             MOVE 1 TO L-ACT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM VIL-ACTIVITY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-BIOME-TYPE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY VILBIOME.
+ 01 WS-VB REDEFINES VILBIOME-DATA.
+    05 WS-B OCCURS 29 TIMES.
+       10 WS-KEY               PIC X(32).
+       10 WS-TYPE              BINARY-LONG.
+ 01 WS-I                    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                   PIC X(32).
+ 01 L-TYPE                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-TYPE.
+     MOVE 2 TO L-TYPE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > VB-COUNT
+         IF WS-KEY(WS-I) = L-KEY
+             MOVE WS-TYPE(WS-I) TO L-TYPE
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM VIL-BIOME-TYPE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-FOOD.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                   PIC X(24).
+ 01 L-NUTRITION             BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-NUTRITION.
+     EVALUATE L-KEY
+         WHEN "bread"
+             MOVE 4 TO L-NUTRITION
+         WHEN "carrot"
+         WHEN "potato"
+         WHEN "beetroot"
+             MOVE 1 TO L-NUTRITION
+         WHEN OTHER
+             MOVE 0 TO L-NUTRITION
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM VIL-FOOD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-CAN-BREED.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-FOOD                  BINARY-LONG.
+ 01 L-INV                   BINARY-LONG.
+ 01 L-SLEEPING              BINARY-LONG.
+ 01 L-AGE                   BINARY-LONG.
+ 01 L-YES                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-FOOD L-INV L-SLEEPING L-AGE L-YES.
+     MOVE 0 TO L-YES
+     IF L-FOOD + L-INV >= 12 AND L-SLEEPING = 0 AND L-AGE = 0
+         MOVE 1 TO L-YES
+     END-IF
+     GOBACK.
+ END PROGRAM VIL-CAN-BREED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-OFFSPRING.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ROLL                  BINARY-LONG.
+ 01 L-BIOME                 BINARY-LONG.
+ 01 L-OWN                   BINARY-LONG.
+ 01 L-OTHER                 BINARY-LONG.
+ 01 L-TYPE                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROLL L-BIOME L-OWN L-OTHER L-TYPE.
+     EVALUATE TRUE
+         WHEN L-ROLL < 500
+             MOVE L-BIOME TO L-TYPE
+         WHEN L-ROLL < 750
+             MOVE L-OWN TO L-TYPE
+         WHEN OTHER
+             MOVE L-OTHER TO L-TYPE
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM VIL-OFFSPRING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-PROFESSION.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                   PIC X(32).
+ 01 L-PROF                  PIC X(16).
+ PROCEDURE DIVISION USING L-KEY L-PROF.
+     EVALUATE L-KEY
+         WHEN "blast_furnace"
+             MOVE "armorer" TO L-PROF
+         WHEN "smoker"
+             MOVE "butcher" TO L-PROF
+         WHEN "cartography_table"
+             MOVE "cartographer" TO L-PROF
+         WHEN "brewing_stand"
+             MOVE "cleric" TO L-PROF
+         WHEN "composter"
+             MOVE "farmer" TO L-PROF
+         WHEN "barrel"
+             MOVE "fisherman" TO L-PROF
+         WHEN "fletching_table"
+             MOVE "fletcher" TO L-PROF
+         WHEN "cauldron"
+         WHEN "water_cauldron"
+         WHEN "lava_cauldron"
+         WHEN "powder_snow_cauldron"
+             MOVE "leatherworker" TO L-PROF
+         WHEN "lectern"
+             MOVE "librarian" TO L-PROF
+         WHEN "stonecutter"
+             MOVE "mason" TO L-PROF
+         WHEN "loom"
+             MOVE "shepherd" TO L-PROF
+         WHEN "smithing_table"
+             MOVE "toolsmith" TO L-PROF
+         WHEN "grindstone"
+             MOVE "weaponsmith" TO L-PROF
+         WHEN OTHER
+             MOVE "none" TO L-PROF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM VIL-PROFESSION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-GOLEM-WANTS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-TIME                  BINARY-LONG.
+ 01 L-SLEPT                 BINARY-LONG.
+ 01 L-DETECTED              BINARY-LONG.
+ 01 L-YES                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-TIME L-SLEPT L-DETECTED L-YES.
+     MOVE 0 TO L-YES
+     IF L-SLEPT >= 0 AND L-TIME - L-SLEPT < 24000 AND L-DETECTED = 0
+         MOVE 1 TO L-YES
+     END-IF
+     GOBACK.
+ END PROGRAM VIL-GOLEM-WANTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-WANDER-CHANCE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-CHANCE                BINARY-LONG.
+ 01 L-NEW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-CHANCE L-NEW.
+     COMPUTE L-NEW = L-CHANCE + 25
+     IF L-NEW < 25
+         MOVE 25 TO L-NEW
+     END-IF
+     IF L-NEW > 75
+         MOVE 75 TO L-NEW
+     END-IF
+     GOBACK.
+ END PROGRAM VIL-WANDER-CHANCE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-TRADE-ROW.
+*> USING row (1 to 397), price item out, price count, second item out, second count, result item out, result count, max uses, xp, multiplier milli, type mask, modifier.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TRADES.
+ 01 WS-TR REDEFINES TRADE-DATA.
+    05 WS-ROW OCCURS 397 TIMES.
+       10 FILLER                PIC X(16).
+       10 FILLER                BINARY-LONG.
+       10 WS-WANT               PIC X(32).
+       10 WS-WC                 BINARY-LONG.
+       10 WS-EXTRA              PIC X(32).
+       10 WS-EC                 BINARY-LONG.
+       10 WS-GIVE               PIC X(32).
+       10 WS-GC                 BINARY-LONG.
+       10 WS-MU                 BINARY-LONG.
+       10 WS-XP                 BINARY-LONG.
+       10 WS-MULT               BINARY-LONG.
+       10 WS-MASK               BINARY-LONG.
+       10 WS-MOD                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-WANT                  PIC X(32).
+ 01 L-WC                    BINARY-LONG.
+ 01 L-EXTRA                 PIC X(32).
+ 01 L-EC                    BINARY-LONG.
+ 01 L-GIVE                  PIC X(32).
+ 01 L-GC                    BINARY-LONG.
+ 01 L-MU                    BINARY-LONG.
+ 01 L-XP                    BINARY-LONG.
+ 01 L-MULT                  BINARY-LONG.
+ 01 L-MASK                  BINARY-LONG.
+ 01 L-MOD                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-WANT L-WC L-EXTRA L-EC L-GIVE L-GC L-MU L-XP L-MULT L-MASK L-MOD.
+     MOVE WS-WANT(L-ROW) TO L-WANT
+     MOVE WS-WC(L-ROW) TO L-WC
+     MOVE WS-EXTRA(L-ROW) TO L-EXTRA
+     MOVE WS-EC(L-ROW) TO L-EC
+     MOVE WS-GIVE(L-ROW) TO L-GIVE
+     MOVE WS-GC(L-ROW) TO L-GC
+     MOVE WS-MU(L-ROW) TO L-MU
+     MOVE WS-XP(L-ROW) TO L-XP
+     MOVE WS-MULT(L-ROW) TO L-MULT
+     MOVE WS-MASK(L-ROW) TO L-MASK
+     MOVE WS-MOD(L-ROW) TO L-MOD
+     GOBACK.
+ END PROGRAM VIL-TRADE-ROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-PRICE.
+*> USING base count, demand, multiplier milli, special difference, max stack size, count out: 22.4 getCostA = clamp(base + max(0, floor(base x demand x multiplier)) + special, 1, max stack).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ADJ                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-BASE                  BINARY-LONG.
+ 01 L-DEMAND                BINARY-LONG.
+ 01 L-MULT                  BINARY-LONG.
+ 01 L-SPECIAL               BINARY-LONG.
+ 01 L-MAXSTACK              BINARY-LONG.
+ 01 L-COUNT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-BASE L-DEMAND L-MULT L-SPECIAL L-MAXSTACK L-COUNT.
+     COMPUTE WS-ADJ = FUNCTION INTEGER(L-BASE * L-DEMAND * L-MULT / 1000)
+     IF WS-ADJ < 0
+         MOVE 0 TO WS-ADJ
+     END-IF
+     COMPUTE L-COUNT = L-BASE + WS-ADJ + L-SPECIAL
+     IF L-COUNT < 1
+         MOVE 1 TO L-COUNT
+     END-IF
+     IF L-COUNT > L-MAXSTACK
+         MOVE L-MAXSTACK TO L-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM VIL-PRICE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-ENCH-PICK.
+*> USING salt, enchantment key out (X(24)), level out, extra price out, max level out, doubled out (54 section 4.1): one enchantment of the tag tradeable drawn uniformly, a level
+*> uniform from 1 to its max level, E = 2 + nextInt(5 + 10 L) + 3 L (doubled for double_trade_price).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY ENCHTRADE.
+ 01 WS-ET REDEFINES ENCHTRADE-DATA.
+    05 WS-E OCCURS 40 TIMES.
+       10 WS-KEY               PIC X(24).
+       10 WS-MAX               BINARY-LONG.
+       10 WS-DBL               BINARY-LONG.
+ 01 WS-SALT-A               BINARY-LONG.
+ 01 WS-SALT-B               BINARY-LONG.
+ 01 WS-SALT-C               BINARY-LONG.
+ 01 WS-COUNT                BINARY-LONG VALUE 40.
+ 01 WS-R                    BINARY-LONG.
+ 01 WS-IDX                  BINARY-LONG.
+ 01 WS-SPAN                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SALT                  BINARY-LONG.
+ 01 L-KEY                   PIC X(24).
+ 01 L-LEVEL                 BINARY-LONG.
+ 01 L-EXTRA                 BINARY-LONG.
+ 01 L-MAX                   BINARY-LONG.
+ 01 L-DOUBLE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SALT L-KEY L-LEVEL L-EXTRA L-MAX L-DOUBLE.
+     COMPUTE WS-SALT-A = L-SALT * 3 + 1
+     COMPUTE WS-SALT-B = L-SALT * 3 + 2
+     COMPUTE WS-SALT-C = L-SALT * 3 + 3
+     CALL "XP-RANDOM" USING WS-SALT-A WS-COUNT WS-R
+     COMPUTE WS-IDX = WS-R + 1
+     MOVE WS-KEY(WS-IDX) TO L-KEY
+     MOVE WS-MAX(WS-IDX) TO L-MAX
+     MOVE WS-DBL(WS-IDX) TO L-DOUBLE
+     CALL "XP-RANDOM" USING WS-SALT-B L-MAX WS-R
+     COMPUTE L-LEVEL = WS-R + 1
+     COMPUTE WS-SPAN = 5 + 10 * L-LEVEL
+     CALL "XP-RANDOM" USING WS-SALT-C WS-SPAN WS-R
+     COMPUTE L-EXTRA = 2 + WS-R + 3 * L-LEVEL
+     IF L-DOUBLE = 1
+         COMPUTE L-EXTRA = L-EXTRA * 2
+     END-IF
+     GOBACK.
+ END PROGRAM VIL-ENCH-PICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-ROW-STACK.
+*> USING trade row, salt, extra out, patch handle out (54 section 4.1 and 4.3; lane itemcomp T9610): the extra price of a trade by its modifier (1 enchanted book the E of VIL-ENCH-PICK,
+*> 2 equipment enchanted at 5 to 19 levels E = V, anything else 0) and the patch of the result: a book's stored_enchantments (45) holds the drawn enchantment at the drawn level (a key
+*> the registry does not know leaves the patch 0). Equipment is enchanted by ENCH-APPLY-LEVELS (itemcomp3, T10603) over the pool on_traded_equipment; the filter that drops an offer without an enchantment is a gap.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-WANT                 PIC X(32).
+ 01 WS-EXT                  PIC X(32).
+ 01 WS-GIVE                 PIC X(32).
+ 01 WS-WC                   BINARY-LONG.
+ 01 WS-EC                   BINARY-LONG.
+ 01 WS-GC                   BINARY-LONG.
+ 01 WS-MU                   BINARY-LONG.
+ 01 WS-XPV                  BINARY-LONG.
+ 01 WS-MULT                 BINARY-LONG.
+ 01 WS-MASK                 BINARY-LONG.
+ 01 WS-MOD                  BINARY-LONG.
+ 01 WS-KEY                  PIC X(24).
+ 01 WS-KEY112               PIC X(112).
+ 01 WS-LEVEL                BINARY-LONG.
+ 01 WS-MAXL                 BINARY-LONG.
+ 01 WS-DOUBLE               BINARY-LONG.
+ 01 WS-SALT2                BINARY-LONG.
+ 01 WS-SPAN                 BINARY-LONG VALUE 15.
+ 01 WS-R                    BINARY-LONG.
+ 01 WS-ID                   BINARY-LONG.
+ 01 WS-STORED               BINARY-LONG VALUE 45.
+ 01 WS-ROWTXT               PIC X(270).
+ 01 WS-STATUS               BINARY-LONG.
+ 01 WS-SEED                 BINARY-LONG.
+ 01 WS-RST                  BINARY-DOUBLE UNSIGNED.
+ 01 WS-RMODE                BINARY-LONG VALUE 0.
+ 01 WS-POOL                 PIC X(112) VALUE "minecraft:on_traded_equipment".
+ 01 WS-N                    BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-SALT                  BINARY-LONG.
+ 01 L-EXTRA                 BINARY-LONG.
+ 01 L-HANDLE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SALT L-EXTRA L-HANDLE.
+     MOVE 0 TO L-EXTRA L-HANDLE
+     CALL "VIL-TRADE-ROW" USING L-ROW WS-WANT WS-WC WS-EXT WS-EC WS-GIVE WS-GC WS-MU WS-XPV WS-MULT WS-MASK WS-MOD
+     EVALUATE WS-MOD
+         WHEN 1
+             CALL "VIL-ENCH-PICK" USING L-SALT WS-KEY WS-LEVEL L-EXTRA WS-MAXL WS-DOUBLE
+             MOVE SPACES TO WS-KEY112
+             MOVE WS-KEY TO WS-KEY112
+             CALL "LOOT-ENCH-ID" USING WS-KEY112 WS-ID
+             IF WS-ID >= 0
+                 CALL "SC-ENCH-ADD" USING L-HANDLE WS-STORED WS-ID WS-LEVEL
+             END-IF
+         WHEN 2
+             COMPUTE WS-SALT2 = L-SALT * 5 + 11
+             CALL "XP-RANDOM" USING WS-SALT2 WS-SPAN WS-R
+             COMPUTE L-EXTRA = 5 + WS-R
+*>           The result is enchanted at V levels from the pool on_traded_equipment (54 section 4.3): a random seeded by the salt.
+             MOVE SPACES TO WS-KEY112
+             STRING "minecraft:" FUNCTION TRIM(WS-GIVE) DELIMITED BY SIZE INTO WS-KEY112
+             CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY112 WS-ID WS-ROWTXT WS-STATUS
+             IF WS-STATUS = 0
+                 COMPUTE WS-SEED = L-SALT * 7919 + 13
+                 CALL "ENCH-STATE-SEED" USING WS-SEED WS-RST
+                 CALL "ENCH-APPLY-LEVELS" USING WS-RST WS-RMODE WS-POOL WS-ID L-HANDLE L-EXTRA WS-N
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM VIL-ROW-STACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VIL-ROW-EXTRA.
+*> USING trade row, salt, extra out: VIL-ROW-STACK without the patch.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-HANDLE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ 01 L-SALT                  BINARY-LONG.
+ 01 L-EXTRA                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-SALT L-EXTRA.
+     CALL "VIL-ROW-STACK" USING L-ROW L-SALT L-EXTRA WS-HANDLE
+     GOBACK.
+ END PROGRAM VIL-ROW-EXTRA.

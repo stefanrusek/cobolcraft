@@ -1,0 +1,7823 @@
+*> Acceptance test of docs/protocol/34-entity-models-3-villagers-illagers-golems-misc.md section 4 (Illagers): 4.1 the mesh (12 cuboids, 0.9375, hat hidden), 4.2 setupAnim for every arm
+*> pose with the riding and walking bases and the arm visibility, 4.3 which pose each illager has, 4.4 swingWeaponDown and bobArms with the worked example, 4.5 the four mobs, 4.6 the
+*> illusioner (double rendering offsets, culling box), 4.7 the spellcasting particles and spell colours, 4.8 the evoker fangs (mesh, setupAnim, renderer, client counters and the worked
+*> table). Mesh rows are the tables of the document; formula values were worked by an independent script.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTMODEL-34-3-4.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLEMM.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-E                   FLOAT-LONG.
+ 01 WS-O                   FLOAT-LONG.
+ 01 WS-IN.
+    05 WS-IV                FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-OUT.
+    05 WS-OV                FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-LAYER              PIC X(32).
+ 01 WS-OK                 BINARY-LONG.
+ 01 WS-PARTS              BINARY-LONG.
+ 01 WS-CUBES              BINARY-LONG.
+ 01 WS-P                  BINARY-LONG.
+ 01 WS-PN                 PIC X(24).
+ COPY EMCHKW.
+ 01 WS-TEXT               PIC X(100).
+ 01 WS-NAME2              PIC X(24).
+ 01 WS-I2                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer PILLAGER is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-3§4 Illagers 4.1" TO CK-PREFIX
+     MOVE "P head root 0.0 1.501 0.0 0 0 0 0.9375 0.9375 0.9375" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C head 0 0 -4 -10 -4 8 10 8 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P hat head 0 0 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C hat 32 0 -4 -10 -4 8 12 8 0.45 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P nose head 0 -2 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C nose 24 0 -1 -1 -6 2 4 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P body root 0.0 1.501 0.0 0 0 0 0.9375 0.9375 0.9375" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body 16 20 -4 0 -3 8 12 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body 0 38 -4 0 -3 8 20 6 0.5 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P arms root 0.0 4.3135 -0.9375 -0.75 0 0 0.9375 0.9375 0.9375" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C arms 44 22 -8 -2 -2 4 8 4 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C arms 40 38 -4 2 -2 8 4 4 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_shoulder arms 0 0 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_shoulder 44 22 4 -2 -2 4 8 4 0 1" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_leg root -1.875 12.751 0.0 0 0 0 0.9375 0.9375 0.9375" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_leg 0 22 -2 0 -2 4 12 4 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_leg root 1.875 12.751 0.0 0 0 0 0.9375 0.9375 0.9375" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_leg 0 22 -2 0 -2 4 12 4 0 1" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_arm root -4.6875 3.376 0.0 0 0 0 0.9375 0.9375 0.9375" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_arm 40 46 -3 -2 -2 4 12 4 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_arm root 4.6875 3.376 0.0 0 0 0 0.9375 0.9375 0.9375" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_arm 40 46 -1 -2 -2 4 12 4 0 1" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "4.1 illager: parts below the root" TO WS-NAME
+     MOVE 10 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.1 illager: cuboids" TO WS-NAME
+     MOVE 12 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.1 illager: texture width" TO WS-NAME
+     MOVE 64 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.1 illager: texture height" TO WS-NAME
+     MOVE 64 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "VINDICATOR" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer VINDICATOR is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "4.1 VINDICATOR shares the illager mesh: parts below the root" TO WS-NAME
+     MOVE 10 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.1 VINDICATOR shares the illager mesh: cuboids" TO WS-NAME
+     MOVE 12 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.1 VINDICATOR shares the illager mesh: texture width" TO WS-NAME
+     MOVE 64 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.1 VINDICATOR shares the illager mesh: texture height" TO WS-NAME
+     MOVE 64 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "EVOKER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer EVOKER is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "4.1 EVOKER shares the illager mesh: parts below the root" TO WS-NAME
+     MOVE 10 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.1 EVOKER shares the illager mesh: cuboids" TO WS-NAME
+     MOVE 12 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.1 EVOKER shares the illager mesh: texture width" TO WS-NAME
+     MOVE 64 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.1 EVOKER shares the illager mesh: texture height" TO WS-NAME
+     MOVE 64 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "ILLUSIONER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer ILLUSIONER is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "4.1 ILLUSIONER shares the illager mesh: parts below the root" TO WS-NAME
+     MOVE 10 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.1 ILLUSIONER shares the illager mesh: cuboids" TO WS-NAME
+     MOVE 12 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.1 ILLUSIONER shares the illager mesh: texture width" TO WS-NAME
+     MOVE 64 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.1 ILLUSIONER shares the illager mesh: texture height" TO WS-NAME
+     MOVE 64 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 10 TO WS-IV(1)
+     MOVE -20 TO WS-IV(2)
+     MOVE 3 TO WS-IV(3)
+     MOVE 0.5 TO WS-IV(4)
+     MOVE 10 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 0 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE 0.17453292 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE -0.34906584 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE 0.207436706 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -0.207436706 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE -0.145205694 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE 0.145205694 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 5 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 7 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     MOVE 0 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -0.62831855 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -0.62831855 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE -1.4137167 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0.31415927 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0.07853982 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -1.4137167 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE -0.31415927 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE -0.07853982 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 5 TO WS-IV(1)
+     MOVE 15 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 0.7 TO WS-IV(4)
+     MOVE 3 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 7 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE 0.08726646 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.26179938 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -0.165301229 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE 0.165301229 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE 0.11571086 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -0.11571086 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 5 TO WS-IV(1)
+     MOVE 15 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 0.7 TO WS-IV(4)
+     MOVE 3 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     MOVE 7 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE 0.08726646 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.26179938 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -0.62831855 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -0.62831855 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE -1.4137167 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0.31415927 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0.07853982 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -1.4137167 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE -0.31415927 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE -0.07853982 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 1 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -2.094395102 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE -0.1 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0.1 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -2.094395102 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0.1 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE -0.1 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE -5 TO WS-IV(1)
+     MOVE 12 TO WS-IV(2)
+     MOVE 4 TO WS-IV(3)
+     MOVE 0.5 TO WS-IV(4)
+     MOVE 9 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 1 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0.5 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE -0.08726646 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.209439504 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -1.148882018 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0.084474922 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -1.205593612 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE -0.5 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE -0.084474922 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE -0.310965005 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE 0.310965005 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE -5 TO WS-IV(1)
+     MOVE 12 TO WS-IV(2)
+     MOVE 4 TO WS-IV(3)
+     MOVE 0.5 TO WS-IV(4)
+     MOVE 9 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 1 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0.5 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 4 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE -0.08726646 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.209439504 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE 0.472591519 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0.084474922 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -1.205593612 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE -0.5 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE -0.084474922 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE -0.310965005 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE 0.310965005 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE -5 TO WS-IV(1)
+     MOVE 12 TO WS-IV(2)
+     MOVE 4 TO WS-IV(3)
+     MOVE 0.5 TO WS-IV(4)
+     MOVE 9 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 1 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0.5 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 4 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE -0.08726646 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.209439504 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -1.148882018 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0.084474922 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -0.472591519 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE -0.084474922 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE -0.310965005 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE 0.310965005 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE -5 TO WS-IV(1)
+     MOVE 12 TO WS-IV(2)
+     MOVE 4 TO WS-IV(3)
+     MOVE 0.5 TO WS-IV(4)
+     MOVE 9 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 1 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0.5 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 10 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE -0.08726646 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.209439504 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE 0.472591519 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0.084474922 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -0.472591519 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE -0.084474922 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE -0.310965005 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE 0.310965005 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 1 TO WS-IV(7)
+     MOVE 0 TO WS-IV(8)
+     MOVE 0.5 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE 0.182201488 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE 0.15707964 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0.1 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE 1.417157288 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE -0.15707964 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE -0.1 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO WS-IV(1)
+     MOVE 4 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 11 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 1 TO WS-IV(7)
+     MOVE 0 TO WS-IV(8)
+     MOVE 0.25 TO WS-IV(9)
+     MOVE 2 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE 0.052359876 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.069813168 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE 0.241723043 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE 0.15707964 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0.077434493 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -0.672934988 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE -0.15707964 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE -0.077434493 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE 0.550323023 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -0.550323023 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO WS-IV(1)
+     MOVE 4 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 11 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     MOVE 1 TO WS-IV(7)
+     MOVE 0 TO WS-IV(8)
+     MOVE 0.8 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE 0.052359876 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.069813168 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -0.526054586 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE 0.15707964 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0.077434493 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE 0.373511079 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE -0.15707964 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE -0.077434493 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE -1.4137167 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0.31415927 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0.07853982 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -1.4137167 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE -0.31415927 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE -0.07853982 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE -8 TO WS-IV(1)
+     MOVE 22 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 0.3 TO WS-IV(4)
+     MOVE 5 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 2 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE -0.139626336 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.383972424 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -0.245528998 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 2.3561945 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -0.245528998 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE -2.3561945 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE 0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE -8 TO WS-IV(1)
+     MOVE 22 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 0.3 TO WS-IV(4)
+     MOVE 5 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     MOVE 2 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 1 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE -0.139626336 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.383972424 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -0.245528998 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 2.3561945 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -0.245528998 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE -2.3561945 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE -1.4137167 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0.31415927 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0.07853982 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -1.4137167 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE -0.31415927 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE -0.07853982 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 12 TO WS-IV(1)
+     MOVE -25 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 0.3 TO WS-IV(4)
+     MOVE 5 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 3 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 1 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE 0.209439504 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE -0.4363323 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -1.361356823 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE -0.5363323 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -0.733038396 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE -0.8363323 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE 1.570796327 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE 0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 12 TO WS-IV(1)
+     MOVE -25 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 0.3 TO WS-IV(4)
+     MOVE 5 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 4 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE 0.209439504 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE -0.4363323 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -1.261356823 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE -0.7363323 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -1.290560496 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0.1636677 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE 0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE -4 TO WS-IV(1)
+     MOVE 9 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 0.3 TO WS-IV(4)
+     MOVE 5 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 5 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 40 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE -0.069813168 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.157079628 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -0.97079635 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE -0.8 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -0.97079635 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0.4 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE 0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE -4 TO WS-IV(1)
+     MOVE 9 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 0.3 TO WS-IV(4)
+     MOVE 5 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 5 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 40 TO WS-IV(11)
+     MOVE 20 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE -0.069813168 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.157079628 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -0.97079635 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE -0.8 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -1.270796338 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0.625 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE 0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE -4 TO WS-IV(1)
+     MOVE 9 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 0.3 TO WS-IV(4)
+     MOVE 5 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 5 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 40 TO WS-IV(11)
+     MOVE 99 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE -0.069813168 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.157079628 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -0.97079635 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE -0.8 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -1.570796327 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0.85 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE 0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE -4 TO WS-IV(1)
+     MOVE 9 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 0.3 TO WS-IV(4)
+     MOVE 5 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 5 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 40 TO WS-IV(11)
+     MOVE -3 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE -0.069813168 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.157079628 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -0.97079635 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE -0.8 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 4.6875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -0.97079635 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0.4 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE 0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 2 TO WS-IV(1)
+     MOVE 2 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 0.3 TO WS-IV(4)
+     MOVE 5 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 6 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE 0.034906584 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.034906584 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE -0.0491058 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 2.670354 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE -0.0491058 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE -2.3561945 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE 0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -0.049590369 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 2 TO WS-IV(1)
+     MOVE 2 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 0.3 TO WS-IV(4)
+     MOVE 8.5 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     MOVE 6 TO WS-IV(7)
+     MOVE 1 TO WS-IV(8)
+     MOVE 0 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.xrot" TO WS-NAME
+     MOVE 0.034906584 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.yrot" TO WS-NAME
+     MOVE 0.034906584 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "head" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "head.zrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.x" TO WS-NAME
+     MOVE -5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE 0.040679819 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.zrot" TO WS-NAME
+     MOVE 2.670354 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.x" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.y" TO WS-NAME
+     MOVE 3.376 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE 0.040679819 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.yrot" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.zrot" TO WS-NAME
+     MOVE -2.3561945 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.x" TO WS-NAME
+     MOVE -1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.xrot" TO WS-NAME
+     MOVE -1.4137167 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.yrot" TO WS-NAME
+     MOVE 0.31415927 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_leg.zrot" TO WS-NAME
+     MOVE 0.07853982 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.x" TO WS-NAME
+     MOVE 1.875 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.y" TO WS-NAME
+     MOVE 12.751 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.z" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.xrot" TO WS-NAME
+     MOVE -1.4137167 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.yrot" TO WS-NAME
+     MOVE -0.31415927 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_leg" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_leg.zrot" TO WS-NAME
+     MOVE -0.07853982 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms.xrot" TO WS-NAME
+     MOVE -0.75 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "arms" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "arms visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm visible" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "hat" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "hat visible" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE MM-VISIBLE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PILLAGER" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 1 TO WS-IV(7)
+     MOVE 0 TO WS-IV(8)
+     MOVE 0.5 TO WS-IV(9)
+     MOVE 1 TO WS-IV(10)
+     MOVE 0 TO WS-IV(11)
+     MOVE 0 TO WS-IV(12)
+     MOVE 0 TO WS-IV(13)
+     MOVE 0 TO WS-IV(14)
+     MOVE 0 TO WS-IV(15)
+     CALL "EM3-ILLAGER-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_arm.xrot" TO WS-NAME
+     MOVE 0.1822015 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_arm" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_arm.xrot" TO WS-NAME
+     MOVE 1.4171573 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 00000" TO WS-NAME
+     MOVE 7 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 00001" TO WS-NAME
+     MOVE 7 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 00010" TO WS-NAME
+     MOVE 7 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 00011" TO WS-NAME
+     MOVE 7 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 00100" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 00101" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 00110" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 00111" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 01000" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 01001" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 01010" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 01011" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 01100" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 01101" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 01110" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 01111" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 10000" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 10001" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 10010" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 10011" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 10100" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 10101" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 10110" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 10111" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 11000" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 11001" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 11010" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 11011" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 11100" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 11101" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 11110" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 1 flags 11111" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 00000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 00001" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 00010" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 00011" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 00100" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 00101" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 00110" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 00111" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 01000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 01001" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 01010" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 01011" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 01100" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 01101" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 01110" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 01111" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 10000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 10001" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 10010" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 10011" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 10100" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 10101" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 10110" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 10111" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 11000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 11001" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 11010" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 11011" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 11100" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 11101" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 11110" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 2 flags 11111" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 00000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 00001" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 00010" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 00011" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 00100" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 00101" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 00110" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 00111" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 01000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 01001" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 01010" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 01011" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 01100" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 01101" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 01110" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 01111" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 10000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 10001" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 10010" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 10011" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 10100" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 10101" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 10110" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 10111" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 11000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 11001" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 11010" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 11011" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 11100" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 11101" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 11110" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 3 flags 11111" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 00000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 00001" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 00010" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 00011" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 00100" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 00101" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 00110" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 00111" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 01000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 01001" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 01010" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 01011" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 01100" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 01101" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 01110" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 01111" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 10000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 10001" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 10010" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 10011" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 10100" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 10101" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 10110" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 10111" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 11000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 11001" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 11010" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 11011" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 11100" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 11101" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 11110" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 4 flags 11111" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 00000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 00001" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 00010" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 00011" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 00100" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 00101" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 00110" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 00111" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 01000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 01001" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 01010" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 01011" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 01100" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 01101" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 01110" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 01111" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 10000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 10001" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 10010" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 10011" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 10100" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 10101" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 10110" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 10111" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 11000" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 11001" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 11010" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 11011" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 11100" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 11101" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 11110" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 1 TO WS-IV(5)
+     MOVE 1 TO WS-IV(6)
+     CALL "EM3-ILLAGER-POSE" USING WS-IN WS-OUT
+     MOVE "4.3 pose of kind 5 flags 11111" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "pillager" TO WS-NAME2
+     CALL "EM3-ILLAGER-RENDERER" USING WS-NAME2 WS-OUT WS-TEXT
+     MOVE "4.5 pillager found" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 pillager shadow" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 pillager texture" TO WS-NAME
+     MOVE "textures/entity/illager/pillager.png" TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "vindicator" TO WS-NAME2
+     CALL "EM3-ILLAGER-RENDERER" USING WS-NAME2 WS-OUT WS-TEXT
+     MOVE "4.5 vindicator found" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 vindicator shadow" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 vindicator texture" TO WS-NAME
+     MOVE "textures/entity/illager/vindicator.png" TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "evoker" TO WS-NAME2
+     CALL "EM3-ILLAGER-RENDERER" USING WS-NAME2 WS-OUT WS-TEXT
+     MOVE "4.5 evoker found" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 evoker shadow" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 evoker texture" TO WS-NAME
+     MOVE "textures/entity/illager/evoker.png" TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "illusioner" TO WS-NAME2
+     CALL "EM3-ILLAGER-RENDERER" USING WS-NAME2 WS-OUT WS-TEXT
+     MOVE "4.5 illusioner found" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 illusioner shadow" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 illusioner texture" TO WS-NAME
+     MOVE "textures/entity/illager/illusioner.png" TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "ravager" TO WS-NAME2
+     CALL "EM3-ILLAGER-RENDERER" USING WS-NAME2 WS-OUT WS-TEXT
+     MOVE "4.5 a mob outside the illager renderer is not found" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 1 aggressive 0 casting 0" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 1 aggressive 0 casting 1" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 1 aggressive 1 casting 0" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 1 aggressive 1 casting 1" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 2 aggressive 0 casting 0" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 2 aggressive 0 casting 1" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 2 aggressive 1 casting 0" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 2 aggressive 1 casting 1" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 3 aggressive 0 casting 0" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 3 aggressive 0 casting 1" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 3 aggressive 1 casting 0" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 3 aggressive 1 casting 1" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 4 aggressive 0 casting 0" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 4 aggressive 0 casting 1" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 4 aggressive 1 casting 0" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM3-ILLAGER-ITEM" USING WS-IN WS-OUT
+     MOVE "4.5 item layer drawn kind 4 aggressive 1 casting 1" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EM8-HAND-OFFSET" USING WS-IN WS-OUT
+     MOVE "4.5 ItemInHandLayer translate sign 1 baby 0 stand 0 [1]" TO WS-NAME
+     MOVE 0.0625 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 ItemInHandLayer translate sign 1 baby 0 stand 0 [2]" TO WS-NAME
+     MOVE 0.125 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 ItemInHandLayer translate sign 1 baby 0 stand 0 [3]" TO WS-NAME
+     MOVE -0.625 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE -1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EM8-HAND-OFFSET" USING WS-IN WS-OUT
+     MOVE "4.5 ItemInHandLayer translate sign -1 baby 0 stand 0 [1]" TO WS-NAME
+     MOVE -0.0625 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 ItemInHandLayer translate sign -1 baby 0 stand 0 [2]" TO WS-NAME
+     MOVE 0.125 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 ItemInHandLayer translate sign -1 baby 0 stand 0 [3]" TO WS-NAME
+     MOVE -0.625 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EM8-HAND-OFFSET" USING WS-IN WS-OUT
+     MOVE "4.5 ItemInHandLayer translate sign 1 baby 1 stand 0 [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 ItemInHandLayer translate sign 1 baby 1 stand 0 [2]" TO WS-NAME
+     MOVE 0.0625 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 ItemInHandLayer translate sign 1 baby 1 stand 0 [3]" TO WS-NAME
+     MOVE -0.28125 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EM8-HAND-OFFSET" USING WS-IN WS-OUT
+     MOVE "4.5 ItemInHandLayer translate sign 1 baby 1 stand 1 [1]" TO WS-NAME
+     MOVE 0.0625 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 ItemInHandLayer translate sign 1 baby 1 stand 1 [2]" TO WS-NAME
+     MOVE 0.125 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.5 ItemInHandLayer translate sign 1 baby 1 stand 1 [3]" TO WS-NAME
+     MOVE -0.625 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     CALL "EM3-ILLUSION-OFFSET" USING WS-IN WS-OUT
+     MOVE "4.6 illusion offset (0 0 0) i 0 age 0 [1]" TO WS-NAME
+     MOVE 0.025 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.6 illusion offset (0 0 0) i 0 age 0 [2]" TO WS-NAME
+     MOVE 0.0125 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.6 illusion offset (0 0 0) i 0 age 0 [3]" TO WS-NAME
+     MOVE 0.025 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     CALL "EM3-ILLUSION-OFFSET" USING WS-IN WS-OUT
+     MOVE "4.6 illusion offset (1 0 0) i 1 age 0 [1]" TO WS-NAME
+     MOVE 1.013507558 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.6 illusion offset (1 0 0) i 1 age 0 [2]" TO WS-NAME
+     MOVE 0.006753779 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.6 illusion offset (1 0 0) i 1 age 0 [3]" TO WS-NAME
+     MOVE 0.013507558 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0.5 TO WS-IV(1)
+     MOVE -0.25 TO WS-IV(2)
+     MOVE 2 TO WS-IV(3)
+     MOVE 2 TO WS-IV(4)
+     MOVE 13.5 TO WS-IV(5)
+     CALL "EM3-ILLUSION-OFFSET" USING WS-IN WS-OUT
+     MOVE "4.6 illusion offset (0.5 -0.25 2) i 2 age 13.5 [1]" TO WS-NAME
+     MOVE 0.480478858 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.6 illusion offset (0.5 -0.25 2) i 2 age 13.5 [2]" TO WS-NAME
+     MOVE -0.238697912 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.6 illusion offset (0.5 -0.25 2) i 2 age 13.5 [3]" TO WS-NAME
+     MOVE 2.01097366 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     MOVE 0 TO WS-IV(4)
+     MOVE 40 TO WS-IV(5)
+     CALL "EM3-ILLUSION-OFFSET" USING WS-IN WS-OUT
+     MOVE "4.6 illusion offset (0 1 0) i 0 age 40 [1]" TO WS-NAME
+     MOVE 0.010202052 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.6 illusion offset (0 1 0) i 0 age 40 [2]" TO WS-NAME
+     MOVE 1.001928143 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.6 illusion offset (0 1 0) i 0 age 40 [3]" TO WS-NAME
+     MOVE -0.024065147 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE -0.3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE -0.3 TO WS-IV(3)
+     MOVE 0.3 TO WS-IV(4)
+     MOVE 1.95 TO WS-IV(5)
+     MOVE 0.3 TO WS-IV(6)
+     CALL "EM3-ILLUSIONER-CULL" USING WS-IN WS-OUT
+     MOVE "4.6 culling box inflated by (3, 0, 3) [1]" TO WS-NAME
+     MOVE -3.3 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.6 culling box inflated by (3, 0, 3) [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.6 culling box inflated by (3, 0, 3) [3]" TO WS-NAME
+     MOVE -3.3 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.6 culling box inflated by (3, 0, 3) [4]" TO WS-NAME
+     MOVE 3.3 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.6 culling box inflated by (3, 0, 3) [5]" TO WS-NAME
+     MOVE 1.95 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.6 culling box inflated by (3, 0, 3) [6]" TO WS-NAME
+     MOVE 3.3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     CALL "EM3-SPELL-COLOUR" USING WS-IN WS-OUT
+     MOVE "4.7 spell colour 0 [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 spell colour 0 [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 spell colour 0 [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     CALL "EM3-SPELL-COLOUR" USING WS-IN WS-OUT
+     MOVE "4.7 spell colour 1 [1]" TO WS-NAME
+     MOVE 0.7 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 spell colour 1 [2]" TO WS-NAME
+     MOVE 0.7 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 spell colour 1 [3]" TO WS-NAME
+     MOVE 0.8 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     CALL "EM3-SPELL-COLOUR" USING WS-IN WS-OUT
+     MOVE "4.7 spell colour 2 [1]" TO WS-NAME
+     MOVE 0.4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 spell colour 2 [2]" TO WS-NAME
+     MOVE 0.3 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 spell colour 2 [3]" TO WS-NAME
+     MOVE 0.35 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     CALL "EM3-SPELL-COLOUR" USING WS-IN WS-OUT
+     MOVE "4.7 spell colour 3 [1]" TO WS-NAME
+     MOVE 0.7 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 spell colour 3 [2]" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 spell colour 3 [3]" TO WS-NAME
+     MOVE 0.2 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4 TO WS-IV(1)
+     CALL "EM3-SPELL-COLOUR" USING WS-IN WS-OUT
+     MOVE "4.7 spell colour 4 [1]" TO WS-NAME
+     MOVE 0.3 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 spell colour 4 [2]" TO WS-NAME
+     MOVE 0.3 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 spell colour 4 [3]" TO WS-NAME
+     MOVE 0.8 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 5 TO WS-IV(1)
+     CALL "EM3-SPELL-COLOUR" USING WS-IN WS-OUT
+     MOVE "4.7 spell colour 5 [1]" TO WS-NAME
+     MOVE 0.1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 spell colour 5 [2]" TO WS-NAME
+     MOVE 0.1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 spell colour 5 [3]" TO WS-NAME
+     MOVE 0.2 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 1 TO WS-IV(4)
+     MOVE 10 TO WS-IV(5)
+     MOVE 64 TO WS-IV(6)
+     MOVE -3 TO WS-IV(7)
+     CALL "EM3-SPELL-PARTICLES" USING WS-IN WS-OUT
+     MOVE "4.7 particles yBodyRot 0 tick 0 scale 1 spell 1 [1]" TO WS-NAME
+     MOVE 10.581347453 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 0 tick 0 scale 1 spell 1 [2]" TO WS-NAME
+     MOVE 65.8 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 0 tick 0 scale 1 spell 1 [3]" TO WS-NAME
+     MOVE -2.851557624 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 0 tick 0 scale 1 spell 1 [4]" TO WS-NAME
+     MOVE 9.418652547 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 0 tick 0 scale 1 spell 1 [5]" TO WS-NAME
+     MOVE 65.8 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 0 tick 0 scale 1 spell 1 [6]" TO WS-NAME
+     MOVE -3.148442376 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 0 tick 0 scale 1 spell 1 [7]" TO WS-NAME
+     MOVE 0.7 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 0 tick 0 scale 1 spell 1 [8]" TO WS-NAME
+     MOVE 0.7 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 0 tick 0 scale 1 spell 1 [9]" TO WS-NAME
+     MOVE 0.8 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 90 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     MOVE 3 TO WS-IV(4)
+     MOVE 0 TO WS-IV(5)
+     MOVE 0 TO WS-IV(6)
+     MOVE 0 TO WS-IV(7)
+     CALL "EM3-SPELL-PARTICLES" USING WS-IN WS-OUT
+     MOVE "4.7 particles yBodyRot 90 tick 5 scale 1 spell 3 [1]" TO WS-NAME
+     MOVE 0.145841722 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 90 tick 5 scale 1 spell 3 [2]" TO WS-NAME
+     MOVE 1.8 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 90 tick 5 scale 1 spell 3 [3]" TO WS-NAME
+     MOVE 0.58200532 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 90 tick 5 scale 1 spell 3 [4]" TO WS-NAME
+     MOVE -0.145841722 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 90 tick 5 scale 1 spell 3 [5]" TO WS-NAME
+     MOVE 1.8 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 90 tick 5 scale 1 spell 3 [6]" TO WS-NAME
+     MOVE -0.58200532 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 90 tick 5 scale 1 spell 3 [7]" TO WS-NAME
+     MOVE 0.7 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 90 tick 5 scale 1 spell 3 [8]" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot 90 tick 5 scale 1 spell 3 [9]" TO WS-NAME
+     MOVE 0.2 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE -37 TO WS-IV(1)
+     MOVE 17 TO WS-IV(2)
+     MOVE 1.2 TO WS-IV(3)
+     MOVE 5 TO WS-IV(4)
+     MOVE 1.5 TO WS-IV(5)
+     MOVE 70 TO WS-IV(6)
+     MOVE 2.5 TO WS-IV(7)
+     CALL "EM3-SPELL-PARTICLES" USING WS-IN WS-OUT
+     MOVE "4.7 particles yBodyRot -37 tick 17 scale 1.2 spell 5 [1]" TO WS-NAME
+     MOVE 2.108180006 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot -37 tick 17 scale 1.2 spell 5 [2]" TO WS-NAME
+     MOVE 72.16 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot -37 tick 17 scale 1.2 spell 5 [3]" TO WS-NAME
+     MOVE 2.114620861 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot -37 tick 17 scale 1.2 spell 5 [4]" TO WS-NAME
+     MOVE 0.891819994 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot -37 tick 17 scale 1.2 spell 5 [5]" TO WS-NAME
+     MOVE 72.16 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot -37 tick 17 scale 1.2 spell 5 [6]" TO WS-NAME
+     MOVE 2.885379139 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot -37 tick 17 scale 1.2 spell 5 [7]" TO WS-NAME
+     MOVE 0.1 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot -37 tick 17 scale 1.2 spell 5 [8]" TO WS-NAME
+     MOVE 0.1 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.7 particles yBodyRot -37 tick 17 scale 1.2 spell 5 [9]" TO WS-NAME
+     MOVE 0.2 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "EVOKER_FANGS" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer EVOKER_FANGS is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-3§4 Illagers 4.8" TO CK-PREFIX
+     MOVE "P base root -5 24 -5 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C base 0 0 0 0 0 10 12 10 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P upper_jaw base 6.5 0 1 0 0 2.042035" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C upper_jaw 40 0 0 0 0 4 14 8 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P lower_jaw base 3.5 0 9 0 3.1415927 4.2411504" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C lower_jaw 40 0 0 0 0 4 14 8 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "4.8 evoker fangs: parts below the root" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 evoker fangs: cuboids" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 evoker fangs: texture width" TO WS-NAME
+     MOVE 64 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 evoker fangs: texture height" TO WS-NAME
+     MOVE 32 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "EVOKER_FANGS" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0 TO WS-IV(1)
+     CALL "EM3-FANGS-ANIM" USING EMM-MODEL WS-IN
+     MOVE "upper_jaw" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "upper_jaw.zrot" TO WS-NAME
+     MOVE 2.042035225 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "lower_jaw" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "lower_jaw.zrot" TO WS-NAME
+     MOVE 4.241150082 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "base" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "base.y" TO WS-NAME
+     MOVE 24.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.y" TO WS-NAME
+     MOVE 4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.xs" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.ys" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.zs" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "EVOKER_FANGS" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0.1 TO WS-IV(1)
+     CALL "EM3-FANGS-ANIM" USING EMM-MODEL WS-IN
+     MOVE "upper_jaw" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "upper_jaw.zrot" TO WS-NAME
+     MOVE 2.050831684 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "lower_jaw" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "lower_jaw.zrot" TO WS-NAME
+     MOVE 4.232353623 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "base" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "base.y" TO WS-NAME
+     MOVE 21.359533656 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.y" TO WS-NAME
+     MOVE 4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.xs" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.ys" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.zs" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "EVOKER_FANGS" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0.25 TO WS-IV(1)
+     CALL "EM3-FANGS-ANIM" USING EMM-MODEL WS-IN
+     MOVE "upper_jaw" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "upper_jaw.zrot" TO WS-NAME
+     MOVE 2.179479903 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "lower_jaw" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "lower_jaw.zrot" TO WS-NAME
+     MOVE 4.103705404 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "base" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "base.y" TO WS-NAME
+     MOVE 17.70073932 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.y" TO WS-NAME
+     MOVE 4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.xs" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.ys" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.zs" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "EVOKER_FANGS" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0.5 TO WS-IV(1)
+     CALL "EM3-FANGS-ANIM" USING EMM-MODEL WS-IN
+     MOVE "upper_jaw" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "upper_jaw.zrot" TO WS-NAME
+     MOVE 3.141592654 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "lower_jaw" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "lower_jaw.zrot" TO WS-NAME
+     MOVE 3.141592654 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "base" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "base.y" TO WS-NAME
+     MOVE 13.374791824 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.y" TO WS-NAME
+     MOVE 4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.xs" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.ys" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.zs" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "EVOKER_FANGS" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0.9 TO WS-IV(1)
+     CALL "EM3-FANGS-ANIM" USING EMM-MODEL WS-IN
+     MOVE "upper_jaw" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "upper_jaw.zrot" TO WS-NAME
+     MOVE 3.141592654 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "lower_jaw" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "lower_jaw.zrot" TO WS-NAME
+     MOVE 3.141592654 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "base" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "base.y" TO WS-NAME
+     MOVE 12.818106589 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.y" TO WS-NAME
+     MOVE 4.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.xs" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.ys" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.zs" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "EVOKER_FANGS" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 0.95 TO WS-IV(1)
+     CALL "EM3-FANGS-ANIM" USING EMM-MODEL WS-IN
+     MOVE "upper_jaw" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "upper_jaw.zrot" TO WS-NAME
+     MOVE 3.141592654 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "lower_jaw" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "lower_jaw.zrot" TO WS-NAME
+     MOVE 3.141592654 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "base" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "base.y" TO WS-NAME
+     MOVE 13.23477137 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.y" TO WS-NAME
+     MOVE 14.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.xs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.ys" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.zs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "EVOKER_FANGS" TO WS-LAYER
+     CALL "EM3-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 1.0 TO WS-IV(1)
+     CALL "EM3-FANGS-ANIM" USING EMM-MODEL WS-IN
+     MOVE "upper_jaw" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "upper_jaw.zrot" TO WS-NAME
+     MOVE 3.141592654 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "lower_jaw" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "lower_jaw.zrot" TO WS-NAME
+     MOVE 3.141592654 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "base" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "base.y" TO WS-NAME
+     MOVE 13.722864862 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.y" TO WS-NAME
+     MOVE 24.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.xs" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.ys" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "root" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "root.zs" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     CALL "EM3-FANGS-OPS" USING WS-IN WS-OUT
+     MOVE "4.8 renderer draws (yRot 0 p 0)" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 30 TO WS-IV(1)
+     MOVE 0.5 TO WS-IV(2)
+     CALL "EM3-FANGS-OPS" USING WS-IN WS-OUT
+     MOVE "4.8 renderer draws (yRot 30 p 0.5)" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation count" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 1 value 0" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 1 value 1" TO WS-NAME
+     MOVE 60 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 1 value 2" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 1 value 3" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 2 value 0" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 2 value 1" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 2 value 2" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 2 value 3" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 3 value 0" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 3 value 1" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 3 value 2" TO WS-NAME
+     MOVE -1.501 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 3 value 3" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE -100 TO WS-IV(1)
+     MOVE 1 TO WS-IV(2)
+     CALL "EM3-FANGS-OPS" USING WS-IN WS-OUT
+     MOVE "4.8 renderer draws (yRot -100 p 1)" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation count" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 1 value 0" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 1 value 1" TO WS-NAME
+     MOVE 190 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 1 value 2" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 1 value 3" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 2 value 0" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 2 value 1" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 2 value 2" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 2 value 3" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 3 value 0" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 3 value 1" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 3 value 2" TO WS-NAME
+     MOVE -1.501 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 renderer operation 3 value 3" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 22 TO WS-IV(2)
+     MOVE 0.0 TO WS-IV(3)
+     CALL "EM3-FANGS-PROGRESS" USING WS-IN WS-OUT
+     MOVE "4.8 getAnimationProgress started 0 lifeTicks 22 partial 0" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 22 TO WS-IV(2)
+     MOVE 0.0 TO WS-IV(3)
+     CALL "EM3-FANGS-PROGRESS" USING WS-IN WS-OUT
+     MOVE "4.8 getAnimationProgress started 1 lifeTicks 22 partial 0" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 22 TO WS-IV(2)
+     MOVE 0.5 TO WS-IV(3)
+     CALL "EM3-FANGS-PROGRESS" USING WS-IN WS-OUT
+     MOVE "4.8 getAnimationProgress started 1 lifeTicks 22 partial 0.5" TO WS-NAME
+     MOVE 0.025 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 12 TO WS-IV(2)
+     MOVE 0.5 TO WS-IV(3)
+     CALL "EM3-FANGS-PROGRESS" USING WS-IN WS-OUT
+     MOVE "4.8 getAnimationProgress started 1 lifeTicks 12 partial 0.5" TO WS-NAME
+     MOVE 0.525 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 2 TO WS-IV(2)
+     MOVE 0.25 TO WS-IV(3)
+     CALL "EM3-FANGS-PROGRESS" USING WS-IN WS-OUT
+     MOVE "4.8 getAnimationProgress started 1 lifeTicks 2 partial 0.25" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 0.9 TO WS-IV(3)
+     CALL "EM3-FANGS-PROGRESS" USING WS-IN WS-OUT
+     MOVE "4.8 getAnimationProgress started 1 lifeTicks 0 partial 0.9" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 17 TO WS-IV(2)
+     MOVE 0.3 TO WS-IV(3)
+     CALL "EM3-FANGS-PROGRESS" USING WS-IN WS-OUT
+     MOVE "4.8 getAnimationProgress started 1 lifeTicks 17 partial 0.3" TO WS-NAME
+     MOVE 0.265 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     MOVE 22 TO WS-IV(2)
+     CALL "EM3-FANGS-TICK" USING WS-IN WS-OUT
+     MOVE "4.8 client tick started 0 lifeTicks 22 [1]" TO WS-NAME
+     MOVE 22 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 client tick started 0 lifeTicks 22 [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 22 TO WS-IV(2)
+     CALL "EM3-FANGS-TICK" USING WS-IN WS-OUT
+     MOVE "4.8 client tick started 1 lifeTicks 22 [1]" TO WS-NAME
+     MOVE 21 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 client tick started 1 lifeTicks 22 [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 15 TO WS-IV(2)
+     CALL "EM3-FANGS-TICK" USING WS-IN WS-OUT
+     MOVE "4.8 client tick started 1 lifeTicks 15 [1]" TO WS-NAME
+     MOVE 14 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 client tick started 1 lifeTicks 15 [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 14 TO WS-IV(2)
+     CALL "EM3-FANGS-TICK" USING WS-IN WS-OUT
+     MOVE "4.8 client tick started 1 lifeTicks 14 [1]" TO WS-NAME
+     MOVE 13 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 client tick started 1 lifeTicks 14 [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     MOVE 3 TO WS-IV(2)
+     CALL "EM3-FANGS-TICK" USING WS-IN WS-OUT
+     MOVE "4.8 client tick started 1 lifeTicks 3 [1]" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 client tick started 1 lifeTicks 3 [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0.2 TO WS-IV(1)
+     MOVE 0.7 TO WS-IV(2)
+     MOVE 0.5 TO WS-IV(3)
+     MOVE 0.9 TO WS-IV(4)
+     MOVE 0.1 TO WS-IV(5)
+     MOVE 0.35 TO WS-IV(6)
+     MOVE 10 TO WS-IV(7)
+     MOVE 64 TO WS-IV(8)
+     MOVE -3 TO WS-IV(9)
+     MOVE 0.5 TO WS-IV(10)
+     CALL "EM3-FANGS-CRIT" USING WS-IN WS-OUT
+     MOVE "4.8 one crit particle of the burst [1]" TO WS-NAME
+     MOVE 9.85 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 one crit particle of the burst [2]" TO WS-NAME
+     MOVE 65.75 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 one crit particle of the burst [3]" TO WS-NAME
+     MOVE -3.0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 one crit particle of the burst [4]" TO WS-NAME
+     MOVE 0.24 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 one crit particle of the burst [5]" TO WS-NAME
+     MOVE 0.33 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "4.8 one crit particle of the burst [6]" TO WS-NAME
+     MOVE -0.09 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0.0 TO WS-IV(1)
+     CALL "EM3-FANGS-SOUND-PITCH" USING WS-IN WS-OUT
+     MOVE "4.8 attack sound pitch r = 0" TO WS-NAME
+     MOVE 0.85 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0.5 TO WS-IV(1)
+     CALL "EM3-FANGS-SOUND-PITCH" USING WS-IN WS-OUT
+     MOVE "4.8 attack sound pitch r = 0.5" TO WS-NAME
+     MOVE 0.95 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     CALL "EM3-FANGS-TEXTURE" USING WS-TEXT
+     MOVE "4.8 fangs texture" TO WS-NAME
+     MOVE "textures/entity/illager/evoker_fangs.png" TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     STOP RUN.
+
+ COPY EMCHKP.
+
+ CHECK-NUM.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US15 34-3§4 Illagers: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = WS-E * 100000
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O * 100000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK-TEXT.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US15 34-3§4 Illagers: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-ENTMODEL-34-3-4.

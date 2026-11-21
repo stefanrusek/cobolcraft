@@ -1,0 +1,4736 @@
+*> Test of 30 part 8 section 7, Tripwire and tripwire hook (core/src/redstone-30-8.cob; T0830): shapes, support, signals, the line calculation, the transition effects, the wire detection, shears and removal.
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-I as integers and WS-FX as doubles), calls the program
+*> and shows the outputs WS-R(1..WS-N) joined by "/", one group per call; expected values come from the rules and tables of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-REDSTONE-30-8-7.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY INTERACT.
+ 01 WS-ISG.
+    05 WS-I1 BINARY-LONG.
+    05 WS-I2 BINARY-LONG.
+    05 WS-I3 BINARY-LONG.
+    05 WS-I4 BINARY-LONG.
+    05 WS-I5 BINARY-LONG.
+    05 WS-I6 BINARY-LONG.
+    05 WS-I7 BINARY-LONG.
+    05 WS-I8 BINARY-LONG.
+    05 WS-I9 BINARY-LONG.
+    05 WS-I10 BINARY-LONG.
+    05 WS-I11 BINARY-LONG.
+    05 WS-I12 BINARY-LONG.
+    05 WS-I13 BINARY-LONG.
+    05 WS-I14 BINARY-LONG.
+    05 WS-I15 BINARY-LONG.
+    05 WS-I16 BINARY-LONG.
+ 01 WS-IST REDEFINES WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-FXSG.
+    05 WS-FX1 FLOAT-LONG.
+    05 WS-FX2 FLOAT-LONG.
+    05 WS-FX3 FLOAT-LONG.
+    05 WS-FX4 FLOAT-LONG.
+    05 WS-FX5 FLOAT-LONG.
+    05 WS-FX6 FLOAT-LONG.
+    05 WS-FX7 FLOAT-LONG.
+    05 WS-FX8 FLOAT-LONG.
+    05 WS-FX9 FLOAT-LONG.
+    05 WS-FX10 FLOAT-LONG.
+    05 WS-FX11 FLOAT-LONG.
+    05 WS-FX12 FLOAT-LONG.
+    05 WS-FX13 FLOAT-LONG.
+    05 WS-FX14 FLOAT-LONG.
+    05 WS-FX15 FLOAT-LONG.
+    05 WS-FX16 FLOAT-LONG.
+ 01 WS-FXST REDEFINES WS-FXSG.
+    05 WS-FX FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R1 BINARY-LONG.
+    05 WS-R2 BINARY-LONG.
+    05 WS-R3 BINARY-LONG.
+    05 WS-R4 BINARY-LONG.
+    05 WS-R5 BINARY-LONG.
+    05 WS-R6 BINARY-LONG.
+    05 WS-R7 BINARY-LONG.
+    05 WS-R8 BINARY-LONG.
+    05 WS-R9 BINARY-LONG.
+    05 WS-R10 BINARY-LONG.
+    05 WS-R11 BINARY-LONG.
+    05 WS-R12 BINARY-LONG.
+    05 WS-R13 BINARY-LONG.
+    05 WS-R14 BINARY-LONG.
+    05 WS-R15 BINARY-LONG.
+    05 WS-R16 BINARY-LONG.
+ 01 WS-RST REDEFINES WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RFSG.
+    05 WS-RF1 FLOAT-LONG.
+    05 WS-RF2 FLOAT-LONG.
+    05 WS-RF3 FLOAT-LONG.
+    05 WS-RF4 FLOAT-LONG.
+    05 WS-RF5 FLOAT-LONG.
+    05 WS-RF6 FLOAT-LONG.
+    05 WS-RF7 FLOAT-LONG.
+    05 WS-RF8 FLOAT-LONG.
+ 01 WS-RFST REDEFINES WS-RFSG.
+    05 WS-RF FLOAT-LONG OCCURS 8 TIMES.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(10)9.
+ 01 WS-TEXTS.
+    05 WS-T1               PIC X(96).
+    05 WS-T2               PIC X(96).
+ 01 WS-NM                PIC X(40).
+ 01 WS-KDG.
+    05 WS-KD BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-DSG.
+    05 WS-DS BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-PWG.
+    05 WS-PW BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-FL FLOAT-LONG.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: hook shape (7.1): for facing north x 5 to 11, y 0 to 10, z 10 to 16 (pixels, the box on the support side; the other facings follow the support" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SHAPE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SHAPE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SHAPE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SHAPE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "5/11/0/10/10/16 5/11/0/10/0/6 10/16/0/10/5/11 0/6/0/10/5/11" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: hook placement (7.1): of the horizontal directions in the placer nearest-looking order the first d for which facing = opp(d) survives; none:" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "2 1 5 1 3 1 4 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-PLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-I8 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 5 1 3 1 4 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-PLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-I8 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0 2 0 5 0 4 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-PLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-I8 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 0 4 0 2 0 3 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-PLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-I8 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 1 2 0 3 0 5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-PLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-I8 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 4 5 -1 5" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: hook updateShape (7.1): when the changed direction is opp(facing) and the hook cannot survive it becomes air (facing, direction, survives; air)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "2 3 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-UPDATE-SHAPE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 3 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-UPDATE-SHAPE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-UPDATE-SHAPE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-UPDATE-SHAPE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: wire shape (7.1): column(16, 1, 2.5) when attached, column(16, 0, 8) when not, in tenths of a pixel (attached; min y, max y)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-SHAPE" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-SHAPE" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "10/25 0/80" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: wire sides (7.1): side d is true when the neighbour in d is a hook with facing == opp(d) or another wire (neighbour 0 other 1 hook 2 wire, hook" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 2 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-SIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 3 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-SIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-SIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 4 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-SIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 5 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-SIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 2 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-SIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 5 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-SIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0 1 0 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: rotate (7.1): the four sides permute; clockwise 90 turns the north side into the east side (north, east, south, west, rotation 0 none 1 CW 90 2" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-ROTATE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-ROTATE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 0 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-ROTATE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 0 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-ROTATE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-ROTATE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1 0 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-ROTATE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/0 0/1/0/0 0/0/1/0 0/0/0/1 0/1/1/0 1/1/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: mirror (7.1): left-right swaps the north and south sides, front-back the east and west sides (north, east, south, west, mirror 0 none 1" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-MIRROR" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-MIRROR" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 1 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-MIRROR" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/1 0/0/1/1 1/1/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: signals (7.2): the hook is a signal source with weak 15 to every direction while powered; getDirectSignal is 15 only when powered and the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 2 2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 2 2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 2 3 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 2 3 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 2 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 2 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 3 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 3 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-SIGNAL" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 0 0 0 15 15 15 0 15 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: calculation, example 11.3 (11): hooks 4 apart with 3 wires, an entity powers the wire at distance 2: attached and powered, D 4, a tick scheduled" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 2 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 0 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 0 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 1 TO WS-I1
+     MOVE 0 TO WS-I2
+     MOVE 2 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 0 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 2 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 0 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 0 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 1 TO WS-I1
+     MOVE 0 TO WS-I2
+     MOVE -1 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 1 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1/4/1 1/1/0/4/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: calculation, idle line (7.3): no changed cell, nothing powered: attached stays true and powered false; the hook tick refresh finds the same" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 2 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 0 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 0 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 1 TO WS-I1
+     MOVE 0 TO WS-I2
+     MOVE -1 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 0 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 2 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 0 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 0 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 1 TO WS-I1
+     MOVE 0 TO WS-I2
+     MOVE -1 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 0 TO WS-I6
+     MOVE 0 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/4/0 1/1/0/4/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: calculation, V18 (12): 40 wires between the hooks (hooks 41 apart) are attached; with 41 wires the scan ends at k = 41 without finding the far" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 1 TO WS-KD(4)
+     MOVE 1 TO WS-KD(5)
+     MOVE 1 TO WS-KD(6)
+     MOVE 1 TO WS-KD(7)
+     MOVE 1 TO WS-KD(8)
+     MOVE 1 TO WS-KD(9)
+     MOVE 1 TO WS-KD(10)
+     MOVE 1 TO WS-KD(11)
+     MOVE 1 TO WS-KD(12)
+     MOVE 1 TO WS-KD(13)
+     MOVE 1 TO WS-KD(14)
+     MOVE 1 TO WS-KD(15)
+     MOVE 1 TO WS-KD(16)
+     MOVE 1 TO WS-KD(17)
+     MOVE 1 TO WS-KD(18)
+     MOVE 1 TO WS-KD(19)
+     MOVE 1 TO WS-KD(20)
+     MOVE 1 TO WS-KD(21)
+     MOVE 1 TO WS-KD(22)
+     MOVE 1 TO WS-KD(23)
+     MOVE 1 TO WS-KD(24)
+     MOVE 1 TO WS-KD(25)
+     MOVE 1 TO WS-KD(26)
+     MOVE 1 TO WS-KD(27)
+     MOVE 1 TO WS-KD(28)
+     MOVE 1 TO WS-KD(29)
+     MOVE 1 TO WS-KD(30)
+     MOVE 1 TO WS-KD(31)
+     MOVE 1 TO WS-KD(32)
+     MOVE 1 TO WS-KD(33)
+     MOVE 1 TO WS-KD(34)
+     MOVE 1 TO WS-KD(35)
+     MOVE 1 TO WS-KD(36)
+     MOVE 1 TO WS-KD(37)
+     MOVE 1 TO WS-KD(38)
+     MOVE 1 TO WS-KD(39)
+     MOVE 1 TO WS-KD(40)
+     MOVE 2 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 0 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 0 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 1 TO WS-I1
+     MOVE 0 TO WS-I2
+     MOVE -1 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 0 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 1 TO WS-KD(4)
+     MOVE 1 TO WS-KD(5)
+     MOVE 1 TO WS-KD(6)
+     MOVE 1 TO WS-KD(7)
+     MOVE 1 TO WS-KD(8)
+     MOVE 1 TO WS-KD(9)
+     MOVE 1 TO WS-KD(10)
+     MOVE 1 TO WS-KD(11)
+     MOVE 1 TO WS-KD(12)
+     MOVE 1 TO WS-KD(13)
+     MOVE 1 TO WS-KD(14)
+     MOVE 1 TO WS-KD(15)
+     MOVE 1 TO WS-KD(16)
+     MOVE 1 TO WS-KD(17)
+     MOVE 1 TO WS-KD(18)
+     MOVE 1 TO WS-KD(19)
+     MOVE 1 TO WS-KD(20)
+     MOVE 1 TO WS-KD(21)
+     MOVE 1 TO WS-KD(22)
+     MOVE 1 TO WS-KD(23)
+     MOVE 1 TO WS-KD(24)
+     MOVE 1 TO WS-KD(25)
+     MOVE 1 TO WS-KD(26)
+     MOVE 1 TO WS-KD(27)
+     MOVE 1 TO WS-KD(28)
+     MOVE 1 TO WS-KD(29)
+     MOVE 1 TO WS-KD(30)
+     MOVE 1 TO WS-KD(31)
+     MOVE 1 TO WS-KD(32)
+     MOVE 1 TO WS-KD(33)
+     MOVE 1 TO WS-KD(34)
+     MOVE 1 TO WS-KD(35)
+     MOVE 1 TO WS-KD(36)
+     MOVE 1 TO WS-KD(37)
+     MOVE 1 TO WS-KD(38)
+     MOVE 1 TO WS-KD(39)
+     MOVE 1 TO WS-KD(40)
+     MOVE 1 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 0 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 0 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 1 TO WS-I1
+     MOVE 0 TO WS-I2
+     MOVE -1 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 0 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/41/0 1/0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: calculation, gaps and disarmed wires (7.3 step 4): a gap does not end the scan but clears attached and powered; a disarmed changed cell clears" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 0 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 2 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 0 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 0 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 1 TO WS-I1
+     MOVE 0 TO WS-I2
+     MOVE -1 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 1 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 2 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 0 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 0 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 1 TO WS-I1
+     MOVE 0 TO WS-I2
+     MOVE 2 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 0 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 3 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 0 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 0 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 1 TO WS-I1
+     MOVE 0 TO WS-I2
+     MOVE 2 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 0 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 3 TO WS-KD(1)
+     MOVE 0 TO WS-KD(2)
+     MOVE 0 TO WS-KD(3)
+     MOVE 0 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 0 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 0 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 1 TO WS-I1
+     MOVE 0 TO WS-I2
+     MOVE -1 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 0 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/4/0 1/0/0/4/1 1/0/0/0/1 1/0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: calculation, removing and the guard (7.3): removing starts attached false; a state without a readable facing is a no-op; a hook adjacent to the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 2 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 0 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 0 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 1 TO WS-I1
+     MOVE 1 TO WS-I2
+     MOVE -1 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 1 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 2 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 0 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 0 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 0 TO WS-I1
+     MOVE 0 TO WS-I2
+     MOVE 2 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 0 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 2 TO WS-KD(1)
+     MOVE 0 TO WS-KD(2)
+     MOVE 0 TO WS-KD(3)
+     MOVE 0 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 0 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 0 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 1 TO WS-I1
+     MOVE 0 TO WS-I2
+     MOVE -1 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 0 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/4/0 0/1/0/0/0 1/0/0/1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: cut with shears, example 11.4 (11): the removed wire passes as a disarmed changed cell: attached false and powered false, no pulse; a plain cut" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 2 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 0 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 0 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 1 TO WS-I1
+     MOVE 0 TO WS-I2
+     MOVE 2 TO WS-I3
+     MOVE 1 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 0 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 2 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 0 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 0 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 1 TO WS-I1
+     MOVE 0 TO WS-I2
+     MOVE 2 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 1 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 0 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 0 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 2 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     MOVE 0 TO WS-DS(1)
+     MOVE 0 TO WS-DS(2)
+     MOVE 0 TO WS-DS(3)
+     MOVE 0 TO WS-DS(4)
+     MOVE 0 TO WS-DS(5)
+     MOVE 0 TO WS-DS(6)
+     MOVE 0 TO WS-DS(7)
+     MOVE 0 TO WS-DS(8)
+     MOVE 0 TO WS-DS(9)
+     MOVE 0 TO WS-DS(10)
+     MOVE 0 TO WS-DS(11)
+     MOVE 0 TO WS-DS(12)
+     MOVE 0 TO WS-DS(13)
+     MOVE 0 TO WS-DS(14)
+     MOVE 0 TO WS-DS(15)
+     MOVE 0 TO WS-DS(16)
+     MOVE 0 TO WS-DS(17)
+     MOVE 0 TO WS-DS(18)
+     MOVE 0 TO WS-DS(19)
+     MOVE 0 TO WS-DS(20)
+     MOVE 0 TO WS-DS(21)
+     MOVE 0 TO WS-DS(22)
+     MOVE 0 TO WS-DS(23)
+     MOVE 0 TO WS-DS(24)
+     MOVE 0 TO WS-DS(25)
+     MOVE 0 TO WS-DS(26)
+     MOVE 0 TO WS-DS(27)
+     MOVE 0 TO WS-DS(28)
+     MOVE 0 TO WS-DS(29)
+     MOVE 0 TO WS-DS(30)
+     MOVE 0 TO WS-DS(31)
+     MOVE 0 TO WS-DS(32)
+     MOVE 0 TO WS-DS(33)
+     MOVE 0 TO WS-DS(34)
+     MOVE 0 TO WS-DS(35)
+     MOVE 0 TO WS-DS(36)
+     MOVE 0 TO WS-DS(37)
+     MOVE 0 TO WS-DS(38)
+     MOVE 0 TO WS-DS(39)
+     MOVE 0 TO WS-DS(40)
+     MOVE 0 TO WS-DS(41)
+     MOVE 0 TO WS-DS(42)
+     MOVE 0 TO WS-DS(43)
+     MOVE 0 TO WS-DS(44)
+     MOVE 0 TO WS-DS(45)
+     MOVE 0 TO WS-DS(46)
+     MOVE 0 TO WS-DS(47)
+     MOVE 0 TO WS-DS(48)
+     MOVE 0 TO WS-DS(49)
+     MOVE 0 TO WS-DS(50)
+     MOVE 0 TO WS-DS(51)
+     MOVE 0 TO WS-DS(52)
+     MOVE 0 TO WS-DS(53)
+     MOVE 0 TO WS-DS(54)
+     MOVE 0 TO WS-DS(55)
+     MOVE 0 TO WS-DS(56)
+     MOVE 0 TO WS-DS(57)
+     MOVE 0 TO WS-DS(58)
+     MOVE 0 TO WS-DS(59)
+     MOVE 0 TO WS-DS(60)
+     MOVE 0 TO WS-DS(61)
+     MOVE 0 TO WS-DS(62)
+     MOVE 0 TO WS-DS(63)
+     MOVE 0 TO WS-DS(64)
+     MOVE 1 TO WS-PW(1)
+     MOVE 0 TO WS-PW(2)
+     MOVE 1 TO WS-PW(3)
+     MOVE 0 TO WS-PW(4)
+     MOVE 0 TO WS-PW(5)
+     MOVE 0 TO WS-PW(6)
+     MOVE 0 TO WS-PW(7)
+     MOVE 0 TO WS-PW(8)
+     MOVE 0 TO WS-PW(9)
+     MOVE 0 TO WS-PW(10)
+     MOVE 0 TO WS-PW(11)
+     MOVE 0 TO WS-PW(12)
+     MOVE 0 TO WS-PW(13)
+     MOVE 0 TO WS-PW(14)
+     MOVE 0 TO WS-PW(15)
+     MOVE 0 TO WS-PW(16)
+     MOVE 0 TO WS-PW(17)
+     MOVE 0 TO WS-PW(18)
+     MOVE 0 TO WS-PW(19)
+     MOVE 0 TO WS-PW(20)
+     MOVE 0 TO WS-PW(21)
+     MOVE 0 TO WS-PW(22)
+     MOVE 0 TO WS-PW(23)
+     MOVE 0 TO WS-PW(24)
+     MOVE 0 TO WS-PW(25)
+     MOVE 0 TO WS-PW(26)
+     MOVE 0 TO WS-PW(27)
+     MOVE 0 TO WS-PW(28)
+     MOVE 0 TO WS-PW(29)
+     MOVE 0 TO WS-PW(30)
+     MOVE 0 TO WS-PW(31)
+     MOVE 0 TO WS-PW(32)
+     MOVE 0 TO WS-PW(33)
+     MOVE 0 TO WS-PW(34)
+     MOVE 0 TO WS-PW(35)
+     MOVE 0 TO WS-PW(36)
+     MOVE 0 TO WS-PW(37)
+     MOVE 0 TO WS-PW(38)
+     MOVE 0 TO WS-PW(39)
+     MOVE 0 TO WS-PW(40)
+     MOVE 0 TO WS-PW(41)
+     MOVE 0 TO WS-PW(42)
+     MOVE 0 TO WS-PW(43)
+     MOVE 0 TO WS-PW(44)
+     MOVE 0 TO WS-PW(45)
+     MOVE 0 TO WS-PW(46)
+     MOVE 0 TO WS-PW(47)
+     MOVE 0 TO WS-PW(48)
+     MOVE 0 TO WS-PW(49)
+     MOVE 0 TO WS-PW(50)
+     MOVE 0 TO WS-PW(51)
+     MOVE 0 TO WS-PW(52)
+     MOVE 0 TO WS-PW(53)
+     MOVE 0 TO WS-PW(54)
+     MOVE 0 TO WS-PW(55)
+     MOVE 0 TO WS-PW(56)
+     MOVE 0 TO WS-PW(57)
+     MOVE 0 TO WS-PW(58)
+     MOVE 0 TO WS-PW(59)
+     MOVE 0 TO WS-PW(60)
+     MOVE 0 TO WS-PW(61)
+     MOVE 0 TO WS-PW(62)
+     MOVE 0 TO WS-PW(63)
+     MOVE 0 TO WS-PW(64)
+     MOVE 1 TO WS-I1
+     MOVE 0 TO WS-I2
+     MOVE -1 TO WS-I3
+     MOVE 0 TO WS-I4
+     MOVE 0 TO WS-I5
+     MOVE 1 TO WS-I6
+     MOVE 1 TO WS-I7
+     CALL "RS3-HOOK-CALC" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-I7 WS-KDG WS-DSG WS-PWG WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0/4/1 1/1/1/4/1 1/0/0/4/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: writes (7.3): the far hook is written and notified when D > 0; the near hook is written when not removing and notified when notify is set; when" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "4 0 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-WRITES" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 0 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-WRITES" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 0 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-WRITES" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-WRITES" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 1 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-WRITES" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-WRITES" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-WRITES" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1/1/0 1/1/1/1/3 1/1/1/0/3 0/0/1/1/0 1/1/0/0/3 1/1/1/0/0 0/0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: transition effects (7.4): exactly one, first match: powered rose (click_on volume 0.4 pitch 0.6, block_activate), powered fell (click_off 0.5," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/0 2/500000/2/400000 4/0/4/400000 2/500000/2/400000 1/600000/1/400000 0/0/0/0 1/600000/1/400000 4/0/4/400000 3/700000/3/400000 2/500000/2/400000 0/0/0/0 2/500000/2/400000" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: transition effects (7.4): exactly one, first match: powered rose (click_on volume 0.4 pitch 0.6, block_activate), powered fell (click_off 0.5," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-EMIT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/600000/1/400000 3/700000/3/400000 1/600000/1/400000 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: detach pitch (7.4): 1.2 / (random.nextFloat() * 0.2 + 0.9), between 1.0909 and 1.3333 (millionths)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0.0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-DETACH-PITCH" USING WS-FX1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0.5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-DETACH-PITCH" USING WS-FX1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0.25" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-DETACH-PITCH" USING WS-FX1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0.999" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-DETACH-PITCH" USING WS-FX1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1333333 1200000 1263158 1091107" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: entityInside (7.5): on the server, only when the wire is not powered and no tick is scheduled, checkPressed runs (server, powered, tick" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 0 1 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: checkPressed (7.5): when pressed differs from powered set powered and run updateSource; then a pressed wire schedules a tick after 10, a wire" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-CHECK" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-CHECK" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-CHECK" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-CHECK" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/0 1/0/1/1 1/1/1/10 0/1/0/10" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: scheduled tick (7.5): nothing when the wire is not powered, else the entities overlapping the wire are gathered and checkPressed runs (V19)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-TICK" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-TICK" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: entities that never trigger (7.5): Display, Interaction, Marker, OminousItemSpawner, Bat and an ArmorStand that is a marker; every other entity" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "display" TO WS-NM
+     CALL "RS3-IGNORES-TRIGGERS" USING WS-NM WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "interaction" TO WS-NM
+     CALL "RS3-IGNORES-TRIGGERS" USING WS-NM WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "marker" TO WS-NM
+     CALL "RS3-IGNORES-TRIGGERS" USING WS-NM WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "ominous_item_spawner" TO WS-NM
+     CALL "RS3-IGNORES-TRIGGERS" USING WS-NM WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "bat" TO WS-NM
+     CALL "RS3-IGNORES-TRIGGERS" USING WS-NM WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "armor_stand" TO WS-NM
+     CALL "RS3-IGNORES-TRIGGERS" USING WS-NM WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "armor_stand" TO WS-NM
+     CALL "RS3-IGNORES-TRIGGERS" USING WS-NM WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "player" TO WS-NM
+     CALL "RS3-IGNORES-TRIGGERS" USING WS-NM WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "zombie" TO WS-NM
+     CALL "RS3-IGNORES-TRIGGERS" USING WS-NM WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "item" TO WS-NM
+     CALL "RS3-IGNORES-TRIGGERS" USING WS-NM WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "experience_orb" TO WS-NM
+     CALL "RS3-IGNORES-TRIGGERS" USING WS-NM WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "arrow" TO WS-NM
+     CALL "RS3-IGNORES-TRIGGERS" USING WS-NM WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "boat" TO WS-NM
+     CALL "RS3-IGNORES-TRIGGERS" USING WS-NM WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 1 1 1 0 0 0 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: pressed (7.5): at least one entity in the list that does not ignore block triggers (triggering entities)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-PRESSED" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-PRESSED" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-PRESSED" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: removal state (7.5): updateSource gets the removed state with powered forced true and the disarmed flag kept (disarmed; disarmed, powered)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-REMOVAL-STATE" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-REMOVAL-STATE" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/1 1/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: updateSource scan (7.5): along one direction a wire continues, a hook facing the wire ends with its index i (1 to 41), a hook facing otherwise" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 2 TO WS-KD(3)
+     MOVE 0 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     CALL "RS3-SOURCE-SCAN" USING WS-KDG WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 2 TO WS-KD(1)
+     MOVE 0 TO WS-KD(2)
+     MOVE 0 TO WS-KD(3)
+     MOVE 0 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     CALL "RS3-SOURCE-SCAN" USING WS-KDG WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 3 TO WS-KD(2)
+     MOVE 0 TO WS-KD(3)
+     MOVE 0 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     CALL "RS3-SOURCE-SCAN" USING WS-KDG WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 0 TO WS-KD(1)
+     MOVE 0 TO WS-KD(2)
+     MOVE 0 TO WS-KD(3)
+     MOVE 0 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     CALL "RS3-SOURCE-SCAN" USING WS-KDG WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 0 TO WS-KD(3)
+     MOVE 2 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     CALL "RS3-SOURCE-SCAN" USING WS-KDG WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 3 TO WS-KD(1)
+     MOVE 0 TO WS-KD(2)
+     MOVE 0 TO WS-KD(3)
+     MOVE 0 TO WS-KD(4)
+     MOVE 0 TO WS-KD(5)
+     MOVE 0 TO WS-KD(6)
+     MOVE 0 TO WS-KD(7)
+     MOVE 0 TO WS-KD(8)
+     MOVE 0 TO WS-KD(9)
+     MOVE 0 TO WS-KD(10)
+     MOVE 0 TO WS-KD(11)
+     MOVE 0 TO WS-KD(12)
+     MOVE 0 TO WS-KD(13)
+     MOVE 0 TO WS-KD(14)
+     MOVE 0 TO WS-KD(15)
+     MOVE 0 TO WS-KD(16)
+     MOVE 0 TO WS-KD(17)
+     MOVE 0 TO WS-KD(18)
+     MOVE 0 TO WS-KD(19)
+     MOVE 0 TO WS-KD(20)
+     MOVE 0 TO WS-KD(21)
+     MOVE 0 TO WS-KD(22)
+     MOVE 0 TO WS-KD(23)
+     MOVE 0 TO WS-KD(24)
+     MOVE 0 TO WS-KD(25)
+     MOVE 0 TO WS-KD(26)
+     MOVE 0 TO WS-KD(27)
+     MOVE 0 TO WS-KD(28)
+     MOVE 0 TO WS-KD(29)
+     MOVE 0 TO WS-KD(30)
+     MOVE 0 TO WS-KD(31)
+     MOVE 0 TO WS-KD(32)
+     MOVE 0 TO WS-KD(33)
+     MOVE 0 TO WS-KD(34)
+     MOVE 0 TO WS-KD(35)
+     MOVE 0 TO WS-KD(36)
+     MOVE 0 TO WS-KD(37)
+     MOVE 0 TO WS-KD(38)
+     MOVE 0 TO WS-KD(39)
+     MOVE 0 TO WS-KD(40)
+     MOVE 0 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     CALL "RS3-SOURCE-SCAN" USING WS-KDG WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 1 TO WS-KD(4)
+     MOVE 1 TO WS-KD(5)
+     MOVE 1 TO WS-KD(6)
+     MOVE 1 TO WS-KD(7)
+     MOVE 1 TO WS-KD(8)
+     MOVE 1 TO WS-KD(9)
+     MOVE 1 TO WS-KD(10)
+     MOVE 1 TO WS-KD(11)
+     MOVE 1 TO WS-KD(12)
+     MOVE 1 TO WS-KD(13)
+     MOVE 1 TO WS-KD(14)
+     MOVE 1 TO WS-KD(15)
+     MOVE 1 TO WS-KD(16)
+     MOVE 1 TO WS-KD(17)
+     MOVE 1 TO WS-KD(18)
+     MOVE 1 TO WS-KD(19)
+     MOVE 1 TO WS-KD(20)
+     MOVE 1 TO WS-KD(21)
+     MOVE 1 TO WS-KD(22)
+     MOVE 1 TO WS-KD(23)
+     MOVE 1 TO WS-KD(24)
+     MOVE 1 TO WS-KD(25)
+     MOVE 1 TO WS-KD(26)
+     MOVE 1 TO WS-KD(27)
+     MOVE 1 TO WS-KD(28)
+     MOVE 1 TO WS-KD(29)
+     MOVE 1 TO WS-KD(30)
+     MOVE 1 TO WS-KD(31)
+     MOVE 1 TO WS-KD(32)
+     MOVE 1 TO WS-KD(33)
+     MOVE 1 TO WS-KD(34)
+     MOVE 1 TO WS-KD(35)
+     MOVE 1 TO WS-KD(36)
+     MOVE 1 TO WS-KD(37)
+     MOVE 1 TO WS-KD(38)
+     MOVE 1 TO WS-KD(39)
+     MOVE 1 TO WS-KD(40)
+     MOVE 2 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     CALL "RS3-SOURCE-SCAN" USING WS-KDG WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 1 TO WS-KD(4)
+     MOVE 1 TO WS-KD(5)
+     MOVE 1 TO WS-KD(6)
+     MOVE 1 TO WS-KD(7)
+     MOVE 1 TO WS-KD(8)
+     MOVE 1 TO WS-KD(9)
+     MOVE 1 TO WS-KD(10)
+     MOVE 1 TO WS-KD(11)
+     MOVE 1 TO WS-KD(12)
+     MOVE 1 TO WS-KD(13)
+     MOVE 1 TO WS-KD(14)
+     MOVE 1 TO WS-KD(15)
+     MOVE 1 TO WS-KD(16)
+     MOVE 1 TO WS-KD(17)
+     MOVE 1 TO WS-KD(18)
+     MOVE 1 TO WS-KD(19)
+     MOVE 1 TO WS-KD(20)
+     MOVE 1 TO WS-KD(21)
+     MOVE 1 TO WS-KD(22)
+     MOVE 1 TO WS-KD(23)
+     MOVE 1 TO WS-KD(24)
+     MOVE 1 TO WS-KD(25)
+     MOVE 1 TO WS-KD(26)
+     MOVE 1 TO WS-KD(27)
+     MOVE 1 TO WS-KD(28)
+     MOVE 1 TO WS-KD(29)
+     MOVE 1 TO WS-KD(30)
+     MOVE 1 TO WS-KD(31)
+     MOVE 1 TO WS-KD(32)
+     MOVE 1 TO WS-KD(33)
+     MOVE 1 TO WS-KD(34)
+     MOVE 1 TO WS-KD(35)
+     MOVE 1 TO WS-KD(36)
+     MOVE 1 TO WS-KD(37)
+     MOVE 1 TO WS-KD(38)
+     MOVE 1 TO WS-KD(39)
+     MOVE 1 TO WS-KD(40)
+     MOVE 1 TO WS-KD(41)
+     MOVE 2 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     CALL "RS3-SOURCE-SCAN" USING WS-KDG WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-KD(1)
+     MOVE 1 TO WS-KD(2)
+     MOVE 1 TO WS-KD(3)
+     MOVE 1 TO WS-KD(4)
+     MOVE 1 TO WS-KD(5)
+     MOVE 1 TO WS-KD(6)
+     MOVE 1 TO WS-KD(7)
+     MOVE 1 TO WS-KD(8)
+     MOVE 1 TO WS-KD(9)
+     MOVE 1 TO WS-KD(10)
+     MOVE 1 TO WS-KD(11)
+     MOVE 1 TO WS-KD(12)
+     MOVE 1 TO WS-KD(13)
+     MOVE 1 TO WS-KD(14)
+     MOVE 1 TO WS-KD(15)
+     MOVE 1 TO WS-KD(16)
+     MOVE 1 TO WS-KD(17)
+     MOVE 1 TO WS-KD(18)
+     MOVE 1 TO WS-KD(19)
+     MOVE 1 TO WS-KD(20)
+     MOVE 1 TO WS-KD(21)
+     MOVE 1 TO WS-KD(22)
+     MOVE 1 TO WS-KD(23)
+     MOVE 1 TO WS-KD(24)
+     MOVE 1 TO WS-KD(25)
+     MOVE 1 TO WS-KD(26)
+     MOVE 1 TO WS-KD(27)
+     MOVE 1 TO WS-KD(28)
+     MOVE 1 TO WS-KD(29)
+     MOVE 1 TO WS-KD(30)
+     MOVE 1 TO WS-KD(31)
+     MOVE 1 TO WS-KD(32)
+     MOVE 1 TO WS-KD(33)
+     MOVE 1 TO WS-KD(34)
+     MOVE 1 TO WS-KD(35)
+     MOVE 1 TO WS-KD(36)
+     MOVE 1 TO WS-KD(37)
+     MOVE 1 TO WS-KD(38)
+     MOVE 1 TO WS-KD(39)
+     MOVE 1 TO WS-KD(40)
+     MOVE 1 TO WS-KD(41)
+     MOVE 0 TO WS-KD(42)
+     MOVE 0 TO WS-KD(43)
+     MOVE 0 TO WS-KD(44)
+     MOVE 0 TO WS-KD(45)
+     MOVE 0 TO WS-KD(46)
+     MOVE 0 TO WS-KD(47)
+     MOVE 0 TO WS-KD(48)
+     MOVE 0 TO WS-KD(49)
+     MOVE 0 TO WS-KD(50)
+     MOVE 0 TO WS-KD(51)
+     MOVE 0 TO WS-KD(52)
+     MOVE 0 TO WS-KD(53)
+     MOVE 0 TO WS-KD(54)
+     MOVE 0 TO WS-KD(55)
+     MOVE 0 TO WS-KD(56)
+     MOVE 0 TO WS-KD(57)
+     MOVE 0 TO WS-KD(58)
+     MOVE 0 TO WS-KD(59)
+     MOVE 0 TO WS-KD(60)
+     MOVE 0 TO WS-KD(61)
+     MOVE 0 TO WS-KD(62)
+     MOVE 0 TO WS-KD(63)
+     MOVE 0 TO WS-KD(64)
+     CALL "RS3-SOURCE-SCAN" USING WS-KDG WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1 0 0 0 0 41 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: shears (7.5): on a server with shears in the main hand the wire is set disarmed with flags 260, the event shear (frequency 6) is posted, then" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-SHEARS" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-SHEARS" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-SHEARS" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-WIRE-SHEARS" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0 0/0/0 0/0/0 1/260/6" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: notifying neighbours (7.6): the neighbours of the position, then the neighbours of pos.relative(opp(direction)), with the hook block as source" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-NOTIFY-SECOND" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-NOTIFY-SECOND" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-NOTIFY-SECOND" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-NOTIFY-SECOND" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 2 5 4" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: hook removal (7.7): a removed hook that was attached or powered runs the calculation with removing true and notify false; when it was powered" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-REMOVAL" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-REMOVAL" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-REMOVAL" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-REMOVAL" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0 1/1 1/0 1/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 30-8§7 Tripwire and tripwire hook: callers (7.3): placement (removing false, notify false, no changed cell), the hook tick (notify true), a wire updateSource (notify true," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-CALLER" USING WS-I1 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-CALLER" USING WS-I1 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-CALLER" USING WS-I1 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "RS3-HOOK-CALLER" USING WS-I1 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0 0/1/0 0/1/1 1/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-FX(WS-K) = FUNCTION NUMVAL(WS-TOK)
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-T1) "|" FUNCTION TRIM(WS-T2) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-REDSTONE-30-8-7.

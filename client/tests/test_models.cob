@@ -373,6 +373,12 @@
      MOVE 6166 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = BM-QUAD-COUNT(3) * 1000 + QD-SPRITE * 100 + QD-CULL * 10 + QD-SHADE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE -1 TO SX-COUNT
+     CALL "STATE-BAKE" USING CLIENT-STATE WS-S STATE-MODELS
+     MOVE "models a multipart state with no part that applies draws nothing (the union of no parts), not the missing cube" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE BM-QUAD-COUNT(3) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
  SHOW-QUAD.

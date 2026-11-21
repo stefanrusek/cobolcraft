@@ -1,0 +1,269 @@
+*> The biome info noise of the placement counts (docs/protocol/10 section 3.5: SimplexNoise(r, true), the LegacyRandomSource of seed 2345 of 35-1 sections 7.9 and 7.10).
+*> The permutation is built once, on first use, from the seed: three nextDouble draws (next(26) then next(27) each, the offsets of the flag true are multiplied by 0) and the shuffle
+*> of 10 section 3.1 (j = nextInt(256 - i), swap i and i + j), so the table does not depend on the order of calls and every process builds the same one. All double
+*> arithmetic goes through the cc_f64 shim, so the bytes are the same in every build.
+*>
+*> Entry points:
+*>   F351-SIMPLEX USING x (FLOAT-LONG), y (FLOAT-LONG), noise out (FLOAT-LONG): get(x, y) of 3.5, a float widened to double
+*>   F351-SIMPLEX-T USING noise slot (BINARY-LONG 1 to 5), x, y, noise out: the same for one of the five fixed-seed noises of Biome (10 Open question 8): slot 1 BIOME_INFO_NOISE (seed 2345),
+*>     slot 2 TEMPERATURE_NOISE (seed 1234), slots 3 to 5 the three layers of FROZEN_TEMPERATURE_NOISE (three SimplexNoise built one after the other from one random source of seed 3456)
+*>   F351-SIMPLEX-CORNER USING x, y (FLOAT-LONG), gradient index (BINARY-LONG 0 to 11), contribution out (FLOAT-LONG): 0 below c = 0.5 - x^2 - y^2 = 0, else c^4 * (gx x + gy y)
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F351-SIMPLEX-CORNER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-HALF                FLOAT-LONG VALUE 0.5.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-C                   FLOAT-LONG.
+ 01 WS-C2                  FLOAT-LONG.
+ 01 WS-C4                  FLOAT-LONG.
+ 01 WS-GX                  FLOAT-LONG.
+ 01 WS-GY                  FLOAT-LONG.
+ 01 WS-DOT                 FLOAT-LONG.
+ 01 WS-CP                  FLOAT-LONG.
+*> the x and y components of the first twelve entries of the gradient table (10 section 3.1)
+ 01 WS-GRADS.
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE -1.
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE -1.
+    05 FILLER BINARY-LONG VALUE -1.
+    05 FILLER BINARY-LONG VALUE -1.
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE -1.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE -1.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE -1.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE -1.
+ 01 WS-GRAD-TABLE REDEFINES WS-GRADS.
+    05 WS-GRAD-ROW OCCURS 12 TIMES.
+       10 WS-GRAD-X          BINARY-LONG.
+       10 WS-GRAD-Y          BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-G                    BINARY-LONG.
+ 01 L-RESULT               FLOAT-LONG.
+ PROCEDURE DIVISION USING L-X L-Y L-G L-RESULT.
+     MOVE 0 TO L-RESULT
+     MOVE L-X TO WS-CP
+     CALL STATIC "cc_f64_mul" USING BY REFERENCE L-X WS-CP WS-A
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-HALF WS-A WS-B
+     MOVE L-Y TO WS-CP
+     CALL STATIC "cc_f64_mul" USING BY REFERENCE L-Y WS-CP WS-A
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-B WS-A WS-C
+     IF WS-C >= WS-ZERO
+         MOVE WS-C TO WS-CP
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-C WS-CP WS-C2
+         MOVE WS-C2 TO WS-CP
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-C2 WS-CP WS-C4
+         MOVE WS-GRAD-X(L-G + 1) TO WS-GX
+         MOVE WS-GRAD-Y(L-G + 1) TO WS-GY
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-GX L-X WS-A
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-GY L-Y WS-B
+         CALL STATIC "cc_f64_add" USING BY REFERENCE WS-A WS-B WS-DOT
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-C4 WS-DOT L-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM F351-SIMPLEX-CORNER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F351-SIMPLEX-T.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-READYS.
+    05 WS-READY            BINARY-LONG OCCURS 5 TIMES VALUE 0.
+*> the seed, the first and the last slot of the group of each slot
+ 01 WS-SEEDS.
+    05 FILLER BINARY-LONG VALUE 2345.
+    05 FILLER BINARY-LONG VALUE 1234.
+    05 FILLER BINARY-LONG VALUE 3456.
+    05 FILLER BINARY-LONG VALUE 3456.
+    05 FILLER BINARY-LONG VALUE 3456.
+ 01 WS-SEED-TABLE REDEFINES WS-SEEDS.
+    05 WS-SEED-OF          BINARY-LONG OCCURS 5 TIMES.
+ 01 WS-FIRSTS.
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE 2.
+    05 FILLER BINARY-LONG VALUE 3.
+    05 FILLER BINARY-LONG VALUE 3.
+    05 FILLER BINARY-LONG VALUE 3.
+ 01 WS-FIRST-TABLE REDEFINES WS-FIRSTS.
+    05 WS-FIRST-OF         BINARY-LONG OCCURS 5 TIMES.
+ 01 WS-LASTS.
+    05 FILLER BINARY-LONG VALUE 1.
+    05 FILLER BINARY-LONG VALUE 2.
+    05 FILLER BINARY-LONG VALUE 5.
+    05 FILLER BINARY-LONG VALUE 5.
+    05 FILLER BINARY-LONG VALUE 5.
+ 01 WS-LAST-TABLE REDEFINES WS-LASTS.
+    05 WS-LAST-OF          BINARY-LONG OCCURS 5 TIMES.
+ 01 WS-SEED                BINARY-DOUBLE UNSIGNED.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-STATE               BINARY-DOUBLE UNSIGNED.
+ 01 WS-DRAW                BINARY-DOUBLE.
+ 01 WS-BITS                BINARY-LONG.
+ 01 WS-BOUND               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-SWAP                BINARY-LONG.
+ 01 WS-PERM.
+    05 WS-P                BINARY-LONG OCCURS 1280 TIMES.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-THREE               FLOAT-LONG VALUE 3.
+ 01 WS-SIX                 FLOAT-LONG VALUE 6.
+ 01 WS-HALF                FLOAT-LONG VALUE 0.5.
+ 01 WS-SEVENTY             FLOAT-LONG VALUE 70.
+ 01 WS-S3                  FLOAT-LONG.
+ 01 WS-F2                  FLOAT-LONG.
+ 01 WS-G2                  FLOAT-LONG.
+ 01 WS-G2X2                FLOAT-LONG.
+ 01 WS-G2B                 FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-U                   FLOAT-LONG.
+ 01 WS-S                   FLOAT-LONG.
+ 01 WS-FI                  FLOAT-LONG.
+ 01 WS-FJ                  FLOAT-LONG.
+ 01 WS-TT                  FLOAT-LONG.
+ 01 WS-X0                  FLOAT-LONG.
+ 01 WS-Y0                  FLOAT-LONG.
+ 01 WS-X1                  FLOAT-LONG.
+ 01 WS-Y1                  FLOAT-LONG.
+ 01 WS-X2                  FLOAT-LONG.
+ 01 WS-Y2                  FLOAT-LONG.
+ 01 WS-DI1                 FLOAT-LONG.
+ 01 WS-DJ1                 FLOAT-LONG.
+ 01 WS-N0                  FLOAT-LONG.
+ 01 WS-N1                  FLOAT-LONG.
+ 01 WS-N2                  FLOAT-LONG.
+ 01 WS-SUM                 FLOAT-LONG.
+ 01 WS-II                  BINARY-LONG.
+ 01 WS-JJ                  BINARY-LONG.
+ 01 WS-I1                  BINARY-LONG.
+ 01 WS-J1                  BINARY-LONG.
+ 01 WS-G                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-RESULT               FLOAT-LONG.
+ PROCEDURE DIVISION USING L-SLOT L-X L-Y L-RESULT.
+     MOVE WS-FIRST-OF(L-SLOT) TO WS-FIRST
+     IF WS-READY(WS-FIRST) = 0
+         MOVE WS-SEED-OF(L-SLOT) TO WS-SEED
+         CALL "JRAND-SET-SEED" USING WS-STATE WS-SEED
+         PERFORM VARYING WS-SLOT FROM WS-FIRST BY 1 UNTIL WS-SLOT > WS-LAST-OF(L-SLOT)
+             COMPUTE WS-BASE = (WS-SLOT - 1) * 256
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
+                 COMPUTE WS-P(WS-BASE + WS-I) = WS-I - 1
+             END-PERFORM
+             PERFORM 3 TIMES
+                 MOVE 26 TO WS-BITS
+                 CALL "JRAND-NEXT" USING WS-STATE WS-BITS WS-DRAW
+                 MOVE 27 TO WS-BITS
+                 CALL "JRAND-NEXT" USING WS-STATE WS-BITS WS-DRAW
+             END-PERFORM
+             PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 255
+                 COMPUTE WS-BOUND = 256 - WS-I
+                 CALL "JRAND-NEXT-INT-BOUND" USING WS-STATE WS-BOUND WS-J
+                 COMPUTE WS-K = WS-BASE + WS-I + WS-J + 1
+                 MOVE WS-P(WS-BASE + WS-I + 1) TO WS-SWAP
+                 MOVE WS-P(WS-K) TO WS-P(WS-BASE + WS-I + 1)
+                 MOVE WS-SWAP TO WS-P(WS-K)
+             END-PERFORM
+             MOVE 1 TO WS-READY(WS-SLOT)
+         END-PERFORM
+         CALL STATIC "cc_f64_sqrt" USING BY REFERENCE WS-THREE WS-S3
+         CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-S3 WS-ONE WS-T
+         CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-HALF WS-T WS-F2
+         CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-THREE WS-S3 WS-T
+         CALL STATIC "cc_f64_div" USING BY REFERENCE WS-T WS-SIX WS-G2
+         MOVE WS-G2 TO WS-G2B
+         CALL STATIC "cc_f64_add" USING BY REFERENCE WS-G2 WS-G2B WS-G2X2
+     END-IF
+     COMPUTE WS-BASE = (L-SLOT - 1) * 256
+*>   the simplex cell
+     CALL STATIC "cc_f64_add" USING BY REFERENCE L-X L-Y WS-T
+     CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-T WS-F2 WS-S
+     CALL STATIC "cc_f64_add" USING BY REFERENCE L-X WS-S WS-T
+     CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-T WS-FI
+     CALL STATIC "cc_f64_add" USING BY REFERENCE L-Y WS-S WS-T
+     CALL STATIC "cc_f64_floor" USING BY REFERENCE WS-T WS-FJ
+     CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-FI WS-II
+     CALL STATIC "cc_f64_to_i32" USING BY REFERENCE WS-FJ WS-JJ
+     CALL STATIC "cc_f64_add" USING BY REFERENCE WS-FI WS-FJ WS-T
+     CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-T WS-G2 WS-TT
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-FI WS-TT WS-U
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE L-X WS-U WS-X0
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-FJ WS-TT WS-U
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE L-Y WS-U WS-Y0
+     MOVE 0 TO WS-I1 WS-J1
+     IF WS-X0 > WS-Y0
+         MOVE 1 TO WS-I1
+     ELSE
+         MOVE 1 TO WS-J1
+     END-IF
+     MOVE WS-I1 TO WS-DI1
+     MOVE WS-J1 TO WS-DJ1
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-X0 WS-DI1 WS-T
+     CALL STATIC "cc_f64_add" USING BY REFERENCE WS-T WS-G2 WS-X1
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-Y0 WS-DJ1 WS-T
+     CALL STATIC "cc_f64_add" USING BY REFERENCE WS-T WS-G2 WS-Y1
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-X0 WS-ONE WS-T
+     CALL STATIC "cc_f64_add" USING BY REFERENCE WS-T WS-G2X2 WS-X2
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE WS-Y0 WS-ONE WS-T
+     CALL STATIC "cc_f64_add" USING BY REFERENCE WS-T WS-G2X2 WS-Y2
+*>   the gradient of each corner: perm(ii + perm(jj)) mod 12
+     COMPUTE WS-II = FUNCTION MOD(WS-II, 256)
+     COMPUTE WS-JJ = FUNCTION MOD(WS-JJ, 256)
+     COMPUTE WS-A = FUNCTION MOD(WS-II + WS-P(WS-BASE + WS-JJ + 1), 256)
+     COMPUTE WS-G = FUNCTION MOD(WS-P(WS-BASE + WS-A + 1), 12)
+     CALL "F351-SIMPLEX-CORNER" USING WS-X0 WS-Y0 WS-G WS-N0
+     COMPUTE WS-K = FUNCTION MOD(WS-JJ + WS-J1, 256)
+     COMPUTE WS-A = FUNCTION MOD(WS-II + WS-I1 + WS-P(WS-BASE + WS-K + 1), 256)
+     COMPUTE WS-G = FUNCTION MOD(WS-P(WS-BASE + WS-A + 1), 12)
+     CALL "F351-SIMPLEX-CORNER" USING WS-X1 WS-Y1 WS-G WS-N1
+     COMPUTE WS-K = FUNCTION MOD(WS-JJ + 1, 256)
+     COMPUTE WS-A = FUNCTION MOD(WS-II + 1 + WS-P(WS-BASE + WS-K + 1), 256)
+     COMPUTE WS-G = FUNCTION MOD(WS-P(WS-BASE + WS-A + 1), 12)
+     CALL "F351-SIMPLEX-CORNER" USING WS-X2 WS-Y2 WS-G WS-N2
+     CALL STATIC "cc_f64_add" USING BY REFERENCE WS-N0 WS-N1 WS-T
+     CALL STATIC "cc_f64_add" USING BY REFERENCE WS-T WS-N2 WS-SUM
+     CALL STATIC "cc_f64_mul" USING BY REFERENCE WS-SEVENTY WS-SUM WS-T
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-T L-RESULT
+     GOBACK.
+ END PROGRAM F351-SIMPLEX-T.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F351-SIMPLEX.
+*> USING x, y, noise out: BIOME_INFO_NOISE (slot 1 of F351-SIMPLEX-T).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SLOT                BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-RESULT               FLOAT-LONG.
+ PROCEDURE DIVISION USING L-X L-Y L-RESULT.
+     CALL "F351-SIMPLEX-T" USING WS-SLOT L-X L-Y L-RESULT
+     GOBACK.
+ END PROGRAM F351-SIMPLEX.

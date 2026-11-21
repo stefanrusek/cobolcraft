@@ -54,14 +54,14 @@
      CALL "CV-UNTIL-PLAY" USING CONVH WS-ALICE WS-JOINED
      CALL "CV-ATTACH" USING CONVH WS-BOBBY
      CALL "CV-UNTIL-PLAY" USING CONVH WS-BOBBY WS-JOINED
-     MOVE "/clock 6000" TO WS-LINE
-     MOVE 11 TO WS-LINE-LENGTH
+     MOVE "/time set 6000" TO WS-LINE
+     MOVE 19 TO WS-LINE-LENGTH
      PERFORM SAY-AND-WAIT
      CALL "U11-SKY" USING CONVH WS-ALICE WS-CLEAR-SKY
 
 *>   US11-2 and US11-1: a hailstorm, then drizzle, forced by the weather command.
-     MOVE "/skies main hailstorm" TO WS-LINE
-     MOVE 21 TO WS-LINE-LENGTH
+     MOVE "/weather thunder" TO WS-LINE
+     MOVE 16 TO WS-LINE-LENGTH
      PERFORM SAY-AND-WAIT
      MOVE "acceptance US11-2 given two Players in the main dimension when the weather becomes a "
          & "hailstorm (weather command) then both see the hailstorm" TO TL-CASE
@@ -70,8 +70,8 @@
      PERFORM BOTH-KINDS
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE "/skies main drizzle" TO WS-LINE
-     MOVE 19 TO WS-LINE-LENGTH
+     MOVE "/weather rain" TO WS-LINE
+     MOVE 13 TO WS-LINE-LENGTH
      PERFORM SAY-AND-WAIT
      MOVE "acceptance US11-2 given two Players in the main dimension when the weather becomes "
          & "drizzle then both see drizzle" TO TL-CASE
@@ -89,8 +89,8 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE "/skies main clear" TO WS-LINE
-     MOVE 17 TO WS-LINE-LENGTH
+     MOVE "/weather clear" TO WS-LINE
+     MOVE 14 TO WS-LINE-LENGTH
      PERFORM SAY-AND-WAIT
      CALL "U11-SKY" USING CONVH WS-ALICE WS-SKY
      MOVE "acceptance US11-1 when the weather turns clear then neither client draws "
@@ -106,8 +106,8 @@
 
 *>   With weather changes on, a clear sky timed for 1 second (20 ticks) ends on its own; both
 *>   clients see the new kind in the same frame.
-     MOVE "/skies main clear 1" TO WS-LINE
-     MOVE 19 TO WS-LINE-LENGTH
+     MOVE "/weather clear 1s" TO WS-LINE
+     MOVE 17 TO WS-LINE-LENGTH
      PERFORM SAY-AND-WAIT
      MOVE 1 TO WS-SAME
      MOVE 0 TO WS-CHANGED
@@ -147,8 +147,8 @@
      MOVE CORE-SETTINGS TO SP-SETTINGS
      CALL "CV-HOST-OPEN" USING CONVH WS-ALICE WS-FOLDER WS-FOLDER-LENGTH WS-MODE
      CALL "CV-UNTIL-PLAY" USING CONVH WS-ALICE WS-JOINED
-     MOVE "/skies main drizzle 1" TO WS-LINE
-     MOVE 21 TO WS-LINE-LENGTH
+     MOVE "/weather rain 1s" TO WS-LINE
+     MOVE 16 TO WS-LINE-LENGTH
      PERFORM SAY-AND-WAIT
      MOVE 80 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
@@ -166,8 +166,9 @@
      STOP RUN.
 
  SAY-AND-WAIT.
+*>   T4803: the rain and thunder levels ease by 0.01 a tick (33 section 4), so a kind shows after about 50 ticks.
      CALL "CV-SAY" USING CONVH WS-ALICE WS-LINE WS-LINE-LENGTH
-     MOVE 5 TO WS-N
+     MOVE 120 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
      .
 

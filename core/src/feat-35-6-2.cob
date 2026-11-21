@@ -1,0 +1,272 @@
+*> The shared enumerations and helpers of the underground features (docs/protocol/35-worldgen-features-6-underground.md sections 2.1, 2.2 and 2.4). Directions are ordinals of Direction.values():
+*> DOWN 0, UP 1, NORTH 2, SOUTH 3, WEST 4, EAST 5 (FEATDIR.cpy); rotations NONE 0, CLOCKWISE_90 1, CLOCKWISE_180 2, COUNTERCLOCKWISE_90 3; axes X 0, Y 1, Z 2. Util.shuffle is F355-SHUFFLE, clampedMap is
+*> FX-CLAMPED-MAP, Mth.sin and Mth.cos are cc_f64_sin_tab and cc_f64_cos_tab, the level-bound helpers of 2.3 are SP-EMPTY-WATER, SP-IS-BASE and SP-BASE-PLACE (feat-35-6.cob), SC-SCAN is scanDirection.
+*> Entry points:
+*>   F356-DIR-STEP USING dir, dx, dy, dz out (the unit step)
+*>   F356-CLOCKWISE USING dir, out (NORTH to EAST to SOUTH to WEST to NORTH; DOWN and UP are returned unchanged)
+*>   F356-ROTATE USING rotation, dir, out (Rotation.rotate: a vertical direction is unchanged, else rotation clockwise quarter turns)
+*>   F356-AXIS-NEGATIVE USING axis, dir out (X to WEST, Y to DOWN, Z to NORTH)
+*>   F356-RANDOM-DIR USING xoroshiro state, dir out (nextInt(6)); F356-RANDOM-ROTATION USING state, rotation out (nextInt(4)); F356-RANDOM-INDEX USING state, size, index out (Util.getRandom: nextInt(size), one
+*>     draw even for one element)
+*>   F356-BETWEEN-INCL USING state, lo, hi, value out (Mth.randomBetweenInclusive: nextInt(hi - lo + 1) + lo)
+*>   F356-CLAMPED-LERP USING t, a, b, result out; F356-INVERSE-LERP USING v, lo, hi, result out (doubles)
+*>   F356-NORMAL USING state, mean, deviation, result out (Mth.normal in single precision); F356-CLAMPED-NORMAL USING state, mean, deviation, min, max, result out (ClampedNormalFloat.sample)
+*>   F356-COLUMN-CREATE USING floor present, floor, ceiling present, ceiling, kind out (1 range, 2 ray up from a floor, 3 ray down from a ceiling, 4 line), height out (ceiling - floor - 1 of a range, else 0),
+*>     ok out (0 for a range of negative height: the IllegalArgumentException of the constructor)
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F356-DIR-STEP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY FEATDIR.
+ 01 WS-D1                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-DX                   BINARY-LONG.
+ 01 L-DY                   BINARY-LONG.
+ 01 L-DZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIR L-DX L-DY L-DZ.
+     COMPUTE WS-D1 = L-DIR + 1
+     MOVE FDR-DX(WS-D1) TO L-DX
+     MOVE FDR-DY(WS-D1) TO L-DY
+     MOVE FDR-DZ(WS-D1) TO L-DZ
+     GOBACK.
+ END PROGRAM F356-DIR-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F356-CLOCKWISE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIR L-OUT.
+     EVALUATE L-DIR
+         WHEN 2
+             MOVE 5 TO L-OUT
+         WHEN 5
+             MOVE 3 TO L-OUT
+         WHEN 3
+             MOVE 4 TO L-OUT
+         WHEN 4
+             MOVE 2 TO L-OUT
+         WHEN OTHER
+             MOVE L-DIR TO L-OUT
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM F356-CLOCKWISE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F356-ROTATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-NEXT                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROT                  BINARY-LONG.
+ 01 L-DIR                  BINARY-LONG.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROT L-DIR L-OUT.
+     MOVE L-DIR TO L-OUT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-ROT
+         CALL "F356-CLOCKWISE" USING L-OUT WS-NEXT
+         MOVE WS-NEXT TO L-OUT
+     END-PERFORM
+     GOBACK.
+ END PROGRAM F356-ROTATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F356-AXIS-NEGATIVE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-AXIS                 BINARY-LONG.
+ 01 L-DIR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-AXIS L-DIR.
+     EVALUATE L-AXIS
+         WHEN 0
+             MOVE 4 TO L-DIR
+         WHEN 1
+             MOVE 0 TO L-DIR
+         WHEN OTHER
+             MOVE 2 TO L-DIR
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM F356-AXIS-NEGATIVE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F356-RANDOM-INDEX.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
+ 01 L-SIZE                 BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-SIZE L-INDEX.
+     CALL "WGR-NEXT-INT-BOUND" USING L-STATE L-SIZE L-INDEX
+     GOBACK.
+ END PROGRAM F356-RANDOM-INDEX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F356-RANDOM-DIR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SIX                 BINARY-LONG VALUE 6.
+ LINKAGE SECTION.
+ COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
+ 01 L-DIR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-DIR.
+     CALL "F356-RANDOM-INDEX" USING L-STATE WS-SIX L-DIR
+     GOBACK.
+ END PROGRAM F356-RANDOM-DIR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F356-RANDOM-ROTATION.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-FOUR                BINARY-LONG VALUE 4.
+ LINKAGE SECTION.
+ COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
+ 01 L-ROT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-ROT.
+     CALL "F356-RANDOM-INDEX" USING L-STATE WS-FOUR L-ROT
+     GOBACK.
+ END PROGRAM F356-RANDOM-ROTATION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F356-BETWEEN-INCL.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
+ 01 L-MIN-V                   BINARY-LONG.
+ 01 L-MAX-V                   BINARY-LONG.
+ 01 L-VALUE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-MIN-V L-MAX-V L-VALUE.
+     COMPUTE WS-N = L-MAX-V - L-MIN-V + 1
+     CALL "WGR-NEXT-INT-BOUND" USING L-STATE WS-N WS-D
+     COMPUTE L-VALUE = WS-D + L-MIN-V
+     GOBACK.
+ END PROGRAM F356-BETWEEN-INCL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F356-INVERSE-LERP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-V                    FLOAT-LONG.
+ 01 L-LO                   FLOAT-LONG.
+ 01 L-HI                   FLOAT-LONG.
+ 01 L-R                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-V L-LO L-HI L-R.
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE L-V L-LO WS-A
+     CALL STATIC "cc_f64_sub" USING BY REFERENCE L-HI L-LO WS-B
+     CALL STATIC "cc_f64_div" USING BY REFERENCE WS-A WS-B L-R
+     GOBACK.
+ END PROGRAM F356-INVERSE-LERP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F356-CLAMPED-LERP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-T                    FLOAT-LONG.
+ 01 L-A                    FLOAT-LONG.
+ 01 L-B                    FLOAT-LONG.
+ 01 L-R                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-T L-A L-B L-R.
+     EVALUATE TRUE
+         WHEN L-T < WS-ZERO
+             MOVE L-A TO L-R
+         WHEN L-T > WS-ONE
+             MOVE L-B TO L-R
+         WHEN OTHER
+             CALL STATIC "cc_f64_sub" USING BY REFERENCE L-B L-A WS-A
+             CALL STATIC "cc_f64_mul" USING BY REFERENCE L-T WS-A WS-B
+             CALL STATIC "cc_f64_add" USING BY REFERENCE L-A WS-B L-R
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM F356-CLAMPED-LERP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F356-NORMAL.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-G                   FLOAT-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-P                   FLOAT-LONG.
+ 01 WS-MUL                 BINARY-LONG VALUE 3.
+ 01 WS-ADD                 BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
+ 01 L-MEAN                 FLOAT-LONG.
+ 01 L-DEV                  FLOAT-LONG.
+ 01 L-R                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-STATE L-MEAN L-DEV L-R.
+     CALL "F351-NEXT-GAUSSIAN" USING L-STATE WS-G
+     CALL STATIC "cc_f64_f32_round" USING BY REFERENCE WS-G WS-F
+     CALL "FX-OP" USING WS-MUL WS-F L-DEV WS-P
+     CALL "FX-OP" USING WS-ADD L-MEAN WS-P L-R
+     GOBACK.
+ END PROGRAM F356-NORMAL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F356-CLAMPED-NORMAL.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-V                   FLOAT-LONG.
+ LINKAGE SECTION.
+ COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
+ 01 L-MEAN                 FLOAT-LONG.
+ 01 L-DEV                  FLOAT-LONG.
+ 01 L-MIN                  FLOAT-LONG.
+ 01 L-MAX                  FLOAT-LONG.
+ 01 L-R                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-STATE L-MEAN L-DEV L-MIN L-MAX L-R.
+     CALL "F356-NORMAL" USING L-STATE L-MEAN L-DEV WS-V
+     EVALUATE TRUE
+         WHEN WS-V < L-MIN
+             MOVE L-MIN TO L-R
+         WHEN WS-V > L-MAX
+             MOVE L-MAX TO L-R
+         WHEN OTHER
+             MOVE WS-V TO L-R
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM F356-CLAMPED-NORMAL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F356-COLUMN-CREATE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-HAS-FLOOR            BINARY-LONG.
+ 01 L-FLOOR                BINARY-LONG.
+ 01 L-HAS-CEIL             BINARY-LONG.
+ 01 L-CEIL                 BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-HAS-FLOOR L-FLOOR L-HAS-CEIL L-CEIL L-KIND L-HEIGHT L-OK.
+     MOVE 1 TO L-OK
+     MOVE 0 TO L-HEIGHT
+     EVALUATE TRUE
+         WHEN L-HAS-FLOOR = 1 AND L-HAS-CEIL = 1
+             MOVE 1 TO L-KIND
+             COMPUTE L-HEIGHT = L-CEIL - L-FLOOR - 1
+             IF L-HEIGHT < 0
+                 MOVE 0 TO L-OK
+             END-IF
+         WHEN L-HAS-FLOOR = 1
+             MOVE 2 TO L-KIND
+         WHEN L-HAS-CEIL = 1
+             MOVE 3 TO L-KIND
+         WHEN OTHER
+             MOVE 4 TO L-KIND
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM F356-COLUMN-CREATE.

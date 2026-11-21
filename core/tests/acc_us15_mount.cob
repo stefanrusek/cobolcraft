@@ -1,0 +1,358 @@
+ *> Acceptance test, mobs riding mobs (docs/protocol/18 sections 1.1.1, 2.2, 8.4; 20 section 7.1; lane 002-lane-mobsb7, T9500): a skeleton rides a spider on the seat of the
+*> attachment table (y 0.765 less the riding offset 0.7), the vehicle's viewers get Set Passengers, a rider follows its vehicle, the vehicle walks to the rider's target, the ride ends
+*> when either side is removed or dying, a species with no seat takes no rider, and a spawned spider has the skeleton jockey with probability 1/100.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US15-MOUNT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BRWORLD.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-STYPE               BINARY-LONG.
+ 01 WS-KTYPE               BINARY-LONG.
+ 01 WS-PTYPE               BINARY-LONG.
+ 01 WS-ZTYPE               BINARY-LONG.
+ 01 WS-CTYPE               BINARY-LONG.
+ 01 WS-SP                  BINARY-LONG.
+ 01 WS-SK                  BINARY-LONG.
+ 01 WS-CKA BINARY-LONG.
+ 01 WS-CKB BINARY-LONG.
+ 01 WS-CKC BINARY-LONG.
+ 01 WS-SEED BINARY-DOUBLE UNSIGNED.
+ COPY XORO.
+ 01 WS-SP2                BINARY-LONG.
+ 01 WS-SK2                 BINARY-LONG.
+ 01 WS-PIG                 BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-X0                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-WANTED              BINARY-LONG VALUE 109.
+ 01 WS-EXPECTED            PIC X(1024).
+ 01 WS-HEX                 PIC X(8).
+ 01 WS-HEX2                PIC X(8).
+ 01 WS-BYTE                BINARY-LONG.
+ 01 WS-CH                  PIC X.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-HP                  FLOAT-SHORT.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "N" TO TL-MODE
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE PL-CONN(WS-PLAYER) TO WS-CONN
+     MOVE "minecraft:spider" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-STYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:skeleton" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-KTYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:pig" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-PTYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:zombie" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZTYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "minecraft:chicken" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-CTYPE WS-ENTITY-ROW WS-STATUS
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     MOVE 2 TO BW-DIFFICULTY
+     COMPUTE WS-X0 = WS-X + 3
+*>   The spider and the skeletons are mounted by hand (a spawned spider carries a skeleton with probability 1/100: the case at the end).
+     CALL "MOB-SPAWN" USING WS-DIM WS-KTYPE WS-X0 WS-Y WS-Z WS-YAW WS-SK
+     CALL "MOB-SPAWN" USING WS-DIM WS-KTYPE WS-X0 WS-Y WS-Z WS-YAW WS-SK2
+     CALL "MOB-SPAWN" USING WS-DIM WS-PTYPE WS-X0 WS-Y WS-Z WS-YAW WS-PIG
+     CALL "MOB-SPAWN" USING WS-DIM WS-STYPE WS-X0 WS-Y WS-Z WS-YAW WS-SP
+     CALL "MOB-MOUNT" USING WS-SK WS-PIG WS-OK
+     MOVE "acceptance US15 18§8.4 a pig takes no mob rider" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "MOB-MOUNT" USING WS-SK WS-SP WS-OK
+     MOVE "acceptance US15 18§8.4 a skeleton mounts a spider" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 18§8.4 the rider row and the vehicle row point at each other" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = WS-SP * 10000 + WS-SK
+     COMPUTE TL-OBSERVED-N = EN-MOUNT(WS-SK) * 10000 + EN-PASS(WS-SP)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 1.1.1 seat 0.765 less the riding offset 0.7 (thousandths)" TO TL-CASE
+     MOVE 65 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = (EN-Y(WS-SK) - EN-Y(WS-SP)) * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "MOB-MOUNT" USING WS-SK2 WS-SP WS-OK
+     MOVE "acceptance US15 18§8.4 a vehicle with a rider takes no second" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "MOB-MOUNT" USING WS-SK WS-SK2 WS-OK
+     MOVE "acceptance US15 18§8.4 a mob that rides takes no second ride" TO TL-CASE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE WS-SP TO WS-SP2
+     CALL "MOB-MOUNT" USING WS-SP WS-SP2 WS-OK
+     MOVE "acceptance US15 18§8.4 nothing rides itself" TO TL-CASE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE EN-ID(WS-SP) TO WS-BYTE
+     MOVE FUNCTION CHAR(WS-BYTE + 1) TO WS-CH
+     MOVE FUNCTION LOWER-CASE(FUNCTION HEX-OF(WS-CH)) TO WS-HEX(1:2)
+     MOVE EN-ID(WS-SK) TO WS-BYTE
+     MOVE FUNCTION CHAR(WS-BYTE + 1) TO WS-CH
+     MOVE FUNCTION LOWER-CASE(FUNCTION HEX-OF(WS-CH)) TO WS-HEX2(1:2)
+     MOVE SPACES TO WS-EXPECTED
+     STRING WS-HEX(1:2) "01" WS-HEX2(1:2) DELIMITED BY SIZE INTO WS-EXPECTED
+     MOVE "acceptance US15 18§8.4 the viewers get Set Passengers with the rider" TO TL-CASE
+     CALL "RC-CHECK-HEX" USING WS-CONN TL-CASE WS-WANTED WS-EXPECTED
+*>   The rider follows its vehicle.
+     COMPUTE EN-X(WS-SP) = EN-X(WS-SP) + 2
+     CALL "STDMOB-STEP" USING WS-SK
+     MOVE "acceptance US15 18§8.4 the rider is put on its vehicle (thousandths of x)" TO TL-CASE
+     COMPUTE TL-EXPECTED-N ROUNDED = EN-X(WS-SP) * 1000
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-X(WS-SK) * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Getting off tells the viewers.
+     CALL "MOB-MOUNT-DROP" USING WS-SK
+     MOVE "acceptance US15 18§8.4 the rider gets off" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = EN-MOUNT(WS-SK) + EN-PASS(WS-SP)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO WS-EXPECTED
+     STRING WS-HEX(1:2) "00" DELIMITED BY SIZE INTO WS-EXPECTED
+     MOVE "acceptance US15 18§8.4 Set Passengers with none" TO TL-CASE
+     CALL "RC-CHECK-HEX" USING WS-CONN TL-CASE WS-WANTED WS-EXPECTED
+*>   The vehicle dies: the rider carries on by itself.
+     CALL "MOB-MOUNT" USING WS-SK WS-SP WS-OK
+     MOVE 0 TO EN-HEALTH(WS-SP)
+     CALL "STDMOB-STEP" USING WS-SK
+     MOVE "acceptance US15 18§8.4 a dying vehicle ends the ride" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = EN-MOUNT(WS-SK) + EN-PASS(WS-SP)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The rider dies: the vehicle is free, it acts by itself.
+     MOVE 20 TO EN-HEALTH(WS-SP)
+     CALL "MOB-MOUNT" USING WS-SK WS-SP WS-OK
+     MOVE 0 TO EN-HEALTH(WS-SK)
+     CALL "STDMOB-STEP" USING WS-SP
+     MOVE "acceptance US15 18§8.4 a dying rider frees the vehicle" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-PASS(WS-SP) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 20 TO EN-HEALTH(WS-SK)
+     MOVE 0 TO EN-MOUNT(WS-SK)
+*>   A removed vehicle leaves the rider standing; a removed rider leaves the vehicle empty.
+     CALL "MOB-MOUNT" USING WS-SK WS-SP WS-OK
+     CALL "ENTITY-REMOVE" USING WS-SP
+     MOVE "acceptance US15 18§8.4 a removed vehicle leaves the rider" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-MOUNT(WS-SK) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "MOB-SPAWN" USING WS-DIM WS-STYPE WS-X0 WS-Y WS-Z WS-YAW WS-SP
+     CALL "MOB-MOUNT" USING WS-SK WS-SP WS-OK
+     CALL "ENTITY-REMOVE" USING WS-SK
+     MOVE "acceptance US15 18§8.4 a removed rider leaves the vehicle empty" TO TL-CASE
+     MOVE EN-PASS(WS-SP) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A chicken jockey: the zombie on the chicken hits the player in reach, and the chicken walks to the player's side.
+     CALL "ENTITY-REMOVE" USING WS-SP
+     COMPUTE WS-X0 = PL-X(WS-PLAYER) + 8
+     CALL "MOB-SPAWN" USING WS-DIM WS-ZTYPE WS-X0 WS-Y WS-Z WS-YAW WS-SK
+     CALL "MOB-SPAWN" USING WS-DIM WS-CTYPE WS-X0 WS-Y WS-Z WS-YAW WS-SP
+     MOVE 1 TO WS-FOUND
+     MOVE WS-X0 TO WS-X
+     CALL "MOB-MOUNT" USING WS-SK WS-SP WS-OK
+     MOVE "acceptance US15 20§4.1 a zombie mounts a chicken" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE EN-Y(WS-SP) TO PL-Y(WS-PLAYER)
+     MOVE PL-Z(WS-PLAYER) TO EN-Z(WS-SP)
+     PERFORM 4 TIMES
+         CALL "STDMOB-STEP" USING WS-SK
+         CALL "STDMOB-STEP" USING WS-SP
+     END-PERFORM
+     MOVE "acceptance US15 18§2.2 the chicken walks to the target of its rider" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-X(WS-SP) < WS-X
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE EN-X(WS-SP) = PL-X(WS-PLAYER) + 0.5
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-PLAYER) EN-COOLDOWN(WS-SK)
+     CALL "STDMOB-STEP" USING WS-SK
+     MOVE "acceptance US15 20§4.1 the zombie rider hits the player in reach" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF PL-HEALTH(WS-PLAYER) < 20
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 20§4.1 and its attack timer runs" TO TL-CASE
+     MOVE 20 TO TL-EXPECTED-N
+     MOVE EN-COOLDOWN(WS-SK) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Finalizing a spider: with probability 1/100 it carries a finalized skeleton (a bow in the main hand).
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2000 OR WS-FOUND = 1
+         MOVE WS-I TO WS-SEED
+         CALL "XORO-SEED" USING WS-SEED XR-STATE
+         CALL "MOB-SPAWN" USING WS-DIM WS-STYPE WS-X0 WS-Y WS-Z WS-YAW WS-SP
+         CALL "STDMOB-FINALIZE" USING XR-STATE WS-SP
+         IF EN-PASS(WS-SP) > 0
+             MOVE 1 TO WS-FOUND
+         ELSE
+             CALL "ENTITY-REMOVE" USING WS-SP
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 20§7.1 a finalized spider can carry a skeleton" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-FOUND TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE EN-PASS(WS-SP) TO WS-SK
+     MOVE "acceptance US15 20§7.1 the jockey is a skeleton riding that spider" TO TL-CASE
+     MOVE WS-KTYPE TO TL-EXPECTED-N
+     MOVE EN-TYPE(WS-SK) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 20§7.1 the jockey is finalized (bow, hand 4)" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE EN-HAND(WS-SK) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-SP
+     CALL "ENTITY-REMOVE" USING WS-SK
+*>   Finalizing a baby zombie with no chicken near: the second 0.05 draw creates a chicken jockey.
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4000 OR WS-FOUND = 1
+         MOVE WS-I TO WS-SEED
+         CALL "XORO-SEED" USING WS-SEED XR-STATE
+         CALL "MOB-SPAWN" USING WS-DIM WS-ZTYPE WS-X0 WS-Y WS-Z WS-YAW WS-SK
+         CALL "STDMOB-FINALIZE" USING XR-STATE WS-SK
+         IF EN-MOUNT(WS-SK) > 0
+             MOVE 1 TO WS-FOUND
+         ELSE
+             CALL "ENTITY-REMOVE" USING WS-SK
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 20§4.1 a baby zombie can arrive on a new chicken jockey" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-FOUND TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE EN-MOUNT(WS-SK) TO WS-SP
+     MOVE "acceptance US15 20§4.1 the mount is a chicken flagged as jockey" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = WS-CTYPE * 10 + 1
+     COMPUTE TL-OBSERVED-N = EN-TYPE(WS-SP) * 10 + EN-JOCKEY(WS-SP)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 20§4.1 the zombie of the jockey is a baby" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE EN-VARIANT(WS-SK) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-SK
+     CALL "ENTITY-REMOVE" USING WS-SP
+*>   With a chicken within (5, 3, 5) the first draw rides that one; a ridden chicken or one beyond the box is not taken.
+     CALL "MOB-SPAWN" USING WS-DIM WS-CTYPE WS-X0 WS-Y WS-Z WS-YAW WS-CKA
+     CALL "MOB-SPAWN" USING WS-DIM WS-CTYPE WS-X0 WS-Y WS-Z WS-YAW WS-CKB
+     COMPUTE EN-X(WS-CKB) = WS-X0 + 40
+     CALL "MOB-SPAWN" USING WS-DIM WS-ZTYPE WS-X0 WS-Y WS-Z WS-YAW WS-SK2
+     CALL "MOB-MOUNT" USING WS-SK2 WS-CKA WS-OK
+     CALL "MOB-SPAWN" USING WS-DIM WS-CTYPE WS-X0 WS-Y WS-Z WS-YAW WS-CKC
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4000 OR WS-FOUND = 1
+         MOVE WS-I TO WS-SEED
+         CALL "XORO-SEED" USING WS-SEED XR-STATE
+         CALL "MOB-SPAWN" USING WS-DIM WS-ZTYPE WS-X0 WS-Y WS-Z WS-YAW WS-SK
+         CALL "STDMOB-FINALIZE" USING XR-STATE WS-SK
+         IF EN-MOUNT(WS-SK) = WS-CKC
+             MOVE 1 TO WS-FOUND
+         ELSE
+             IF EN-MOUNT(WS-SK) > 0
+                 CALL "ENTITY-REMOVE" USING EN-MOUNT(WS-SK)
+             END-IF
+             CALL "ENTITY-REMOVE" USING WS-SK
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 20§4.1 the first draw rides the free chicken in the box" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-FOUND TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 20§4.1 and flags it" TO TL-CASE
+     MOVE EN-JOCKEY(WS-CKC) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A chicken jockey lays no eggs: its egg timer stays, a free chicken's counts down.
+     MOVE 5000 TO EN-EGG(WS-CKC) EN-EGG(WS-CKB)
+     MOVE 0 TO EN-JOCKEY(WS-CKB)
+     MOVE 0 TO EN-MOBAGE(WS-CKB) EN-VARIANT(WS-CKB) EN-MOBAGE(WS-CKC) EN-VARIANT(WS-CKC)
+     CALL "MOB-LIFE-TICK" USING WS-CKC WS-X WS-Z WS-N
+     CALL "MOB-LIFE-TICK" USING WS-CKB WS-X WS-Z WS-N
+     MOVE "acceptance US15 20§4.1 a chicken jockey lays no eggs (timer stays)" TO TL-CASE
+     MOVE 5000 TO TL-EXPECTED-N
+     MOVE EN-EGG(WS-CKC) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 19§2.5 a free chicken's timer counts down" TO TL-CASE
+     MOVE 4999 TO TL-EXPECTED-N
+     MOVE EN-EGG(WS-CKB) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM ACC-US15-MOUNT.
+
+ COPY CORETEST.
+ COPY MOBSPTEST.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RC-CHECK-HEX.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-AREA                PIC X(65536) BASED.
+ 01 WS-COPY                PIC X(512).
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-TEXT                PIC X(4096).
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-CASE                 PIC X(240).
+ 01 L-WANTED               BINARY-LONG.
+ 01 L-EXPECTED             PIC X(1024).
+ PROCEDURE DIVISION USING L-ID L-CASE L-WANTED L-EXPECTED.
+     MOVE "none" TO WS-HEX
+     MOVE 0 TO WS-FOUND WS-OUTCOME
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID = L-WANTED AND WS-FOUND = 0
+             MOVE 1 TO WS-FOUND
+             SET ADDRESS OF WS-AREA TO PK-ADDR
+             COMPUTE WS-COUNT = PK-LENGTH - PK-POS
+             MOVE SPACES TO WS-COPY
+             MOVE WS-AREA(PK-POS + 1:WS-COUNT) TO WS-COPY
+             CALL "TEST-HEX-OF" USING WS-COPY WS-COUNT WS-HEX
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     MOVE WS-HEX TO WS-TEXT
+     MOVE L-CASE TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE L-EXPECTED TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     GOBACK.
+ END PROGRAM RC-CHECK-HEX.

@@ -1,0 +1,8731 @@
+*> Acceptance test of docs/protocol/34-entity-models-8-aquatic-nautilus-boats.md section 5 (fish): 5.1 cod, 5.2 salmon (three sizes through MeshTransformer.scaling), 5.3 pufferfish (three models), 5.4 tropical fish (base and pattern layers, grow 0.008),
+*> the meshes (every part, pose and box of the tables), setupAnim of every fish in water and out of it, setupRotations (ENTITY-FISH-SEQUENCE), the salmon size ids (clamped), the pufferfish model and shadow by puff state, the tropical fish packed variant
+*> (12 patterns, the sparse id map with default kob, the dye id map with default white, the tints and pattern textures), and the worked examples E7 to E10 and the Validation rows for the fish.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTMODEL-34-8-5.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLEMM.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-E                   FLOAT-LONG.
+ 01 WS-O                   FLOAT-LONG.
+ 01 WS-IN.
+    05 WS-IV                FLOAT-LONG OCCURS 32 TIMES.
+ 01 WS-OUT.
+    05 WS-OV                FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-LAYER              PIC X(32).
+ 01 WS-OK                 BINARY-LONG.
+ 01 WS-PARTS              BINARY-LONG.
+ 01 WS-CUBES              BINARY-LONG.
+ 01 WS-P                  BINARY-LONG.
+ 01 WS-PN                 PIC X(24).
+ COPY EMCHKW.
+
+ 01 WS-X32               PIC X(32).
+ 01 WS-X32B              PIC X(32).
+ 01 WS-X120              PIC X(120).
+ 01 WS-X24               PIC X(24).
+ 01 WS-X40               PIC X(40).
+ 01 WS-FL                BINARY-LONG.
+ COPY CLSTATE.
+ COPY CLMODELS.
+ 01 WS-RMODEL              BINARY-LONG.
+ 01 WS-RKEY                PIC X(24).
+ 01 WS-RR                  FLOAT-LONG.
+ 01 WS-RG                  FLOAT-LONG.
+ 01 WS-RB                  FLOAT-LONG.
+ 01 WS-RCODE               BINARY-LONG.
+ 01 WS-RPATH               PIC X(64).
+ 01 WS-RK20                PIC X(20).
+ PROCEDURE DIVISION.
+     MOVE "COD" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer COD is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§5 Fish 5 COD" TO CK-PREFIX
+     MOVE "P body root 0 22 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body 0 0 -1 -2 0 2 4 7 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P head root 0 22 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C head 11 0 -1 -2 -3 2 4 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P nose root 0 22 -3 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C nose 0 0 -1 -2 -1 2 3 1 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_fin root -1 23 0 0 0 -0.7853982" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_fin 22 1 -2 0 -1 2 0 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_fin root 1 23 0 0 0 0.7853982" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_fin 22 4 0 0 -1 2 0 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P tail_fin root 0 22 7 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C tail_fin 22 3 0 -2 0 0 4 4 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_fin root 0 20 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_fin 20 -6 0 -1 -1 0 1 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "5 COD: parts below the root" TO WS-NAME
+     MOVE 7 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 COD: cuboids" TO WS-NAME
+     MOVE 7 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 COD: texture width" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 COD: texture height" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer SALMON is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§5 Fish 5 SALMON" TO CK-PREFIX
+     MOVE "P body_front root 0 20 -7.2 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body_front 0 0 -1.5 -2.5 0 3 5 8 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P body_back root 0 20 0.8000002 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body_back 0 13 -1.5 -2.5 0 3 5 8 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P head root 0 20 -7.2 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C head 22 0 -1 -2 -3 2 4 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P back_fin body_back 0 0 8 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C back_fin 20 10 0 -2.5 0 0 5 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_front_fin body_front 0 -4.5 5 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_front_fin 2 1 0 0 0 0 2 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_back_fin body_back 0 -4.5 -1 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_back_fin 0 2 0 0 0 0 2 4 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_fin root -1.5 21.5 -7.2 0 0 -0.7853982" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_fin -4 0 -2 0 0 2 0 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_fin root 1.5 21.5 -7.2 0 0 0.7853982" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_fin 0 0 0 0 0 2 0 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "5 SALMON: parts below the root" TO WS-NAME
+     MOVE 8 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 SALMON: cuboids" TO WS-NAME
+     MOVE 8 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 SALMON: texture width" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 SALMON: texture height" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer SALMON_SMALL is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§5 Fish 5 SALMON_SMALL" TO CK-PREFIX
+     MOVE "P body_front root 0.0 22.008 -3.6 0 0 0 0.5 0.5 0.5" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body_front 0 0 -1.5 -2.5 0 3 5 8 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P body_back root 0.0 22.008 0.4000001 0 0 0 0.5 0.5 0.5" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body_back 0 13 -1.5 -2.5 0 3 5 8 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P head root 0.0 22.008 -3.6 0 0 0 0.5 0.5 0.5" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C head 22 0 -1 -2 -3 2 4 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P back_fin body_back 0 0 8 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C back_fin 20 10 0 -2.5 0 0 5 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_front_fin body_front 0 -4.5 5 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_front_fin 2 1 0 0 0 0 2 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_back_fin body_back 0 -4.5 -1 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_back_fin 0 2 0 0 0 0 2 4 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_fin root -0.75 22.758 -3.6 0 0 -0.7853982 0.5 0.5 0.5" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_fin -4 0 -2 0 0 2 0 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_fin root 0.75 22.758 -3.6 0 0 0.7853982 0.5 0.5 0.5" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_fin 0 0 0 0 0 2 0 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "5 SALMON_SMALL: parts below the root" TO WS-NAME
+     MOVE 8 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 SALMON_SMALL: cuboids" TO WS-NAME
+     MOVE 8 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 SALMON_SMALL: texture width" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 SALMON_SMALL: texture height" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON_LARGE" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer SALMON_LARGE is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§5 Fish 5 SALMON_LARGE" TO CK-PREFIX
+     MOVE "P body_front root 0.0 17.992 -10.8 0 0 0 1.5 1.5 1.5" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body_front 0 0 -1.5 -2.5 0 3 5 8 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P body_back root 0.0 17.992 1.2000003 0 0 0 1.5 1.5 1.5" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body_back 0 13 -1.5 -2.5 0 3 5 8 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P head root 0.0 17.992 -10.8 0 0 0 1.5 1.5 1.5" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C head 22 0 -1 -2 -3 2 4 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P back_fin body_back 0 0 8 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C back_fin 20 10 0 -2.5 0 0 5 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_front_fin body_front 0 -4.5 5 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_front_fin 2 1 0 0 0 0 2 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_back_fin body_back 0 -4.5 -1 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_back_fin 0 2 0 0 0 0 2 4 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_fin root -2.25 20.242 -10.8 0 0 -0.7853982 1.5 1.5 1.5" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_fin -4 0 -2 0 0 2 0 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_fin root 2.25 20.242 -10.8 0 0 0.7853982 1.5 1.5 1.5" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_fin 0 0 0 0 0 2 0 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "5 SALMON_LARGE: parts below the root" TO WS-NAME
+     MOVE 8 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 SALMON_LARGE: cuboids" TO WS-NAME
+     MOVE 8 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 SALMON_LARGE: texture width" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 SALMON_LARGE: texture height" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer PUFFERFISH_SMALL is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§5 Fish 5 PUFFERFISH_SMALL" TO CK-PREFIX
+     MOVE "P body root 0 23 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body 0 27 -1.5 -2 -1.5 3 2 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_eye root 0 20 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_eye 24 6 -1.5 0 -1.5 1 1 1 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_eye root 0 20 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_eye 28 6 0.5 0 -1.5 1 1 1 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P back_fin root 0 22 1.5 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C back_fin -3 0 -1.5 0 0 3 0 3 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_fin root -1.5 22 -1.5 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_fin 25 0 -1 0 0 1 0 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_fin root 1.5 22 -1.5 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_fin 25 0 0 0 0 1 0 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "5 PUFFERFISH_SMALL: parts below the root" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 PUFFERFISH_SMALL: cuboids" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 PUFFERFISH_SMALL: texture width" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 PUFFERFISH_SMALL: texture height" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_MEDIUM" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer PUFFERFISH_MEDIUM is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§5 Fish 5 PUFFERFISH_MEDIUM" TO CK-PREFIX
+     MOVE "P body root 0 22 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body 12 22 -2.5 -5 -2.5 5 5 5 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_blue_fin root -2.5 18 -1.5 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_blue_fin 24 0 -2 0 0 2 0 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_blue_fin root 2.5 18 -1.5 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_blue_fin 24 3 0 0 0 2 0 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_front_fin root 0 17 -2.5 0.7853982 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_front_fin 19 17 -2.5 -1 0 5 1 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_back_fin root 0 17 2.5 -0.7853982 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_back_fin 11 17 -2.5 -1 0 5 1 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_front_fin root -2.5 22 -2.5 0 -0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_front_fin 5 17 -1 -5 0 1 5 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_back_fin root -2.5 22 2.5 0 0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_back_fin 9 17 -1 -5 0 1 5 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_back_fin root 2.5 22 2.5 0 -0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_back_fin 1 17 0 -5 0 1 5 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_front_fin root 2.5 22 -2.5 0 0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_front_fin 1 17 0 -5 0 1 5 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P bottom_back_fin root -2.5 22 2.5 0.7853982 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C bottom_back_fin 18 20 0 0 0 5 1 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P bottom_front_fin root 0 22 -2.5 -0.7853982 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C bottom_front_fin 17 19 -2.5 0 0 5 1 1 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "5 PUFFERFISH_MEDIUM: parts below the root" TO WS-NAME
+     MOVE 11 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 PUFFERFISH_MEDIUM: cuboids" TO WS-NAME
+     MOVE 11 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 PUFFERFISH_MEDIUM: texture width" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 PUFFERFISH_MEDIUM: texture height" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_BIG" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer PUFFERFISH_BIG is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§5 Fish 5 PUFFERFISH_BIG" TO CK-PREFIX
+     MOVE "P body root 0 22 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body 0 0 -4 -8 -4 8 8 8 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_blue_fin root -4 15 -2 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_blue_fin 24 0 -2 0 -1 2 1 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_blue_fin root 4 15 -2 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_blue_fin 24 3 0 0 -1 2 1 2 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_front_fin root 0 14 -4 0.7853982 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_front_fin 15 17 -4 -1 0 8 1 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_middle_fin root 0 14 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_middle_fin 14 16 -4 -1 0 8 1 1 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_back_fin root 0 14 4 -0.7853982 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_back_fin 23 18 -4 -1 0 8 1 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_front_fin root -4 22 -4 0 -0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_front_fin 5 17 -1 -8 0 1 8 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_front_fin root 4 22 -4 0 0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_front_fin 1 17 0 -8 0 1 8 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P bottom_front_fin root 0 22 -4 -0.7853982 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C bottom_front_fin 15 20 -4 0 0 8 1 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P bottom_middle_fin root 0 22 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C bottom_middle_fin 15 20 -4 0 0 8 1 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P bottom_back_fin root 0 22 4 0.7853982 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C bottom_back_fin 15 20 -4 0 0 8 1 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_back_fin root -4 22 4 0 0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_back_fin 9 17 -1 -8 0 1 8 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_back_fin root 4 22 4 0 -0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_back_fin 9 17 0 -8 0 1 8 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "5 PUFFERFISH_BIG: parts below the root" TO WS-NAME
+     MOVE 13 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 PUFFERFISH_BIG: cuboids" TO WS-NAME
+     MOVE 13 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 PUFFERFISH_BIG: texture width" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 PUFFERFISH_BIG: texture height" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer TROPICAL_SMALL is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§5 Fish 5 TROPICAL_SMALL" TO CK-PREFIX
+     MOVE "P body root 0 22 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body 0 0 -1 -1.5 -3 2 3 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P tail root 0 22 3 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C tail 22 -6 0 -1.5 0 0 3 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_fin root -1 22.5 0 0 0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_fin 2 16 -2 -1 0 2 2 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_fin root 1 22.5 0 0 -0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_fin 2 12 0 -1 0 2 2 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_fin root 0 20.5 -3 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_fin 10 -5 0 -3 0 0 3 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "5 TROPICAL_SMALL: parts below the root" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 TROPICAL_SMALL: cuboids" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 TROPICAL_SMALL: texture width" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 TROPICAL_SMALL: texture height" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_SMALL_PATTERN" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer TROPICAL_SMALL_PATTERN is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§5 Fish 5 TROPICAL_SMALL_PATTERN" TO CK-PREFIX
+     MOVE "P body root 0 22 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body 0 0 -1 -1.5 -3 2 3 6 0.008 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P tail root 0 22 3 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C tail 22 -6 0 -1.5 0 0 3 6 0.008 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_fin root -1 22.5 0 0 0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_fin 2 16 -2 -1 0 2 2 0 0.008 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_fin root 1 22.5 0 0 -0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_fin 2 12 0 -1 0 2 2 0 0.008 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_fin root 0 20.5 -3 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_fin 10 -5 0 -3 0 0 3 6 0.008 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "5 TROPICAL_SMALL_PATTERN: parts below the root" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 TROPICAL_SMALL_PATTERN: cuboids" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 TROPICAL_SMALL_PATTERN: texture width" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 TROPICAL_SMALL_PATTERN: texture height" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_LARGE" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer TROPICAL_LARGE is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§5 Fish 5 TROPICAL_LARGE" TO CK-PREFIX
+     MOVE "P body root 0 19 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body 0 20 -1 -3 -3 2 6 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P tail root 0 19 3 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C tail 21 16 0 -3 0 0 6 5 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_fin root -1 20 0 0 0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_fin 2 16 -2 0 0 2 2 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_fin root 1 20 0 0 -0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_fin 2 12 0 0 0 2 2 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_fin root 0 16 -3 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_fin 20 11 0 -4 0 0 4 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P bottom_fin root 0 22 -3 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C bottom_fin 20 21 0 0 0 0 4 6 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "5 TROPICAL_LARGE: parts below the root" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 TROPICAL_LARGE: cuboids" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 TROPICAL_LARGE: texture width" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 TROPICAL_LARGE: texture height" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_LARGE_PATTERN" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     PERFORM CK-RESET-COUNTS
+     MOVE "layer TROPICAL_LARGE_PATTERN is known" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OK TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "acceptance US15 34-8§5 Fish 5 TROPICAL_LARGE_PATTERN" TO CK-PREFIX
+     MOVE "P body root 0 19 0 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C body 0 20 -1 -3 -3 2 6 6 0.008 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P tail root 0 19 3 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C tail 21 16 0 -3 0 0 6 5 0.008 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P right_fin root -1 20 0 0 0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C right_fin 2 16 -2 0 0 2 2 0 0.008 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P left_fin root 1 20 0 0 -0.7853982 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C left_fin 2 12 0 0 0 2 2 0 0.008 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P top_fin root 0 16 -3 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C top_fin 20 11 0 -4 0 0 4 6 0.008 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "P bottom_fin root 0 22 -3 0 0 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     MOVE "C bottom_fin 20 21 0 0 0 0 4 6 0.008 0" TO CK-ROW
+     PERFORM CK-ROW-CHECK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "5 TROPICAL_LARGE_PATTERN: parts below the root" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 TROPICAL_LARGE_PATTERN: cuboids" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-CUBES TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 TROPICAL_LARGE_PATTERN: texture width" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXW TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 TROPICAL_LARGE_PATTERN: texture height" TO WS-NAME
+     MOVE 32.0 TO WS-E
+     MOVE MM-TEXH TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "Validation PUFFERFISH_SMALL has 6 parts" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_MEDIUM" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "Validation PUFFERFISH_MEDIUM has 11 parts" TO WS-NAME
+     MOVE 11 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_BIG" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES
+     MOVE "Validation PUFFERFISH_BIG has 13 parts" TO WS-NAME
+     MOVE 13 TO WS-E
+     MOVE WS-PARTS TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "COD" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 1 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.z" TO WS-NAME
+     MOVE 7.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.yrot" TO WS-NAME
+     MOVE -0.063504004 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "COD" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 1 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.z" TO WS-NAME
+     MOVE 7.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.yrot" TO WS-NAME
+     MOVE -0.095256005 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "COD" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 1 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.z" TO WS-NAME
+     MOVE 7.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.yrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "COD" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 1 TO WS-IV(1)
+     MOVE 12.5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.z" TO WS-NAME
+     MOVE 7.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.yrot" TO WS-NAME
+     MOVE -0.633149984 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 3 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.y" TO WS-NAME
+     MOVE 20.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.z" TO WS-NAME
+     MOVE 0.8000002 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.yrot" TO WS-NAME
+     MOVE -0.035280002 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.y" TO WS-NAME
+     MOVE 20.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.z" TO WS-NAME
+     MOVE -7.2 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 3 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.y" TO WS-NAME
+     MOVE 20.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.z" TO WS-NAME
+     MOVE 0.8000002 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.yrot" TO WS-NAME
+     MOVE 0.300889772 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.y" TO WS-NAME
+     MOVE 20.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.z" TO WS-NAME
+     MOVE -7.2 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.y" TO WS-NAME
+     MOVE 20.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.z" TO WS-NAME
+     MOVE 0.8000002 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.yrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.y" TO WS-NAME
+     MOVE 20.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.z" TO WS-NAME
+     MOVE -7.2 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 3 TO WS-IV(1)
+     MOVE 12.5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.y" TO WS-NAME
+     MOVE 20.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.z" TO WS-NAME
+     MOVE 0.8000002 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.yrot" TO WS-NAME
+     MOVE -0.059344719 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.y" TO WS-NAME
+     MOVE 20.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.z" TO WS-NAME
+     MOVE -7.2 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 3 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.y" TO WS-NAME
+     MOVE 22.008 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.z" TO WS-NAME
+     MOVE 0.4000001 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.yrot" TO WS-NAME
+     MOVE -0.035280002 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.ys" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.y" TO WS-NAME
+     MOVE 22.008 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.z" TO WS-NAME
+     MOVE -3.6 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.ys" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 3 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.y" TO WS-NAME
+     MOVE 22.008 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.z" TO WS-NAME
+     MOVE 0.4000001 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.yrot" TO WS-NAME
+     MOVE 0.300889772 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.ys" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.y" TO WS-NAME
+     MOVE 22.008 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.z" TO WS-NAME
+     MOVE -3.6 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.ys" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.y" TO WS-NAME
+     MOVE 22.008 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.z" TO WS-NAME
+     MOVE 0.4000001 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.yrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.ys" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.y" TO WS-NAME
+     MOVE 22.008 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.z" TO WS-NAME
+     MOVE -3.6 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.ys" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 3 TO WS-IV(1)
+     MOVE 12.5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.y" TO WS-NAME
+     MOVE 22.008 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.z" TO WS-NAME
+     MOVE 0.4000001 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.yrot" TO WS-NAME
+     MOVE -0.059344719 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.ys" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.y" TO WS-NAME
+     MOVE 22.008 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.z" TO WS-NAME
+     MOVE -3.6 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.ys" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zs" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON_LARGE" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 3 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.y" TO WS-NAME
+     MOVE 17.992 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.z" TO WS-NAME
+     MOVE 1.2000003 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.yrot" TO WS-NAME
+     MOVE -0.035280002 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.ys" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.y" TO WS-NAME
+     MOVE 17.992 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.z" TO WS-NAME
+     MOVE -10.8 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.ys" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON_LARGE" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 3 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.y" TO WS-NAME
+     MOVE 17.992 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.z" TO WS-NAME
+     MOVE 1.2000003 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.yrot" TO WS-NAME
+     MOVE 0.300889772 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.ys" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.y" TO WS-NAME
+     MOVE 17.992 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.z" TO WS-NAME
+     MOVE -10.8 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.ys" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON_LARGE" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 3 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.y" TO WS-NAME
+     MOVE 17.992 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.z" TO WS-NAME
+     MOVE 1.2000003 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.yrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.ys" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.y" TO WS-NAME
+     MOVE 17.992 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.z" TO WS-NAME
+     MOVE -10.8 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.ys" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON_LARGE" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 3 TO WS-IV(1)
+     MOVE 12.5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.y" TO WS-NAME
+     MOVE 17.992 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.z" TO WS-NAME
+     MOVE 1.2000003 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.yrot" TO WS-NAME
+     MOVE -0.059344719 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.xs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.ys" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.zs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.y" TO WS-NAME
+     MOVE 17.992 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.z" TO WS-NAME
+     MOVE -10.8 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.ys" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.zs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 4 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.x" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.zrot" TO WS-NAME
+     MOVE 0.136588394 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.x" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.zrot" TO WS-NAME
+     MOVE -0.136588394 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 23.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 4 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.x" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.zrot" TO WS-NAME
+     MOVE 0.136588394 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.x" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.zrot" TO WS-NAME
+     MOVE -0.136588394 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 23.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.x" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.zrot" TO WS-NAME
+     MOVE -0.2 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.x" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.zrot" TO WS-NAME
+     MOVE 0.2 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 23.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 4 TO WS-IV(1)
+     MOVE 12.5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.x" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.zrot" TO WS-NAME
+     MOVE 0.039388858 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.x" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.zrot" TO WS-NAME
+     MOVE -0.039388858 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 23.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_MEDIUM" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 4 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.x" TO WS-NAME
+     MOVE -2.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.y" TO WS-NAME
+     MOVE 18.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zrot" TO WS-NAME
+     MOVE 0.136588394 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.x" TO WS-NAME
+     MOVE 2.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.y" TO WS-NAME
+     MOVE 18.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zrot" TO WS-NAME
+     MOVE -0.136588394 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_MEDIUM" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 4 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.x" TO WS-NAME
+     MOVE -2.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.y" TO WS-NAME
+     MOVE 18.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zrot" TO WS-NAME
+     MOVE 0.136588394 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.x" TO WS-NAME
+     MOVE 2.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.y" TO WS-NAME
+     MOVE 18.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zrot" TO WS-NAME
+     MOVE -0.136588394 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_MEDIUM" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.x" TO WS-NAME
+     MOVE -2.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.y" TO WS-NAME
+     MOVE 18.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zrot" TO WS-NAME
+     MOVE -0.2 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.x" TO WS-NAME
+     MOVE 2.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.y" TO WS-NAME
+     MOVE 18.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zrot" TO WS-NAME
+     MOVE 0.2 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_MEDIUM" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 4 TO WS-IV(1)
+     MOVE 12.5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.x" TO WS-NAME
+     MOVE -2.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.y" TO WS-NAME
+     MOVE 18.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zrot" TO WS-NAME
+     MOVE 0.039388858 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.x" TO WS-NAME
+     MOVE 2.5 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.y" TO WS-NAME
+     MOVE 18.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.z" TO WS-NAME
+     MOVE -1.5 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zrot" TO WS-NAME
+     MOVE -0.039388858 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_BIG" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 4 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.x" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.y" TO WS-NAME
+     MOVE 15.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.z" TO WS-NAME
+     MOVE -2.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zrot" TO WS-NAME
+     MOVE 0.136588394 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.x" TO WS-NAME
+     MOVE 4.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.y" TO WS-NAME
+     MOVE 15.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.z" TO WS-NAME
+     MOVE -2.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zrot" TO WS-NAME
+     MOVE -0.136588394 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_BIG" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 4 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.x" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.y" TO WS-NAME
+     MOVE 15.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.z" TO WS-NAME
+     MOVE -2.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zrot" TO WS-NAME
+     MOVE 0.136588394 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.x" TO WS-NAME
+     MOVE 4.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.y" TO WS-NAME
+     MOVE 15.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.z" TO WS-NAME
+     MOVE -2.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zrot" TO WS-NAME
+     MOVE -0.136588394 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_BIG" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 4 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.x" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.y" TO WS-NAME
+     MOVE 15.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.z" TO WS-NAME
+     MOVE -2.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zrot" TO WS-NAME
+     MOVE -0.2 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.x" TO WS-NAME
+     MOVE 4.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.y" TO WS-NAME
+     MOVE 15.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.z" TO WS-NAME
+     MOVE -2.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zrot" TO WS-NAME
+     MOVE 0.2 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_BIG" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 4 TO WS-IV(1)
+     MOVE 12.5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.x" TO WS-NAME
+     MOVE -4.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.y" TO WS-NAME
+     MOVE 15.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.z" TO WS-NAME
+     MOVE -2.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zrot" TO WS-NAME
+     MOVE 0.039388858 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.x" TO WS-NAME
+     MOVE 4.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.y" TO WS-NAME
+     MOVE 15.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.z" TO WS-NAME
+     MOVE -2.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zrot" TO WS-NAME
+     MOVE -0.039388858 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.063504004 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.095256005 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 12.5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.633149984 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_SMALL_PATTERN" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.063504004 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_SMALL_PATTERN" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.095256005 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_SMALL_PATTERN" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_SMALL_PATTERN" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 12.5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.633149984 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 22.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_LARGE" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.063504004 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_LARGE" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.095256005 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_LARGE" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_LARGE" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 12.5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.633149984 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_LARGE_PATTERN" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.063504004 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_LARGE_PATTERN" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.095256005 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_LARGE_PATTERN" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 0 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "TROPICAL_LARGE_PATTERN" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO MM-CXROT(2)
+     MOVE 2 TO WS-IV(1)
+     MOVE 12.5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.z" TO WS-NAME
+     MOVE 3.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.yrot" TO WS-NAME
+     MOVE -0.633149984 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tail" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.x" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CX(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.y" TO WS-NAME
+     MOVE 19.0 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.z" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZ(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CXROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.yrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zrot" TO WS-NAME
+     MOVE 0.0 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.xs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.ys" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body.zs" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE MM-CZSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "COD" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 1 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.yrot" TO WS-NAME
+     MOVE -0.09526 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+*>   E7 cod on land
+     MOVE "COD" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 1 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "tail_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "tail_fin.yrot" TO WS-NAME
+     MOVE -0.0635 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+*>   E7 cod in water
+     MOVE "SALMON_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 3 TO WS-IV(1)
+     MOVE 5 TO WS-IV(2)
+     MOVE 0 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "body_back" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_back.yrot" TO WS-NAME
+     MOVE 0.3009 TO WS-E
+     MOVE MM-CYROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+*>   E8 salmon out of water
+     MOVE "SALMON_SMALL" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.ys" TO WS-NAME
+     MOVE 0.5 TO WS-E
+     MOVE MM-CYSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.y" TO WS-NAME
+     MOVE 22.008 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "SALMON_LARGE" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.xs" TO WS-NAME
+     MOVE 1.5 TO WS-E
+     MOVE MM-CXSCALE(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "body_front" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "body_front.y" TO WS-NAME
+     MOVE 17.992 TO WS-E
+     MOVE MM-CY(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "PUFFERFISH_MEDIUM" TO WS-LAYER
+     CALL "EF8-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     MOVE 4 TO WS-IV(1)
+     MOVE 20 TO WS-IV(2)
+     MOVE 1 TO WS-IV(3)
+     CALL "EF8-FISH-ANIM" USING EMM-MODEL WS-IN
+     MOVE "right_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "right_blue_fin.zrot" TO WS-NAME
+     MOVE -0.502720998 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+*>   E10
+     MOVE "left_blue_fin" TO WS-PN
+     CALL "EMM-FIND" USING EMM-MODEL WS-PN WS-P
+     MOVE "left_blue_fin.zrot" TO WS-NAME
+     MOVE 0.502720998 TO WS-E
+     MOVE MM-CZROT(WS-P) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "cod" TO EN-KEY(1)
+     MOVE 0 TO EN-DRY(1)
+     MOVE 5 TO EN-AGE(1)
+     MOVE 0 TO EN-YAW(1)
+     MOVE 1 TO WS-FL
+     CALL "ENTITY-FISH-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 1" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 2" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 3" TO WS-NAME
+     MOVE 180 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 4" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 5" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 6" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 7" TO WS-NAME
+     MOVE 0.606816035 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 8" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 9" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 10" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 11" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 12" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 13" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 14" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 15" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(15) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 16" TO WS-NAME
+     MOVE -1.501 TO WS-E
+     MOVE WS-OV(16) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 0 age 5 dry 0 value 17" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(17) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "cod" TO EN-KEY(1)
+     MOVE 1 TO EN-DRY(1)
+     MOVE 5 TO EN-AGE(1)
+     MOVE 30 TO EN-YAW(1)
+     MOVE 1 TO WS-FL
+     CALL "ENTITY-FISH-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 1" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 2" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 3" TO WS-NAME
+     MOVE 150 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 4" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 5" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 6" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 7" TO WS-NAME
+     MOVE 0.606816035 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 8" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 9" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 10" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 11" TO WS-NAME
+     MOVE 0.1 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 12" TO WS-NAME
+     MOVE 0.1 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 13" TO WS-NAME
+     MOVE -0.1 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 14" TO WS-NAME
+     MOVE 7 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 15" TO WS-NAME
+     MOVE 90 TO WS-E
+     MOVE WS-OV(15) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 16" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(16) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 17" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(17) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 18" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(18) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 19" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(19) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 20" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(20) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 21" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(21) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 22" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(22) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 23" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(23) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 24" TO WS-NAME
+     MOVE -1.501 TO WS-E
+     MOVE WS-OV(24) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations cod yaw 30 age 5 dry 1 value 25" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(25) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "salmon" TO EN-KEY(1)
+     MOVE 0 TO EN-DRY(1)
+     MOVE 5 TO EN-AGE(1)
+     MOVE 90 TO EN-YAW(1)
+     MOVE 1 TO WS-FL
+     CALL "ENTITY-FISH-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 1" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 2" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 3" TO WS-NAME
+     MOVE 90 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 4" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 5" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 6" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 7" TO WS-NAME
+     MOVE 0.606816035 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 8" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 9" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 10" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 11" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 12" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 13" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 14" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 15" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(15) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 16" TO WS-NAME
+     MOVE -1.501 TO WS-E
+     MOVE WS-OV(16) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 0 value 17" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(17) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "salmon" TO EN-KEY(1)
+     MOVE 1 TO EN-DRY(1)
+     MOVE 5 TO EN-AGE(1)
+     MOVE 90 TO EN-YAW(1)
+     MOVE 1 TO WS-FL
+     CALL "ENTITY-FISH-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 1" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 2" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 3" TO WS-NAME
+     MOVE 90 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 4" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 5" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 6" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 7" TO WS-NAME
+     MOVE -5.175304074 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 8" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 9" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 10" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 11" TO WS-NAME
+     MOVE 0.2 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 12" TO WS-NAME
+     MOVE 0.1 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 13" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 14" TO WS-NAME
+     MOVE 7 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 15" TO WS-NAME
+     MOVE 90 TO WS-E
+     MOVE WS-OV(15) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 16" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(16) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 17" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(17) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 18" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(18) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 19" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(19) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 20" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(20) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 21" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(21) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 22" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(22) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 23" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(23) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 24" TO WS-NAME
+     MOVE -1.501 TO WS-E
+     MOVE WS-OV(24) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations salmon yaw 90 age 5 dry 1 value 25" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(25) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish" TO EN-KEY(1)
+     MOVE 0 TO EN-DRY(1)
+     MOVE 7.5 TO EN-AGE(1)
+     MOVE -45 TO EN-YAW(1)
+     MOVE 1 TO WS-FL
+     CALL "ENTITY-FISH-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 1" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 2" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 3" TO WS-NAME
+     MOVE 225 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 4" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 5" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 6" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 7" TO WS-NAME
+     MOVE -4.203379506 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 8" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 9" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 10" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 11" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 12" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 13" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 14" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 15" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(15) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 16" TO WS-NAME
+     MOVE -1.501 TO WS-E
+     MOVE WS-OV(16) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw -45 age 7.5 dry 0 value 17" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(17) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish" TO EN-KEY(1)
+     MOVE 1 TO EN-DRY(1)
+     MOVE 2 TO EN-AGE(1)
+     MOVE 10 TO EN-YAW(1)
+     MOVE 1 TO WS-FL
+     CALL "ENTITY-FISH-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 1" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 2" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 3" TO WS-NAME
+     MOVE 170 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 4" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 5" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 6" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 7" TO WS-NAME
+     MOVE 4.00776807 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 8" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 9" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 10" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 11" TO WS-NAME
+     MOVE 0.2 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 12" TO WS-NAME
+     MOVE 0.1 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 13" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 14" TO WS-NAME
+     MOVE 7 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 15" TO WS-NAME
+     MOVE 90 TO WS-E
+     MOVE WS-OV(15) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 16" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(16) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 17" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(17) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 18" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(18) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 19" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(19) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 20" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(20) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 21" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(21) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 22" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(22) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 23" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(23) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 24" TO WS-NAME
+     MOVE -1.501 TO WS-E
+     MOVE WS-OV(24) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations tropical_fish yaw 10 age 2 dry 1 value 25" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(25) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "pufferfish" TO EN-KEY(1)
+     MOVE 0 TO EN-DRY(1)
+     MOVE 20 TO EN-AGE(1)
+     MOVE 20 TO EN-YAW(1)
+     MOVE 1 TO WS-FL
+     CALL "ENTITY-FISH-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 1" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 2" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 3" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 4" TO WS-NAME
+     MOVE 0.043224184 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 5" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 6" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 7" TO WS-NAME
+     MOVE 160 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 8" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 9" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 10" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 11" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 12" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 13" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 14" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 15" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(15) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 16" TO WS-NAME
+     MOVE -1.501 TO WS-E
+     MOVE WS-OV(16) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 20 age 20 dry 0 value 17" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(17) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "pufferfish" TO EN-KEY(1)
+     MOVE 1 TO EN-DRY(1)
+     MOVE 0 TO EN-AGE(1)
+     MOVE 0 TO EN-YAW(1)
+     MOVE 1 TO WS-FL
+     CALL "ENTITY-FISH-SEQUENCE" USING CLIENT-STATE WS-FL WS-OUT
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 1" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 2" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 3" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 4" TO WS-NAME
+     MOVE 0.08 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 5" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 6" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 7" TO WS-NAME
+     MOVE 180 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 8" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(8) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 9" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(9) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 10" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(10) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 11" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(11) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 12" TO WS-NAME
+     MOVE -1 TO WS-E
+     MOVE WS-OV(12) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 13" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(13) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 14" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(14) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 15" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(15) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 16" TO WS-NAME
+     MOVE -1.501 TO WS-E
+     MOVE WS-OV(16) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5 setupRotations pufferfish yaw 0 age 0 dry 1 value 17" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(17) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE -3 TO WS-IV(1)
+     CALL "EF8-SALMON-SIZE" USING WS-IN WS-OUT
+     MOVE "5.2 salmon variant id -3 gives size 0 (ids are clamped to 0..2)" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     CALL "EF8-SALMON-SIZE" USING WS-IN WS-OUT
+     MOVE "5.2 salmon variant id 0 gives size 0 (ids are clamped to 0..2)" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     CALL "EF8-SALMON-SIZE" USING WS-IN WS-OUT
+     MOVE "5.2 salmon variant id 1 gives size 1 (ids are clamped to 0..2)" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     CALL "EF8-SALMON-SIZE" USING WS-IN WS-OUT
+     MOVE "5.2 salmon variant id 2 gives size 2 (ids are clamped to 0..2)" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     CALL "EF8-SALMON-SIZE" USING WS-IN WS-OUT
+     MOVE "5.2 salmon variant id 3 gives size 2 (ids are clamped to 0..2)" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 9 TO WS-IV(1)
+     CALL "EF8-SALMON-SIZE" USING WS-IN WS-OUT
+     MOVE "5.2 salmon variant id 9 gives size 2 (ids are clamped to 0..2)" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     CALL "EF8-PUFFER-MODEL" USING WS-IN WS-OUT
+     MOVE "5.3 puff state 0 draws model 0 (0 small, 1 medium, any other value big)" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     CALL "EF8-PUFFER-MODEL" USING WS-IN WS-OUT
+     MOVE "5.3 puff state 1 draws model 1 (0 small, 1 medium, any other value big)" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     CALL "EF8-PUFFER-MODEL" USING WS-IN WS-OUT
+     MOVE "5.3 puff state 2 draws model 2 (0 small, 1 medium, any other value big)" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 3 TO WS-IV(1)
+     CALL "EF8-PUFFER-MODEL" USING WS-IN WS-OUT
+     MOVE "5.3 puff state 3 draws model 2 (0 small, 1 medium, any other value big)" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 7 TO WS-IV(1)
+     CALL "EF8-PUFFER-MODEL" USING WS-IN WS-OUT
+     MOVE "5.3 puff state 7 draws model 2 (0 small, 1 medium, any other value big)" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     CALL "EF8-PUFFER-SHADOW" USING WS-IN WS-OUT
+     MOVE "5.3 shadow radius of puff state 0" TO WS-NAME
+     MOVE 0.1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     CALL "EF8-PUFFER-SHADOW" USING WS-IN WS-OUT
+     MOVE "5.3 shadow radius of puff state 1" TO WS-NAME
+     MOVE 0.2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     CALL "EF8-PUFFER-SHADOW" USING WS-IN WS-OUT
+     MOVE "5.3 shadow radius of puff state 2" TO WS-NAME
+     MOVE 0.3 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+*>   E9: stripey, red base, white pattern colour packs to 917761
+     COMPUTE WS-RMODEL = 257 + 14 * 65536
+     MOVE "E9 packed value stripey, red, white" TO WS-NAME
+     MOVE 917761 TO WS-E
+     MOVE WS-RMODEL TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 917761 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 decode packed 917761 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [1]" TO WS-NAME
+     MOVE 7 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 917761 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 917761 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [3]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 917761 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [4]" TO WS-NAME
+     MOVE 14 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 917761 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 917761 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [6]" TO WS-NAME
+     MOVE 11546150 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 917761 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 decode packed 0 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 0 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 0 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 0 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 0 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 0 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 0 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 256 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 decode packed 256 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [1]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 256 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 256 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [3]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 256 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 256 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 256 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 256 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1281 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 decode packed 1281 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [1]" TO WS-NAME
+     MOVE 11 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1281 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1281 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [3]" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1281 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1281 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1281 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1281 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 251855105 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 decode packed 251855105 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [1]" TO WS-NAME
+     MOVE 7 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 251855105 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 251855105 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [3]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 251855105 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [4]" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 251855105 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [5]" TO WS-NAME
+     MOVE 15 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 251855105 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [6]" TO WS-NAME
+     MOVE 3847130 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 251855105 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [7]" TO WS-NAME
+     MOVE 1908001 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 2 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 decode packed 2 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 2 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 2 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 2 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 2 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 2 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 2 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1793 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 decode packed 1793 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1793 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1793 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1793 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1793 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1793 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1793 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 4279238661 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 decode packed 4279238661 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 4279238661 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 4279238661 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 4279238661 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 4279238661 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 4279238661 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 4279238661 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1310726 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 decode packed 1310726 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1310726 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1310726 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1310726 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1310726 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1310726 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1310726 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1073741825 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 decode packed 1073741825 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [1]" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1073741825 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1073741825 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1073741825 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1073741825 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1073741825 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 decode packed 1073741825 (ordinal, base, index, base colour id, pattern colour id, base RGB, pattern RGB) [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 the packed id 0 is the pattern kob [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 0 is the pattern kob [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 0 is the pattern kob [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 0 is the pattern kob [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 0 is the pattern kob [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 0 is the pattern kob [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 0 is the pattern kob [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 256 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 the packed id 256 is the pattern sunstreak [1]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 256 is the pattern sunstreak [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 256 is the pattern sunstreak [3]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 256 is the pattern sunstreak [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 256 is the pattern sunstreak [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 256 is the pattern sunstreak [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 256 is the pattern sunstreak [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 512 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 the packed id 512 is the pattern snooper [1]" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 512 is the pattern snooper [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 512 is the pattern snooper [3]" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 512 is the pattern snooper [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 512 is the pattern snooper [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 512 is the pattern snooper [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 512 is the pattern snooper [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 768 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 the packed id 768 is the pattern dasher [1]" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 768 is the pattern dasher [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 768 is the pattern dasher [3]" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 768 is the pattern dasher [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 768 is the pattern dasher [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 768 is the pattern dasher [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 768 is the pattern dasher [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1024 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 the packed id 1024 is the pattern brinely [1]" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1024 is the pattern brinely [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1024 is the pattern brinely [3]" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1024 is the pattern brinely [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1024 is the pattern brinely [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1024 is the pattern brinely [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1024 is the pattern brinely [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1280 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 the packed id 1280 is the pattern spotty [1]" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1280 is the pattern spotty [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1280 is the pattern spotty [3]" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1280 is the pattern spotty [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1280 is the pattern spotty [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1280 is the pattern spotty [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1280 is the pattern spotty [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 the packed id 1 is the pattern flopper [1]" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1 is the pattern flopper [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1 is the pattern flopper [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1 is the pattern flopper [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1 is the pattern flopper [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1 is the pattern flopper [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1 is the pattern flopper [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 257 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 the packed id 257 is the pattern stripey [1]" TO WS-NAME
+     MOVE 7 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 257 is the pattern stripey [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 257 is the pattern stripey [3]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 257 is the pattern stripey [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 257 is the pattern stripey [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 257 is the pattern stripey [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 257 is the pattern stripey [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 513 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 the packed id 513 is the pattern glitter [1]" TO WS-NAME
+     MOVE 8 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 513 is the pattern glitter [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 513 is the pattern glitter [3]" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 513 is the pattern glitter [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 513 is the pattern glitter [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 513 is the pattern glitter [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 513 is the pattern glitter [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 769 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 the packed id 769 is the pattern blockfish [1]" TO WS-NAME
+     MOVE 9 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 769 is the pattern blockfish [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 769 is the pattern blockfish [3]" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 769 is the pattern blockfish [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 769 is the pattern blockfish [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 769 is the pattern blockfish [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 769 is the pattern blockfish [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1025 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 the packed id 1025 is the pattern betty [1]" TO WS-NAME
+     MOVE 10 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1025 is the pattern betty [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1025 is the pattern betty [3]" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1025 is the pattern betty [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1025 is the pattern betty [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1025 is the pattern betty [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1025 is the pattern betty [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 1281 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 the packed id 1281 is the pattern clayfish [1]" TO WS-NAME
+     MOVE 11 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1281 is the pattern clayfish [2]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1281 is the pattern clayfish [3]" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1281 is the pattern clayfish [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1281 is the pattern clayfish [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1281 is the pattern clayfish [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 the packed id 1281 is the pattern clayfish [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 0 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 0 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 0 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 0 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 0 diffuse colour [4]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 0 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 0 diffuse colour [6]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 0 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 65536 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 1 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 1 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 1 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 1 diffuse colour [4]" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 1 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 1 diffuse colour [6]" TO WS-NAME
+     MOVE 16351261 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 1 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 131072 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 2 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 2 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 2 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 2 diffuse colour [4]" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 2 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 2 diffuse colour [6]" TO WS-NAME
+     MOVE 13061821 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 2 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 196608 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 3 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 3 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 3 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 3 diffuse colour [4]" TO WS-NAME
+     MOVE 3 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 3 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 3 diffuse colour [6]" TO WS-NAME
+     MOVE 3847130 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 3 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 262144 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 4 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 4 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 4 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 4 diffuse colour [4]" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 4 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 4 diffuse colour [6]" TO WS-NAME
+     MOVE 16701501 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 4 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 327680 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 5 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 5 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 5 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 5 diffuse colour [4]" TO WS-NAME
+     MOVE 5 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 5 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 5 diffuse colour [6]" TO WS-NAME
+     MOVE 8439583 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 5 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 393216 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 6 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 6 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 6 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 6 diffuse colour [4]" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 6 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 6 diffuse colour [6]" TO WS-NAME
+     MOVE 15961002 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 6 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 458752 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 7 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 7 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 7 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 7 diffuse colour [4]" TO WS-NAME
+     MOVE 7 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 7 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 7 diffuse colour [6]" TO WS-NAME
+     MOVE 4673362 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 7 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 524288 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 8 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 8 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 8 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 8 diffuse colour [4]" TO WS-NAME
+     MOVE 8 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 8 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 8 diffuse colour [6]" TO WS-NAME
+     MOVE 10329495 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 8 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 589824 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 9 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 9 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 9 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 9 diffuse colour [4]" TO WS-NAME
+     MOVE 9 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 9 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 9 diffuse colour [6]" TO WS-NAME
+     MOVE 1481884 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 9 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 655360 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 10 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 10 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 10 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 10 diffuse colour [4]" TO WS-NAME
+     MOVE 10 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 10 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 10 diffuse colour [6]" TO WS-NAME
+     MOVE 8991416 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 10 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 720896 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 11 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 11 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 11 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 11 diffuse colour [4]" TO WS-NAME
+     MOVE 11 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 11 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 11 diffuse colour [6]" TO WS-NAME
+     MOVE 3949738 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 11 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 786432 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 12 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 12 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 12 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 12 diffuse colour [4]" TO WS-NAME
+     MOVE 12 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 12 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 12 diffuse colour [6]" TO WS-NAME
+     MOVE 8606770 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 12 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 851968 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 13 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 13 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 13 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 13 diffuse colour [4]" TO WS-NAME
+     MOVE 13 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 13 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 13 diffuse colour [6]" TO WS-NAME
+     MOVE 6192150 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 13 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 917504 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 14 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 14 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 14 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 14 diffuse colour [4]" TO WS-NAME
+     MOVE 14 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 14 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 14 diffuse colour [6]" TO WS-NAME
+     MOVE 11546150 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 14 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE 983040 TO WS-IV(1)
+     CALL "EF8-TROPICAL-DECODE" USING WS-IN WS-OUT
+     MOVE "5.4 dye 15 diffuse colour [1]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(1) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 15 diffuse colour [2]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(2) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 15 diffuse colour [3]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(3) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 15 diffuse colour [4]" TO WS-NAME
+     MOVE 15 TO WS-E
+     MOVE WS-OV(4) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 15 diffuse colour [5]" TO WS-NAME
+     MOVE 0 TO WS-E
+     MOVE WS-OV(5) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 15 diffuse colour [6]" TO WS-NAME
+     MOVE 1908001 TO WS-E
+     MOVE WS-OV(6) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 dye 15 diffuse colour [7]" TO WS-NAME
+     MOVE 16383998 TO WS-E
+     MOVE WS-OV(7) TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish" TO EN-KEY(1)
+     MOVE 917761 TO EN-VAR(1)
+     MOVE "tropical_fish" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY EN-MODEL(1)
+     CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-FL WS-RMODEL
+     MOVE 1 TO WS-FL
+     CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-FL WS-RMODEL
+     MOVE CL-MD-KEY(WS-RMODEL) TO WS-RK20
+     MOVE "5.4 packed 917761 draws the large model" TO WS-NAME
+     MOVE "tropical_fish~l" TO TL-EXPECTED
+     MOVE WS-RK20 TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "tropical_pattern~l" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY WS-RMODEL
+     CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-FL WS-RMODEL WS-RCODE
+     MOVE "5.4 packed 917761 pattern texture code (index + 1)" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-RCODE TO WS-O
+     PERFORM CHECK-NUM
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-FL WS-RMODEL WS-RR WS-RG WS-RB
+     MOVE "5.4 packed 917761 pattern tint red" TO WS-NAME
+     MOVE 0.976470588 TO WS-E
+     MOVE WS-RR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 917761 pattern tint green" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-RG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 917761 pattern tint blue" TO WS-NAME
+     MOVE 0.996078431 TO WS-E
+     MOVE WS-RB TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish~l" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY WS-RMODEL
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-FL WS-RMODEL WS-RR WS-RG WS-RB
+     MOVE "5.4 packed 917761 base tint red" TO WS-NAME
+     MOVE 0.690196078 TO WS-E
+     MOVE WS-RR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 917761 base tint green" TO WS-NAME
+     MOVE 0.180392157 TO WS-E
+     MOVE WS-RG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 917761 base tint blue" TO WS-NAME
+     MOVE 0.149019608 TO WS-E
+     MOVE WS-RB TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish" TO EN-KEY(1)
+     MOVE 0 TO EN-VAR(1)
+     MOVE "tropical_fish" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY EN-MODEL(1)
+     CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-FL WS-RMODEL
+     MOVE 1 TO WS-FL
+     CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-FL WS-RMODEL
+     MOVE CL-MD-KEY(WS-RMODEL) TO WS-RK20
+     MOVE "5.4 packed 0 draws the small model" TO WS-NAME
+     MOVE "tropical_fish" TO TL-EXPECTED
+     MOVE WS-RK20 TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "tropical_pattern" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY WS-RMODEL
+     CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-FL WS-RMODEL WS-RCODE
+     MOVE "5.4 packed 0 pattern texture code (index + 1)" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-RCODE TO WS-O
+     PERFORM CHECK-NUM
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-FL WS-RMODEL WS-RR WS-RG WS-RB
+     MOVE "5.4 packed 0 pattern tint red" TO WS-NAME
+     MOVE 0.976470588 TO WS-E
+     MOVE WS-RR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 0 pattern tint green" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-RG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 0 pattern tint blue" TO WS-NAME
+     MOVE 0.996078431 TO WS-E
+     MOVE WS-RB TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY WS-RMODEL
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-FL WS-RMODEL WS-RR WS-RG WS-RB
+     MOVE "5.4 packed 0 base tint red" TO WS-NAME
+     MOVE 0.976470588 TO WS-E
+     MOVE WS-RR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 0 base tint green" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-RG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 0 base tint blue" TO WS-NAME
+     MOVE 0.996078431 TO WS-E
+     MOVE WS-RB TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish" TO EN-KEY(1)
+     MOVE 256 TO EN-VAR(1)
+     MOVE "tropical_fish" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY EN-MODEL(1)
+     CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-FL WS-RMODEL
+     MOVE 1 TO WS-FL
+     CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-FL WS-RMODEL
+     MOVE CL-MD-KEY(WS-RMODEL) TO WS-RK20
+     MOVE "5.4 packed 256 draws the small model" TO WS-NAME
+     MOVE "tropical_fish" TO TL-EXPECTED
+     MOVE WS-RK20 TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "tropical_pattern" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY WS-RMODEL
+     CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-FL WS-RMODEL WS-RCODE
+     MOVE "5.4 packed 256 pattern texture code (index + 1)" TO WS-NAME
+     MOVE 2 TO WS-E
+     MOVE WS-RCODE TO WS-O
+     PERFORM CHECK-NUM
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-FL WS-RMODEL WS-RR WS-RG WS-RB
+     MOVE "5.4 packed 256 pattern tint red" TO WS-NAME
+     MOVE 0.976470588 TO WS-E
+     MOVE WS-RR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 256 pattern tint green" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-RG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 256 pattern tint blue" TO WS-NAME
+     MOVE 0.996078431 TO WS-E
+     MOVE WS-RB TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY WS-RMODEL
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-FL WS-RMODEL WS-RR WS-RG WS-RB
+     MOVE "5.4 packed 256 base tint red" TO WS-NAME
+     MOVE 0.976470588 TO WS-E
+     MOVE WS-RR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 256 base tint green" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-RG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 256 base tint blue" TO WS-NAME
+     MOVE 0.996078431 TO WS-E
+     MOVE WS-RB TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish" TO EN-KEY(1)
+     MOVE 1281 TO EN-VAR(1)
+     MOVE "tropical_fish" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY EN-MODEL(1)
+     CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-FL WS-RMODEL
+     MOVE 1 TO WS-FL
+     CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-FL WS-RMODEL
+     MOVE CL-MD-KEY(WS-RMODEL) TO WS-RK20
+     MOVE "5.4 packed 1281 draws the large model" TO WS-NAME
+     MOVE "tropical_fish~l" TO TL-EXPECTED
+     MOVE WS-RK20 TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "tropical_pattern~l" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY WS-RMODEL
+     CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-FL WS-RMODEL WS-RCODE
+     MOVE "5.4 packed 1281 pattern texture code (index + 1)" TO WS-NAME
+     MOVE 6 TO WS-E
+     MOVE WS-RCODE TO WS-O
+     PERFORM CHECK-NUM
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-FL WS-RMODEL WS-RR WS-RG WS-RB
+     MOVE "5.4 packed 1281 pattern tint red" TO WS-NAME
+     MOVE 0.976470588 TO WS-E
+     MOVE WS-RR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 1281 pattern tint green" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-RG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 1281 pattern tint blue" TO WS-NAME
+     MOVE 0.996078431 TO WS-E
+     MOVE WS-RB TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish~l" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY WS-RMODEL
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-FL WS-RMODEL WS-RR WS-RG WS-RB
+     MOVE "5.4 packed 1281 base tint red" TO WS-NAME
+     MOVE 0.976470588 TO WS-E
+     MOVE WS-RR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 1281 base tint green" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-RG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 1281 base tint blue" TO WS-NAME
+     MOVE 0.996078431 TO WS-E
+     MOVE WS-RB TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish" TO EN-KEY(1)
+     MOVE 2 TO EN-VAR(1)
+     MOVE "tropical_fish" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY EN-MODEL(1)
+     CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-FL WS-RMODEL
+     MOVE 1 TO WS-FL
+     CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-FL WS-RMODEL
+     MOVE CL-MD-KEY(WS-RMODEL) TO WS-RK20
+     MOVE "5.4 packed 2 draws the small model" TO WS-NAME
+     MOVE "tropical_fish" TO TL-EXPECTED
+     MOVE WS-RK20 TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "tropical_pattern" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY WS-RMODEL
+     CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-FL WS-RMODEL WS-RCODE
+     MOVE "5.4 packed 2 pattern texture code (index + 1)" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-RCODE TO WS-O
+     PERFORM CHECK-NUM
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-FL WS-RMODEL WS-RR WS-RG WS-RB
+     MOVE "5.4 packed 2 pattern tint red" TO WS-NAME
+     MOVE 0.976470588 TO WS-E
+     MOVE WS-RR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 2 pattern tint green" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-RG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 2 pattern tint blue" TO WS-NAME
+     MOVE 0.996078431 TO WS-E
+     MOVE WS-RB TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY WS-RMODEL
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-FL WS-RMODEL WS-RR WS-RG WS-RB
+     MOVE "5.4 packed 2 base tint red" TO WS-NAME
+     MOVE 0.976470588 TO WS-E
+     MOVE WS-RR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 2 base tint green" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-RG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 2 base tint blue" TO WS-NAME
+     MOVE 0.996078431 TO WS-E
+     MOVE WS-RB TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish" TO EN-KEY(1)
+     MOVE 1793 TO EN-VAR(1)
+     MOVE "tropical_fish" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY EN-MODEL(1)
+     CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-FL WS-RMODEL
+     MOVE 1 TO WS-FL
+     CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-FL WS-RMODEL
+     MOVE CL-MD-KEY(WS-RMODEL) TO WS-RK20
+     MOVE "5.4 packed 1793 draws the small model" TO WS-NAME
+     MOVE "tropical_fish" TO TL-EXPECTED
+     MOVE WS-RK20 TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "tropical_pattern" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY WS-RMODEL
+     CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-FL WS-RMODEL WS-RCODE
+     MOVE "5.4 packed 1793 pattern texture code (index + 1)" TO WS-NAME
+     MOVE 1 TO WS-E
+     MOVE WS-RCODE TO WS-O
+     PERFORM CHECK-NUM
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-FL WS-RMODEL WS-RR WS-RG WS-RB
+     MOVE "5.4 packed 1793 pattern tint red" TO WS-NAME
+     MOVE 0.976470588 TO WS-E
+     MOVE WS-RR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 1793 pattern tint green" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-RG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 1793 pattern tint blue" TO WS-NAME
+     MOVE 0.996078431 TO WS-E
+     MOVE WS-RB TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY WS-RMODEL
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-FL WS-RMODEL WS-RR WS-RG WS-RB
+     MOVE "5.4 packed 1793 base tint red" TO WS-NAME
+     MOVE 0.976470588 TO WS-E
+     MOVE WS-RR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 1793 base tint green" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-RG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 1793 base tint blue" TO WS-NAME
+     MOVE 0.996078431 TO WS-E
+     MOVE WS-RB TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish" TO EN-KEY(1)
+     MOVE 197377 TO EN-VAR(1)
+     MOVE "tropical_fish" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY EN-MODEL(1)
+     CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-FL WS-RMODEL
+     MOVE 1 TO WS-FL
+     CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-FL WS-RMODEL
+     MOVE CL-MD-KEY(WS-RMODEL) TO WS-RK20
+     MOVE "5.4 packed 197377 draws the large model" TO WS-NAME
+     MOVE "tropical_fish~l" TO TL-EXPECTED
+     MOVE WS-RK20 TO TL-OBSERVED
+     PERFORM CHECK-TEXT
+     MOVE "tropical_pattern~l" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY WS-RMODEL
+     CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-FL WS-RMODEL WS-RCODE
+     MOVE "5.4 packed 197377 pattern texture code (index + 1)" TO WS-NAME
+     MOVE 4 TO WS-E
+     MOVE WS-RCODE TO WS-O
+     PERFORM CHECK-NUM
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-FL WS-RMODEL WS-RR WS-RG WS-RB
+     MOVE "5.4 packed 197377 pattern tint red" TO WS-NAME
+     MOVE 0.976470588 TO WS-E
+     MOVE WS-RR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 197377 pattern tint green" TO WS-NAME
+     MOVE 1.0 TO WS-E
+     MOVE WS-RG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 197377 pattern tint blue" TO WS-NAME
+     MOVE 0.996078431 TO WS-E
+     MOVE WS-RB TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "tropical_fish~l" TO WS-RKEY
+     CALL "ENTITY-MODEL-FIND" USING WS-RKEY WS-RMODEL
+     CALL "ENTITY-TINT" USING CLIENT-STATE WS-FL WS-RMODEL WS-RR WS-RG WS-RB
+     MOVE "5.4 packed 197377 base tint red" TO WS-NAME
+     MOVE 0.22745098 TO WS-E
+     MOVE WS-RR TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 197377 base tint green" TO WS-NAME
+     MOVE 0.701960784 TO WS-E
+     MOVE WS-RG TO WS-O
+     PERFORM CHECK-NUM
+     MOVE "5.4 packed 197377 base tint blue" TO WS-NAME
+     MOVE 0.854901961 TO WS-E
+     MOVE WS-RB TO WS-O
+     PERFORM CHECK-NUM
+     STOP RUN.
+
+ COPY EMCHKP.
+
+ CHECK-NUM.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US15 34-8§5 Fish: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     IF FUNCTION ABS(WS-O - WS-E) <= 0.00002
+         MOVE WS-E TO WS-O
+     END-IF
+     COMPUTE TL-EXPECTED-N ROUNDED = WS-E * 100000
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O * 100000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK-TEXT.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US15 34-8§5 Fish: " FUNCTION TRIM(WS-NAME) DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-ENTMODEL-34-8-5.

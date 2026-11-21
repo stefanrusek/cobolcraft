@@ -35,6 +35,11 @@
 *>     the file's lines joined by " | ". No TEST line may be printed between start and stop.
 *>   SVT-UNSTAMP USING text (PIC X(4096)): removes every console time stamp "[HH:MM:SS] "
 *>     (operator-surface §3) from captured text, so a test can compare the lines themselves.
+*>   SVT-FREE-PORT USING port out (BINARY-LONG): a TCP port nothing listens on (listens on port 0 to let
+*>     the system choose, then closes), so a test never binds the default 25565 (CC-0005).
+*>   SVT-DROP-INFO USING text (PIC X(4096)): removes the start-up info lines "World type: ...", "Generated
+*>     directory: ..." and "Registries: ..." (core-host-delta section 5) from captured, unstamped console text
+*>     (lines joined by " | "), for tests that are not about them (test_startup_lines is).
 *>   SVT-HOME: makes the repository root the current directory again (after SVT-SCRATCH).
 *>   SVT-WRITE-CONF USING text (PIC X(4096)): writes ./cobolcraft-server.conf with that text, "|"
 *>     separating lines (trailing spaces of the text dropped, a newline after the last line).
@@ -650,3 +655,62 @@
      MOVE WS-TEXT TO L-TEXT
      GOBACK.
  END PROGRAM SVT-UNSTAMP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-FREE-PORT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-HANDLE              BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PORT                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PORT.
+     CALL STATIC "cc_net_listen" USING BY VALUE WS-ZERO BY REFERENCE WS-HANDLE
+         BY REFERENCE L-PORT RETURNING WS-RC
+     CALL STATIC "cc_net_close" USING BY VALUE WS-HANDLE
+     GOBACK.
+ END PROGRAM SVT-FREE-PORT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SVT-DROP-INFO.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-AT                  BINARY-LONG.
+ 01 WS-END                 BINARY-LONG.
+ 01 WS-SKIP                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X(4096).
+ PROCEDURE DIVISION USING L-TEXT.
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-I WS-AT
+     PERFORM UNTIL WS-I > 4096
+         MOVE 0 TO WS-SKIP
+         IF WS-I = 1 OR L-TEXT(WS-I - 1:1) = SPACE
+             IF (WS-I <= 4085 AND L-TEXT(WS-I:12) = "World type: ")
+                     OR (WS-I <= 4076 AND L-TEXT(WS-I:21) = "Generated directory: ")
+                     OR (WS-I <= 4085 AND L-TEXT(WS-I:12) = "Registries: ")
+                 MOVE 1 TO WS-SKIP
+             END-IF
+         END-IF
+         IF WS-SKIP = 1
+*>           Skip to just after the next " | " (or the end).
+             MOVE WS-I TO WS-END
+             PERFORM UNTIL WS-END > 4093 OR L-TEXT(WS-END:3) = " | "
+                 ADD 1 TO WS-END
+             END-PERFORM
+             IF WS-END > 4093
+                 MOVE 4097 TO WS-I
+             ELSE
+                 COMPUTE WS-I = WS-END + 3
+             END-IF
+         ELSE
+             MOVE L-TEXT(WS-I:1) TO WS-TEXT(WS-AT:1)
+             ADD 1 TO WS-I WS-AT
+         END-IF
+     END-PERFORM
+     MOVE WS-TEXT TO L-TEXT
+     GOBACK.
+ END PROGRAM SVT-DROP-INFO.

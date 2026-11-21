@@ -14,8 +14,8 @@
  01 WS-CONF                PIC X(4096).
  01 WS-CONF-PATH           PIC X(256) VALUE "cobolcraft-server.conf".
  01 WS-LINES               PIC X(4096).
- 01 WS-DEFAULTS            PIC X(1707).
- 01 WS-EXPECTED            PIC X(1707).
+ 01 WS-DEFAULTS            PIC X(3829).
+ 01 WS-EXPECTED            PIC X(3829).
  01 WS-I                   BINARY-LONG.
  01 WS-AT                  BINARY-LONG.
  01 WS-START               BINARY-LONG.
@@ -37,6 +37,9 @@
      MOVE 1 TO CS-PLAYER-COMBAT CS-HOSTILE-MOBS CS-WEATHER-CHANGES CS-EXTRA-DIMENSIONS
      MOVE 0 TO CS-ALLOW-LIST-ENFORCED CS-PACK-OFFERED CS-PACK-REQUIRED CS-HOST-KIND
      MOVE "world" TO CS-NEW-WORLD-NAME
+     MOVE "auto" TO CS-WORLD-TYPE
+     MOVE "." TO CS-GAME-DIR
+     MOVE "./generated" TO CS-GENERATED-DIR
      MOVE CORE-SETTINGS TO WS-DEFAULTS
 
 *>   US18-6: every pack key set.

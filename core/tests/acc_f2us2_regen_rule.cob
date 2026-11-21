@@ -1,0 +1,95 @@
+*> Acceptance test, feature 002 (task T4806; docs/protocol/33 section 6 natural_health_regeneration,
+*> 17 section 4.9): with the game rule natural_health_regeneration false the slow and the saturated
+*> regeneration branches of FoodData.tick do not run (starvation does not depend on the rule); with
+*> it true they heal again. Alice (entity 1) is survival, health 10.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-F2US2-REGEN-RULE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ 01 WS-NAME                PIC X(16) VALUE "Alice".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-ALICE               BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-RULE-NAME           PIC X(40) VALUE "natural_health_regeneration".
+ 01 WS-RULE-INDEX          BINARY-LONG.
+ 01 WS-RULE-VALUE          BINARY-DOUBLE.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-DEFAULT-MODE
+     MOVE 2 TO CS-VIEW-DISTANCE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ALICE
+     MOVE CN-PLAYER(WS-ALICE) TO WS-ROW
+     CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
+     CALL "BR-RULE-FIND" USING WS-RULE-NAME WS-RULE-INDEX
+     MOVE 0 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+     MOVE 10 TO PL-HEALTH(WS-ROW)
+     MOVE 20 TO PL-FOOD(WS-ROW)
+     MOVE 5 TO PL-SATURATION(WS-ROW)
+     MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)
+
+     MOVE "acceptance regen rule false: food 20 with saturation, 100 ticks, no healing" TO TL-CASE
+     MOVE 100 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 10 TO TL-EXPECTED-N
+     MOVE PL-HEALTH(WS-ROW) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+
+     MOVE "acceptance regen rule false: food 19 without saturation, 200 ticks, no healing" TO TL-CASE
+     MOVE 19 TO PL-FOOD(WS-ROW)
+     MOVE 0 TO PL-SATURATION(WS-ROW)
+     MOVE 200 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 10 TO TL-EXPECTED-N
+     MOVE PL-HEALTH(WS-ROW) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+
+     MOVE "acceptance regen rule false: starvation still damages at food 0" TO TL-CASE
+     MOVE 0 TO PL-FOOD(WS-ROW)
+     MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)
+     MOVE 80 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 9 TO TL-EXPECTED-N
+     MOVE PL-HEALTH(WS-ROW) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+
+     MOVE 1 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+     MOVE 10 TO PL-HEALTH(WS-ROW)
+     MOVE 19 TO PL-FOOD(WS-ROW)
+     MOVE 0 TO PL-SATURATION(WS-ROW)
+     MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)
+     MOVE "acceptance regen rule true: food 19, 80 ticks heal 1" TO TL-CASE
+     MOVE 80 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     MOVE 11 TO TL-EXPECTED-N
+     MOVE PL-HEALTH(WS-ROW) TO TL-OBSERVED-N
+     PERFORM CHECK-N
+
+     MOVE "acceptance regen rule true: food 20 with saturation heals on the 10th tick" TO TL-CASE
+     MOVE 20 TO PL-FOOD(WS-ROW)
+     MOVE 5 TO PL-SATURATION(WS-ROW)
+     MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)
+     MOVE 10 TO WS-TICKS
+     CALL "TEST-TICKS" USING WS-TICKS
+     IF PL-HEALTH(WS-ROW) > 11
+         MOVE 1 TO TL-OBSERVED-N
+     ELSE
+         MOVE 0 TO TL-OBSERVED-N
+     END-IF
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     STOP RUN.
+
+ CHECK-N.
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM ACC-F2US2-REGEN-RULE.
+
+ COPY CORETEST.

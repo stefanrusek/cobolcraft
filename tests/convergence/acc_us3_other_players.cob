@@ -3,8 +3,8 @@
 *> hosts the single-player world, Bobby joins over a further memory connection of the same core;
 *> view distance 2). Each client's entity replica holds the other Player as an operator figure
 *> (type 0) at their position and facing while they move; the figure disappears when that Player
-*> moves out of view distance, changes dimension or disconnects (the relocate command, run by Alice
-*> from the chat line: the host is an operator).
+*> moves out of view distance or disconnects (the tp command, run by Alice from the chat line: the
+*> host is an operator; the dimension change is T4805).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US3-OTHER-PLAYERS.
  DATA DIVISION.
@@ -130,14 +130,14 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Out of view distance (2 chunks): Alice moves 200 blocks east; then back.
-     MOVE "/relocate Alice at 200 60 8" TO WS-SAY
-     MOVE 27 TO WS-SAY-LENGTH
+     MOVE "/tp Alice 200 60 8" TO WS-SAY
+     MOVE 17 TO WS-SAY-LENGTH
      PERFORM ALICE-SAYS
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
      CALL "FIGURES" USING CLIENT-STATE WS-FIGURES WS-ROW
      MOVE WS-FIGURES TO WS-E1
-     MOVE "/relocate Alice at 6 60 8" TO WS-SAY
-     MOVE 25 TO WS-SAY-LENGTH
+     MOVE "/tp Alice 6 60 8" TO WS-SAY
+     MOVE 15 TO WS-SAY-LENGTH
      PERFORM ALICE-SAYS
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
      CALL "FIGURES" USING CLIENT-STATE WS-FIGURES WS-ROW
@@ -150,31 +150,27 @@
          INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   Another dimension: Alice goes to the Subroutine, then back to main.
-     MOVE "/relocate Alice at 4 50 8 subroutine" TO WS-SAY
-     MOVE 35 TO WS-SAY-LENGTH
+*>   Another dimension (54 s9: a location form uses the executor's level, so execute in ... run tp crosses dimensions):
+*>   Alice leaves for cobolcraft:subroutine and Bobby, who stays in cobolcraft:main, no longer sees her; she comes back.
+     MOVE "/gamemode creative Alice" TO WS-SAY
      PERFORM ALICE-SAYS
-     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
-     MOVE PL-DIM-NAME TO WS-SAY
+     MOVE "/execute in cobolcraft:subroutine run tp Alice 8 70 8" TO WS-SAY
+     PERFORM ALICE-SAYS
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
      CALL "FIGURES" USING CLIENT-STATE WS-FIGURES WS-ROW
      MOVE WS-FIGURES TO WS-E1
-     MOVE "acceptance US3-5 given another player in view when they change dimension then the "
-         & "Player no longer sees them" TO TL-CASE
-     MOVE "Alice in cobolcraft:subroutine; Bobby sees 0" TO TL-EXPECTED
-     MOVE SPACES TO TL-OBSERVED
-     STRING "Alice in " FUNCTION TRIM(WS-SAY) "; Bobby sees " FUNCTION TRIM(WS-E1)
-         DELIMITED BY SIZE INTO TL-OBSERVED
-     IF TL-OBSERVED NOT = TL-EXPECTED
-         CALL "CV-CHAT-LOG" USING CONVH WS-ALICE WS-LOG
-         DISPLAY "Alice's chat: " FUNCTION TRIM(WS-LOG)
-     END-IF
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "/relocate Alice at 6 60 8 main" TO WS-SAY
-     MOVE 30 TO WS-SAY-LENGTH
+     MOVE "/execute in cobolcraft:main run tp Alice 6 60 8" TO WS-SAY
      PERFORM ALICE-SAYS
-     MOVE 40 TO WS-N
-     CALL "CV-STEPS" USING CONVH WS-N
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
+     CALL "FIGURES" USING CLIENT-STATE WS-FIGURES WS-ROW
+     MOVE WS-FIGURES TO WS-E2
+     MOVE "acceptance US3-5 given another player in view when they travel to another dimension then "
+         & "the Player no longer sees them, and sees them again when they come back" TO TL-CASE
+     MOVE "other dimension 0 back 1" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING "other dimension " FUNCTION TRIM(WS-E1) " back " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE
+         INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Bobby disconnects (pause menu, disconnect control): Alice no longer sees him.
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)

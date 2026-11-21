@@ -1,0 +1,720 @@
+*> Test of 29b part 4 section 12, Dripleaf (core/src/growth-29b-4.cob; T0603): big dripleaf (12.1), its stem (12.2), placeWithRandomHeight (12.3), small dripleaf (12.4), worked examples 10 and 11.
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-I as integers and WS-FX as doubles), calls the program
+*> and shows the outputs WS-R(1..WS-N) joined by "/", one group per call; expected values come from the rules and tables of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-GROWTH-29B-4-12.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY INTERACT.
+ 01 WS-ISG.
+    05 WS-I1 BINARY-LONG.
+    05 WS-I2 BINARY-LONG.
+    05 WS-I3 BINARY-LONG.
+    05 WS-I4 BINARY-LONG.
+    05 WS-I5 BINARY-LONG.
+    05 WS-I6 BINARY-LONG.
+    05 WS-I7 BINARY-LONG.
+    05 WS-I8 BINARY-LONG.
+    05 WS-I9 BINARY-LONG.
+    05 WS-I10 BINARY-LONG.
+    05 WS-I11 BINARY-LONG.
+    05 WS-I12 BINARY-LONG.
+    05 WS-I13 BINARY-LONG.
+    05 WS-I14 BINARY-LONG.
+    05 WS-I15 BINARY-LONG.
+    05 WS-I16 BINARY-LONG.
+ 01 WS-IST REDEFINES WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-FXSG.
+    05 WS-FX1 FLOAT-LONG.
+    05 WS-FX2 FLOAT-LONG.
+    05 WS-FX3 FLOAT-LONG.
+    05 WS-FX4 FLOAT-LONG.
+    05 WS-FX5 FLOAT-LONG.
+    05 WS-FX6 FLOAT-LONG.
+    05 WS-FX7 FLOAT-LONG.
+    05 WS-FX8 FLOAT-LONG.
+    05 WS-FX9 FLOAT-LONG.
+    05 WS-FX10 FLOAT-LONG.
+    05 WS-FX11 FLOAT-LONG.
+    05 WS-FX12 FLOAT-LONG.
+    05 WS-FX13 FLOAT-LONG.
+    05 WS-FX14 FLOAT-LONG.
+    05 WS-FX15 FLOAT-LONG.
+    05 WS-FX16 FLOAT-LONG.
+ 01 WS-FXST REDEFINES WS-FXSG.
+    05 WS-FX FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R1 BINARY-LONG.
+    05 WS-R2 BINARY-LONG.
+    05 WS-R3 BINARY-LONG.
+    05 WS-R4 BINARY-LONG.
+    05 WS-R5 BINARY-LONG.
+    05 WS-R6 BINARY-LONG.
+    05 WS-R7 BINARY-LONG.
+    05 WS-R8 BINARY-LONG.
+    05 WS-R9 BINARY-LONG.
+    05 WS-R10 BINARY-LONG.
+    05 WS-R11 BINARY-LONG.
+    05 WS-R12 BINARY-LONG.
+    05 WS-R13 BINARY-LONG.
+    05 WS-R14 BINARY-LONG.
+    05 WS-R15 BINARY-LONG.
+    05 WS-R16 BINARY-LONG.
+ 01 WS-RST REDEFINES WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RFSG.
+    05 WS-RF1 FLOAT-LONG.
+    05 WS-RF2 FLOAT-LONG.
+    05 WS-RF3 FLOAT-LONG.
+    05 WS-RF4 FLOAT-LONG.
+    05 WS-RF5 FLOAT-LONG.
+    05 WS-RF6 FLOAT-LONG.
+    05 WS-RF7 FLOAT-LONG.
+    05 WS-RF8 FLOAT-LONG.
+ 01 WS-RFST REDEFINES WS-RFSG.
+    05 WS-RF FLOAT-LONG OCCURS 8 TIMES.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(9)9.
+ 01 WS-TEXTS.
+    05 WS-T1               PIC X(96).
+    05 WS-T2               PIC X(96).
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 29b-4§12 Dripleaf: tilt table (12.1): causesVibration none true, unstable false, partial true, full true; delay until the next tilt step -1, 10, 10, 100; collision y range 11 to" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-TILT" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-TILT" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-TILT" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-TILT" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/-1/11/15 0/10/11/15 1/10/11/13 1/100/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: big dripleaf constants (12.1): NO_TICK -1, MAX_GEN_HEIGHT 5, stem box 6 wide to 13, leaf box 16 wide" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-CONST" USING  WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "-1/5/6/16" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: big dripleaf survival (12.1 step 1, 12.2 step 1): the head needs a dripleaf, a stem or supports_big_dripleaf below; the stem needs a stem or the tag below and" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SURVIVE" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SURVIVE" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SURVIVE" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SURVIVE" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: big dripleaf placement (12.1 step 2): facing is the state below's facing when it is a dripleaf or stem, else the opposite of the placer's horizontal direction;" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 5 3 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-PLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 5 3 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-PLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 5 4 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-PLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 5 5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-PLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 5 6 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-PLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "5/1 4/0 3/1 6/0 5/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: big dripleaf shape update (12.1 step 3): from DOWN air when it cannot survive; a water tick when waterlogged; from UP with a big_dripleaf neighbour a stem with" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SU" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SU" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SU" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SU" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SU" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SU" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0 0/0 2/1 0/0 2/0 0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: big dripleaf canGrowInto and canPlaceAt (12.1 step 4): inside the build height and the state is air, block water (any level) or small_dripleaf (in height, kind" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-CANGROW" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-CANGROW" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-CANGROW" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-CANGROW" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-CANGROW" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-CANGROW" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: place (12.1 step 5, 12.2 step 3): setBlockAndUpdate with waterlogged set from a water source of the fluid (flags 3)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-WRITE" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-WRITE" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/3 0/3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: big dripleaf bone meal (12.1 step 6): valid when canGrowInto(above); the effect (this block a stem, a new head above) needs canPlaceAt(above) (can grow, can" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-BONE" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-BONE" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-BONE" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1 0/1/0 1/1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: big dripleaf entityInside (12.1 step 7.1, example 11): server only; with tilt none, the entity on the ground with y strictly above pos.y + 0.6875 and no" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 1 70.0 64 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-I6 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 65.0 64 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-I6 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 64.6875 64 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-I6 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 64.69 64 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-I6 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 70.0 64 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-I6 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 70.0 64 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-I6 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1 70.0 64 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-I6 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 3 1 70.0 64 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-INSIDE" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-I6 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "-1/-1/0 1/10/0 -1/-1/0 1/10/0 -1/-1/0 -1/-1/0 -1/-1/0 -1/-1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: setTilt (12.1 step 7.3): the block is written with flags 2; the game event BLOCK_CHANGE is sent when the new tilt causes vibration (partial or full; none does" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SETTILT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SETTILT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SETTILT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SETTILT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SETTILT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SETTILT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SETTILT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-SETTILT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1 1 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: resetTilt (12.1 step 7.4, 7.7): the tilt becomes none; the tilt-up sound plays when the given state's tilt was not none (tilt) (tilt after, sound 1 up)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-RESET" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-RESET" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-RESET" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-RESET" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0 0/1 0/1 0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: big dripleaf tick (12.1 step 7.6, example 11): with a neighbour signal the tilt resets; otherwise unstable becomes partial (sound down 1, next tick 10)," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-TICK" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-TICK" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-TICK" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-TICK" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-TICK" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-TICK" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/2/-1 0/0/-1 2/1/10 3/1/100 0/2/-1 0/0/-1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: big dripleaf neighbour change (12.1 step 7.7): a redstone signal resets the tilt at once, with the tilt-up sound when it was not none; no signal does nothing" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-NEIGHBOUR" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-NEIGHBOUR" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-NEIGHBOUR" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/1 0/0 -1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: big dripleaf projectile hit (12.1 step 7.8): setTiltAndScheduleTick to full with the tilt-down sound: the leaf drops at once and resets 100 ticks later (tilt," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-PROJECTILE" USING  WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "3/1/100" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: stem survival (12.2 step 1): a stem or supports_big_dripleaf below and a stem or head above (below ok, above ok) (survives)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-SURVIVE" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-SURVIVE" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-SURVIVE" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-SURVIVE" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: stem shape update (12.2 step 2): from DOWN or UP a stem that cannot survive schedules a tick (delay 1); a water tick when waterlogged (direction 1 down 2 up 3" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-SU" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-SU" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-SU" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-SU" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-SU" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0 1/1 0/0 0/1 0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: stem finding the top (12.2 step 4): from pos move UP over stems; the first other cell must be big_dripleaf (stems from pos including pos, the cell above them" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-FIND" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-FIND" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-FIND" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1 1/3 0/2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: stem bone meal (12.2 step 4): valid when the head is found and canPlaceAt(top.above()); success always; the top becomes a stem and a new head is placed above" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-BONE" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-BONE" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-BONE" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-STEM-BONE" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1 0/1 0/1 0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: placeWithRandomHeight (12.3, example 10): n = Mth.nextInt(2, 5); i counts the cells from pos up that canPlaceAt, at most n; stems fill all but the last used" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-HEIGHT" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-HEIGHT" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-HEIGHT" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-HEIGHT" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-HEIGHT" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-HEIGHT" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-HEIGHT" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-HEIGHT" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 9" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-DRIP-HEIGHT" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2/2/1/1 5/5/4/4 4/4/3/3 5/2/1/1 3/0/0/0 2/1/0/0 5/1/0/0 4/3/2/2 5/5/4/4" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: small dripleaf mayPlaceOn (12.4 step 1): the supporting state in supports_small_dripleaf (clay, moss_block), or a water source in the lower half's own cell" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SMALL-PLACEON" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SMALL-PLACEON" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SMALL-PLACEON" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SMALL-PLACEON" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SMALL-PLACEON" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: small dripleaf setPlacedBy (12.4 step 4): on a server only the upper half is placed above, facing from the placed state, waterlogged copied (server) (placed)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SMALL-PLACED" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SMALL-PLACED" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: small dripleaf shape update (12.4 step 5): a water tick when waterlogged, then the DoublePlantBlock update (waterlogged) (water tick)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SMALL-SU" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SMALL-SU" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: small dripleaf bone meal (12.4 step 6): always valid and successful; from the lower half the upper cell becomes the legacy fluid block (water when it is water," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SMALL-BONE" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SMALL-BONE" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SMALL-BONE" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SMALL-BONE" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/0/1/18 1/1/0/0/18 1/1/-1/1/18 1/1/-1/0/18" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-4§12 Dripleaf: small dripleaf constants (12.4): column 12 wide to 13, maximum vertical offset 0.1 (x 1000)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC4-SMALL-CONST" USING  WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "12/0/13/100" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-FX(WS-K) = FUNCTION NUMVAL(WS-TOK)
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-T1) "|" FUNCTION TRIM(WS-T2) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-GROWTH-29B-4-12.

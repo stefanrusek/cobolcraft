@@ -37,6 +37,7 @@
  01 WS-REACHED             BINARY-LONG.
  01 WS-SCREEN              BINARY-LONG.
  01 WS-TEXT                PIC X(1024).
+ 01 WS-TYPE                PIC X(10).
  01 WS-BIG-LOG             PIC X(4096).
  01 WS-E4                  PIC -(9)9.
  01 WS-SAY                 PIC X(64).
@@ -139,9 +140,21 @@
          DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   The guest may use operator commands (the choice made): the clock command is confirmed.
-     MOVE "/clock 1000" TO WS-SAY
-     MOVE 11 TO WS-SAY-LENGTH
+*>   US2 (feature 002): the world opened to others is of the type it was created with; the guest's replica
+*>   holds that type's dimension.
+     CALL "U17-WORLD-TYPE" USING WS-TYPE
+     MOVE "acceptance US2-3 given a world of the cobolcraft type opened to others when a guest joined then "
+         & "the world's type is cobolcraft and the guest is in its main dimension" TO TL-CASE
+     MOVE "type cobolcraft guest in cobolcraft:main" TO TL-EXPECTED
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
+     MOVE SPACES TO TL-OBSERVED
+     STRING "type " FUNCTION TRIM(WS-TYPE) " guest in " FUNCTION TRIM(PL-DIM-NAME)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The guest may use operator commands (the choice made): the time command is confirmed.
+     MOVE "/time set 1000" TO WS-SAY
+     MOVE 14 TO WS-SAY-LENGTH
      CALL "CV-SAY" USING CONVH WS-BOBBY WS-SAY WS-SAY-LENGTH
      MOVE 4 TO WS-COUNT
      CALL "CV-STEPS" USING CONVH WS-COUNT
@@ -150,7 +163,7 @@
          & "it is carried out" TO TL-CASE
      MOVE "found 1" TO TL-EXPECTED
      MOVE 0 TO WS-COUNT
-     INSPECT WS-BIG-LOG TALLYING WS-COUNT FOR ALL "1000"
+     INSPECT WS-BIG-LOG TALLYING WS-COUNT FOR ALL "commands.time.set"
      MOVE SPACES TO TL-OBSERVED
      MOVE FUNCTION MIN(WS-COUNT, 1) TO WS-E1
      STRING "found " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
@@ -161,8 +174,8 @@
 
 *>   Block changes both ways: the guest (creative) breaks a block, the host places one. The guest
 *>   first stands apart (the host's command), so neither aims at the other's figure.
-     MOVE "/relocate Bobby at 12.5 62 8.5" TO WS-SAY
-     MOVE 30 TO WS-SAY-LENGTH
+     MOVE "/tp Bobby 12.5 62 8.5" TO WS-SAY
+     MOVE 21 TO WS-SAY-LENGTH
      CALL "CV-SAY" USING CONVH WS-ALICE WS-SAY WS-SAY-LENGTH
      MOVE 40 TO WS-COUNT
      CALL "CV-STEPS" USING CONVH WS-COUNT
@@ -273,21 +286,18 @@
          DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   The guest's state to be kept (US17-5): survival, health 17, food 9, five ledger tiles, a spot
+*>   The guest's state to be kept (US17-5): survival, 3 points of damage, five ledger tiles, a spot
 *>   away from the spawn, all set by the host's operator commands.
-     MOVE "/mode Bobby survival" TO WS-SAY
-     MOVE 20 TO WS-SAY-LENGTH
+     MOVE "/gamemode survival Bobby" TO WS-SAY
+     MOVE 24 TO WS-SAY-LENGTH
      CALL "CV-SAY" USING CONVH WS-ALICE WS-SAY WS-SAY-LENGTH
-     MOVE "/relocate Bobby at 20 60 20" TO WS-SAY
-     MOVE 27 TO WS-SAY-LENGTH
-     CALL "CV-SAY" USING CONVH WS-ALICE WS-SAY WS-SAY-LENGTH
-     MOVE "/supply Bobby ledger_tile 5" TO WS-SAY
-     MOVE 27 TO WS-SAY-LENGTH
-     CALL "CV-SAY" USING CONVH WS-ALICE WS-SAY WS-SAY-LENGTH
-     MOVE "/vitality Bobby 17" TO WS-SAY
+     MOVE "/tp Bobby 20 60 20" TO WS-SAY
      MOVE 18 TO WS-SAY-LENGTH
      CALL "CV-SAY" USING CONVH WS-ALICE WS-SAY WS-SAY-LENGTH
-     MOVE "/ration Bobby 9" TO WS-SAY
+     MOVE "/give Bobby cobolcraft:ledger_tile 5" TO WS-SAY
+     MOVE 36 TO WS-SAY-LENGTH
+     CALL "CV-SAY" USING CONVH WS-ALICE WS-SAY WS-SAY-LENGTH
+     MOVE "/damage Bobby 3" TO WS-SAY
      MOVE 15 TO WS-SAY-LENGTH
      CALL "CV-SAY" USING CONVH WS-ALICE WS-SAY WS-SAY-LENGTH
      MOVE 60 TO WS-COUNT
@@ -456,3 +466,16 @@
      END-PERFORM
      GOBACK.
  END PROGRAM GUEST-STATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. U17-WORLD-TYPE.
+*> USING type out (PIC X(10)): the type of the world the core has open (level.dat WorldType).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ LINKAGE SECTION.
+ 01 L-TYPE                 PIC X(10).
+ PROCEDURE DIVISION USING L-TYPE.
+     MOVE CW-WORLD-TYPE TO L-TYPE
+     GOBACK.
+ END PROGRAM U17-WORLD-TYPE.

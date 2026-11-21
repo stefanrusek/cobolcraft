@@ -1,0 +1,183 @@
+*> Entity models part 4 section 2 (Cow): the meshes of the layers cow, cold_cow, warm_cow and cow_baby (2.3), the variant texture rule (2.1) and setupAnim (2.2).
+*> Entry points for the integrator (inputs): EF4-VARIANT-TEXTURE IN(variant null, baby) OUT(0 missing texture, 1 the variant's adult asset, 2 its baby texture) (2.1, also pig and chicken);
+*>   EF4-COW-ANIM EMM-MODEL state(1 xRot, 2 yRot degrees, 3 walk position, 4 walk speed): QuadrupedModel.setupAnim of 2.2 (EF4-QUAD-POSE). Layers: EF4-LAYER (COW, COLD_COW, WARM_COW, COW_BABY).
+
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-M-COW.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(100) VALUE "P head root 0 4 -8 0 0 0".
+    05 FILLER PIC X(100) VALUE "C head 0 0 -4 -4 -6 8 8 6 0 0".
+    05 FILLER PIC X(100) VALUE "C head 1 33 -3 1 -7 6 3 1 0 0".
+    05 FILLER PIC X(100) VALUE "C head 22 0 -5 -5 -5 1 3 1 0 0".
+    05 FILLER PIC X(100) VALUE "C head 22 0 4 -5 -5 1 3 1 0 0".
+    05 FILLER PIC X(100) VALUE "P body root 0 5 2 1.5707964 0 0".
+    05 FILLER PIC X(100) VALUE "C body 18 4 -6 -10 -7 12 18 10 0 0".
+    05 FILLER PIC X(100) VALUE "C body 52 0 -2 2 -8 4 6 1 0 0".
+    05 FILLER PIC X(100) VALUE "P right_hind_leg root -4 12 7 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_hind_leg 0 16 -2 0 -2 4 12 4 0 0".
+    05 FILLER PIC X(100) VALUE "P left_hind_leg root 4 12 7 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_hind_leg 0 16 -2 0 -2 4 12 4 0 1".
+    05 FILLER PIC X(100) VALUE "P right_front_leg root -4 12 -5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_front_leg 0 16 -2 0 -2 4 12 4 0 0".
+    05 FILLER PIC X(100) VALUE "P left_front_leg root 4 12 -5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_front_leg 0 16 -2 0 -2 4 12 4 0 1".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 64 TIMES.
+ 01 WS-ROWS-R REDEFINES WS-ROWS.
+    05 WS-ROW              PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N                   BINARY-LONG VALUE 16.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CALL "EMM-INIT" USING EMM-MODEL
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS-R WS-N WS-ZERO
+     MOVE 64 TO MM-TEXW
+     MOVE 64 TO MM-TEXH
+     GOBACK.
+ END PROGRAM EF4-M-COW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-M-COLD-COW.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(100) VALUE "P head root 0 4 -8 0 0 0".
+    05 FILLER PIC X(100) VALUE "C head 0 0 -4 -4 -6 8 8 6 0 0".
+    05 FILLER PIC X(100) VALUE "C head 9 33 -3 1 -7 6 3 1 0 0".
+    05 FILLER PIC X(100) VALUE "P body root 0 5 2 1.5707964 0 0".
+    05 FILLER PIC X(100) VALUE "C body 20 32 -6 -10 -7 12 18 10 0.5 0".
+    05 FILLER PIC X(100) VALUE "C body 18 4 -6 -10 -7 12 18 10 0 0".
+    05 FILLER PIC X(100) VALUE "C body 52 0 -2 2 -8 4 6 1 0 0".
+    05 FILLER PIC X(100) VALUE "P right_hind_leg root -4 12 7 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_hind_leg 0 16 -2 0 -2 4 12 4 0 0".
+    05 FILLER PIC X(100) VALUE "P left_hind_leg root 4 12 7 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_hind_leg 0 16 -2 0 -2 4 12 4 0 1".
+    05 FILLER PIC X(100) VALUE "P right_front_leg root -4 12 -5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_front_leg 0 16 -2 0 -2 4 12 4 0 0".
+    05 FILLER PIC X(100) VALUE "P left_front_leg root 4 12 -5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_front_leg 0 16 -2 0 -2 4 12 4 0 1".
+    05 FILLER PIC X(100) VALUE "P right_horn head -4.5 -2.5 -3.5 1.5708 0 0".
+    05 FILLER PIC X(100) VALUE "C right_horn 0 40 -1.5 -4.5 -0.5 2 6 2 0 0".
+    05 FILLER PIC X(100) VALUE "P left_horn head 5.5 -2.5 -5 1.5708 0 0".
+    05 FILLER PIC X(100) VALUE "C left_horn 0 32 -1.5 -3 -0.5 2 6 2 0 0".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 61 TIMES.
+ 01 WS-ROWS-R REDEFINES WS-ROWS.
+    05 WS-ROW              PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N                   BINARY-LONG VALUE 19.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CALL "EMM-INIT" USING EMM-MODEL
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS-R WS-N WS-ZERO
+     MOVE 64 TO MM-TEXW
+     MOVE 64 TO MM-TEXH
+     GOBACK.
+ END PROGRAM EF4-M-COLD-COW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-M-WARM-COW.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(100) VALUE "P head root 0 4 -8 0 0 0".
+    05 FILLER PIC X(100) VALUE "C head 0 0 -4 -4 -6 8 8 6 0 0".
+    05 FILLER PIC X(100) VALUE "C head 1 33 -3 1 -7 6 3 1 0 0".
+    05 FILLER PIC X(100) VALUE "C head 27 0 -8 -3 -5 4 2 2 0 0".
+    05 FILLER PIC X(100) VALUE "C head 39 0 -8 -5 -5 2 2 2 0 0".
+    05 FILLER PIC X(100) VALUE "C head 27 0 4 -3 -5 4 2 2 0 1".
+    05 FILLER PIC X(100) VALUE "C head 39 0 6 -5 -5 2 2 2 0 1".
+    05 FILLER PIC X(100) VALUE "P body root 0 5 2 1.5707964 0 0".
+    05 FILLER PIC X(100) VALUE "C body 18 4 -6 -10 -7 12 18 10 0 0".
+    05 FILLER PIC X(100) VALUE "C body 52 0 -2 2 -8 4 6 1 0 0".
+    05 FILLER PIC X(100) VALUE "P right_hind_leg root -4 12 7 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_hind_leg 0 16 -2 0 -2 4 12 4 0 0".
+    05 FILLER PIC X(100) VALUE "P left_hind_leg root 4 12 7 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_hind_leg 0 16 -2 0 -2 4 12 4 0 1".
+    05 FILLER PIC X(100) VALUE "P right_front_leg root -4 12 -5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_front_leg 0 16 -2 0 -2 4 12 4 0 0".
+    05 FILLER PIC X(100) VALUE "P left_front_leg root 4 12 -5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_front_leg 0 16 -2 0 -2 4 12 4 0 1".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 62 TIMES.
+ 01 WS-ROWS-R REDEFINES WS-ROWS.
+    05 WS-ROW              PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N                   BINARY-LONG VALUE 18.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CALL "EMM-INIT" USING EMM-MODEL
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS-R WS-N WS-ZERO
+     MOVE 64 TO MM-TEXW
+     MOVE 64 TO MM-TEXH
+     GOBACK.
+ END PROGRAM EF4-M-WARM-COW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-M-COW-BABY.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ROWS.
+    05 FILLER PIC X(100) VALUE "P head root 0 13.569 -5.1667 0 0 0".
+    05 FILLER PIC X(100) VALUE "C head 0 18 -3 -4.569 -4.8333 6 6 5 0 0".
+    05 FILLER PIC X(100) VALUE "C head 8 29 3 -5.569 -3.8333 1 2 1 0 0".
+    05 FILLER PIC X(100) VALUE "C head 4 29 -4 -5.569 -3.8333 1 2 1 0 1".
+    05 FILLER PIC X(100) VALUE "C head 12 29 -2 -1.569 -5.8333 4 3 1 0 0".
+    05 FILLER PIC X(100) VALUE "P body root 3 19 -5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C body 0 0 -7 -7 -1 8 6 12 0 0".
+    05 FILLER PIC X(100) VALUE "P right_front_leg root -2.5 18 -3.5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_front_leg 22 18 -1.5 0 -1.5 3 6 3 0 0".
+    05 FILLER PIC X(100) VALUE "P left_front_leg root 2.5 18 -3.5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_front_leg 34 18 -1.5 0 -1.5 3 6 3 0 0".
+    05 FILLER PIC X(100) VALUE "P right_hind_leg root -2.5 18 3.5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C right_hind_leg 22 27 -1.5 0 -1.5 3 6 3 0 0".
+    05 FILLER PIC X(100) VALUE "P left_hind_leg root 2.5 18 3.5 0 0 0".
+    05 FILLER PIC X(100) VALUE "C left_hind_leg 34 27 -1.5 0 -1.5 3 6 3 0 0".
+    05 FILLER PIC X(100) VALUE SPACES OCCURS 65 TIMES.
+ 01 WS-ROWS-R REDEFINES WS-ROWS.
+    05 WS-ROW              PIC X(100) OCCURS 80 TIMES.
+ 01 WS-N                   BINARY-LONG VALUE 15.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ PROCEDURE DIVISION USING EMM-MODEL.
+     CALL "EMM-INIT" USING EMM-MODEL
+     CALL "EM3-ROWS" USING EMM-MODEL WS-ROWS-R WS-N WS-ZERO
+     MOVE 64 TO MM-TEXW
+     MOVE 64 TO MM-TEXH
+     GOBACK.
+ END PROGRAM EF4-M-COW-BABY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-VARIANT-TEXTURE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 0 TO L-O(1)
+     IF L-I(1) = 0
+         MOVE 1 TO L-O(1)
+         IF L-I(2) NOT = 0
+             MOVE 2 TO L-O(1)
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM EF4-VARIANT-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF4-COW-ANIM.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ PROCEDURE DIVISION USING EMM-MODEL L-IN.
+     CALL "EF4-QUAD-POSE" USING EMM-MODEL L-IN
+     GOBACK.
+ END PROGRAM EF4-COW-ANIM.

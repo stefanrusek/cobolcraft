@@ -1,0 +1,1 @@
+{"type": "minecraft:add", "left": {"type": "minecraft:add", "left": {"type": "minecraft:abs", "input": "minecraft:t/small"}, "right": {"type": "minecraft:square", "input": "minecraft:t/small"}}, "right": {"type": "minecraft:add", "left": {"type": "minecraft:cube", "input": "minecraft:t/small"}, "right": {"type": "minecraft:negate", "input": "minecraft:t/small"}}}

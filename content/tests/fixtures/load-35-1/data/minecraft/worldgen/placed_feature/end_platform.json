@@ -1,0 +1,1 @@
+{"feature":"minecraft:end_platform","placement":[{"type":"minecraft:fixed_placement","positions":[[100,49,0]]},{"type":"minecraft:noise_based_count","noise_to_count_ratio":160,"noise_factor":80.0,"noise_offset":0.3},{"type":"minecraft:randomly_selected","placements":[{"type":"minecraft:in_square"}]}]}

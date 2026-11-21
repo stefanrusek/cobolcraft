@@ -1,0 +1,144 @@
+*> Test of 31-2 section 8 (Comparator; T0881): the comparator block entity keeps the output signal (OutputSignal, default 0) and saves it.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-2-8.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY CITEMS.
+ 01 WS-TEXT                PIC X(8192).
+ 01 WS-OUT                 PIC X(8192).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-EDIT2               PIC -(9)9.
+ 01 WS-EDIT3               PIC -(9)9.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-TYPE10              BINARY-LONG VALUE 10.
+ 01 WS-FORM                BINARY-LONG VALUE 2.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-X                   BINARY-LONG VALUE 5.
+ 01 WS-Y                   BINARY-LONG VALUE 70.
+ 01 WS-Z                   BINARY-LONG VALUE 5.
+ 01 WS-T                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-KEY24               PIC X(24).
+ 01 WS-KEY32               PIC X(32).
+ 01 WS-NAME                PIC X(32).
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-HOPPER              BINARY-LONG.
+ 01 WS-DISPENSER           BINARY-LONG.
+ 01 WS-DROPPER             BINARY-LONG.
+ 01 WS-SRC                BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-SHELF               BINARY-LONG.
+ 01 WS-COMP                BINARY-LONG.
+ 01 WS-FL1                 FLOAT-LONG.
+ 01 WS-FL2                 FLOAT-LONG.
+ 01 WS-FL3                 FLOAT-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "minecraft:hopper" TO WS-KEY
+     MOVE 16 TO WS-LEN
+     MOVE 18 TO WS-T
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-T WS-KEY WS-LEN WS-HOPPER
+     ADD 1 TO WS-X
+     MOVE "minecraft:dispenser" TO WS-KEY
+     MOVE 19 TO WS-LEN
+     MOVE 5 TO WS-T
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-T WS-KEY WS-LEN WS-DISPENSER
+     ADD 1 TO WS-X
+     MOVE "minecraft:dropper" TO WS-KEY
+     MOVE 17 TO WS-LEN
+     MOVE 6 TO WS-T
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-T WS-KEY WS-LEN WS-DROPPER
+     MOVE "T" TO TL-MODE
+     MOVE "minecraft:comparator" TO WS-KEY
+     MOVE 20 TO WS-LEN
+     MOVE 19 TO WS-T
+     ADD 1 TO WS-X
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-T WS-KEY WS-LEN WS-COMP
+     MOVE "minecraft:chiseled_bookshelf" TO WS-KEY
+     MOVE 28 TO WS-LEN
+     MOVE 38 TO WS-T
+     ADD 1 TO WS-X
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-T WS-KEY WS-LEN WS-SHELF
+     MOVE "minecraft:comparator" TO WS-KEY
+     MOVE 20 TO WS-LEN
+     MOVE 19 TO WS-T
+     ADD 1 TO WS-X
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-T WS-KEY WS-LEN WS-SRC
+     MOVE "acceptance US12 31-2§8 Comparator: a fresh comparator writes OutputSignal 0, one holding 9 writes 9 (always written, not a container, no name or loot)" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     MOVE WS-COMP TO WS-IDX
+     PERFORM SAVE-RENDER
+     MOVE 9 TO BE-OUTPUT(WS-COMP)
+     PERFORM SAVE-RENDER
+     MOVE "{OutputSignal:0} {OutputSignal:9} " TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 31-2§8 Comparator: loading reads OutputSignal, a tag without it gives 0, no update tag is sent to clients" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     MOVE 12 TO BE-OUTPUT(WS-SRC)
+     MOVE WS-COMP TO WS-IDX
+     PERFORM ROUNDTRIP
+     MOVE BE-OUTPUT(WS-COMP) TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) " " DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
+     MOVE 0 TO WS-FORM
+     MOVE 9 TO BE-OUTPUT(WS-COMP)
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-COMP PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     MOVE BE-OUTPUT(WS-COMP) TO WS-EDIT
+     MOVE 19 TO WS-T
+     CALL "BE-SYNC-INFO" USING WS-T WS-A WS-B
+     MOVE WS-A TO WS-EDIT2
+     MOVE WS-B TO WS-EDIT3
+     STRING FUNCTION TRIM(WS-EDIT) " sync " FUNCTION TRIM(WS-EDIT2) FUNCTION TRIM(WS-EDIT3) DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
+     MOVE "12 0 sync 00" TO TL-EXPECTED
+     PERFORM CHECK
+
+     GOBACK.
+
+ CHECK.
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ROUNDTRIP.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-SRC WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-IDX PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER.
+
+*> Saves entity WS-IDX in form WS-FORM and appends the rendered compound to WS-TEXT.
+ SAVE-RENDER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-IDX WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-TYPE10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR.
+ END PROGRAM TEST-BE-31-2-8.
+
+ COPY CORETEST.

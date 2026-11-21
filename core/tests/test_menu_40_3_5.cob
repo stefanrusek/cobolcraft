@@ -1,0 +1,861 @@
+*> Test of 40-3§5 section, Smithing table (T1033): mayPlace by property set, the error flag, createResult, taking, quick-move, cycling hint icons, tooltips and the preview (core/src/menu-40-3.cob).
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-I as integers and WS-FX as doubles), calls the program
+*> and shows the outputs WS-R(1..WS-N) joined by "/", one group per call; expected values come from the rules and tables of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MENU-40-3-5.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY INTERACT.
+ 01 WS-ISG.
+    05 WS-I1 BINARY-LONG.
+    05 WS-I2 BINARY-LONG.
+    05 WS-I3 BINARY-LONG.
+    05 WS-I4 BINARY-LONG.
+    05 WS-I5 BINARY-LONG.
+    05 WS-I6 BINARY-LONG.
+    05 WS-I7 BINARY-LONG.
+    05 WS-I8 BINARY-LONG.
+    05 WS-I9 BINARY-LONG.
+    05 WS-I10 BINARY-LONG.
+    05 WS-I11 BINARY-LONG.
+    05 WS-I12 BINARY-LONG.
+    05 WS-I13 BINARY-LONG.
+    05 WS-I14 BINARY-LONG.
+    05 WS-I15 BINARY-LONG.
+    05 WS-I16 BINARY-LONG.
+ 01 WS-IST REDEFINES WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-FXSG.
+    05 WS-FX1 FLOAT-LONG.
+    05 WS-FX2 FLOAT-LONG.
+    05 WS-FX3 FLOAT-LONG.
+    05 WS-FX4 FLOAT-LONG.
+    05 WS-FX5 FLOAT-LONG.
+    05 WS-FX6 FLOAT-LONG.
+    05 WS-FX7 FLOAT-LONG.
+    05 WS-FX8 FLOAT-LONG.
+    05 WS-FX9 FLOAT-LONG.
+    05 WS-FX10 FLOAT-LONG.
+    05 WS-FX11 FLOAT-LONG.
+    05 WS-FX12 FLOAT-LONG.
+    05 WS-FX13 FLOAT-LONG.
+    05 WS-FX14 FLOAT-LONG.
+    05 WS-FX15 FLOAT-LONG.
+    05 WS-FX16 FLOAT-LONG.
+ 01 WS-FXST REDEFINES WS-FXSG.
+    05 WS-FX FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R1 BINARY-LONG.
+    05 WS-R2 BINARY-LONG.
+    05 WS-R3 BINARY-LONG.
+    05 WS-R4 BINARY-LONG.
+    05 WS-R5 BINARY-LONG.
+    05 WS-R6 BINARY-LONG.
+    05 WS-R7 BINARY-LONG.
+    05 WS-R8 BINARY-LONG.
+    05 WS-R9 BINARY-LONG.
+    05 WS-R10 BINARY-LONG.
+    05 WS-R11 BINARY-LONG.
+    05 WS-R12 BINARY-LONG.
+    05 WS-R13 BINARY-LONG.
+    05 WS-R14 BINARY-LONG.
+    05 WS-R15 BINARY-LONG.
+    05 WS-R16 BINARY-LONG.
+ 01 WS-RST REDEFINES WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RFSG.
+    05 WS-RF1 FLOAT-LONG.
+    05 WS-RF2 FLOAT-LONG.
+    05 WS-RF3 FLOAT-LONG.
+    05 WS-RF4 FLOAT-LONG.
+    05 WS-RF5 FLOAT-LONG.
+    05 WS-RF6 FLOAT-LONG.
+    05 WS-RF7 FLOAT-LONG.
+    05 WS-RF8 FLOAT-LONG.
+ 01 WS-RFST REDEFINES WS-RFSG.
+    05 WS-RF FLOAT-LONG OCCURS 8 TIMES.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(10)9.
+ 01 WS-TEXTS.
+    05 WS-T1               PIC X(96).
+    05 WS-T2               PIC X(96).
+ 01 WS-NM                PIC X(32).
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 40-3§5 Smithing table: mayPlace (5.1): slot 0 takes an item of the smithing_template" &
+         " set, slot 1 of smithing_base, slot 2 of smithing_addition (slot, in template set, in base" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-MAYPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-MAYPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-MAYPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-MAYPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-MAYPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-MAYPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-MAYPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-MAYPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-MAYPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-MAYPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-MAYPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-MAYPLACE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 0 0 1 0 0 0 0 1 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: error flag (5.2, 8.9): on a server level 1 exactly when the t" &
+         "hree inputs are present and the result is empty; on a client level it keeps the packet value" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 1 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-FLAG" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-FLAG" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-FLAG" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-FLAG" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0 1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-FLAG" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-FLAG" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-FLAG" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 0 0 0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: createResult (5.3): on a client level no recipe, so the resul" &
+         "t is emptied; on a server level the first matching recipe sets the recipe used and the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-CREATE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-CREATE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-CREATE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-CREATE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-CREATE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1 1/0 0/0 0/0 0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: take (5.4, E9): one item is taken from each non-empty input s" &
+         "lot and level event 1044 is sent (count 0, count 1, count 2 -> new counts, event)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TAKE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 64 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TAKE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 3 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TAKE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TAKE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TAKE" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0/1044 0/63/0/1044 0/2/0/1044 1/0/0/1044 0/0/0/1044" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: canMoveIntoInputSlots (5.4): an item the template set accepts" &
+         " while slot 0 is empty, or base set and slot 1 empty, or addition set and slot 2 empty" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 0 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-CANMOVE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-CANMOVE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-CANMOVE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-CANMOVE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-CANMOVE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-CANMOVE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-CANMOVE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-CANMOVE" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 0 1 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: double-click gather (5.4): only the result slot 3 is excluded" &
+         " (slot -> canTakeItemForPickAll)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-PICKALL" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-PICKALL" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-PICKALL" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-PICKALL" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-PICKALL" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "39" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-PICKALL" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 0 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: cycling hint icons, tick (5.6): a different list is stored an" &
+         "d the icon index reset (the tick counter is not); a non-empty list counts the tick and at" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 4 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-TICK" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 4 29 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-TICK" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 4 29 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-TICK" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 4 29 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-TICK" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 4 59 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-TICK" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-TICK" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-TICK" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 59 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-TICK" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 29 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-TICK" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 7 89 6" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-TICK" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0 30/1 30/2 30/1 60/1 5/0 5/0 60/0 30/0 90/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: cycling hint icons, draw (5.6): nothing for an empty list or " &
+         "an occupied slot; transitioning for a list of 2 or more from tick 30; alpha = min((tick mod" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "2 0 0 0.0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-DRAW" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 29 1 0.5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-DRAW" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 30 1 0.0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-DRAW" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 31 1 0.5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-DRAW" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 31 0 0.25 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-DRAW" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 33 1 0.75 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-DRAW" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 34 0 0.0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-DRAW" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/1000000/0/0/0 1/0/1000000/0/0/0 1/1/0/1/0/1000000 1/1/375000/1/0/625000 1/1/312500/1/1/687500 1/" &
+         "1/937500/1/0/62500 1/1/1000000/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: cycling hint icons, draw again (5.6): nothing for an empty li" &
+         "st or an occupied slot; transitioning for a list of 2 or more from tick 30; alpha = min((tick" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "2 35 1 0.5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-DRAW" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 95 3 0.5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-DRAW" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 100 0 0.5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-DRAW" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 5 0 0.5 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-DRAW" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 40 2 0.5 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-DRAW" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 60 0 0.25 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-CYCLE-DRAW" USING WS-I1 WS-I2 WS-I3 WS-FX4 WS-I5 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1000000/0/0/0 1/1/1000000/0/0/0 1/0/1000000/0/0/0 0/0/0/0/0/0 0/0/0/0/0/0 1/1/62500/1/3/937500" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): armor trim has 4 base and 7 addition icons," &
+         " netherite upgrade 11 base and 1 addition; no template gives none (kind 1 armor trim 2" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-COUNT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-COUNT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-COUNT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-COUNT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-COUNT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-COUNT" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 4 7 11 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): the sprite of each icon of kind 1 slot 1, i" &
+         "n order (kind, slot, position from 1)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "1 1 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "1 1 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "1 1 4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "container/slot/helmet|helmet container/slot/chestplate|chestplate container/slot/leggings|leggings c" &
+         "ontainer/slot/boots|boots" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): the sprite of each icon of kind 1 slot 2, i" &
+         "n order (kind, slot, position from 1)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "1 2 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "1 2 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "1 2 4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "1 2 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "1 2 6" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "1 2 7" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "container/slot/ingot|ingot container/slot/redstone_dust|redstone_dust container/slot/lapis_lazuli|la" &
+         "pis_lazuli container/slot/quartz|quartz container/slot/diamond|diamond container/slot/emerald|emeral" &
+         "d container/slot/amethyst_shard|amethyst_shard" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): the sprite of each icon of kind 2 slot 1, i" &
+         "n order (kind, slot, position from 1)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "2 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "2 1 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "2 1 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "2 1 4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "2 1 5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "2 1 6" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "2 1 7" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "2 1 8" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "2 1 9" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "2 1 10" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "2 1 11" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "container/slot/helmet|helmet container/slot/sword|sword container/slot/chestplate|chestplate contain" &
+         "er/slot/pickaxe|pickaxe container/slot/leggings|leggings container/slot/axe|axe container/slot/boots" &
+         "|boots container/slot/hoe|hoe container/slot/shovel|shovel container/slot/nautilus_armor|nautilus_ar" &
+         "mor container/slot/spear|spear" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): the sprite of each icon of kind 2 slot 2, i" &
+         "n order (kind, slot, position from 1)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "2 2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-ICON-NAME" USING WS-I1 WS-I2 WS-I3 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "container/slot/ingot|ingot" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: icon lists (5.6): the two template icons of slot 0 (position " &
+         "1 or 2)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-TEMPLATE-ICON" USING WS-I1 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-TEMPLATE-ICON" USING WS-I1 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "container/slot/smithing_template_armor_trim|armor_trim container/slot/smithing_template_netherite_up" &
+         "grade|netherite_upgrade" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: tooltip choice (5.7): the error tooltip over the 28 x 21 box," &
+         " overridden by Add Smithing Template over an empty slot 0, or by the base or addition" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 -1 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TOOLTIP" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 -1 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TOOLTIP" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 -1 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TOOLTIP" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TOOLTIP" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TOOLTIP" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TOOLTIP" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TOOLTIP" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 2 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TOOLTIP" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TOOLTIP" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TOOLTIP" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TOOLTIP" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 3 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TOOLTIP" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-TOOLTIP" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 2 2 0 3 4 0 0 0 0 3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: tooltip texts (5.7): keys and English text of the error and t" &
+         "he missing template (code, template kind 1 armor trim 2 netherite)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-TOOLTIP-TEXT" USING WS-I1 WS-I2 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-TOOLTIP-TEXT" USING WS-I1 WS-I2 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "container.upgrade.error_tooltip|Item can't be upgraded this way container.upgrade.missing_template_t" &
+         "ooltip|Add Smithing Template" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: tooltip texts (5.7): keys and English text of the armor trim " &
+         "descriptions (code, template kind 1 armor trim 2 netherite)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "3 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-TOOLTIP-TEXT" USING WS-I1 WS-I2 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "4 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-TOOLTIP-TEXT" USING WS-I1 WS-I2 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "item.minecraft.smithing_template.armor_trim.base_slot_description|Add a piece of armor item.minecraf" &
+         "t.smithing_template.armor_trim.additions_slot_description|Add ingot or crystal" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: tooltip texts (5.7): keys and English text of the netherite u" &
+         "pgrade descriptions (code, template kind 1 armor trim 2 netherite)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "3 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-TOOLTIP-TEXT" USING WS-I1 WS-I2 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "4 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-TOOLTIP-TEXT" USING WS-I1 WS-I2 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "item.minecraft.smithing_template.netherite_upgrade.base_slot_description|Add diamond armor, weapon, " &
+         "or tool item.minecraft.smithing_template.netherite_upgrade.additions_slot_description|Add Netherite " &
+         "Ingot" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: armor stand preview (5.8, E9): an empty result clears everyth" &
+         "ing; a head item that passes HumanoidArmorLayer.shouldRender is the head equipment, else the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-PREVIEW" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-PREVIEW" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-PREVIEW" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 3 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-PREVIEW" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 4 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-PREVIEW" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 5 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-PREVIEW" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-PREVIEW" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-PREVIEW" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 3 4 5 6 6 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: preview update (5.8): updateArmorStandPreview runs from subIn" &
+         "it and whenever slot 3 changes (slot -> update)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-SLOT-CHANGED" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-SLOT-CHANGED" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-SLOT-CHANGED" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-3§5 Smithing table: screen (5.5, E11): the error sprite 28 x 21 at (leftPos + 65," &
+         " topPos + 46), the preview box (leftPos + 121, topPos + 20) to (leftPos + 161, topPos + 80)," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "339 157" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-SCREEN" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6 WS-R7 WS-R8
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN3-SMITH-SCREEN" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6 WS-R7 WS-R8
+     MOVE 8 TO WS-N
+     PERFORM ADD-N
+     MOVE "404/203/460/177/500/237/44/15 65/46/121/20/161/80/44/15" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-FX(WS-K) = FUNCTION NUMVAL(WS-TOK)
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-T1) "|" FUNCTION TRIM(WS-T2) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-MENU-40-3-5.

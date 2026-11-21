@@ -21,6 +21,7 @@
  01 WS-PORT-PROBLEM        PIC X(64) VALUE "must be a number from 1 to 65535".
  01 WS-VIEW-PROBLEM        PIC X(64) VALUE "must be a number from 2 to 32".
  01 WS-BOOLEAN-PROBLEM     PIC X(64) VALUE "must be true or false".
+ 01 WS-WORKERS-PROBLEM     PIC X(64) VALUE "must be auto or a number from 0 to 4".
  01 WS-CASES.
     05 FILLER PIC X(64) VALUE "port=0".
     05 FILLER PIC X(64) VALUE "port".
@@ -67,14 +68,20 @@
     05 FILLER PIC X(64) VALUE "extra-dimensions=".
     05 FILLER PIC X(64) VALUE "extra-dimensions".
     05 FILLER PIC X(64) VALUE "B".
+    05 FILLER PIC X(64) VALUE "generation-workers=5".
+    05 FILLER PIC X(64) VALUE "generation-workers".
+    05 FILLER PIC X(64) VALUE "W".
+    05 FILLER PIC X(64) VALUE "generation-workers=many".
+    05 FILLER PIC X(64) VALUE "generation-workers".
+    05 FILLER PIC X(64) VALUE "W".
  01 WS-CASE-TABLE REDEFINES WS-CASES.
-    05 WS-CASE OCCURS 15 TIMES.
+    05 WS-CASE OCCURS 17 TIMES.
        10 WS-LINE          PIC X(64).
        10 WS-KEY           PIC X(64).
        10 WS-PROBLEM       PIC X(64).
  PROCEDURE DIVISION.
      CALL "SVT-SCRATCH" USING WS-SCRATCH
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 15
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 17
          EVALUATE WS-PROBLEM(WS-I)
              WHEN "P"
                  MOVE WS-PORT-PROBLEM TO WS-PROBLEM(WS-I)
@@ -82,6 +89,8 @@
                  MOVE WS-VIEW-PROBLEM TO WS-PROBLEM(WS-I)
              WHEN "B"
                  MOVE WS-BOOLEAN-PROBLEM TO WS-PROBLEM(WS-I)
+             WHEN "W"
+                 MOVE WS-WORKERS-PROBLEM TO WS-PROBLEM(WS-I)
          END-EVALUATE
          MOVE SPACES TO WS-CONF
          STRING "# sub-case||port=25565|" DELIMITED BY SIZE WS-LINE(WS-I) DELIMITED BY SPACE

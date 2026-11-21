@@ -25,14 +25,7 @@
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
 
-     MOVE "contract wire server Level Chunk With Light of chunk (0, 0) of cobolcraft:main equals "
-         & "play-s2c-2e-level-chunk-with-light-spawn.hex" TO TL-CASE
-     MOVE 0 TO WS-CX WS-CZ
-     CALL "PB-RESET" USING PB-BUFFER
-     CALL "CHUNK-PACKET-BUILD" USING WS-DIM WS-CX WS-CZ PB-BUFFER
-     MOVE "contract/fixtures/wire/play-s2c-2e-level-chunk-with-light-spawn.hex" TO WS-PATH
-     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
-
+*>   Level Chunk With Light of the spawn chunk is generated from contract/cases/wire-core.tsv.
      MOVE "contract wire server Chunk Batch Start equals play-s2c-0c-chunk-batch-start.hex"
          TO TL-CASE
      CALL "PB-RESET" USING PB-BUFFER

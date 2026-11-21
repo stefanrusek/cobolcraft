@@ -1,12 +1,13 @@
 #!/bin/sh
 # Workspace bootstrap (`make bootstrap`; contracts/test-harness.md §1, research R1).
 # 1. Checks every prerequisite; names the missing ones, prints the install line and exits 1.
-# 2. Creates the build/ tree.
+# 2. Creates the build/ tree (including build/generated-test/, the scratch space of tests that run the
+#    extraction tool).
 # 3. Compiles shim/shaders/*.vert and *.frag to build/shaders/<file>.spv.
 # It starts no shared infrastructure.
 set -u
 REPO=$(cd "$(dirname "$0")/.." && pwd)
-PACKAGES="shim proto core server client"
+PACKAGES="shim formats proto content extract core server client"
 BREW_LINE="brew install gnucobol glfw molten-vk vulkan-loader vulkan-headers glslang openssl@3 pkg-config"
 
 missing=""
@@ -55,7 +56,7 @@ if [ -n "$missing" ]; then
     exit 1
 fi
 
-mkdir -p "$REPO/build/bin" "$REPO/build/shaders" || exit 1
+mkdir -p "$REPO/build/bin" "$REPO/build/shaders" "$REPO/build/generated-test" || exit 1
 for package in $PACKAGES; do
     mkdir -p "$REPO/build/$package/obj" "$REPO/build/$package/tests" || exit 1
 done

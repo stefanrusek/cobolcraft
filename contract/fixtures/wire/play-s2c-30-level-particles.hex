@@ -1,0 +1,21 @@
+# Fixture: Level Particles, block (state id option)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x30 (48).
+# Doc refs: 05a 0x30 and Particle (block: VarInt state id); 46 section 5.1 (block = 1)
+# Stated inputs:
+#   particle block with state 35722; override limiter true; always show false; position (-1.5, 3.0, 8.25); zero spread and speed; count 0; randomization 0
+
+30                                               # packet id: VarInt 0x30
+01 8a 97 02                                      # Particle: type VarInt 1 (block), state VarInt 35722
+01                                               # Override limiter: Boolean true
+00                                               # Always show: Boolean false
+bf f8 00 00 00 00 00 00                          # X: Double -1.5
+40 08 00 00 00 00 00 00                          # Y: Double 3.0
+40 20 80 00 00 00 00 00                          # Z: Double 8.25
+00 00 00 00                                      # X distance: Float 0.0
+00 00 00 00                                      # Y distance: Float 0.0
+00 00 00 00                                      # Z distance: Float 0.0
+00 00 00 00                                      # X max speed: Float 0.0
+00 00 00 00                                      # Y max speed: Float 0.0
+00 00 00 00                                      # Z max speed: Float 0.0
+00                                               # Count: VarInt 0
+00                                               # Randomization: VarInt 0

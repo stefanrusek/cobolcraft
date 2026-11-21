@@ -4,7 +4,8 @@
 *> entity id. Alice (creative) at the spawn point has room for exactly one stack (slot 35 empty).
 *> Item A is spawned and removed, item B (greystone x64) is spawned at her feet, then item C
 *> (dump_shard x64) takes A's free, earlier row; both lie within her pickup range with no pickup
-*> delay. B, the lower entity id, is taken; C stays.
+*> delay. B, the lower entity id, is taken first and is the stack that lands in slot 35; C is then consumed
+*> without being added (a creative player's full inventory does not block a pickup, 41 section 4.3).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-GROUND-ITEM-ORDER.
  DATA DIVISION.
@@ -50,7 +51,7 @@
      MOVE PL-Z(WS-PLAYER) TO WS-Z
 
      MOVE "test ground item order a newer item in an earlier tracker row is processed after an "
-         & "older one: the lower entity id is picked up first" TO TL-CASE
+         & "older one: the lower entity id is picked up first (it is the one added to slot 35)" TO TL-CASE
      MOVE 2 TO WS-ITEM
      CALL "GI-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ITEM WS-COUNT WS-DELAY
          WS-ROW-A
@@ -71,7 +72,8 @@
          FUNCTION TRIM(WS-E2) " row C - row B " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE
          INTO TL-OBSERVED
      MOVE "T" TO TL-MODE
-     MOVE "127(3,1,64) 20(35=2x64) 78(3) slot 35 item 2 C left 64 row C - row B -1"
+*>   A creative player consumes what does not fit (41 section 4.3): C is taken too, after B, without being added.
+     MOVE "127(3,1,64) 20(35=2x64) 78(3) 127(4,1,64) 78(4) slot 35 item 2 C left 0 row C - row B -1"
          TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.

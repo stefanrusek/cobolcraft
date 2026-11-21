@@ -1,0 +1,138 @@
+*> Acceptance test, gifts to a Hero of the Village (docs/protocol/19 section 22.9; lane 002-lane-mobsb3, T8104): the gift tables by profession, and GiveGiftToHero: nothing
+*> counts down without a hero near, the first gift needs 600 evaluations with a hero, then 20 more ticks with the hero within 5 blocks, and one item is thrown.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US15-VILLAGER-GIFT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY VILSTATE.
+ 01 WS-NAME                PIC X(16).
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ITEM-TYPE           BINARY-LONG.
+ 01 WS-VROW                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-FIRSTI              BINARY-LONG VALUE 0.
+ 01 WS-VID                 BINARY-LONG.
+ 01 WS-HERO                BINARY-LONG VALUE 31.
+ 01 WS-AMP                 BINARY-LONG VALUE 0.
+ 01 WS-DUR                 BINARY-LONG VALUE 20000.
+ 01 WS-FLAGS               BINARY-LONG VALUE 3.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-BEFORE              BINARY-LONG.
+ 01 WS-PROF                PIC X(16).
+ 01 WS-GKEY                PIC X(32).
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-HOSTILE-MOBS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "Alice" TO WS-NAME
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     CALL "TEST-STANDARD-TABLES"
+     MOVE CN-PLAYER(WS-CONN) TO WS-ROW
+     MOVE "N" TO TL-MODE
+*>   The tables.
+     MOVE "shepherd" TO WS-PROF
+     CALL "VIL-GIFT-COUNT" USING WS-PROF WS-ZERO WS-N
+     MOVE "acceptance US15 19§22.9 the shepherd gift table has 16 wools" TO TL-CASE
+     MOVE 16 TO TL-EXPECTED-N
+     MOVE WS-N TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "armorer" TO WS-PROF
+     CALL "VIL-GIFT-COUNT" USING WS-PROF WS-ZERO WS-N
+     MOVE "acceptance US15 19§22.9 the armorer gift table has 4 pieces" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE WS-N TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "none" TO WS-PROF
+     CALL "VIL-GIFT-COUNT" USING WS-PROF WS-ZERO WS-N
+     MOVE "acceptance US15 19§22.9 no profession gives the unemployed table (wheat seeds)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-N TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "VIL-GIFT-KEY" USING WS-PROF WS-ZERO WS-FIRSTI WS-GKEY
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US15 19§22.9 unemployed_gift is wheat_seeds" TO TL-CASE
+     MOVE "wheat_seeds" TO TL-EXPECTED
+     MOVE WS-GKEY TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "armorer" TO WS-PROF
+     CALL "VIL-GIFT-KEY" USING WS-PROF WS-ONE WS-FIRSTI WS-GKEY
+     MOVE "acceptance US15 19§22.9 a baby villager's gift is a poppy whatever the profession" TO TL-CASE
+     MOVE "poppy" TO TL-EXPECTED
+     MOVE WS-GKEY TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+*>   The behaviour.
+     MOVE "villager" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "item" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ITEM-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE PL-X(WS-ROW) TO WS-X
+     MOVE PL-Y(WS-ROW) TO WS-Y
+     MOVE PL-Z(WS-ROW) TO WS-Z
+     ADD 2 TO WS-X
+     CALL "MOB-SPAWN" USING PL-DIM(WS-ROW) WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-VROW
+     MOVE EN-ID(WS-VROW) TO WS-VID
+     CALL "VL-FIND" USING WS-VID WS-ONE WS-SLOT
+     MOVE "librarian" TO VL-PROF(WS-SLOT)
+     PERFORM COUNT-ITEMS
+     MOVE WS-N TO WS-BEFORE
+     PERFORM 700 TIMES
+         CALL "VL-GIFT-TICK" USING WS-VROW
+     END-PERFORM
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 19§22.9 without a hero nothing is thrown" TO TL-CASE
+     MOVE WS-BEFORE TO TL-EXPECTED-N
+     MOVE WS-N TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "EFFECT-ADD" USING WS-ROW WS-HERO WS-AMP WS-DUR WS-FLAGS
+     PERFORM 590 TIMES
+         CALL "VL-GIFT-TICK" USING WS-VROW
+     END-PERFORM
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 19§22.9 590 evaluations with a hero: still no gift (cooldown 600)" TO TL-CASE
+     MOVE WS-BEFORE TO TL-EXPECTED-N
+     MOVE WS-N TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM 40 TIMES
+         CALL "VL-GIFT-TICK" USING WS-VROW
+     END-PERFORM
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 19§22.9 after the cooldown and 20 ticks of walking one gift is thrown" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = WS-BEFORE + 1
+     MOVE WS-N TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM 100 TIMES
+         CALL "VL-GIFT-TICK" USING WS-VROW
+     END-PERFORM
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 19§22.9 the next gift waits at least 600 ticks" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = WS-BEFORE + 1
+     MOVE WS-N TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ COUNT-ITEMS.
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-ITEM-TYPE
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM.
+ END PROGRAM ACC-US15-VILLAGER-GIFT.
+ COPY CORETEST.

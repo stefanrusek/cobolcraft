@@ -1,0 +1,178 @@
+*> Implementation test (T0416; docs/protocol/10 sections 4.1, 6.5 and 11 section 2.1 to 2.6): the final density at sample points.
+*> The fixture tree core/tests/fixtures/final is hand-authored from the documents: final_density has the structure the
+*> documents give (the squeeze of an interpolated, blend_density-wrapped lerp pair around the range_choice of sloped_cheese,
+*> the cheese, spaghetti, entrance and pillar terms of the deep-rock branch, the min with the noodle that has four interpolated
+*> nodes behind y gates, and the beardifier), with each noise leaf replaced by a gradient or constant (so that no noise code is
+*> needed to know the answer). The expected values come from an independent Python evaluator of the same JSON
+*> (core/tests/fixtures/final/expected.py: float32 after every operation, the interpolation by corners). The check of the
+*> real overworld data (real noises, real splines) is a Convergence test, not this one.
+*> Also: the same function evaluated through the interpolation grids of a chunk (grid mode, density.cob) is bit identical to
+*> the direct evaluation, at every block of a column of the chunk.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DENSITY-FINAL.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY DENSITY.
+ COPY CTWORLDGEN.
+ COPY GENSTEPS.
+ 01 WS-DIR                 PIC X(1100) VALUE "core/tests/fixtures/final".
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-SEED                BINARY-DOUBLE UNSIGNED VALUE 0.
+ 01 WS-KEY                 PIC X(112) VALUE "minecraft:overworld/final_density".
+ 01 WS-ROWS.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE -64.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-DOUBLE VALUE 4585562606772682752.   *> 0.03748241811990738
+    05 FILLER BINARY-LONG VALUE 3.
+    05 FILLER BINARY-LONG VALUE -50.
+    05 FILLER BINARY-LONG VALUE 5.
+    05 FILLER BINARY-DOUBLE VALUE -4633925473439580160.   *> -0.0663655623793602
+    05 FILLER BINARY-LONG VALUE 5.
+    05 FILLER BINARY-LONG VALUE -41.
+    05 FILLER BINARY-LONG VALUE 7.
+    05 FILLER BINARY-DOUBLE VALUE -4629692442256343040.   *> -0.1252213418483734
+    05 FILLER BINARY-LONG VALUE 13.
+    05 FILLER BINARY-LONG VALUE 30.
+    05 FILLER BINARY-LONG VALUE 22.
+    05 FILLER BINARY-DOUBLE VALUE 4599163041085390848.   *> 0.30483511090278625
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-LONG VALUE 100.
+    05 FILLER BINARY-LONG VALUE 0.
+    05 FILLER BINARY-DOUBLE VALUE 4594179097684344832.   *> 0.1390853375196457
+    05 FILLER BINARY-LONG VALUE 7.
+    05 FILLER BINARY-LONG VALUE 127.
+    05 FILLER BINARY-LONG VALUE 9.
+    05 FILLER BINARY-DOUBLE VALUE 4573725986679422976.   *> 0.006137420888990164
+    05 FILLER BINARY-LONG VALUE 9.
+    05 FILLER BINARY-LONG VALUE 238.
+    05 FILLER BINARY-LONG VALUE 4.
+    05 FILLER BINARY-DOUBLE VALUE -4621443817441067008.   *> -0.4583333432674408
+    05 FILLER BINARY-LONG VALUE -5.
+    05 FILLER BINARY-LONG VALUE 245.
+    05 FILLER BINARY-LONG VALUE -3.
+    05 FILLER BINARY-DOUBLE VALUE -4621443817441067008.   *> -0.4583333432674408
+    05 FILLER BINARY-LONG VALUE 4.
+    05 FILLER BINARY-LONG VALUE 250.
+    05 FILLER BINARY-LONG VALUE 4.
+    05 FILLER BINARY-DOUBLE VALUE -4624509508188635136.   *> -0.2881533205509186
+    05 FILLER BINARY-LONG VALUE 20.
+    05 FILLER BINARY-LONG VALUE 300.
+    05 FILLER BINARY-LONG VALUE -30.
+    05 FILLER BINARY-DOUBLE VALUE -4640510557563125760.   *> -0.02499479055404663
+    05 FILLER BINARY-LONG VALUE -33.
+    05 FILLER BINARY-LONG VALUE -60.
+    05 FILLER BINARY-LONG VALUE 18.
+    05 FILLER BINARY-DOUBLE VALUE 4574471621456166912.   *> 0.006784155964851379
+    05 FILLER BINARY-LONG VALUE 12.
+    05 FILLER BINARY-LONG VALUE 64.
+    05 FILLER BINARY-LONG VALUE 12.
+    05 FILLER BINARY-DOUBLE VALUE 4599547752580382720.   *> 0.32619088888168335
+    05 FILLER BINARY-LONG VALUE -100.
+    05 FILLER BINARY-LONG VALUE 128.
+    05 FILLER BINARY-LONG VALUE 100.
+    05 FILLER BINARY-DOUBLE VALUE -4628488600504238080.   *> -0.15863466262817383
+    05 FILLER BINARY-LONG VALUE 31.
+    05 FILLER BINARY-LONG VALUE 17.
+    05 FILLER BINARY-LONG VALUE -8.
+    05 FILLER BINARY-DOUBLE VALUE 4581769528416927744.   *> 0.02120632492005825
+    05 FILLER BINARY-LONG VALUE 64.
+    05 FILLER BINARY-LONG VALUE 319.
+    05 FILLER BINARY-LONG VALUE 64.
+    05 FILLER BINARY-DOUBLE VALUE -4640510557563125760.   *> -0.02499479055404663
+
+ 01 WS-ROW-TABLE REDEFINES WS-ROWS.
+    05 WS-ROW OCCURS 15 TIMES.
+       10 WS-X             BINARY-LONG.
+       10 WS-Y             BINARY-LONG.
+       10 WS-Z             BINARY-LONG.
+       10 WS-BITS          BINARY-DOUBLE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-R                   FLOAT-LONG.
+ 01 WS-R2                  FLOAT-LONG.
+ 01 WS-GOT                 BINARY-DOUBLE.
+ 01 WS-GOT2                BINARY-DOUBLE.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-ROOT                BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG VALUE 1.
+ 01 WS-LX                  BINARY-LONG.
+ 01 WS-LZ                  BINARY-LONG.
+ 01 WS-Y2                  BINARY-LONG.
+ 01 WS-X2                  BINARY-LONG.
+ 01 WS-Z2                  BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-V                   FLOAT-LONG.
+ 01 WS-JOB.
+    COPY GENJOB REPLACING LEADING ==GJ-== BY ==T-==.
+ PROCEDURE DIVISION.
+     MOVE "N" TO TL-MODE
+     CALL "WORLDGEN-FREE"
+     CALL "DENSITY-FUNCTIONS-LOAD" USING WS-DIR WS-STATUS
+     MOVE "test density final the fixture functions load" TO TL-CASE
+     MOVE WS-STATUS TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "DENSITY-SETUP" USING WS-SEED
+     MOVE 0 TO DNG-ACTIVE
+
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 15
+         CALL "DENSITY-EVAL" USING WS-KEY WS-X(WS-I) WS-Y(WS-I) WS-Z(WS-I) WS-R
+         CALL STATIC "cc_f64_f64_bits" USING BY REFERENCE WS-R WS-GOT
+         IF WS-GOT NOT = WS-BITS(WS-I)
+             MOVE WS-I TO WS-EDIT
+             MOVE SPACES TO TL-CASE
+             STRING "test density final at sample row " FUNCTION TRIM(WS-EDIT) " is bit exact"
+                 DELIMITED BY SIZE INTO TL-CASE
+             MOVE WS-BITS(WS-I) TO TL-EXPECTED-N
+             MOVE WS-GOT TO TL-OBSERVED-N
+             CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+             ADD 1 TO WS-BAD
+         END-IF
+     END-PERFORM
+     MOVE "test density final is bit exact at all fifteen sample points" TO TL-CASE
+     MOVE WS-BAD TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   grid mode: the chunk at (0, 0) of a job, every block of the columns x 5 and x 6 (z 3 and 11), y -64 to 319
+     CALL "WG-FIND" USING WS-KIND WS-KEY WS-ROOT
+     MOVE 0 TO T-G-COUNT
+     CALL "GEN-FIND-INTERP" USING WS-ROOT WS-JOB
+     MOVE "test density final the final density has five interpolated nodes" TO TL-CASE
+     MOVE T-G-COUNT TO TL-OBSERVED-N
+     MOVE 5 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO T-CX T-CZ
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 24
+         MOVE WS-I TO T-SUB
+         CALL "GEN-STAGE-DENSITY" USING WS-JOB
+     END-PERFORM
+     MOVE 0 TO WS-BAD
+     PERFORM VARYING WS-LX FROM 0 BY 1 UNTIL WS-LX > 15
+         PERFORM VARYING WS-LZ FROM 0 BY 7 UNTIL WS-LZ > 15
+             PERFORM VARYING WS-Y2 FROM -64 BY 1 UNTIL WS-Y2 > 319
+                 MOVE 0 TO DNG-ACTIVE
+                 CALL "DENSITY-NODE" USING WS-ROOT WS-LX WS-Y2 WS-LZ WS-R
+                 MOVE 1 TO DNG-ACTIVE
+                 MOVE 0 TO DNG-X0 DNG-Z0
+                 SET DNG-PTR TO ADDRESS OF T-GRID
+                 CALL "DENSITY-NODE" USING WS-ROOT WS-LX WS-Y2 WS-LZ WS-R2
+                 CALL STATIC "cc_f64_f64_bits" USING BY REFERENCE WS-R WS-GOT
+                 CALL STATIC "cc_f64_f64_bits" USING BY REFERENCE WS-R2 WS-GOT2
+                 IF WS-GOT NOT = WS-GOT2
+                     ADD 1 TO WS-BAD
+                 END-IF
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     MOVE 0 TO DNG-ACTIVE
+     MOVE "test density final grid mode equals the direct evaluation at every block of 48 columns" TO TL-CASE
+     MOVE WS-BAD TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-DENSITY-FINAL.

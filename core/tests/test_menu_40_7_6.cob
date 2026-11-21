@@ -1,0 +1,653 @@
+*> Test of 40-7§6 section, The screen (T1081): init, drawing order, labels, survival wrappers, selectTab, scrollbar and cursors (core/src/menu-40-7.cob).
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-I as integers and WS-FX as doubles), calls the program
+*> and shows the outputs WS-R(1..WS-N) joined by "/", one group per call; expected values come from the rules and tables of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MENU-40-7-6.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY INTERACT.
+ 01 WS-ISG.
+    05 WS-I1 BINARY-LONG.
+    05 WS-I2 BINARY-LONG.
+    05 WS-I3 BINARY-LONG.
+    05 WS-I4 BINARY-LONG.
+    05 WS-I5 BINARY-LONG.
+    05 WS-I6 BINARY-LONG.
+    05 WS-I7 BINARY-LONG.
+    05 WS-I8 BINARY-LONG.
+    05 WS-I9 BINARY-LONG.
+    05 WS-I10 BINARY-LONG.
+    05 WS-I11 BINARY-LONG.
+    05 WS-I12 BINARY-LONG.
+    05 WS-I13 BINARY-LONG.
+    05 WS-I14 BINARY-LONG.
+    05 WS-I15 BINARY-LONG.
+    05 WS-I16 BINARY-LONG.
+ 01 WS-IST REDEFINES WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-FXSG.
+    05 WS-FX1 FLOAT-LONG.
+    05 WS-FX2 FLOAT-LONG.
+    05 WS-FX3 FLOAT-LONG.
+    05 WS-FX4 FLOAT-LONG.
+    05 WS-FX5 FLOAT-LONG.
+    05 WS-FX6 FLOAT-LONG.
+    05 WS-FX7 FLOAT-LONG.
+    05 WS-FX8 FLOAT-LONG.
+    05 WS-FX9 FLOAT-LONG.
+    05 WS-FX10 FLOAT-LONG.
+    05 WS-FX11 FLOAT-LONG.
+    05 WS-FX12 FLOAT-LONG.
+    05 WS-FX13 FLOAT-LONG.
+    05 WS-FX14 FLOAT-LONG.
+    05 WS-FX15 FLOAT-LONG.
+    05 WS-FX16 FLOAT-LONG.
+ 01 WS-FXST REDEFINES WS-FXSG.
+    05 WS-FX FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R1 BINARY-LONG.
+    05 WS-R2 BINARY-LONG.
+    05 WS-R3 BINARY-LONG.
+    05 WS-R4 BINARY-LONG.
+    05 WS-R5 BINARY-LONG.
+    05 WS-R6 BINARY-LONG.
+    05 WS-R7 BINARY-LONG.
+    05 WS-R8 BINARY-LONG.
+    05 WS-R9 BINARY-LONG.
+    05 WS-R10 BINARY-LONG.
+    05 WS-R11 BINARY-LONG.
+    05 WS-R12 BINARY-LONG.
+    05 WS-R13 BINARY-LONG.
+    05 WS-R14 BINARY-LONG.
+    05 WS-R15 BINARY-LONG.
+    05 WS-R16 BINARY-LONG.
+ 01 WS-RST REDEFINES WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RFSG.
+    05 WS-RF1 FLOAT-LONG.
+    05 WS-RF2 FLOAT-LONG.
+    05 WS-RF3 FLOAT-LONG.
+    05 WS-RF4 FLOAT-LONG.
+    05 WS-RF5 FLOAT-LONG.
+    05 WS-RF6 FLOAT-LONG.
+    05 WS-RF7 FLOAT-LONG.
+    05 WS-RF8 FLOAT-LONG.
+ 01 WS-RFST REDEFINES WS-RFSG.
+    05 WS-RF FLOAT-LONG OCCURS 8 TIMES.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(10)9.
+ 01 WS-TEXTS.
+    05 WS-T1               PIC X(96).
+    05 WS-T2               PIC X(96).
+ 01 WS-NM                PIC X(32).
+ 01 WS-T3                 PIC X(96).
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 40-7§6 The screen: 6.1 the search box at (leftPos + 82, topPos + 6), 80 x 9, at most" &
+         " 50 characters, text colour -1 (leftPos, topPos -> x, y, w, h, max length, colour)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "329 172" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SEARCHBOX" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SEARCHBOX" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5 WS-R6
+     MOVE 6 TO WS-N
+     PERFORM ADD-N
+     MOVE "411/178/80/9/50/-1 82/6/80/9/50/-1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.2 extractBackground steps in order (step 1 to 8)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DRAWSTEP" USING WS-I1 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DRAWSTEP" USING WS-I1 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DRAWSTEP" USING WS-I1 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DRAWSTEP" USING WS-I1 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DRAWSTEP" USING WS-I1 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "6" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DRAWSTEP" USING WS-I1 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "7" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DRAWSTEP" USING WS-I1 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "8" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DRAWSTEP" USING WS-I1 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "dimmed world|- other tabs|- selected tab background|- scrollbar cursor|- search box|- scroller|- sel" &
+         "ected tab button|- player preview|-" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.2, 6.6, 11.2 scroller sprite at (leftPos + 175, topPos + 18 + (" &
+         "int)(95 x scroll)), 12 x 15; at scroll 0.5 y is 237 for topPos 172 (leftPos, topPos, scroll ->" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "329 172 0.5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-THUMB" USING WS-I1 WS-I2 WS-FX3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "329 172 0.0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-THUMB" USING WS-I1 WS-I2 WS-FX3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "329 172 1.0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-THUMB" USING WS-I1 WS-I2 WS-FX3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "329 172 0.999" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-THUMB" USING WS-I1 WS-I2 WS-FX3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0.3333" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-THUMB" USING WS-I1 WS-I2 WS-FX3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "504/237 504/190 504/285 504/284 175/49" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.3 the selected tab title is drawn only when the tab shows it, a" &
+         "t (8, 6) in #404040 (-12566464) without shadow (show title -> drawn, x, y, colour, shadow)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-LABEL" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-LABEL" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/8/6/-12566464/0 1/8/6/-12566464/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.4, 12: survival tab wrappers: 0 to 4 off screen (-2000), armour" &
+         " 5 to 8 at (54, 6), (54, 33), (108, 6), (108, 33), main from (9, 54), hotbar at y 112," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WRAP" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WRAP" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "5" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WRAP" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "6" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WRAP" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "7" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WRAP" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "8" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WRAP" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "9" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WRAP" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "17" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WRAP" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "18" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WRAP" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "35" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WRAP" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "36" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WRAP" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "44" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WRAP" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "45" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WRAP" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "-2000/-2000 -2000/-2000 54/6 54/33 108/6 108/33 9/54 153/54 9/72 153/90 9/112 153/112 35/20" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.4 the survival tab has 46 wrappers and the delete slot at (173," &
+         " 112) in the shared container slot 0: 47 slots" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DELETESLOT" USING WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "173/112/0/47" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.5 selectTab: the items come from the saved hotbars (1) or a cop" &
+         "y of the tab list (2); the survival tab replaces the slot list (1), leaving it restores (2);" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 1 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SELECT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1 6 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SELECT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 1 7 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SELECT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1 14 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SELECT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 1 14" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SELECT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 4 7 7" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SELECT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 2 7 14" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SELECT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 2 14 14" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SELECT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 3 6 6" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SELECT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SELECT" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "2/0/0/1 1/0/0/1 0/0/1/1 0/1/0/1 2/2/0/1 0/0/1/0 0/2/1/1 0/1/0/1 1/0/0/1 2/0/0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.5 step 2 and 11.10: the hotbar tab list has 81 entries, 9 per s" &
+         "aved hotbar: list index -> hotbar and position (index 30 is hotbar 3, entry 3)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HBLIST" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "8" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HBLIST" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "9" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HBLIST" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "30" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HBLIST" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "80" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HBLIST" USING WS-I1 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0 0/8 1/0 3/3 8/8" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.5 step 2: an empty saved hotbar gives a paper with creative_slo" &
+         "t_lock named inventory.hotbarInfo at entry j = h and empty stacks elsewhere; a used hotbar" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "3 3 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HBENTRY" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HBENTRY" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HBENTRY" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "8 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HBENTRY" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 3 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HBENTRY" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HBENTRY" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 0 2 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.5 refreshCurrentTabContents: the search tab runs the search ref" &
+         "resh, other tabs re-add the list (selected type -> 1 search refresh 2 list)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-REFRESHCUR" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-REFRESHCUR" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-REFRESHCUR" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 2 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.6, 11.1 scrollbar box: leftPos + 175 <= x < leftPos + 189, topP" &
+         "os + 18 <= y < topPos + 130 and the tab can scroll: x 504 to 517, y 190 to 301 for window 854" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "504 190 329 172 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SCROLLBOX" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "503 190 329 172 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SCROLLBOX" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "517 190 329 172 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SCROLLBOX" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "518 190 329 172 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SCROLLBOX" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "504 189 329 172 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SCROLLBOX" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "504 301 329 172 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SCROLLBOX" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "504 302 329 172 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SCROLLBOX" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "504 250 329 172 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-SCROLLBOX" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1 0 0 1 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.6, 11.2 drag: scroll = clamp((pointerY - (topPos + 18) - 7.5) /" &
+         " 97, 0, 1) (x 1e6): pointer y 246 at topPos 172 gives 0.5 (pointer y, topPos -> scroll)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "246 172" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DRAG" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "190 172" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DRAG" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "300 172" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DRAG" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "100 172" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DRAG" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "205 172" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DRAG" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DRAG" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "500000 0 1000000 0 77320 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.6 press: inside the scrollbar box scrolling takes the screen's " &
+         "canScroll and the event is consumed (inside, can scroll, scrolling before -> scrolling," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-PRESS" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-PRESS" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-PRESS" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-PRESS" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1 0/1 0/0 1/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.6 wheel: after the generic handler, when it did not consume and" &
+         " the screen can scroll the wheel scrolls and consumes (generic consumed, can scroll -> scroll" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WHEEL" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WHEEL" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WHEEL" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-WHEEL" USING WS-I1 WS-I2 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1 0/1 0/0 0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.2, 6.6 screen canScroll: the tab flag and the menu's canScroll " &
+         "(tab flag, menu can scroll -> can scroll)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-CANSC" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-CANSC" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-CANSC" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-CANSC" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.2 step 4 scrollbar cursor: in the box, resize north-south while" &
+         " dragging and able to scroll (1), the hand when able to scroll (2), not allowed when it cannot" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-CURSORBAR" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-CURSORBAR" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-CURSORBAR" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-CURSORBAR" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-CURSORBAR" USING WS-I1 WS-I2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 2 3 3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§6 The screen: 6.2 survival tab delete slot tooltip inventory.binSlot (Destroy I" &
+         "tem): shown when the survival tab is selected and the pointer is over the 16 x 16 delete slot" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "2 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DELTIP" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DELTIP" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DELTIP" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "4 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-DELTIP" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-FX(WS-K) = FUNCTION NUMVAL(WS-TOK)
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-T1) "|" FUNCTION TRIM(WS-T2) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-MENU-40-7-6.

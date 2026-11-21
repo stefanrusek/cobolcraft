@@ -1,0 +1,10 @@
+{
+ "feature": "minecraft:poppy",
+ "placement": [
+  {
+   "type": "minecraft:cuboid",
+   "xz_size": 1,
+   "y_size": 1
+  }
+ ]
+}

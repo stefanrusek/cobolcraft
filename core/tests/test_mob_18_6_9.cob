@@ -1,0 +1,158 @@
+*> Acceptance test (US15, FR-036, SC-008; docs/protocol/18-mob-framework.md section 6.9, with doc 44 part 2 section 11): placement types.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MOB-18-6-9.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY XORO.
+ COPY MOBSPAWN.
+ 01 WS-CASE               PIC X(240).
+ 01 WS-E                  BINARY-DOUBLE.
+ 01 WS-O                  BINARY-DOUBLE.
+ 01 WS-SEED               BINARY-DOUBLE UNSIGNED.
+ 01 WS-MIRROR.
+    05 WS-M-LO            BINARY-DOUBLE UNSIGNED.
+    05 WS-M-HI            BINARY-DOUBLE UNSIGNED.
+ 01 WS-PLAYER            BINARY-LONG.
+ 01 WS-DIM               BINARY-LONG.
+ 01 WS-X                 BINARY-LONG.
+ 01 WS-Z                 BINARY-LONG.
+ 01 WS-Q                 BINARY-LONG.
+ 01 WS-FY                BINARY-LONG.
+ 01 WS-Y                 BINARY-LONG.
+ 01 WS-Y2                BINARY-LONG.
+ 01 WS-SIZE              BINARY-LONG VALUE 8.
+ 01 WS-KIND              BINARY-LONG VALUE 1.
+ 01 WS-PLACE             BINARY-LONG.
+ 01 WS-OK                BINARY-LONG.
+ 01 WS-KEY               PIC X(112).
+ 01 WS-STATE             BINARY-LONG.
+ 01 WS-STONE             BINARY-LONG.
+ 01 WS-AIR               BINARY-LONG VALUE 0.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     COMPUTE WS-X = FUNCTION INTEGER(PL-X(WS-PLAYER)) + 20
+     COMPUTE WS-Z = FUNCTION INTEGER(PL-Z(WS-PLAYER))
+     COMPUTE WS-FY = FUNCTION INTEGER(PL-Y(WS-PLAYER)) + 40
+     MOVE WS-FY TO WS-Q
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-X WS-Z WS-SIZE WS-FY WS-KIND
+     ADD 2 TO WS-X
+     ADD 2 TO WS-Z
+     COMPUTE WS-Y = WS-FY + 1
+     COMPUTE WS-Y2 = WS-FY + 2
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STONE
+     MOVE 1 TO WS-PLACE
+     CALL "MS6-PLACEMENT-OK" USING WS-PLACE WS-DIM WS-X WS-Y WS-Z WS-OK
+     MOVE "acceptance US15 18§6.9 Placement types: ON_GROUND passes on a stone floor with two air cells" TO WS-CASE
+     COMPUTE WS-E = 1
+     COMPUTE WS-O = WS-OK
+     PERFORM CHECK-N
+     COMPUTE WS-Y = WS-FY + 12
+     MOVE 1 TO WS-PLACE
+     CALL "MS6-PLACEMENT-OK" USING WS-PLACE WS-DIM WS-X WS-Y WS-Z WS-OK
+     MOVE "acceptance US15 18§6.9 Placement types: ON_GROUND fails in mid air (no block below)" TO WS-CASE
+     COMPUTE WS-E = 0
+     COMPUTE WS-O = WS-OK
+     PERFORM CHECK-N
+     COMPUTE WS-Y = WS-FY + 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y2 WS-Z WS-STONE
+     MOVE 1 TO WS-PLACE
+     CALL "MS6-PLACEMENT-OK" USING WS-PLACE WS-DIM WS-X WS-Y WS-Z WS-OK
+     MOVE "acceptance US15 18§6.9 Placement types: ON_GROUND fails when the block above the position is solid" TO WS-CASE
+     COMPUTE WS-E = 0
+     COMPUTE WS-O = WS-OK
+     PERFORM CHECK-N
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y2 WS-Z WS-AIR
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:rail" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE 1 TO WS-PLACE
+     CALL "MS6-PLACEMENT-OK" USING WS-PLACE WS-DIM WS-X WS-Y WS-Z WS-OK
+     MOVE "acceptance US15 18§6.9 Placement types: ON_GROUND fails inside a rail (prevent_mob_spawning_inside)" TO WS-CASE
+     COMPUTE WS-E = 0
+     COMPUTE WS-O = WS-OK
+     PERFORM CHECK-N
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:fire" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE 1 TO WS-PLACE
+     CALL "MS6-PLACEMENT-OK" USING WS-PLACE WS-DIM WS-X WS-Y WS-Z WS-OK
+     MOVE "acceptance US15 18§6.9 Placement types: ON_GROUND fails in fire (dangerous)" TO WS-CASE
+     COMPUTE WS-E = 0
+     COMPUTE WS-O = WS-OK
+     PERFORM CHECK-N
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:lava" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE 1 TO WS-PLACE
+     CALL "MS6-PLACEMENT-OK" USING WS-PLACE WS-DIM WS-X WS-Y WS-Z WS-OK
+     MOVE "acceptance US15 18§6.9 Placement types: ON_GROUND fails in a fluid" TO WS-CASE
+     COMPUTE WS-E = 0
+     COMPUTE WS-O = WS-OK
+     PERFORM CHECK-N
+     MOVE 3 TO WS-PLACE
+     CALL "MS6-PLACEMENT-OK" USING WS-PLACE WS-DIM WS-X WS-Y WS-Z WS-OK
+     MOVE "acceptance US15 18§6.9 Placement types: IN_LAVA passes at a lava block" TO WS-CASE
+     COMPUTE WS-E = 1
+     COMPUTE WS-O = WS-OK
+     PERFORM CHECK-N
+     MOVE 2 TO WS-PLACE
+     CALL "MS6-PLACEMENT-OK" USING WS-PLACE WS-DIM WS-X WS-Y WS-Z WS-OK
+     MOVE "acceptance US15 18§6.9 Placement types: IN_WATER fails at a lava block" TO WS-CASE
+     COMPUTE WS-E = 0
+     COMPUTE WS-O = WS-OK
+     PERFORM CHECK-N
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:water" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE 2 TO WS-PLACE
+     CALL "MS6-PLACEMENT-OK" USING WS-PLACE WS-DIM WS-X WS-Y WS-Z WS-OK
+     MOVE "acceptance US15 18§6.9 Placement types: IN_WATER passes at water with air above" TO WS-CASE
+     COMPUTE WS-E = 1
+     COMPUTE WS-O = WS-OK
+     PERFORM CHECK-N
+     MOVE 3 TO WS-PLACE
+     CALL "MS6-PLACEMENT-OK" USING WS-PLACE WS-DIM WS-X WS-Y WS-Z WS-OK
+     MOVE "acceptance US15 18§6.9 Placement types: IN_LAVA fails at a water block" TO WS-CASE
+     COMPUTE WS-E = 0
+     COMPUTE WS-O = WS-OK
+     PERFORM CHECK-N
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y2 WS-Z WS-STONE
+     MOVE 2 TO WS-PLACE
+     CALL "MS6-PLACEMENT-OK" USING WS-PLACE WS-DIM WS-X WS-Y WS-Z WS-OK
+     MOVE "acceptance US15 18§6.9 Placement types: IN_WATER fails when the block above is a full block (redstone conductor)" TO WS-CASE
+     COMPUTE WS-E = 0
+     COMPUTE WS-O = WS-OK
+     PERFORM CHECK-N
+     MOVE 4 TO WS-PLACE
+     CALL "MS6-PLACEMENT-OK" USING WS-PLACE WS-DIM WS-X WS-Y WS-Z WS-OK
+     MOVE "acceptance US15 18§6.9 Placement types: NO_RESTRICTIONS is always true" TO WS-CASE
+     COMPUTE WS-E = 1
+     COMPUTE WS-O = WS-OK
+     PERFORM CHECK-N
+     COMPUTE WS-Y = WS-FY + 12
+     MOVE 4 TO WS-PLACE
+     CALL "MS6-PLACEMENT-OK" USING WS-PLACE WS-DIM WS-X WS-Y WS-Z WS-OK
+     MOVE "acceptance US15 44-2§11 NO_RESTRICTIONS needs no floor and no border check" TO WS-CASE
+     COMPUTE WS-E = 1
+     COMPUTE WS-O = WS-OK
+     PERFORM CHECK-N
+
+     STOP RUN.
+ CHECK-N.
+     MOVE "N" TO TL-MODE
+     MOVE WS-CASE TO TL-CASE
+     MOVE WS-E TO TL-EXPECTED-N
+     MOVE WS-O TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-MOB-18-6-9.
+ COPY CORETEST.
+ COPY MOBSPTEST.

@@ -1,0 +1,646 @@
+*> Test of 31-2 section 7, Crafter (core/src/be-31-2.cob; T0879): the slot rules and their worked example, the saved keys, the menu data, the ticker, the neighbour rule, the craft step and the dispense paths.
+*> Each case runs its statements and shows the items joined by single spaces ("n" integers, "f" floats x 1e6, "t" text up to a stored length).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-2-7.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY CITEMS.
+ 01 WS-SHOW                PIC -(10)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-OUT                 PIC X(8192).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-T10                 BINARY-LONG VALUE 10.
+ 01 WS-FORM                BINARY-LONG VALUE 1.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-NM                  PIC X(32).
+ 01 WS-NML                 BINARY-LONG.
+ 01 WS-SV                  PIC X(256).
+ 01 WS-SVL                 BINARY-LONG.
+ 01 WS-NV                  BINARY-LONG.
+ 01 WS-LV                  BINARY-DOUBLE.
+ 01 WS-FV                  FLOAT-SHORT.
+ 01 WS-IA.
+    05 WS-IAV              BINARY-LONG OCCURS 8 TIMES.
+ 01 WS-LT                  BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG VALUE 0.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-A                 BINARY-LONG.
+ 01 WS-B                 BINARY-LONG.
+ 01 WS-C                 BINARY-LONG.
+ 01 WS-E                 BINARY-LONG.
+ 01 WS-F                 BINARY-LONG.
+ 01 WS-G                 BINARY-LONG.
+ 01 WS-H                 BINARY-LONG.
+ 01 WS-EV                BINARY-LONG.
+ 01 WS-O1                 BINARY-LONG.
+ 01 WS-O2                 BINARY-LONG.
+ 01 WS-O3                 BINARY-LONG.
+ 01 WS-O4                 BINARY-LONG.
+ 01 WS-FA                FLOAT-LONG.
+ 01 WS-FB                FLOAT-LONG.
+ 01 WS-FC                FLOAT-LONG.
+ 01 WS-LIST.
+    05 WS-L               BINARY-LONG OCCURS 5 TIMES.
+ 01 WS-DATA.
+    05 WS-D10             BINARY-LONG OCCURS 10 TIMES.
+ COPY CTRECIPE.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "acceptance US12 31-2§7 Crafter: worked example 13 (7.2): layout A (slots 0 and 4 filled, slot 1 disabled) gives signal 3; layout B (3 of X in slots 0, 1, 2, 4, 6, 7, 8, 2 in slot 3, slot 5 empty) gives 8; canPlaceItem is false" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:crafter" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 42 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO BE-SLOT-ITEM(WS-IDX, 1)
+     MOVE 1 TO BE-SLOT-COUNT(WS-IDX, 1)
+     MOVE 2 TO BE-SLOT-ITEM(WS-IDX, 5)
+     MOVE 1 TO BE-SLOT-COUNT(WS-IDX, 5)
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE2-CRAFTER-SET-STATE" USING WS-IDX WS-A WS-B
+     CALL "BE2-CRAFTER-SIGNAL" USING WS-IDX WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:crafter" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 42 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO BE-SLOT-ITEM(WS-IDX, 1)
+     MOVE 3 TO BE-SLOT-COUNT(WS-IDX, 1)
+     MOVE 2 TO BE-SLOT-ITEM(WS-IDX, 2)
+     MOVE 3 TO BE-SLOT-COUNT(WS-IDX, 2)
+     MOVE 2 TO BE-SLOT-ITEM(WS-IDX, 3)
+     MOVE 3 TO BE-SLOT-COUNT(WS-IDX, 3)
+     MOVE 2 TO BE-SLOT-ITEM(WS-IDX, 4)
+     MOVE 2 TO BE-SLOT-COUNT(WS-IDX, 4)
+     MOVE 2 TO BE-SLOT-ITEM(WS-IDX, 5)
+     MOVE 3 TO BE-SLOT-COUNT(WS-IDX, 5)
+     MOVE 2 TO BE-SLOT-ITEM(WS-IDX, 7)
+     MOVE 3 TO BE-SLOT-COUNT(WS-IDX, 7)
+     MOVE 2 TO BE-SLOT-ITEM(WS-IDX, 8)
+     MOVE 3 TO BE-SLOT-COUNT(WS-IDX, 8)
+     MOVE 2 TO BE-SLOT-ITEM(WS-IDX, 9)
+     MOVE 3 TO BE-SLOT-COUNT(WS-IDX, 9)
+     CALL "BE2-CRAFTER-SIGNAL" USING WS-IDX WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 64 TO WS-E
+     CALL "BE2-CRAFTER-CAN-PLACE" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 64 TO WS-E
+     CALL "BE2-CRAFTER-CAN-PLACE" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 6 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 64 TO WS-E
+     CALL "BE2-CRAFTER-CAN-PLACE" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 64 TO WS-E
+     CALL "BE2-CRAFTER-CAN-PLACE" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 5 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE2-CRAFTER-SET-STATE" USING WS-IDX WS-A WS-B
+     MOVE 3 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 64 TO WS-E
+     CALL "BE2-CRAFTER-CAN-PLACE" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     CALL "BE2-CRAFTER-SIGNAL" USING WS-IDX WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "3 8 0 0 1 1 1 9" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-2§7 Crafter: slot rules (7.2): only an empty slot in range can be disabled; setSlotState ignores a filled slot and works both ways on an empty one; isSlotDisabled is false out of range; setItem re-enables a" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:crafter" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 42 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO WS-A
+     CALL "BE2-CRAFTER-CAN-DISABLE" USING WS-IDX WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 9 TO WS-A
+     CALL "BE2-CRAFTER-CAN-DISABLE" USING WS-IDX WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE -1 TO WS-A
+     CALL "BE2-CRAFTER-CAN-DISABLE" USING WS-IDX WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO BE-SLOT-ITEM(WS-IDX, 3)
+     MOVE 1 TO BE-SLOT-COUNT(WS-IDX, 3)
+     MOVE 2 TO WS-A
+     CALL "BE2-CRAFTER-CAN-DISABLE" USING WS-IDX WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE2-CRAFTER-SET-STATE" USING WS-IDX WS-A WS-B
+     CALL "BE2-CRAFTER-DISABLED" USING WS-IDX WS-A WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE2-CRAFTER-SET-STATE" USING WS-IDX WS-A WS-B
+     CALL "BE2-CRAFTER-DISABLED" USING WS-IDX WS-A WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-B
+     CALL "BE2-CRAFTER-SET-STATE" USING WS-IDX WS-A WS-B
+     CALL "BE2-CRAFTER-DISABLED" USING WS-IDX WS-A WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 99 TO WS-A
+     CALL "BE2-CRAFTER-DISABLED" USING WS-IDX WS-A WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE2-CRAFTER-SET-STATE" USING WS-IDX WS-A WS-B
+     MOVE 4 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE2-CRAFTER-SET-ITEM" USING WS-IDX WS-A WS-B WS-C WS-E
+     MOVE 4 TO WS-A
+     CALL "BE2-CRAFTER-DISABLED" USING WS-IDX WS-A WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SLOT-ITEM(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 0 0 0 0 1 0 0 0 3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-2§7 Crafter: full stack (7.2): a slot whose stack already has its maximum count takes no more" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:crafter" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 42 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO BE-SLOT-ITEM(WS-IDX, 1)
+     MOVE 64 TO BE-SLOT-COUNT(WS-IDX, 1)
+     MOVE 0 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 64 TO WS-E
+     CALL "BE2-CRAFTER-CAN-PLACE" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-2§7 Crafter: menu data (7.1): ten ints, slot states 0 enabled and 1 disabled for slots 0 to 8, then triggered" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:crafter" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 42 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "BE2-CRAFTER-DATA" USING WS-IDX WS-DATA
+     MOVE WS-D10(1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-D10(10) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE2-CRAFTER-SET-STATE" USING WS-IDX WS-A WS-B
+     MOVE 1 TO BE-XI(WS-IDX, 2)
+     CALL "BE2-CRAFTER-DATA" USING WS-IDX WS-DATA
+     MOVE WS-D10(1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-D10(4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-D10(5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-D10(10) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0 0 1 0 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-2§7 Crafter: saved keys (7.1, 7.2): crafting_ticks_remaining, disabled_slots (an empty array is written when none) and triggered; on load every slot is enabled first, then each listed index is disabled when its" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:crafter" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 42 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE2-CRAFTER-SET-STATE" USING WS-IDX WS-A WS-B
+     MOVE 6 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE2-CRAFTER-SET-STATE" USING WS-IDX WS-A WS-B
+     MOVE 4 TO BE-XI(WS-IDX, 1)
+     MOVE 1 TO BE-XI(WS-IDX, 2)
+     PERFORM SAVE-RENDER
+     MOVE "minecraft:crafter" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 42 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "Items" TO WS-NM
+     MOVE 5 TO WS-NML
+     MOVE 10 TO WS-LT
+     MOVE 1 TO WS-LC
+     PERFORM NB-L
+     MOVE "Slot" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE 3 TO WS-NV
+     PERFORM NB-B
+     MOVE 2 TO WS-ITEM
+     MOVE 1 TO WS-NV
+     PERFORM NB-STACK
+     PERFORM NB-E
+     MOVE "disabled_slots" TO WS-NM
+     MOVE 14 TO WS-NML
+     MOVE 1 TO WS-IAV(1)
+     MOVE 3 TO WS-IAV(2)
+     MOVE 12 TO WS-IAV(3)
+     MOVE 3 TO WS-LC
+     PERFORM NB-IA
+     MOVE "triggered" TO WS-NM
+     MOVE 9 TO WS-NML
+     MOVE 1 TO WS-NV
+     PERFORM NB-I
+     MOVE "crafting_ticks_remaining" TO WS-NM
+     MOVE 24 TO WS-NML
+     MOVE 2 TO WS-NV
+     PERFORM NB-I
+     PERFORM LOAD-BUFFER
+     PERFORM SAVE-RENDER
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "{crafting_ticks_remaining:0,disabled_slots:I[],triggered:0} {crafting_ticks_remaining:4,disabled_slo" &
+         "ts:I[3,6],triggered:1} {Items:[{Slot:3,id:cobolcraft:greystone,count:1}],crafting_ticks_remaining:2," &
+         "disabled_slots:I[1],triggered:1} 2 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-2§7 Crafter: ticker (7.3): r = crafting_ticks_remaining - 1; below 0 nothing is stored; otherwise it is stored and crafting is reset (set false) when r reaches 0 (after the 6 ticks of a craft the sixth resets" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:crafter" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 42 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO BE-XI(WS-IDX, 1)
+     CALL "BE2-CRAFTER-TICK" USING WS-IDX WS-B
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO BE-XI(WS-IDX, 1)
+     CALL "BE2-CRAFTER-TICK" USING WS-IDX WS-B
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO BE-XI(WS-IDX, 1)
+     CALL "BE2-CRAFTER-TICK" USING WS-IDX WS-B
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 6 TO BE-XI(WS-IDX, 1)
+     MOVE 0 TO WS-C
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 9
+     CALL "BE2-CRAFTER-TICK" USING WS-IDX WS-B
+     IF WS-B = 1
+     COMPUTE WS-C = WS-J
+     END-IF
+     END-PERFORM
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 0 0 1 0 0 0 6" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-2§7 Crafter: neighbourChanged (7.4 step 1): powered and not triggered schedules a tick in 4 and writes triggered true (flags 2); not powered and triggered writes triggered false and crafting false; without the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE2-CRAFTER-NEIGHBOR" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE2-CRAFTER-NEIGHBOR" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE2-CRAFTER-NEIGHBOR" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE2-CRAFTER-NEIGHBOR" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE2-CRAFTER-NEIGHBOR" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "4 1 0 0 0 1 0 1 0 0 0 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-2§7 Crafter: dispenseFrom (7.4 step 2): a found recipe with a result sets crafting_ticks_remaining 6 and crafting true and shrinks every non-empty slot by 1; no recipe, or a recipe with an empty result, plays" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:crafter" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 42 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO BE-SLOT-ITEM(WS-IDX, 1)
+     MOVE 3 TO BE-SLOT-COUNT(WS-IDX, 1)
+     MOVE 3 TO BE-SLOT-ITEM(WS-IDX, 2)
+     MOVE 1 TO BE-SLOT-COUNT(WS-IDX, 2)
+     MOVE 2 TO BE-SLOT-ITEM(WS-IDX, 9)
+     MOVE 1 TO BE-SLOT-COUNT(WS-IDX, 9)
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE2-CRAFTER-CRAFT" USING WS-IDX WS-A WS-B WS-E WS-F
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SLOT-COUNT(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SLOT-COUNT(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SLOT-COUNT(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SLOT-COUNT(WS-IDX, 9) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:crafter" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 42 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO BE-SLOT-ITEM(WS-IDX, 1)
+     MOVE 3 TO BE-SLOT-COUNT(WS-IDX, 1)
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE2-CRAFTER-CRAFT" USING WS-IDX WS-A WS-B WS-E WS-F
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SLOT-COUNT(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE2-CRAFTER-CRAFT" USING WS-IDX WS-A WS-B WS-E WS-F
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-SLOT-COUNT(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 1 6 2 0 0 0 1050 0 0 3 1050 0 3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-2§7 Crafter: dispenseItem (7.5): with a target that is a crafter, or a stack larger than the target's maximum, one item is moved at a time (path 1); with a target and a stack within its maximum the whole stack" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 64 TO WS-E
+     CALL "BE2-CRAFTER-PATH" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 70 TO WS-C
+     MOVE 64 TO WS-E
+     CALL "BE2-CRAFTER-PATH" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 64 TO WS-C
+     MOVE 64 TO WS-E
+     CALL "BE2-CRAFTER-PATH" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 64 TO WS-E
+     CALL "BE2-CRAFTER-PATH" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 64 TO WS-E
+     CALL "BE2-CRAFTER-PATH" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     CALL "BE2-CRAFTER-DROP" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     CALL "BE2-CRAFTER-DROP" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 1 2 2 0 0 0 0 0 1 1 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-2§7 Crafter: canPlaceItem is false for a disabled slot even when it is empty (7.2)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:crafter" TO WS-KEY
+     MOVE 17 TO WS-SVL
+     MOVE 42 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE2-CRAFTER-SET-STATE" USING WS-IDX WS-A WS-B
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 64 TO WS-E
+     CALL "BE2-CRAFTER-CAN-PLACE" USING WS-IDX WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ ADD-N.
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> Saves entity WS-IDX in form WS-FORM, renders the compound and appends it to TL-OBSERVED.
+ SAVE-RENDER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-IDX WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> The NBT builders of the cases (name WS-NM and length WS-NML, text WS-SV and length WS-SVL, number WS-NV, list type WS-LT and count WS-LC).
+ NB-S.
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NM WS-NML WS-SV WS-SVL
+     .
+ NB-I.
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-LONG.
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WS-NM WS-NML WS-LV
+     .
+ NB-IA.
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WS-NM WS-NML WS-LC WS-IA
+     .
+ NB-FLOAT.
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WS-NM WS-NML WS-FV
+     .
+ NB-B.
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-C.
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NM WS-NML
+     .
+ NB-E.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     .
+ NB-STACK.
+     MOVE 0 TO WS-KP
+     CALL "PNBT-STACK-WRITE" USING PB-BUFFER WS-ITEM WS-NV WS-KP
+     .
+ NB-L.
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NM WS-NML WS-LT WS-LC
+     .
+
+*> Loads entity WS-IDX from the compound the case built in PB-BUFFER (the closing End tag is written here).
+ LOAD-BUFFER.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-IDX PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     .
+ END PROGRAM TEST-BE-31-2-7.
+
+ COPY CORETEST.

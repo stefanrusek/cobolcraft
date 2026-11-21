@@ -1,0 +1,14 @@
+# Fixture: Open Screen, crafting table
+# Phase: play. Direction: clientbound (S->C). Packet id 0x3c (60).
+# Doc refs: 05a 0x3C; 46 section 5.5 and worked example 2 (menu type crafting = 12); 00 section 9.1
+# Stated inputs:
+#   container id 2; menu type 12 (crafting); title translate component container.crafting (network NBT compound)
+
+3c                                               # packet id: VarInt 0x3c
+02                                               # Container id: VarInt 2
+0c                                               # Menu type: VarInt 12 (crafting)
+0a                                               # Title: TextComponent: root Compound (type 0a), unnamed
+08 00 09 74 72 61 6e 73 6c 61 74 65              #   NBT String (type 08) name "translate"
+00 12 63 6f 6e 74 61 69 6e 65 72 2e 63 72 61 66  #     String 'container.crafting'
+74 69 6e 67                                      #   (continued)
+00                                               # NBT End: end of the root compound

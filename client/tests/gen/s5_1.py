@@ -1,0 +1,359 @@
+from g4 import *
+hdr='''*> Entity models part 5 (docs/protocol/34-entity-models-5-wild-companion-animals-small-creatures.md): wild and companion animals. Section 1 here (shared facts, 1.1 to 1.4); the animals in client/src/entmodel-34-5-<n>.cob.
+*> Entry points for the integrator (inputs; the table programs take IN (16 FLOAT-LONG) and OUT (64 FLOAT-LONG)):
+*>   EF5-MTH-SIN IN(x) OUT(Mth.sin: the 65536-entry table value), EF5-MTH-COS (1.1); EF5-ROT-LERP IN(t a b) OUT(rotLerp: the difference wrapped in degrees), EF5-ROT-LERP-RAD IN(t a b) OUT(rotLerpRad: wrapped to -pi..pi);
+*>   EF5-MESH-SCALE entity(X(24)) factor(out FLOAT-LONG): the MeshTransformer.scaling users (cat 0.8, cat_collar 0.8, cat_baby_collar 1.01, polar_bear 1.2, else 1); EF5-POSE-SCALED IN(position 3, scale 3, factors 3) OUT(position 3, scale 3);
+*>   EF5-TEXEL-UV IN(x y width height) OUT(U V); EF5-AGE-SCALE IN(baby) OUT(0.5 or 1); EF5-SHADOW entity(X(24)) baby(BINARY-LONG) IN(radius, scale) OUT(radius x scale, the baby turtle x 0.83);
+*>   EF5-HEAD-LOOK IN(head yaw, body yaw, pitch, upside down) OUT(yRot (negated upside down), xRot = pitch); EF5-FRAME-OPS IN(entity scale, body yaw deg) OUT(count, then code 1 translate 2 scale 3 rotate Y degrees and three values each);
+*>   EF5-KF-INDEX IN(n, t, times 1..n) OUT(i, j, f) 1-based keyframe indexes and the fraction (1.2 steps 2 and 3); EF5-WALK-TIME IN(pos, speed, pos factor, speed factor) OUT(seconds, k);
+*>   EF5-ANIM-STATE IN(op 1 start 2 startIfStopped 3 stop 4 animateWhen 5 fastForward 6 elapsed ms, start tick, tick or age, flag or n, rate) OUT(new start tick, result: the elapsed ms for op 6, else 1 when the state is started): AnimationState of 1.2;
+*>   EF5-QUAD-POSE EMM-MODEL state(1 xRot, 2 yRot degrees, 3 walk position, 4 walk speed): the QuadrupedModel base of 1.3; EF5-DYE-RGB IN(id) OUT(opaque ARGB of the texture diffuse colour) (1.4).
+'''
+body=r''' IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-MTH-SIN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE WS-I = FUNCTION INTEGER-PART(L-I(1) * 10430.378350470453)
+     COMPUTE WS-I = FUNCTION MOD(WS-I, 65536)
+     COMPUTE L-O(1) = FUNCTION SIN(WS-I / 10430.378350470453)
+     GOBACK.
+ END PROGRAM EF5-MTH-SIN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-MTH-COS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE WS-I = FUNCTION INTEGER-PART(L-I(1) * 10430.378350470453 + 16384.0)
+     COMPUTE WS-I = FUNCTION MOD(WS-I, 65536)
+     COMPUTE L-O(1) = FUNCTION SIN(WS-I / 10430.378350470453)
+     GOBACK.
+ END PROGRAM EF5-MTH-COS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-ROT-LERP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-Q                   BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE WS-D = L-I(3) - L-I(2)
+     COMPUTE WS-Q = FUNCTION INTEGER(WS-D / 360)
+     COMPUTE WS-D = WS-D - 360 * WS-Q
+     IF WS-D >= 180
+         COMPUTE WS-D = WS-D - 360
+     END-IF
+     COMPUTE L-O(1) = L-I(2) + L-I(1) * WS-D
+     GOBACK.
+ END PROGRAM EF5-ROT-LERP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-ROT-LERP-RAD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-D                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE WS-D = L-I(3) - L-I(2)
+     PERFORM UNTIL WS-D < 3.141592653589793
+         COMPUTE WS-D = WS-D - 6.283185307179586
+     END-PERFORM
+     PERFORM UNTIL WS-D >= -3.141592653589793
+         COMPUTE WS-D = WS-D + 6.283185307179586
+     END-PERFORM
+     COMPUTE L-O(1) = L-I(2) + L-I(1) * WS-D
+     GOBACK.
+ END PROGRAM EF5-ROT-LERP-RAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-MESH-SCALE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ENT                  PIC X(24).
+ 01 L-F                    FLOAT-LONG.
+ PROCEDURE DIVISION USING L-ENT L-F.
+     MOVE 1 TO L-F
+     EVALUATE L-ENT
+         WHEN "cat" MOVE 0.8 TO L-F
+         WHEN "cat_collar" MOVE 0.8 TO L-F
+         WHEN "cat_baby_collar" MOVE 1.01 TO L-F
+         WHEN "polar_bear" MOVE 1.2 TO L-F
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM EF5-MESH-SCALE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-POSE-SCALED.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE L-O(1) = L-I(1) * L-I(7)
+     COMPUTE L-O(2) = L-I(2) * L-I(8)
+     COMPUTE L-O(3) = L-I(3) * L-I(9)
+     COMPUTE L-O(4) = L-I(4) * L-I(7)
+     COMPUTE L-O(5) = L-I(5) * L-I(8)
+     COMPUTE L-O(6) = L-I(6) * L-I(9)
+     GOBACK.
+ END PROGRAM EF5-POSE-SCALED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-TEXEL-UV.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE L-O(1) = L-I(1) / L-I(3)
+     COMPUTE L-O(2) = L-I(2) / L-I(4)
+     GOBACK.
+ END PROGRAM EF5-TEXEL-UV.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-AGE-SCALE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 1 TO L-O(1)
+     IF L-I(1) NOT = 0
+         MOVE 0.5 TO L-O(1)
+     END-IF
+     GOBACK.
+ END PROGRAM EF5-AGE-SCALE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-SHADOW.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-ENT                  PIC X(24).
+ 01 L-BABY                 BINARY-LONG.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-ENT L-BABY L-IN L-OUT.
+     COMPUTE L-O(1) = L-I(1) * L-I(2)
+     IF L-ENT = "turtle" AND L-BABY NOT = 0
+         COMPUTE L-O(1) = L-O(1) * 0.83
+     END-IF
+     GOBACK.
+ END PROGRAM EF5-SHADOW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-HEAD-LOOK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-D                   FLOAT-LONG.
+ 01 WS-Q                   BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE WS-D = L-I(1) - L-I(2)
+     COMPUTE WS-Q = FUNCTION INTEGER(WS-D / 360)
+     COMPUTE WS-D = WS-D - 360 * WS-Q
+     IF WS-D >= 180
+         COMPUTE WS-D = WS-D - 360
+     END-IF
+     IF L-I(4) NOT = 0
+         COMPUTE WS-D = 0 - WS-D
+     END-IF
+     MOVE WS-D TO L-O(1)
+     MOVE L-I(3) TO L-O(2)
+     GOBACK.
+ END PROGRAM EF5-HEAD-LOOK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-FRAME-OPS.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE 4 TO L-O(1)
+     MOVE 2 TO L-O(2)
+     MOVE L-I(1) TO L-O(3) L-O(4) L-O(5)
+     MOVE 3 TO L-O(6)
+     MOVE L-I(2) TO L-O(7)
+     MOVE 0 TO L-O(8) L-O(9)
+     MOVE 2 TO L-O(10)
+     MOVE -1 TO L-O(11) L-O(12)
+     MOVE 1 TO L-O(13)
+     MOVE 1 TO L-O(14)
+     MOVE 0 TO L-O(15)
+     MOVE -1.501 TO L-O(16)
+     MOVE 0 TO L-O(17)
+     GOBACK.
+ END PROGRAM EF5-FRAME-OPS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-KF-INDEX.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE WS-N = L-I(1)
+     MOVE 0 TO WS-I
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-N
+         IF L-I(2 + WS-K) < L-I(2)
+             MOVE WS-K TO WS-I
+         END-IF
+     END-PERFORM
+     IF WS-I < 1
+         MOVE 1 TO WS-I
+     END-IF
+     COMPUTE WS-J = WS-I + 1
+     IF WS-J > WS-N
+         MOVE WS-N TO WS-J
+     END-IF
+     MOVE WS-I TO L-O(1)
+     MOVE WS-J TO L-O(2)
+     MOVE 0 TO L-O(3)
+     IF WS-I NOT = WS-J
+         COMPUTE L-O(3) = (L-I(2) - L-I(2 + WS-I)) / (L-I(2 + WS-J) - L-I(2 + WS-I))
+         COMPUTE L-O(3) = FUNCTION MIN(1, FUNCTION MAX(0, L-O(3)))
+     END-IF
+     GOBACK.
+ END PROGRAM EF5-KF-INDEX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-WALK-TIME.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-MS                  BINARY-LONG.
+ 01 WS-K                   FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-C                   FLOAT-LONG.
+ 01 WS-D                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     MOVE L-I(1) TO WS-A
+     MOVE L-I(2) TO WS-B
+     MOVE L-I(3) TO WS-C
+     MOVE L-I(4) TO WS-D
+     CALL "EM5-WALK-TIME" USING WS-A WS-B WS-C WS-D WS-MS WS-K
+     COMPUTE L-O(1) = WS-MS / 1000
+     MOVE WS-K TO L-O(2)
+     GOBACK.
+ END PROGRAM EF5-WALK-TIME.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-ANIM-STATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-OP                  BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-A.
+    05 WS-AV               FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-R                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE WS-OP = L-I(1)
+     COMPUTE WS-START = L-I(2)
+     MOVE L-I(3) TO WS-AV(1)
+     MOVE L-I(4) TO WS-AV(2)
+     MOVE L-I(5) TO WS-AV(3)
+     CALL "EM5-STATE" USING WS-OP WS-START WS-A WS-R
+     MOVE WS-START TO L-O(1)
+     MOVE WS-R TO L-O(2)
+     GOBACK.
+ END PROGRAM EF5-ANIM-STATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-QUAD-POSE.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLEMM.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ PROCEDURE DIVISION USING EMM-MODEL L-IN.
+     CALL "EF4-QUAD-POSE" USING EMM-MODEL L-IN
+     GOBACK.
+ END PROGRAM EF5-QUAD-POSE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EF5-DYE-RGB.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DIFFUSE.
+    05 FILLER PIC 9(8) VALUE 16383998.
+    05 FILLER PIC 9(8) VALUE 16351261.
+    05 FILLER PIC 9(8) VALUE 13061821.
+    05 FILLER PIC 9(8) VALUE 3847130.
+    05 FILLER PIC 9(8) VALUE 16701501.
+    05 FILLER PIC 9(8) VALUE 8439583.
+    05 FILLER PIC 9(8) VALUE 15961002.
+    05 FILLER PIC 9(8) VALUE 4673362.
+    05 FILLER PIC 9(8) VALUE 10329495.
+    05 FILLER PIC 9(8) VALUE 1481884.
+    05 FILLER PIC 9(8) VALUE 8991416.
+    05 FILLER PIC 9(8) VALUE 3949738.
+    05 FILLER PIC 9(8) VALUE 8606770.
+    05 FILLER PIC 9(8) VALUE 6192150.
+    05 FILLER PIC 9(8) VALUE 11546150.
+    05 FILLER PIC 9(8) VALUE 1908001.
+ 01 WS-DIFFUSE-R REDEFINES WS-DIFFUSE.
+    05 WS-D                PIC 9(8) OCCURS 16 TIMES.
+ LINKAGE SECTION.
+ 01 L-IN.
+    05 L-I                 FLOAT-LONG OCCURS 16 TIMES.
+ 01 L-OUT.
+    05 L-O                 FLOAT-LONG OCCURS 64 TIMES.
+ PROCEDURE DIVISION USING L-IN L-OUT.
+     COMPUTE L-O(1) = 4278190080 + WS-D(L-I(1) + 1)
+     GOBACK.
+ END PROGRAM EF5-DYE-RGB.
+'''
+open(REPO+'client/src/entmodel-34-5.cob','w').write(hdr+'\n'+body)

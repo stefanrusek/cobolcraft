@@ -1,7 +1,7 @@
 *> Convergence acceptance test of US1-1 (spec.md US1; contracts/test-harness.md §2; plan 4.2): the
 *> built programs run. The instrumented build/.../convergence/bin/cobolcraft-server (the server's
 *> src/main.cob, a single CALL of SV-MAIN, + libserver.a) started in a scratch directory with the
-*> shutdown command on its standard input prints its ready line (operator-surface §3) and exits 0;
+*> stop command on its standard input prints its ready line (operator-surface §3) and exits 0;
 *> build/.../convergence/bin/cobolcraft (the client's src/main.cob + libclient.a) without --name
 *> prints "FATAL arguments: --name <name> is required" (client-surface §1) and exits 1. So the one
 *> line of each main.cob runs under coverage. The build root comes from COBOLCRAFT_BUILD
@@ -34,7 +34,7 @@
      MOVE LOW-VALUES TO WS-COMMAND
      STRING "rm -rf build/conv-binaries && mkdir -p build/conv-binaries && cd build/conv-binaries"
          " && printf 'port=" FUNCTION TRIM(WS-EDIT) "\nview-distance=2\n' > cobolcraft-server.conf"
-         " && printf 'shutdown\n' > stdin.txt && '" FUNCTION TRIM(WS-BUILD)
+         " && printf 'stop\n' > stdin.txt && '" FUNCTION TRIM(WS-BUILD)
          "/convergence/bin/cobolcraft-server' < stdin.txt > out.txt 2> err.txt;"
          " echo $? > status.txt" DELIMITED BY SIZE INTO WS-COMMAND
      CALL "SYSTEM" USING WS-COMMAND

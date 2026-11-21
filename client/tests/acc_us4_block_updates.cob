@@ -35,12 +35,16 @@
  01 WS-E3                  PIC Z9.
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
+     MOVE 1000000000 TO MB-BUDGET-US
 *>   Every section of the flat world meshed and uploaded first.
      CALL "TEST-TICKS" USING CLIENT-STATE WS-THREE
      MOVE 0 TO WS-CX WS-CZ
      CALL "WORLD-ROW" USING CLIENT-STATE WS-CX WS-CZ WS-ROW
      MOVE 1 TO WS-CX
      CALL "WORLD-ROW" USING CLIENT-STATE WS-CX WS-CZ WS-EAST
+*>   This is about which sections a block change meshes. The sky light stopgap (CC-0007, sky-stopgap.cob) meshes the sections
+*>   below a column whose surface moved as well, to light them; it has its own tests (test_sky_stopgap), so it is off here.
+     MOVE 0 TO PL-HAS-SKY
 
      MOVE "contract/fixtures/wire/play-s2c-08-block-update.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
@@ -57,7 +61,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      CALL "TEST-STEP" USING CLIENT-STATE
-     COMPUTE WS-SLOT = MESH-SLOT-BASE + ((WS-ROW - 1) * 16 + 3) * 2
+     COMPUTE WS-SLOT = MESH-SLOT-BASE + ((WS-ROW - 1) * 24 + 3) * 2
      MOVE 0 TO WS-FOUND
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-UPLOAD-COUNT
          IF RL-U-SLOT(WS-I) = WS-SLOT
@@ -155,19 +159,25 @@
 *> USING CLIENT-STATE, y: block light 9 in every cell of layer y of chunk (0, 0).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY CLCELLS.
  01 WS-CX                  BINARY-LONG VALUE 0.
  01 WS-CZ                  BINARY-LONG VALUE 0.
  01 WS-ROW                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG VALUE 1.
+ 01 WS-LEVEL               BINARY-LONG VALUE 9.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-Y                    BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-Y.
+     MOVE L-Y TO WS-Y
      CALL "WORLD-ROW" USING CLIENT-STATE WS-CX WS-CZ WS-ROW
-     SET ADDRESS OF RC-CHUNK TO WR-ADDR(WS-ROW)
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
-         MOVE 9 TO RC-BLOCK(L-Y * 256 + WS-I)
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 255
+         COMPUTE WS-Z = WS-I / 16
+         COMPUTE WS-X = FUNCTION MOD(WS-I, 16)
+         CALL "LIGHT-SET" USING WR-ADDR(WS-ROW) WS-KIND WS-Y WS-X WS-Z WS-LEVEL
      END-PERFORM
      GOBACK.
  END PROGRAM TEST-SET-LIGHT.

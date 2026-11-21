@@ -2,12 +2,12 @@
 
 | Item | Value |
 |---|---|
-| Covers | An independent second reading of the five operator editor screens `CommandBlockEditScreen` and `MinecartCommandBlockEditScreen` (base `AbstractCommandBlockEditScreen`), `StructureBlockEditScreen`, `JigsawBlockEditScreen` and `TestBlockEditScreen`: how each is opened and who may open it, every field with its limit, every mode and button with its position, the packet each one sends and when, the permission rules on both sides, the server-side handling (summary with pointers), and the close, cancel and resize rules. It also lists what this reading adds to, and where it agrees with, 40-x1. |
+| Covers | An independent second reading of the five operator editor screens `CommandBlockEditScreen` and `MinecartCommandBlockEditScreen` (base `AbstractCommandBlockEditScreen`), `StructureBlockEditScreen`, `JigsawBlockEditScreen` and `TestBlockEditScreen` (and, in section 7A, `TestInstanceBlockEditScreen`): how each is opened and who may open it, every field with its limit, every mode and button with its position, the packet each one sends and when, the permission rules on both sides, the server-side handling (summary with pointers), and the close, cancel and resize rules. It also lists what this reading adds to, and where it agrees with, 40-x1. |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact recorded in `README.md`; protocol 777, data version 5023). Checked with `shasum -a 256` at the start of this round. |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`) of the six screen classes and their inner classes, `LocalPlayer`, `Player`, `ServerPlayer`, `ClientPacketListener`, `ServerGamePacketListenerImpl`, `Screen`, `CycleButton`, `StructureMode`, `TestBlockMode`, `Mirror`, `JointType`, `Mth`, and the six `Serverbound*` packet classes; `unzip -p` for `assets/minecraft/lang/en_us.json`. No execution. |
 | Evidence rule | Every number, key, ordering and rule below was read from the artifact in this round. "(inferred)" marks a deduction from the shape of read code. "(recalled, not verified)" marks a statement not read; each is repeated in Open questions. |
 | Round | RS14, part 9 (design map `docs/design/README.md` GAP-19). Standard Minecraft content is the target (ticket CC-0001). |
-| Relationship to 40-x1 | `40-menus-x1-continuation.md` (cited as 40-x1) already specifies these screens, and also `TestInstanceBlockEditScreen`. This part was written without relying on 40-x1: every position, limit, key and packet field in sections 4 to 8 was read again from the jar, and each matched 40-x1 (section 9 lists the checks). 40-x1 remains the place for the generic widgets (`EditBox`, `CycleButton`, slider, `CommandSuggestions`) and for the test instance block screen; this part is the protocol, permission and server-handling view plus a compact table per screen, and section 9 holds what is new. An implementer needs both only when the table here is not enough. |
+| Relationship to 40-x1 | `40-menus-x1-continuation.md` (cited as 40-x1) already specifies these screens, and also `TestInstanceBlockEditScreen`, which section 7A of this part now reads again. This part was written without relying on 40-x1: every position, limit, key and packet field in sections 4 to 8 was read again from the jar, and each matched 40-x1 (section 9 lists the checks). 40-x1 remains the place for the generic widgets (`EditBox`, `CycleButton`, slider, `CommandSuggestions`) and for the test instance block screen; this part is the protocol, permission and server-handling view plus a compact table per screen, and section 9 holds what is new. An implementer needs both only when the table here is not enough. |
 | Siblings (not repeated) | Server side and entity state of the five blocks and the minecart: 31-6 (command block 2 to 5, structure block 6, jigsaw 8, test block 9, operator rules 11) and 44-8 (minecart synchronized data). Wire layouts: 05c ids 0x1B, 0x37, 0x38, 0x3B, 0x3C, 0x3D; 05a id 6 (Block Entity Data). Permission sets and the event ids that deliver them: 15 section 2.2. Screen model, Escape, Tab and pause rules: 40-1 section 5.7; key predicates and the text-input widgets used by the book editors: 40-8. Text width, shadow and font: 12 section 5.10. Identifier grammar: 23 section 1. Command suggestion display: 15 sections 3.6 and 14.5. |
 
 Conventions: coordinates are GUI-scaled pixels (12 section 5.1); `W` and `H` are the scaled screen width and height; `cx` = `W / 2` with Java integer division. "Label" is a text draw in colour `0xFFA0A0A0` (the int -6250336, read at every label call) with shadow (40-8 section 6.3 step 2). "Title" is the 5-argument centred text in colour -1, drawn at (`cx`, 10) unless stated. "Button" is a 20-pixel-high button. "Cycle" is a `CycleButton` (40-x1 3.2): a click cycles by +1, Shift-click by -1, the wheel up by -1 and down by +1, over the value list (read in `CycleButton.onPress`, `cycleValue`, `mouseScrolled`).
@@ -212,6 +212,132 @@ Title: the translated test block name (`block.minecraft.test_block`, "Test Block
 
 The mode description `test_block.mode_info.<name>` is always drawn at (`cx - 153`, 174). The message is sent whatever the mode, with the hidden box's text when the mode is START. There is no `keyPressed` override and no `resize` override: Enter does nothing, and a resize recreates the message box from the `message` field, which holds the text at open (or at the last Done), so text typed before the resize is lost while the chosen mode is kept.
 
+## 7A. `TestInstanceBlockEditScreen` (round TIBE, a second reading of 40-x1 section 8, same artifact `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, re-checked with `shasum -a 256`)
+
+Classes read for this section: `TestInstanceBlockEditScreen` and its synthetic switch class, `ServerboundTestInstanceBlockActionPacket` and its `Action`, `TestInstanceBlockEntity$Data` and `$Status`, `Rotation`, `Vec3i`, `ResourceKey`, `ByteBufCodecs` (the optional codec), `Screen`, `LocalPlayer.openTestInstanceBlock`, `TestInstanceBlock.useWithoutItem`, `ClientPacketListener.handleTestInstanceBlockStatus`, `ServerGamePacketListenerImpl.handleTestInstanceBlockAction`, `ClientboundTestInstanceBlockStatus`; `en_us.json` for the texts. Every constant below matched 40-x1 section 8 (positions, limits, texts); the differences and additions are in 7A.6.
+
+### 7A.1 Opening and what it edits
+
+| Item | Behaviour (read) |
+|---|---|
+| Opened by | `TestInstanceBlock.useWithoutItem`: when the block entity at the position is a `TestInstanceBlockEntity` and the player passes `canUseGameMasterBlocks` (creative plus gamemaster permission, 31-6 11.1), then on the client level it calls `Player.openTestInstanceBlock` (only `LocalPlayer` implements it: it pushes the screen) and the result is `SUCCESS` on both sides. No entity, or no permission: `PASS`, no screen. The client opens the screen itself in this call; no open-screen message from the server was involved in the path read (the client level runs `useWithoutItem` on the use click) |
+| Title | the block's name, `block.minecraft.test_instance_block` = "Test Instance Block", at (`cx`, 10), colour -1 |
+| Entity data edited | the `data` record of the test instance block entity (31-6 10.1 and 10.2; 31-8 10.2): `test` (optional key in the `test_instance` registry), `size` (3 ints), `rotation`, `ignore_entities`. The screen never edits `status` or `error_message`; it sends them as `cleared` and absent |
+| Initial values copied once at construction/`init` | ID box = the identifier text of `test`, else empty; size boxes = `Integer.toString` of the entity size (a fresh block has size (0, 0, 0), so the boxes show `0`, `0`, `0`); rotation button = the entity's `getRotation()`, the EFFECTIVE rotation: the test definition's own rotation (NONE when no test resolves) combined with `data.rotation` through `Rotation.getRotated` (the table in 7A.3, read), not `data.rotation` alone; include-entities button = NOT `ignoreEntities()` |
+| Pause, background | `isPauseScreen` is the `Screen` default (true); the screen overrides `isInGameUi` to true (also true on the structure, jigsaw and test block screens, false on the command block screen, read), so `Screen.extractBackground` calls `extractTransparentBackground` instead of the blurred panorama and menu background. That method fills the whole screen rectangle (0, 0) to (`W`, `H`) with a vertical gradient from the ARGB colour `0xC0101010` at the top (the int -1072689136, read) to `0xD0101010` at the bottom (the int -804253680, read), i.e. a near-black veil at alpha 192 rising to 208 (the gradient interpolation is the generic `fillGradient`, 12). The same background is used by every `isInGameUi` screen; 40-1 section 5.2 states the generic rule for container screens |
+| Keys | no `keyPressed`, `resize` or `onClose` override: Enter does nothing; Escape closes with no packet; a resize rebuilds the screen through `init` (7A.5) |
+
+### 7A.2 Layout (`W` = scaled width; `left` = `W / 2 - 158` with integer division)
+
+Constants: `WIDTH` = 316, `BUTTON_PADDING` = 8. For `n` columns: `exactWidgetSize(n)` = `(316 - (n - 1) * 8) / n` in float arithmetic; `widgetSize(n)` = that truncated to int; `widgetX(i, n)` = `left + i * (8 + exactWidgetSize(n))` in float arithmetic, truncated to int (the Java `f2i` cast; the value is positive, so truncation equals floor). `c` = 3 when `SharedConstants.IS_RUNNING_IN_IDE` is true, else 2 (a plain static field, in a normal run false: 40-x1 8.2, Open question 8 there).
+
+| n | `exactWidgetSize` | `widgetSize` | step `8 + exact` |
+|---|---|---|---|
+| 2 | 154.0 | 154 | 162.0 |
+| 3 | 100.0 | 100 | 108.0 |
+| 5 | 56.8 | 56 | 64.8 |
+
+Widgets, in creation (and so focus and draw) order:
+
+| # | Widget | Rectangle | Details |
+|---|---|---|---|
+| 1 | ID box | (`left`, 40, 316, 20) | narration `test_instance_block.test_id`; max 128; initial text as 7A.1; the responder (installed AFTER the initial text is set, so the initial text does not fire it) runs `updateTestInfo(false)` on every change |
+| 2 | Info text | `FittingMultiLineTextWidget` (`left`, 70, 316, 72) (the height is 8 times the font line height 9), initial message the empty string | read-only multi-line text; a renderable widget |
+| 3 to 5 | Size X, Y, Z | (`widgetX(0,5)`, 160), (`widgetX(1,5)`, 160), (`widgetX(2,5)`, 160); each `widgetSize(5)` = 56 wide, 20 high | narrations `structure_block.size.x`, `.y`, `.z`; max 15 characters each; texts set from the entity size |
+| 6 | Rotation cycle | (`widgetX(3,5)`, 160, 56, 20) | `CycleButton` over `Rotation.values()` in order NONE, CLOCKWISE_90, CLOCKWISE_180, COUNTERCLOCKWISE_90 (wire ids 0 to 3), `displayOnlyValue` (the button shows only the value text), value texts the literals `0`, `90`, `180`, `270` in that order, initial value as 7A.1; change callback `updateSaveState` |
+| 7 | Include-entities cycle | (`widgetX(4,5)`, 160, 56, 20) | on/off `CycleButton`, `displayOnlyValue` (shows the on or off text only; cycle behaviour 40-x1 3.2), no callback |
+| 8 | Reset | (`widgetX(0,c)`, 185, `widgetSize(c)`, 20) | text `test_instance.action.reset` "Reset and Load" |
+| 9 | Save | (`widgetX(1,c)`, 185, `widgetSize(c)`, 20) | `test_instance.action.save` "Save Structure"; kept in a field to be enabled and disabled |
+| 10 | Export (only when `c` = 3) | (`widgetX(2,c)`, 185, `widgetSize(c)`, 20) | the literal text `Export Structure` (not translated) |
+| 11 | Run | (`widgetX(0,3)`, 210, 100, 20) | `test_instance.action.run` "Load and Run" |
+| 12 | Done | (`widgetX(1,3)`, 210, 100, 20) | `gui.done` |
+| 13 | Cancel | (`widgetX(2,3)`, 210, 100, 20) | `gui.cancel` |
+
+The screen sets no focus itself. Focus follows the generic `Screen` rule: `init(w, h)` (first time) and `rebuildWidgets` (clear widgets, clear focus, `init()`, then `setInitialFocus()`) end with `setInitialFocus()`, which does nothing unless the last input type was the keyboard; with the keyboard it moves the focus to the first focusable widget in tab order (a forward tab navigation from nothing). Which widget that is, is the first focusable child in creation order, expected to be the ID box (inferred: the widget tree's tab order was not traced). After a mouse-driven open or resize no widget has focus until clicked. This also applies to the other screens of this document.
+
+Labels (drawn by the screen after the widgets, colour `0xFFA0A0A0`, with shadow): "Test Instance ID" (`test_instance_block.test_id`) at (`left`, 30); "Test Structure Size" (`test_instance_block.size`) at (`left`, 150); "Rotation:" (`test_instance_block.rotation`) at (rotation button x, 150); "Entities:" (`test_instance_block.entities`) at (include-entities button x, 150). The title is drawn at (`cx`, 10). The two cycle buttons have no text of their own for these words: the labels above are the only place they appear.
+
+### 7A.3 Behaviour
+
+| Rule | Behaviour (read) |
+|---|---|
+| `parseSize(text)` | `Integer.parseInt` of the box text, then clamp to 1..48; any `NumberFormatException` (empty, letters, a lone sign, a number outside the int range) gives 1. Applied to all three boxes every time a packet is built; the boxes themselves keep the typed text. Number grammar: Open question 2 |
+| `sendToServer(action)` | builds one 05c 0x41 packet (7A.4) from the current widgets and sends it; returns whether the test id was present. The packet is sent even when the id is absent |
+| Test id of a packet | the ID box text through `Identifier.tryParse`, which (read in `Identifier.tryBySeparator`, separator `:`) works as follows: split at the FIRST `:`; the part after it must pass `isValidPath` (every character in `a-z 0-9 _ - / .`; the empty text passes); with a colon at index 0 the namespace is `minecraft`; with a colon after index 0 the part before it must pass `isValidNamespace` (every character in `a-z 0-9 _ - .`, and the text `..` is refused; the empty prefix cannot occur here); with no colon at all the whole text must pass `isValidPath` and the namespace is `minecraft`. Any failure gives null (grammar and messages 23 section 1: namespace `[a-z0-9_.-]`, path `[a-z0-9_./-]`, as read here). So `foo` gives `minecraft:foo`; `:foo` gives `minecraft:foo`; `a:b:c` fails (the path `b:c` contains a colon); an upper-case letter or a space fails. THE EMPTY TEXT PARSES (path empty, namespace `minecraft`): the id counts as present with the key `minecraft:` and the red "Invalid test ID" text does not appear. A parsed identifier becomes a key of the `test_instance` registry |
+| `updateTestInfo(init)` | sends INIT (when `init`) or QUERY, then, when the returned flag is false, sets the info text to the translation `test_instance.description.invalid_id` ("Invalid test ID") in red; then `updateSaveState`. Called once at the end of `init` (INIT) and after every change of the ID box text (QUERY): one packet per keystroke that changes the text |
+| `updateSaveState` | Save (and Export when present) are active exactly when the rotation button value is NONE AND the ID box text parses with `Identifier.tryParse` (so also with the empty text). Run on `init` (through `updateTestInfo`), on each ID box change and on each rotation change. Reset, Run, Done and Cancel have no activity rule and are always active |
+| Reset, Save, Export, Run | each sends its action (RESET 3, SAVE 4, EXPORT 5, RUN 6) and then sets the screen to none directly (`Gui.setScreen(null)`) |
+| Done (`onDone`) | sends SET (2), then `onClose` (the `Screen` default, sets the screen to none). Done is never gated: with an invalid id it sends SET with the test absent, which clears the entity's test |
+| Cancel (`onCancel`) | `onClose` only; no packet |
+| Escape | `Screen.keyPressed` then `onClose`; no packet |
+| Status reply | `ClientPacketListener.handleTestInstanceBlockStatus` acts only when the current screen is this screen (a status packet that arrives with no such screen is dropped). It calls `setStatus(text, optional size)` (below) |
+| `setStatus(text, size)` | builds the info message as: an empty component; if the CLIENT-SIDE entity has an `error_message`, first the translation `test_instance.description.failed` ("Failed: %s") whose argument is that message in red, then the two characters line feed, line feed; then the packet's text. The info widget shows it. When the packet carries a size, the three size boxes are replaced by `Integer.toString` of its components (`setValue` on the boxes; they have no responders, so no packet follows) |
+| What the server answers | 31-6 10.4: to INIT and QUERY with one 05c 0x81 packet, text = the test's description (`test_instance.description.no_test` "No such test" in red when the id does not resolve), size = present only for QUERY and only when the test resolves. The info text and the size boxes are therefore updated only by those replies |
+
+Display note: the info widget uses the multi-line fitting widget (40-x1 3.4); its text is not scrolled by the screen.
+
+`Rotation.getRotated(argument)` (read: a 4 by 4 table keyed by the argument and the receiver; it is addition of quarter turns modulo 4 on the ids 0 to 3). The entity's `getRotation()` is `testRotation.getRotated(data.rotation)` (receiver = the test definition's rotation, argument = the stored rotation; NONE for the receiver when no test resolves). Result by receiver (rows) and argument (columns):
+
+| receiver \ argument | NONE | CLOCKWISE_90 | CLOCKWISE_180 | COUNTERCLOCKWISE_90 |
+|---|---|---|---|---|
+| NONE | NONE | CLOCKWISE_90 | CLOCKWISE_180 | COUNTERCLOCKWISE_90 |
+| CLOCKWISE_90 | CLOCKWISE_90 | CLOCKWISE_180 | COUNTERCLOCKWISE_90 | NONE |
+| CLOCKWISE_180 | CLOCKWISE_180 | COUNTERCLOCKWISE_90 | NONE | CLOCKWISE_90 |
+| COUNTERCLOCKWISE_90 | COUNTERCLOCKWISE_90 | NONE | CLOCKWISE_90 | CLOCKWISE_180 |
+
+With `t` the test's own rotation id and `d` the stored id: shown = `(t + d) mod 4`; a Done stores `d' = (t + d) mod 4`; the effective rotation afterwards is `(2t + d) mod 4`. Example: test rotation CLOCKWISE_90 (1), stored NONE (0): the button opens at `90`; Done stores 1 and the effective rotation becomes CLOCKWISE_180.
+
+### 7A.4 The packet sent (05c 0x41, read in `ServerboundTestInstanceBlockActionPacket` and its stream codec)
+
+The codec is a composite of three fields in this order: Position (the block's position), Action (VarInt id), Data (the `TestInstanceBlockEntity$Data` stream codec). `Action` ids: INIT 0, QUERY 1, SET 2, RESET 3, SAVE 4, EXPORT 5, RUN 6 (id equals ordinal; the id mapper uses the ZERO out-of-range strategy: an id outside 0..6 decodes as INIT).
+
+`Data` codec, in order:
+
+| # | Field | Encoding (read) |
+|---|---|---|
+| 1 | test | optional: a boolean (1 present, 0 absent), then when present the key through `ResourceKey.streamCodec(test_instance registry)`, which is the `Identifier` stream codec mapped to and from the key: `Identifier.STREAM_CODEC` is the UTF-8 string codec (limit 32767, the `STRING_UTF8` default) with `Identifier.parse` on read and `Identifier.toString` on write, and `toString` is always `namespace:path`. So the sent text always has the namespace: a box text `foo` is sent as `minecraft:foo`, and the empty box as `minecraft:`. The key's registry is implied by the field, not written (all read) |
+| 2 | size | `Vec3i.STREAM_CODEC`: three VarInts x, y, z |
+| 3 | rotation | VarInt id (NONE 0, CLOCKWISE_90 1, CLOCKWISE_180 2, COUNTERCLOCKWISE_90 3; out-of-range wraps) |
+| 4 | ignore entities | boolean |
+| 5 | status | VarInt id (cleared 0, running 1, finished 2; out-of-range gives 0) |
+| 6 | error message | optional: a boolean, then when present a `ComponentSerialization.STREAM_CODEC` text component |
+
+The screen fills the packet through the constructor that takes the loose values: test = the parsed id (7A.3), size = the three `parseSize` results, rotation = the rotation button value, `ignoreEntities` = NOT the include-entities button value, and it fixes status = cleared (0) and error message = absent. So each packet from this screen has, after the position and action, the bytes: test optional, three size VarInts (each 1 to 48, one byte each), rotation VarInt, a boolean, `00`, `00`.
+
+Server validation (read in `handleTestInstanceBlockAction`): the handler requires `canUseGameMasterBlocks` and a `TestInstanceBlockEntity` at the position, otherwise it returns with no reply and no message; no distance test was seen in the instructions read. For INIT and QUERY it answers (31-6 10.4) and does not store the packet's data. For SET, RESET, SAVE, EXPORT and RUN it first stores the packet's `Data` into the entity through `set` (`setChanged`) WITHOUT any check of the size, rotation or test id (the server trusts the client's 1 to 48 clamp, read: `set` only assigns the field and marks the block changed), then performs the action, and always ends with a block update for the position (flags 3). A test id that is not in the registry is stored as sent and only fails later (INIT/QUERY description "No such test"; RUN and RESET messages 31-6 10.4).
+
+Wire example, Done with id `foo`, size 3, 3, 3, rotation 0, include entities on (position P): P (the packed position, 05c Position type), `02` (SET), `01` (test present), `0D` `minecraft:foo` (13 characters: VarInt length then the ASCII), `03 03 03`, `00` (rotation), `00` (ignore entities false), `00` (cleared), `00` (no error message). A QUERY packet differs only in the second field (`01`).
+
+### 7A.5 Resize
+
+There is no `resize` override: `Screen.resize` stores the new size and runs `repositionElements`, which is `rebuildWidgets` (section 3 above). The whole widget set is created again from the ENTITY values: a typed id, typed sizes, a changed rotation and a changed include-entities state are lost (the widgets return to the entity's data), the info text returns to the empty string, and the closing `updateTestInfo(true)` sends one more INIT packet (with the entity's id, size, rotation and include-entities state). Until the reply comes, the info text is empty.
+
+### 7A.6 Cross-check with 40-x1 section 8, and what is new
+
+1. Every position, size, limit, text key and the layout arithmetic matched 40-x1 8.1 to 8.3. The worked examples of 40-x1 8.4 were recomputed and hold (see 7A.7).
+2. New: the Reset, Save, Export and Run buttons close the screen with `Gui.setScreen(null)` directly, whereas Done uses `onClose`; both end with no screen. Cancel and Escape send nothing.
+3. New: INIT and QUERY never store the packet data on the server (only SET, RESET, SAVE, EXPORT, RUN do), and the server applies no clamp to the stored data.
+4. New: the initial rotation shown is the entity's effective rotation (the test definition's rotation combined with the stored one, table in 7A.3), not the stored `data.rotation`. A Done stores the shown value as `data.rotation`, so with a test whose own rotation `t` is not NONE the effective rotation changes by `t` on each Done (`(t + d)` is shown and stored, then `(2t + d)` is in effect). Read, no longer inferred.
+5. New: a fresh block has size (0, 0, 0), the boxes show `0`, and a Done without editing sends 1, 1, 1 (the clamp), so the stored size changes to (1, 1, 1).
+6. New: Done is always allowed. With an unparseable id (upper case, space, a second colon) it sends the test absent and so clears the stored test; with the EMPTY id box it sends the key `minecraft:` (the empty text parses, 7A.3), not an absent test.
+7. New: a resize resets every edit and re-sends INIT (7A.5); 40-x1 8 does not mention the resize.
+8. New: `isInGameUi` is true, so the transparent background is drawn (7A.1).
+9. New: the response path: the status packet is dropped unless this screen is the current one, so a late reply after Cancel does nothing.
+10. The packet's field layout (7A.4) agrees with 05c 0x41 and its `TestInstanceData` type, including the optional encodings (a boolean then the value) and the VarInt triple.
+
+### 7A.7 Worked examples (`W = 320`, so `left` = 2; no IDE, so `c` = 2)
+
+| Case | Result |
+|---|---|
+| Layout | ID box x 2 to 318, y 40 to 60; info text x 2, y 70, 316 by 72; size boxes at x 2, 66, 131 (`2 + 64.8` = 66.8 gives 66; `2 + 129.6` = 131.6 gives 131), y 160, 56 wide; rotation x 196 (`2 + 194.4` = 196.4); include entities x 261 (`2 + 259.2` = 261.2); Reset x 2 (154 wide), Save x 164 (`2 + 162`) at y 185; Run x 2, Done x 110, Cancel x 218 (100 wide) at y 210. With `c` = 3: Reset x 2, Save x 110, Export x 218 (100 wide), y 185. Labels at y 30 and y 150 |
+| Valid id | text `minecraft:my_test`: each change of the text sends QUERY with the parsed id; Save is active while the rotation is `0` |
+| Invalid id | text `Bad Id`: `tryParse` fails on the space and the capital; the packet is still sent with the test absent; the info text becomes the red "Invalid test ID"; Save is inactive; Done still works and clears the test |
+| Rotation 90 | Save inactive; Reset, Run, Done active; a RUN then carries rotation id 1 |
+| Sizes | `0` sends 1; `99` sends 48; `x` sends 1; `-5` sends 1 (clamp); `48` sends 48 |
+| Reply | a status reply "Function: foo" with size (3, 3, 3) while the entity has the error "boom": the info text reads `Failed: boom` (the argument in red), two line feeds, `Function: foo`; the boxes show 3, 3, 3 |
+| Fresh block | boxes `0 0 0`, id empty. The empty text parses, so INIT carries the test PRESENT with the key `minecraft:` (wire: `01`, `0A`, `minecraft:`), size 1, 1, 1; Save is active (rotation NONE, id parses); no red text. The server finds no such registry entry and answers "No such test" in red; the screen shows it |
+| Resize | the player had typed `minecraft:abc` and size 5 and the window is resized: the id box is empty again (entity test absent) and a new INIT is sent |
+
 ## 8. Packets sent (source and limits)
 
 | Packet | Fields in wire order, source on the screen | Screen limit | Wire limit (read in the packet class) |
@@ -232,7 +358,7 @@ Every constant in sections 4 to 7 was read from the jar and matched 40-x1 sectio
 1. `Screen.resize` is `width, height, repositionElements`, and the default `repositionElements` is `rebuildWidgets` (clear, clear focus, `init`, initial focus). The test block screen has no `resize` override, so a window resize loses the typed message text there (section 7). 40-x1 section 7 does not mention it.
 2. No one of the five screens implements `HasGamemasterPermissionReaction`, so none reacts when the player loses the permission while the screen is open (section 2.2). The server-side rejections of 2.3 are then the only defence.
 3. The client learns the permission level through entity events 24 to 28 on the player (section 2.2), and both `instabuild` and the gamemaster permission are required (31-6 11.1).
-4. 40-x1 Open question 1 is closed for the five screens read here: `Screen.isPauseScreen` returns true and none of the five (nor the abstract base) overrides `isPauseScreen` or `shouldCloseOnEsc` (section 3). The test instance screen was not re-read.
+4. 40-x1 Open question 1 is closed for the five screens read here: `Screen.isPauseScreen` returns true and none of the five (nor the abstract base) overrides `isPauseScreen` or `shouldCloseOnEsc` (section 3). The test instance screen is read in section 7A.
 5. 40-x1 Open question 12 is closed: `updateGui` refreshes from the screen's own entity, so a Block Entity Data packet for another command block never injects foreign data into the screen (section 4.3).
 6. 40-x1 Open question 6, the call chain is read: `Screen.resize` rebuilds through `init` for screens without an override, and the three screens with an override call `init(width, height)` themselves (section 3, 5.6, 6.5).
 7. Wire-level reads of the packet classes (section 8) agree with 05c: strings, VarInts, enum ordinals, byte offsets and sizes with clamps, metadata limit 128.
@@ -257,7 +383,7 @@ Every constant in sections 4 to 7 was read from the jar and matched 40-x1 sectio
 
 ## 12. Open questions
 
-1. `TestInstanceBlockEditScreen` (named in 40-x1 section 8) was not re-read in this round; section 9 covers only the five screens above.
+1. CLOSED (round TIBE): `TestInstanceBlockEditScreen` is now read in section 7A (screen, packet field layout, validation, entity data). Section 9 items 1 to 8 still cover only the five screens above.
 2. Java number grammars for `Integer.parseInt`, `Float.valueOf` and `Long.valueOf` (signs, spaces, hexadecimal and exponent forms, `NaN`) and the half-even rounding of `DecimalFormat("0.0###")` are library behaviour, not read (recalled, not verified); the same as 40-x1 Open question 5.
 3. `ByteBuf.writeByte(int)` keeping only the low 8 bits is Netty library behaviour (recalled, not verified), as in 40-x1 Open question 10.
 4. The permission level numbers behind entity events 25 to 28 (1 to 4) are taken from 15 section 2.2 (inferred from the constant names `MODERATOR`, `GAMEMASTER`, `ADMIN`, `OWNER` and the 24 + level rule there); the constant values were not read here.
@@ -265,4 +391,6 @@ Every constant in sections 4 to 7 was read from the jar and matched 40-x1 sectio
 6. Text box internals (word boundaries, selection colours, scrolling, blink duty beyond the 300 ms interval, IME) are those of 40-x1 Open questions 2, 4 and 15 and 40-8 section 2; not traced for the single-line `EditBox`.
 7. `CommandSuggestions` placement and drawing under the parameters of section 4.1 (40-x1 Open question 11).
 8. Whether the mirror symbol glyphs exist in the default font (40-x1 Open question 3).
-9. `docs/protocol/README.md` has no Documents-table row for this file; the orchestrator adds it (not done here by instruction).
+9. (Removed in round TIBE: the README index row is the orchestrator's task and not a question about the artifact.)
+10. Which widget is first in the tab order of the test instance screen (expected: the ID box; the order of the widget tree's focusable children was not traced), 7A.2.
+11. (Closed in round TIBE: `Identifier.tryParse` on empty and colon-less text, `Rotation.getRotated`, and the transparent background are read in 7A.1 and 7A.3.)

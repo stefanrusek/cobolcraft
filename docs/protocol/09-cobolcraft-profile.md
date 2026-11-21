@@ -373,6 +373,130 @@ fixtures follow it:
     which decodes (signed) as −180.0, the same direction. Fixtures that state 180.0 expect −180.0 from a
     decoder.
 
+### 3.5 Packets whose use changes for the standard rules (feature 002)
+
+Source: specs/002-client-polish/contracts/wire-delta.md §2. Both world types use these packets as described here (the
+standard rules, FR-040); only content keys and ids differ by type. Layouts are those of 05a, 05b and 05c: each table below
+repeats the field list of that document for convenience, and the document is normative. Fixture names follow §3 and are
+the files that `contract/fixtures/wire/` gains (wire-delta §3); a fixture marked "exists" is already named in §3.2 or §3.3.
+Values a row leaves open are the fixture's own choice, recorded in its field comments.
+
+#### 3.5.1 Chat (05a 0x42, 0x21; 05c 0x09, 0x07)
+
+**Player Chat** (S→C 0x42 (66), 05a): replaces System Chat for player chat in both types (README Part 7 decision 7).
+
+| Field | Type | Value |
+|---|---|---|
+| Global index | VarInt | count of chat lines the server has sent this connection, from 0 |
+| Sender | UUID | the sender's UUID (§1) |
+| Index | VarInt | per-sender message index, from 0 |
+| Signature | Optional MessageSignature | absent (Boolean false): the server runs offline and unsigned (Open question 9) |
+| Body | SignedMessageBodyPacked | content, timestamp, salt 0 (Open question 6), last seen: empty array |
+| Unsigned content | Optional TextComponent | absent |
+| Filter mask | FilterMask | kind 0 `PASS_THROUGH` |
+| Chat type | ChatTypeBound | `Holder<chat_type>` written as id + 1 (00 §10.2) of the entry `minecraft:chat` (CORE §3.5, id 0); sender name = the player's display name component; target absent |
+
+Fixture: `play-s2c-42-player-chat.hex`.
+
+**Disguised Chat** (S→C 0x21 (33), 05a): the output of `say`, `me`, `msg`, `teammsg` (16 §8).
+
+| Field | Type | Value |
+|---|---|---|
+| Message | TextComponent | the message content |
+| Chat type | ChatTypeBound | the `chat_type` entry of the command (CORE §3.5: `minecraft:say_command` id 5, `minecraft:emote_command` id 1, `minecraft:msg_command_incoming` id 2 and `_outgoing` id 3, `minecraft:team_msg_command_incoming` id 6 and `_outgoing` id 7) as id + 1; sender name; target name present for `msg` and `teammsg` |
+
+Fixture: `play-s2c-21-disguised-chat-say.hex`.
+
+**Chat** (C→S 0x09 (9), 05c): message string (max 256), timestamp Long, salt Long = 0, signature absent, last seen
+messages (LastSeenMessagesUpdate, none). Fixture: `play-c2s-09-chat.hex` (exists, row 0x09 of §3.2). **Chat Command** (C→S 0x07) has a row in §3.3
+(`play-c2s-07-chat-command.hex`).
+
+#### 3.5.2 Command tree and permission levels (05a 0x10, 0x22, 0x0F; 15 §2.2, §3.3, §3.4)
+
+| Packet | Fields | Value | Fixture |
+|---|---|---|---|
+| Commands (S→C 0x10 (16)) | Nodes: array of CommandNode (flags, children, redirect, name, parser, properties, suggestions type); root index | the full standard tree of 15 filtered for the player's level (15 §3.3), child order 15 §3.2, parser ids 05a "Argument parser registry" | exists: `play-s2c-10-commands-everyone.hex`, `play-s2c-10-commands-operator.hex` |
+| Entity Event (S→C 0x22 (34)) | Entity id Int (the player's own), Event id Byte | **permission level**: event id 24 + level (24 = level 0 to 28 = level 4), sent on login and when `op`/`deop` change the level, immediately followed by a new Commands packet (15 §2.2) | `play-s2c-22-entity-event-permission-level.hex` (level 4, id 28) |
+| Command Suggestions (S→C 0x0F (15)) | Transaction id, Start, Length, array of SuggestionEntry (text, optional tooltip) | as §3.3 | exists: `play-s2c-0f-command-suggestions.hex` |
+
+#### 3.5.3 Player Abilities (05a 0x41; 05c 0x28)
+
+| Packet | Fields | Value | Fixture |
+|---|---|---|---|
+| Player Abilities (S→C 0x41 (65)) | Flags Byte (0x01 invulnerable, 0x02 flying, 0x04 can fly, 0x08 instant build), flying speed Float, walking speed Float | survival 0x00; creative 0x0D (0x0F while flying); **spectator: can fly (0x04) set, the other grants are the server's choice of 33 and 13 §1.4 (creative and spectator alone grant flight; 13 line 122: a spectator's `flying` is set at once, so the flying bit 0x02 is also set); the fixture uses 0x07 (invulnerable, flying, can fly), recorded in its field comments (Open question 13)**; speeds 0.05 and 0.1 | exists: `play-s2c-41-player-abilities-creative.hex`, `-survival.hex`; new: `play-s2c-41-player-abilities-spectator.hex` |
+| Player Abilities (C→S 0x28 (40)) | Flags Byte (only 0x02 flying is read) | 0x02 when the player starts flying, 0x00 when it stops; sent only where flight is granted | exists (row 0x28 of §3.2): `play-c2s-28-player-abilities.hex` (flags 0x02, flying) |
+
+#### 3.5.4 Inventory and crafting menus, recipe book (05a 0x12, 0x14; 05b 0x62, 0x4B to 0x4D; 05c 0x12, 0x27, 0x2F, 0x30)
+
+The inventory menu (container id 0) and the crafting menu (the bench, container id from Open Screen) have **46 slots**
+(§3.2; 12 §5.6a, 5.6b; 13 §3.5). Slot indices are the menu indices of 40-1 and 13 §3.5. Item stacks use the component form
+of 00 §12.1 (data components in the patch); cobolcraft items carry an empty patch.
+
+| Packet | Fields | Value | Fixture |
+|---|---|---|---|
+| Container Set Content (S→C 0x12 (18)) | Container id VarInt, State id VarInt, Slots (array of ItemStack, optional form), Carried item | inventory: 46 slots (exists, §3.2); **the bench menu: 10 slots (result, 3 x 3 grid) + 36 player slots = 46** | exists (inventory); new: `play-s2c-12-container-set-content-crafting-bench.hex` |
+| Container Set Slot (S→C 0x14 (20)) | Container id, State id, Slot Short, Item | one changed slot, e.g. the result slot after a grid change | exists: `play-s2c-14-container-set-slot.hex` |
+| Set Cursor Item (S→C 0x62 (98)) | Contents ItemStack (optional form) | the stack on the cursor after a server-resolved click | `play-s2c-62-set-cursor-item.hex` |
+| Container Click (C→S 0x12 (18)) | Container id, State id, Slot Short (-999 outside), Button Byte, Click type VarInt (0 pickup, 1 quick move, 2 swap, 3 clone, 4 throw, 5 quick craft, 6 pickup all), Changed slots (map Short to HashedStack, max 128), Carried item HashedStack | the standard inventory clicks (13 §3.5, 40-1 §3.4); the hashed form of 00 §12.1 | exists (row 0x12 of §3.2): `play-c2s-12-container-click.hex`, which keeps its name and is the pickup click (click type 0); new: `play-c2s-12-container-click-quick-move.hex` |
+| Place Recipe (C→S 0x27 (39)) | Container id, Recipe VarInt (display id), Use max items Boolean | as §3.3 (fill rule 13 §3.8) | exists: `play-c2s-27-place-recipe.hex` |
+| Recipe Book Add (S→C 0x4B (75)) | Entries: array of (RecipeDisplayEntry: display id, display, group, category, optional crafting requirements; flags Byte 0x01 notification, 0x02 highlight); Replace Boolean | as §3.3; Replace true at join (CORE §5.7) | exists: `play-s2c-4b-recipe-book-add.hex` |
+| Recipe Book Remove (S→C 0x4C (76)) | Recipes: array of VarInt display ids | recipes the player no longer knows | `play-s2c-4c-recipe-book-remove.hex` |
+| Recipe Book Settings (S→C 0x4D (77)) | four (open Boolean, filtering Boolean) pairs: crafting, furnace, blast furnace, smoker | the server's stored settings, sent at join | `play-s2c-4d-recipe-book-settings.hex` |
+| Recipe Book Change Settings (C→S 0x2F (47)) | Book type VarInt (0 crafting, 1 furnace, 2 blast furnace, 3 smoker), Is open Boolean, Is filtering Boolean | the player toggles the recipe book | `play-c2s-2f-recipe-book-change-settings.hex` |
+| Recipe Book Seen Recipe (C→S 0x30 (48)) | Recipe VarInt (display id) | the player has seen the entry (clears its highlight) | `play-c2s-30-recipe-book-seen-recipe.hex` |
+
+#### 3.5.5 Block Destruction, Set Held Item, Player Action swap (05a 0x05; 05b 0x6B; 05c 0x36, 0x29)
+
+| Packet | Fields | Value | Fixture |
+|---|---|---|---|
+| Block Destruction (S→C 0x05 (5)) | Breaker id VarInt, Location Position, Progress UByte | the crack stage 0 to 9 of the block being broken (13 §2.4); a value outside 0 to 9 removes the overlay | exists (row 0x05 of §3.2): `play-s2c-05-block-destruction.hex` |
+| Set Held Item (C→S 0x36 (54), "Set Carried Item" in 05c) | Slot Short (0 to 8) | the hotbar slot the player selected | exists (row 0x36 of §3.2): `play-c2s-36-set-carried-item.hex` |
+| Set Held Slot (S→C 0x6B (107)) | Slot VarInt | as §3.2 | exists: `play-s2c-6b-set-held-slot.hex` |
+| Player Action (C→S 0x29 (41)) action 7 `SWAP_ITEM_WITH_OFFHAND` | Action VarInt = 7, Location (0, 0, 0), Face 0, Sequence 0 | the player pressed F (US19): swap the held item with the off-hand slot | `play-c2s-29-player-action-swap-item-with-offhand.hex` |
+
+#### 3.5.6 Entities: spawn, metadata, attributes, effects (05a 0x01; 05b 0x65, 0x86, 0x87)
+
+Every standard entity is spawned with the same packets as §3.3 uses for the two cobolcraft mobs; the entity type id is
+the id of 21 §2 / 46 §11 (standard) or standin §3 (cobolcraft).
+
+| Packet | Fields | Value | Fixture |
+|---|---|---|---|
+| Add Entity (S→C 0x01 (1)) | Entity id VarInt, UUID, Type VarInt, X, Y, Z Double, Movement LpVec3, Pitch, Yaw, Head yaw (Angle), Data VarInt | any standard entity (mob, vehicle, projectile, item, painting, and so on); the type-specific Data of the entity's document (21, 34 to 45); UUID as §3.3 | `play-s2c-01-add-entity-standard-cow.hex` (a cow, standard type); exists for cobolcraft mobs |
+| Set Entity Data (S→C 0x65 (101)) | Entity id VarInt; entries of (index UByte, serializer id VarInt, value); end marker 0xFF | **every serializer of 46 §12** (the id enums they carry), with the index of the entity's own metadata table (45) | `play-s2c-65-set-entity-data-living.hex` (a mob with health, flags and a custom name); exists for items |
+| Update Attributes (S→C 0x86 (134)) | Entity id VarInt; array (max 128) of (attribute registry id VarInt, base Double, array of modifier (Identifier, amount Double, operation VarInt 0 add, 1 multiply base, 2 multiply total)) | the attribute snapshot (18 §3) | `play-s2c-86-update-attributes.hex` |
+| Update Mob Effect (S→C 0x87 (135)) | Entity id VarInt, Effect registry id VarInt, Amplifier VarInt, Duration VarInt (-1 infinite), Flags Byte (0x01 ambient, 0x02 visible, 0x04 icon, 0x08 blend) | an applied effect (28; 46 §4) | `play-s2c-87-update-mob-effect.hex` |
+| Entity Event (S→C 0x22 (34)) | Entity id Int, Event id Byte | as §3.3 and 3.5.2 | exists |
+| Level Event (S→C 0x2F (47)) | Event type Int, Location Position, Data Int, Global Boolean | effects of 42 | `play-s2c-2f-level-event.hex` |
+| Level Particles (S→C 0x30 (48)) | Particle (type id and data), Override limiter, Always show, X, Y, Z Double, X, Y, Z distance Float, X, Y, Z max speed Float, Count VarInt, Randomization VarInt | the particle emitters of 42 | `play-s2c-30-level-particles.hex` |
+
+Sounds are out of scope (FR-043): no sound packet is sent and a received one is discarded.
+
+#### 3.5.7 Login and Respawn for three dimensions (05a 0x32; 05b 0x54)
+
+| Packet | Fields | Value | Fixture |
+|---|---|---|---|
+| Login (S→C 0x32 (50)) | as §3.2; Dimension names: array of Identifier | standard with `extra-dimensions` on: `minecraft:overworld`, `minecraft:the_nether`, `minecraft:the_end` (39); spawn info per §3.2 | exists (cobolcraft): `play-s2c-32-login-all-dimensions.hex`; new: `play-s2c-32-login-all-dimensions-standard.hex` |
+| Respawn (S→C 0x54 (84)) | CommonPlayerSpawnInfo (dimension type VarInt, dimension Identifier, hashed seed Long, game mode, previous game mode, is debug, is flat, last death location, portal cooldown, sea level), Data to keep Byte | travel to each of the three dimensions: dimension type id of the target in the loaded `dimension_type` registry; sea level of the target (overworld 63, 10 §5; the other two from 37 and 38); data to keep per 39 (portal travel) or 0x00 (death) | new (none of the three exists yet; the existing `play-s2c-54-respawn-main.hex` and `-subroutine.hex` are the cobolcraft ones, and §3.3 names `play-s2c-54-respawn-main-standard.hex` for the overworld, which is also to be created): `play-s2c-54-respawn-main-standard.hex`, `play-s2c-54-respawn-the-nether-standard.hex`, `play-s2c-54-respawn-the-end-standard.hex` |
+
+The debug world type (debug-world.md) sets "is debug" false and "is flat" false in the spawn info: it is a layout of the
+standard overworld, not the client's own debug-world mode.
+
+#### 3.5.8 Chunk data with 24 sections (05a 0x2E; 06)
+
+| Packet | Fields | Value | Fixture |
+|---|---|---|---|
+| Level Chunk With Light (S→C 0x2E (46)) | Chunk X Int, Chunk Z Int, ChunkData (heightmaps, section buffer, block entities), LightData | the standard overworld has **24 sections** (min y -64, height 384: 10 §5), so the section buffer holds 24 sections of block states then biomes, ascending section Y (06 §4); block palettes: single value, linear (up to 4 bits, written as 4), hash map 5 to 8 bits, or the **global kind at `ceillog2(35723)` = 16 bits** (06 §5.2; 24 part 8 for the 35723 states); biome palettes: single, linear 1 to 3 bits or global at `ceillog2(biome registry size)`; light: 26 light sections (24 + 2, 06 §7); encoding choices §3.4 rules 1 and 2 | `play-s2c-2e-level-chunk-with-light-standard-24-sections.hex`; exists (the cobolcraft chunk, section count of its own dimension type): `play-s2c-2e-level-chunk-with-light-spawn.hex` |
+
+#### 3.5.9 Registry Data and Update Tags for the standard world (03 0x07, 0x0E; 05b 0x89; 04 §3, §6)
+
+wire-delta §2 lists "Update Tags and the 51 world registries (04)": the standard world type sends every registry the
+loaded data pack defines (WT §4), in the order of 04 §3. The packet layouts are unchanged from §3.1.
+
+| Packet | Fields | Value | Fixture |
+|---|---|---|---|
+| Registry Data (config S→C 0x07 (7)) | Registry Identifier; Entries: array of (Id Identifier, Data Optional network NBT, Boolean-prefixed) | **standard:** one packet per synchronized registry the pack defines (51 world registries, 04 §3 order), each entry's NBT in the schema of 04 §6 with the field order of §3.4 rule 9, `Data` present (CobolCraft has no known packs, 04 §3.1); **cobolcraft:** the packets of CORE §2 | exists for the cobolcraft type: `config-s2c-07-registry-data-*.hex`. None for the standard type: its rows come from the generated pack, so no byte fixture exists until the loader of 23 does (Open question 11); the automated check is `contract_vanilla_config` against the 04 worked examples |
+| Update Tags (config S→C 0x0E (14); play S→C 0x89 (137)) | Registries: array of (Registry Identifier, Tags: array of (Tag name Identifier, Entries: array of VarInt element ids)) | one packet with every registry's flattened tags; ids are the Registry Data order for synchronized registries and the static ids of 46 and 24 for static ones (04 §1); standard: the pack's tags; cobolcraft: CORE §4.4 | exists for cobolcraft: `config-s2c-0e-update-tags.hex`. None for the standard set (same reason) and none for play id 0x89, which has the layout of the configuration one |
+
 ## 4. Packets CobolCraft never sends
 
 Everything not listed in §3. Neither side implements packets outside this inventory. Receiving one is
@@ -427,3 +551,4 @@ signed chat commands or Start Configuration. Player Chat and Disguised Chat are 
     whether the client must accept Bundle Delimiter, the Respawn data-to-keep for portals (39), the sea level of
     `cobolcraft:main` (not a `dimension_type` field, CORE Open question 26), and the fixture policy for the `-standard`
     variants.
+13. **Spectator Player Abilities flags** (§3.5.3): 05a gives the bit meanings and 13 §1.4 says creative and spectator grant flight, but no document gives the exact byte a spectator receives. The fixture uses 0x07 (invulnerable, flying, can fly) until a read round settles it.

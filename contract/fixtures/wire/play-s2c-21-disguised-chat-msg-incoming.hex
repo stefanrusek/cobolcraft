@@ -1,0 +1,11 @@
+# Fixture: Disguised Chat, chat type minecraft:msg_command_incoming with a target
+# Phase: play. Direction: clientbound (S->C). Packet id 0x21 (33).
+# Doc refs: 05a 0x21; 16 section 8.3 (msg); chat_type ids (msg_command_incoming = 2)
+# Stated inputs:
+#   message plain String "psst"; chat type id 2 (Holder VarInt 3); sender name "Alice"; target name "Bob" present
+
+21                                               # packet id: VarInt 0x21
+08 00 04 70 73 73 74                             # Message: TextComponent plain String "psst"
+03                                               # Chat type: Holder reference VarInt 3 (registry id 2 + 1)
+08 00 05 41 6c 69 63 65                          # Sender name: TextComponent plain String "Alice"
+01 08 00 03 42 6f 62                             # Target name: Optional present, plain String "Bob"

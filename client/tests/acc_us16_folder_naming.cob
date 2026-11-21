@@ -32,8 +32,9 @@
      MOVE "acceptance US16 edge given a world named like an existing one when created then a new "
          & "folder with (2) (then (3)) is used and both appear in the list" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "Single-player Worlds|My World (My World)|My World (My World (2))|My World (My World "
-         & "(3))|Play|Create New World|Delete|Back" TO TL-EXPECTED
+     MOVE "Single-player Worlds|My World (My World)  Type: CobolCraft|My World (My World (2))  "
+         & "Type: CobolCraft|My World (My World (3))  Type: CobolCraft|Play|Create New World|Delete|"
+         & "Back" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -50,8 +51,9 @@
      MOVE "client-surface §2 characters outside A-Z a-z 0-9 _ - space become _ in the folder name; "
          & "the list shows the world name and the folder" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
-     STRING "Single-player Worlds|My World (My World)|My World (My World (2))|My World (My World "
-         "(3))|a/b?c" FUNCTION CHAR(196) FUNCTION CHAR(170) "d-e_f 9 (a_b_c_d-e_f 9)|Play|"
+     STRING "Single-player Worlds|My World (My World)  Type: CobolCraft|My World (My World (2))  "
+         "Type: CobolCraft|My World (My World (3))  Type: CobolCraft|a/b?c" FUNCTION CHAR(196)
+         FUNCTION CHAR(170) "d-e_f 9 (a_b_c_d-e_f 9)  Type: CobolCraft|Play|"
          "Create New World|Delete|Back" DELIMITED BY SIZE INTO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -69,6 +71,8 @@
          CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
      END-PERFORM
      CALL "TEST-TYPE" USING CLIENT-STATE WS-NAME WS-NAME-LENGTH
+*>   (the create screen's default type is standard; these worlds are cobolcraft ones)
+     MOVE 1 TO SP-CREATE-TYPE
      MOVE ACT-CREATE-WORLD TO WS-ACTION
      CALL "TEST-CLICK" USING CLIENT-STATE WS-ACTION WS-ARG WS-FOUND
      CALL "TEST-SP-JOIN" USING CLIENT-STATE WS-JOINED

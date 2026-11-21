@@ -47,7 +47,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACCESS-ADD.
 *> USING list, name (PIC X(16)), name length, offline UUID (PIC X(16)), outcome out (BINARY-LONG):
-*> 0 added at the end of the list, 1 already listed, 2 the list is full (CORE-MAX-ACCESS).
+*> 0 added at the end of the list, 1 already listed, 2 the list is full (CORE-MAX-ACCESS). The entry is level 4 (an operator),
+*> has no creation time, source or reason and expires forever (the caller sets what it knows).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -70,6 +71,16 @@
              MOVE L-NAME TO AC-NAME(L-LIST, AC-COUNT(L-LIST))
              MOVE L-NAME-LENGTH TO AC-NAME-LENGTH(L-LIST, AC-COUNT(L-LIST))
              MOVE L-UUID TO AC-UUID(L-LIST, AC-COUNT(L-LIST))
+             MOVE 0 TO AC-LEVEL(L-LIST, AC-COUNT(L-LIST))
+             IF L-LIST = ACCESS-OPERATORS
+                 MOVE 4 TO AC-LEVEL(L-LIST, AC-COUNT(L-LIST))
+             END-IF
+             MOVE SPACES TO AC-CREATED(L-LIST, AC-COUNT(L-LIST)) AC-SOURCE(L-LIST, AC-COUNT(L-LIST))
+                 AC-REASON(L-LIST, AC-COUNT(L-LIST))
+             MOVE 0 TO AC-CREATED-LENGTH(L-LIST, AC-COUNT(L-LIST)) AC-SOURCE-LENGTH(L-LIST, AC-COUNT(L-LIST))
+                 AC-REASON-LENGTH(L-LIST, AC-COUNT(L-LIST))
+             MOVE "forever" TO AC-EXPIRES(L-LIST, AC-COUNT(L-LIST))
+             MOVE 7 TO AC-EXPIRES-LENGTH(L-LIST, AC-COUNT(L-LIST))
              MOVE 0 TO L-OUTCOME
      END-EVALUATE
      GOBACK.

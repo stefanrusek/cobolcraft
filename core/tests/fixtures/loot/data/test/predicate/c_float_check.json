@@ -1,0 +1,8 @@
+{
+ "type": "minecraft:float_value_check",
+ "value": 0.5,
+ "range": {
+  "min": 0.25,
+  "max": 0.75
+ }
+}

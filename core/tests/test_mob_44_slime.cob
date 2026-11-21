@@ -1,0 +1,137 @@
+*> Implementation test (US15; docs/protocol/54-client-gap-closures.md section 8): the slime chunk seed and test vectors and the sniffer diggable tag.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MOB-44-SLIME.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==TP-==.
+ 01 WS-CASE               PIC X(240).
+ 01 WS-E                  BINARY-DOUBLE.
+ 01 WS-O                  BINARY-DOUBLE.
+ 01 WS-PLAYER             BINARY-LONG.
+ 01 WS-DIM                BINARY-LONG.
+ 01 WS-FX                 FLOAT-LONG.
+ 01 WS-FY                 FLOAT-LONG.
+ 01 WS-FZ                 FLOAT-LONG.
+ 01 WS-YAW                FLOAT-SHORT VALUE 0.
+ 01 WS-EKEY               PIC X(112).
+ 01 WS-TYPE               BINARY-LONG.
+ 01 WS-ENTITY-ROW         PIC X(66).
+ 01 WS-STATUS             BINARY-LONG.
+ 01 WS-ROW                BINARY-LONG.
+ 01 WS-I                  BINARY-LONG.
+ 01 WS-D2                 FLOAT-LONG.
+ 01 WS-WALK               BINARY-LONG.
+ 01 WS-CLEAR              BINARY-LONG.
+ 01 WS-DX                 FLOAT-LONG.
+ 01 WS-DY                 FLOAT-LONG.
+ 01 WS-DZ                 FLOAT-LONG.
+ 01 WS-STARTED            BINARY-LONG.
+ 01 WS-ALIVE              BINARY-LONG.
+ 01 WS-CONT               BINARY-LONG.
+ 01 WS-J                  BINARY-LONG.
+ 01 WS-LEN0               BINARY-LONG.
+ 01 WS-CAPACITY           BINARY-LONG VALUE 256.
+ 01 WS-CX2               BINARY-LONG.
+ 01 WS-CZ2               BINARY-LONG.
+ 01 WS-SEED              BINARY-DOUBLE.
+ 01 WS-OUT               BINARY-DOUBLE.
+ 01 WS-SLIME             BINARY-LONG.
+ 01 WS-COUNT2            BINARY-LONG.
+ 01 WS-BKEY              PIC X(48).
+
+ PROCEDURE DIVISION.
+     MOVE 0 TO WS-CX2 WS-CZ2 WS-SEED
+     CALL "M44-SLIME-SEED" USING WS-CX2 WS-CZ2 WS-SEED WS-OUT
+     MOVE "acceptance US15 54§8.1 Slime seed: chunk (0, 0), world seed 0 gives 987234911" TO WS-CASE
+     MOVE WS-OUT TO WS-O
+     MOVE 987234911 TO WS-E
+     PERFORM CHECK-N
+     MOVE 12345 TO WS-SEED
+     CALL "M44-SLIME-SEED" USING WS-CX2 WS-CZ2 WS-SEED WS-OUT
+     MOVE "acceptance US15 54§8.1 Slime seed: chunk (0, 0), seed 12345 gives 987247206" TO WS-CASE
+     MOVE WS-OUT TO WS-O
+     MOVE 987247206 TO WS-E
+     PERFORM CHECK-N
+     MOVE 1 TO WS-CX2
+     CALL "M44-SLIME-SEED" USING WS-CX2 WS-CZ2 WS-SEED WS-OUT
+     MOVE "acceptance US15 54§8.1 Slime seed: chunk (1, 0), seed 12345 gives 981403717" TO WS-CASE
+     MOVE WS-OUT TO WS-O
+     MOVE 981403717 TO WS-E
+     PERFORM CHECK-N
+     MOVE -3 TO WS-CX2
+     MOVE 7 TO WS-CZ2
+     CALL "M44-SLIME-SEED" USING WS-CX2 WS-CZ2 WS-SEED WS-OUT
+     MOVE "acceptance US15 54§8.1 Slime seed: chunk (-3, 7), seed 12345 gives 876799905" TO WS-CASE
+     MOVE WS-OUT TO WS-O
+     MOVE 876799905 TO WS-E
+     PERFORM CHECK-N
+     MOVE 5 TO WS-CX2 WS-CZ2
+     MOVE -1 TO WS-SEED
+     CALL "M44-SLIME-SEED" USING WS-CX2 WS-CZ2 WS-SEED WS-OUT
+     MOVE "acceptance US15 54§8.1 Slime seed: chunk (5, 5), seed -1 gives 889565929" TO WS-CASE
+     MOVE WS-OUT TO WS-O
+     MOVE 889565929 TO WS-E
+     PERFORM CHECK-N
+     MOVE 100 TO WS-CX2
+     MOVE -200 TO WS-CZ2
+     MOVE 987654321 TO WS-SEED
+     CALL "M44-SLIME-SEED" USING WS-CX2 WS-CZ2 WS-SEED WS-OUT
+     MOVE "acceptance US15 54§8.1 Slime seed: chunk (100, -200), seed 987654321 gives 175648119546" TO WS-CASE
+     MOVE WS-OUT TO WS-O
+     MOVE 175648119546 TO WS-E
+     PERFORM CHECK-N
+     MOVE 12345 TO WS-SEED
+     MOVE -3 TO WS-CX2
+     MOVE 7 TO WS-CZ2
+     CALL "M44-SLIME-CHUNK" USING WS-CX2 WS-CZ2 WS-SEED WS-SLIME
+     MOVE "acceptance US15 54§8.1 Slime chunk: (-3, 7) with seed 12345 is a slime chunk" TO WS-CASE
+     MOVE WS-SLIME TO WS-O
+     MOVE 1 TO WS-E
+     PERFORM CHECK-N
+     MOVE 0 TO WS-CX2 WS-CZ2
+     CALL "M44-SLIME-CHUNK" USING WS-CX2 WS-CZ2 WS-SEED WS-SLIME
+     MOVE "acceptance US15 54§8.1 Slime chunk: (0, 0) with seed 12345 is not" TO WS-CASE
+     MOVE WS-SLIME TO WS-O
+     MOVE 0 TO WS-E
+     PERFORM CHECK-N
+     MOVE 0 TO WS-COUNT2
+     PERFORM VARYING WS-CX2 FROM -8 BY 1 UNTIL WS-CX2 > 7
+         PERFORM VARYING WS-CZ2 FROM -8 BY 1 UNTIL WS-CZ2 > 7
+             CALL "M44-SLIME-CHUNK" USING WS-CX2 WS-CZ2 WS-SEED WS-SLIME
+             ADD WS-SLIME TO WS-COUNT2
+         END-PERFORM
+     END-PERFORM
+     MOVE "acceptance US15 54§8.1 Slime chunk: 23 of the 256 chunks with x and z in -8 to 7 for seed 12345" TO WS-CASE
+     MOVE WS-COUNT2 TO WS-O
+     MOVE 23 TO WS-E
+     PERFORM CHECK-N
+     MOVE "podzol" TO WS-BKEY
+     CALL "M44-SNIFFER-DIGGABLE" USING WS-BKEY WS-SLIME
+     MOVE "acceptance US15 54§8.2 Sniffer diggable: podzol is" TO WS-CASE
+     MOVE WS-SLIME TO WS-O
+     MOVE 1 TO WS-E
+     PERFORM CHECK-N
+     MOVE "muddy_mangrove_roots" TO WS-BKEY
+     CALL "M44-SNIFFER-DIGGABLE" USING WS-BKEY WS-SLIME
+     MOVE "acceptance US15 54§8.2 Sniffer diggable: muddy mangrove roots (tag mud) is" TO WS-CASE
+     MOVE WS-SLIME TO WS-O
+     PERFORM CHECK-N
+     MOVE "stone" TO WS-BKEY
+     CALL "M44-SNIFFER-DIGGABLE" USING WS-BKEY WS-SLIME
+     MOVE "acceptance US15 54§8.2 Sniffer diggable: stone is not" TO WS-CASE
+     MOVE WS-SLIME TO WS-O
+     MOVE 0 TO WS-E
+     PERFORM CHECK-N
+     STOP RUN.
+
+ CHECK-N.
+     MOVE "N" TO TL-MODE
+     MOVE WS-CASE TO TL-CASE
+     MOVE WS-E TO TL-EXPECTED-N
+     MOVE WS-O TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-MOB-44-SLIME.
+ COPY CORETEST.
+ COPY MOBSPTEST.

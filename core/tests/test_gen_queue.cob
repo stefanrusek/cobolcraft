@@ -1,0 +1,184 @@
+*> Implementation test of the chunk generation queue (core/src/gen-queue.cob; research R12; T0405):
+*> wanted chunks are generated nearest to a player first, at most the per-tick budget at a time, a
+*> chunk already loaded or already queued is not queued again, and CORE-TICK runs the queue.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-GEN-QUEUE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY GENQUEUE.
+ 01 WS-DIM                 BINARY-LONG VALUE 1.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-BUDGET              BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-STEPS               BINARY-LONG.
+ 01 WS-CHUNKS              BINARY-LONG.
+ 01 WS-LIMIT               BINARY-LONG.
+ 01 WS-RUN                 BINARY-LONG.
+ 01 WS-DONE2               BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO PL-USED(1)
+     MOVE PS-ALIVE TO PL-STATE(1)
+     MOVE 300 TO PL-AIR(1)
+     MOVE 1 TO PL-DIM(1)
+     MOVE 8.5 TO PL-X(1)
+     MOVE 8.5 TO PL-Z(1)
+
+     MOVE "test gen queue starts empty" TO TL-CASE
+     MOVE GQ-COUNT TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 40 TO WS-CX MOVE 0 TO WS-CZ CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE 3 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE -2 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE 1 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE 1 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+
+     MOVE "test gen queue holds four chunks, a repeated want is ignored" TO TL-CASE
+     MOVE GQ-COUNT TO TL-OBSERVED-N
+     MOVE 4 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 1 TO WS-BUDGET
+     CALL "GEN-QUEUE-RUN" USING WS-BUDGET WS-DONE
+     MOVE "test gen queue budget 1 generates one chunk" TO TL-CASE
+     MOVE WS-DONE TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test gen queue serves the chunk beside the player first" TO TL-CASE
+     MOVE 1 TO WS-CX CALL "WORLD-FIND" USING WS-DIM WS-CX WS-CZ WS-ROW
+     COMPUTE TL-OBSERVED-N = FUNCTION MIN(WS-ROW, 1)
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test gen queue has not generated the farther chunks yet" TO TL-CASE
+     MOVE -2 TO WS-CX CALL "WORLD-FIND" USING WS-DIM WS-CX WS-CZ WS-ROW
+     MOVE WS-ROW TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 2 TO WS-BUDGET
+     CALL "GEN-QUEUE-RUN" USING WS-BUDGET WS-DONE
+     MOVE "test gen queue budget 2 generates two, nearest first (-2 then 3)" TO TL-CASE
+     MOVE -2 TO WS-CX CALL "WORLD-FIND" USING WS-DIM WS-CX WS-CZ WS-ROW
+     COMPUTE TL-OBSERVED-N = WS-DONE * 10 + FUNCTION MIN(WS-ROW, 1)
+     MOVE 21 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO WS-CX CALL "WORLD-FIND" USING WS-DIM WS-CX WS-CZ WS-ROW
+     MOVE "test gen queue chunk 3 generated in the same run" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = FUNCTION MIN(WS-ROW, 1)
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 40 TO WS-CX CALL "WORLD-FIND" USING WS-DIM WS-CX WS-CZ WS-ROW
+     MOVE "test gen queue far chunk 40 still waits" TO TL-CASE
+     MOVE WS-ROW TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test gen queue a loaded chunk is not queued" TO TL-CASE
+     MOVE 3 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE GQ-COUNT TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test gen queue a second player nearer to chunk 40 changes the order" TO TL-CASE
+     MOVE 41 TO WS-CX MOVE 0 TO WS-CZ CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE 1 TO PL-USED(2)
+     MOVE PS-ALIVE TO PL-STATE(2)
+     MOVE 300 TO PL-AIR(2)
+     MOVE 1 TO PL-DIM(2)
+     MOVE 664.5 TO PL-X(2)
+     MOVE 0.5 TO PL-Z(2)
+     MOVE 1 TO WS-BUDGET
+     CALL "GEN-QUEUE-RUN" USING WS-BUDGET WS-DONE
+     MOVE 41 TO WS-CX CALL "WORLD-FIND" USING WS-DIM WS-CX WS-CZ WS-ROW
+     COMPUTE TL-OBSERVED-N = FUNCTION MIN(WS-ROW, 1)
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test gen queue ignores a player of another dimension" TO TL-CASE
+     MOVE 2 TO PL-DIM(2)
+     MOVE 0 TO PL-DIM(1)
+     MOVE 42 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE 1 TO WS-BUDGET
+     CALL "GEN-QUEUE-RUN" USING WS-BUDGET WS-DONE
+     MOVE 40 TO WS-CX CALL "WORLD-FIND" USING WS-DIM WS-CX WS-CZ WS-ROW
+     COMPUTE TL-OBSERVED-N = FUNCTION MIN(WS-ROW, 1)
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test gen queue CORE-TICK generates one to GQ-BUDGET chunks per tick" TO TL-CASE
+     MOVE 1 TO PL-DIM(1)
+     MOVE 60 TO WS-CX MOVE 0 TO WS-CZ CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE 61 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE 62 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE GQ-GENERATED TO WS-N
+     CALL "CORE-TICK"
+*>   (the chunk that took the tick's wall time limit ends the tick's chunks: one to GQ-BUDGET are made, lane perfsteady)
+     COMPUTE WS-DONE = GQ-GENERATED - WS-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-DONE >= 1 AND WS-DONE <= GQ-BUDGET
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "test gen queue a full queue ignores further wants" TO TL-CASE
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > GQ-CAPACITY + 5
+         COMPUTE WS-CX = 1000 + WS-N
+         CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     END-PERFORM
+     MOVE GQ-COUNT TO TL-OBSERVED-N
+     MOVE GQ-CAPACITY TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO GQ-COUNT
+
+     MOVE "test gen queue an empty queue generates nothing" TO TL-CASE
+     PERFORM UNTIL GQ-COUNT = 0
+         CALL "GEN-QUEUE-RUN" USING WS-BUDGET WS-DONE
+     END-PERFORM
+     CALL "GEN-QUEUE-RUN" USING WS-BUDGET WS-DONE
+     MOVE WS-DONE TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Lane perfsteady: a chunk of a cheap generator that took the wall time limit of the tick is the last of the tick (the budget is 4 chunks here, the limit 1/100 s): at least one is made,
+*>   at most four; with no limit the rest are made.
+     MOVE 1 TO PL-DIM(1)
+     MOVE 0 TO PL-DIM(2)
+     MOVE 100 TO WS-CX MOVE 0 TO WS-CZ CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE 101 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE 102 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE 103 TO WS-CX CALL "GEN-QUEUE-WANT" USING WS-DIM WS-CX WS-CZ
+     MOVE 16 TO WS-STEPS
+     MOVE 4 TO WS-CHUNKS
+     MOVE 1 TO WS-LIMIT
+     CALL "GEN-QUEUE-STEPS" USING WS-STEPS WS-CHUNKS WS-LIMIT WS-RUN WS-DONE
+     MOVE "test gen queue a limit of wall time ends the tick's chunks after one: at least 1, at most 4" TO TL-CASE
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-DONE >= 1 AND WS-DONE <= 4
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     MOVE 1 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-LIMIT
+     MOVE 4 TO WS-CHUNKS
+     CALL "GEN-QUEUE-STEPS" USING WS-STEPS WS-CHUNKS WS-LIMIT WS-RUN WS-DONE2
+     MOVE "test gen queue with no limit the chunks left in the queue are made up to the budget" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = WS-DONE + WS-DONE2
+     MOVE 4 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-GEN-QUEUE.
+
+ COPY CORETEST.

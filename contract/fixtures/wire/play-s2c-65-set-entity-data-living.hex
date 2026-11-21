@@ -1,0 +1,12 @@
+# Fixture: Set Entity Data, a living mob (flags, custom name, health)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x65 (101).
+# Doc refs: 05b 0x65; 00 section 13.1 and 13.2 (serializer ids); 45 (entity base indices: 0 flags, 2 custom name; living health 9)
+# Stated inputs:
+#   entity id 301; index 0 BYTE flags 0x00; index 2 OPTIONAL_COMPONENT custom name "Bessie"; index 9 FLOAT health 10.0; end marker 0xFF
+
+65                                               # packet id: VarInt 0x65
+ad 02                                            # Entity id: VarInt 301
+00 00 00                                         # Metadata[0]: index 0, serializer BYTE (0), value 0x00
+02 06 01 08 00 06 42 65 73 73 69 65              # Metadata[1]: index 2, serializer OPTIONAL_COMPONENT (6), present "Bessie"
+09 03 41 20 00 00                                # Metadata[2]: index 9, serializer FLOAT (3), value 10.0
+ff                                               # Metadata end: UByte 0xFF

@@ -127,20 +127,73 @@ The biome `sulfur_caves` lists `sulfur_spike_cluster` and `sulfur_spike` at deco
 
 ### 2.4 `Column` and `Column.scan`
 
-A `Column` is one of: a **range** (`floor` and `ceiling` both known: `Range(floor, ceiling)`, `height = ceiling - floor - 1`, and constructing one with a negative height
-throws `IllegalArgumentException`), a **ray** up from a floor (`getFloor` present, `getCeiling` empty), a **ray** down from a ceiling (the reverse), or a **line** (neither).
-`Column.create(floor, ceiling)` (each an optional int) builds the matching kind (both present: range; only floor: ray up; only ceiling: ray down; neither: line).
-`withFloor(f)` is `create(f, ceiling)`; `getHeight()` is present only for a range.
+Read in `net.minecraft.world.level.levelgen.Column` and its three subclasses (`Range`, `Ray`, `Line`) in the artifact recorded in [README.md](README.md); the consumers were found
+by searching every class of the jar for a reference to `Column` (R3 round).
 
-`Column.scan(level, pos, maxSteps, allowed, target)` returns an optional column:
+#### 2.4.1 The `Column` value
 
-1. If `allowed` is false for the state at `pos`: empty.
-2. `ceiling = scanDirection(UP)` and `floor = scanDirection(DOWN)`, each an optional y.
-3. Result `Column.create(floor, ceiling)` (so a missing end gives a ray or a line, never an empty optional).
+A `Column` describes the free span through a vertical line of cells by its two bounding blocks. Both `floor` and `ceiling` are the y of a **bounding block**, not of a free cell.
 
-`scanDirection(direction)`: start at `pos` (same x, z, y = `pos.y`); for `i` from 1 while `i < maxSteps` and `allowed(state at cursor)`: move one block in the direction.
-After that loop: if `target(state at cursor)` the answer is the cursor's `y`, else "none". The cursor therefore ends on the first block that is not allowed, or after `maxSteps - 1`
-moves; the returned `y` is the y of **that block** (the ceiling or floor block itself, not the last free cell). No random draws.
+| Kind | `getFloor` | `getCeiling` | `getHeight` | Built by |
+|---|---|---|---|---|
+| `Range(floor, ceiling)` | present | present | present: `ceiling - floor - 1` (the number of free cells between the two blocks, 0 when they touch) | `Column.inside(f, c)`; `Column.around(a, b)` = `Range(a - 1, b + 1)` |
+| `Ray` pointing up (a floor and open sky above) | present | empty | empty | `Column.above(f)`; `Column.fromLowest(y)` = `above(y - 1)` |
+| `Ray` pointing down (a ceiling and open space below) | empty | present | empty | `Column.below(c)`; `Column.fromHighest(y)` = `below(y + 1)` |
+| `Line` | empty | empty | empty | `Column.line()` |
+
+`Column.create(floor, ceiling)` (each an optional int): both present gives a `Range` (through `inside`); only the floor gives the up ray; only the ceiling the down ray; neither the line.
+`withFloor(f)` is `create(f, getCeiling())` and `withCeiling(c)` is `create(getFloor(), c)`, so replacing the floor of a `Range` yields a new `Range`, and `withFloor` of a down ray yields a
+`Range` (a floor given to a ray with a ceiling). Constructing a `Range` with `ceiling - floor - 1 < 0` (that is `ceiling <= floor`) throws `IllegalArgumentException`; the message text
+is not significant. A Range can therefore have height 0 (adjacent blocks) but never a negative height.
+
+#### 2.4.2 `Column.scan(level, pos, maxSteps, allowed, target)`
+
+Inputs: a level reader, the start cell `pos`, an int `maxSteps`, and two predicates over block states, `allowed` (may the scan pass through this cell) and `target` (is this the bounding
+block). Output: an optional `Column`. No random draws and no writes.
+
+1. If `allowed` is false for the state at `pos`: return **empty** (the only way `scan` returns empty).
+2. `ceiling = scanDirection(UP)`, then `floor = scanDirection(DOWN)` (each an optional y; the upward scan is made first, which is unobservable because the scans only read).
+3. Return `Column.create(floor, ceiling)`. A missing end therefore gives a ray or a line, never an empty optional.
+
+`scanDirection(direction)`: the cursor starts at `pos` (same x and z, y = `pos.y`); let `i = 1`. While `i < maxSteps` **and** `allowed` is true for the state at the cursor: move the cursor one
+block in `direction` and `i = i + 1`. When the loop ends, read the state at the cursor: if `target` is true for it the answer is the cursor's y, otherwise "none".
+
+Consequences, each derived from that loop:
+
+* **Search length.** The cursor moves at most `maxSteps - 1` times, so the farthest cell examined is `maxSteps - 1` cells from `pos` in each direction. A bounding block exactly `maxSteps`
+  cells from `pos` is not found; one `maxSteps - 1` cells away is. With the data's `floor_to_ceiling_search_range` 12 (cluster) the bounds are within 11 cells above and below; with 30
+  (the default of `large_dripstone`) within 29; with `floor_search_range` 5 (underwater magma) within 4.
+* **What `y` is.** The returned y is that of the cell **where the loop stopped**: the first cell whose state is not `allowed` (the bounding block), or, when the step budget ran out first,
+  the last cell reached, which is still `allowed`. In the second case the answer is present only if `target` also accepts that still-allowed cell. For `speleothem_cluster` and `underwater_magma`
+  the predicates are complementary (empty-or-water against neither; water against not water), so a budget-limited scan always gives "none" for that side. For `large_dripstone` the
+  target (dripstone block, a replaceable block, or lava) is disjoint from the allowed set (air or water), so the same holds.
+* **Not a target.** A bounding block that is not accepted by `target` ends the loop with "none" for that side, although it blocks the scan (`allowed` false): the side is then open.
+* **`maxSteps <= 1`.** The loop body never runs, both scans test `target` on the state at `pos` itself, and a true result on both gives `floor = ceiling = pos.y`, so `create` builds
+  `Range(pos.y, pos.y)` whose height is -1 and the constructor throws (2.4.1). Codec bounds read for the three consumers: `floor_to_ceiling_search_range` is an int 1 to 512 for both `speleothem_cluster` (required field) and `large_dripstone` (optional, default 30); `floor_search_range` of `underwater_magma` is an int 0 to 512 (required field). So the values 1 (and 0 for the magma) are legal; they cannot throw in
+  practice because `allowed(pos)` is true and every caller's `target` is false wherever `allowed` is true (inferred), so with such a value every scan ends in a `Line` (no floor for the magma, which then returns false).
+* **Build height.** A cell outside the dimension's build height reads as `void_air` (35-1 §4.1 rule 3), which is `isAir`; with `allowed` = empty-or-water the scan therefore continues through
+  it and, since `void_air` is not a target, ends with "none": a column under the world top or above the world bottom gives a ray, not an error.
+* **Reads.** Each probe is `level.isStateAtPosition(cell, predicate)`, on the world-generation region the predicate applied to `getBlockState(cell)` (§2.3). Writes made earlier by the
+  same feature or a previous placement are therefore visible to later scans. Cells in chunks outside the 3 x 3 window follow 35-1 §4.1 rule 4.
+* **Worked examples** (y grows upward; `A` = air, `W` = water, `S` = stone; `allowed` = empty-or-water, `target` = neither): a column `S(40) A(41) A(42) A(43) S(44)` scanned from `pos.y = 42` with
+  `maxSteps 12`: the up scan moves to 43 (allowed), then to 44 (not allowed, loop ends), `target` true: ceiling 44; the down scan reaches 40: floor 40; result `Range(40, 44)`, height 3 (cells 41 to 43).
+  Same column with `maxSteps 3`: the up scan moves to 43 (`i = 2`), then to 44 (`i = 3`), the loop ends because `i < 3` is false, and `S` at 44 is the target: ceiling 44; the down scan likewise stops on 40 after
+  two moves (42 to 41 to 40, `i = 3`): floor 40. With `maxSteps 2`: one move each way: up ends on 43 (air, allowed, not a target): "none"; down ends on 41: "none"; the result is `Line`. With
+  `pos.y = 41` and `maxSteps 12`: ceiling 44 and floor 40 as before. A start cell on stone gives empty.
+
+#### 2.4.3 Every consumer in the jar
+
+Searching the artifact for classes that refer to `Column` finds exactly three feature classes (`SpeleothemFeature` and the vegetation and tree features do **not** use it):
+
+| Consumer | `maxSteps` | `allowed` | `target` | What is used of the result |
+|---|---|---|---|---|
+| `speleothem_cluster` (§6.2 step 1) | `floor_to_ceiling_search_range` | empty or water (`isEmptyOrWater`) | **neither empty nor water** (`isNeitherEmptyNorWater`): any non-air, non-water block, lava included | `getCeiling`, `getFloor`, `withFloor`, `getHeight`; an empty result or a result with neither end ends the column |
+| `large_dripstone` (§7.4 step 2) | `floor_to_ceiling_search_range` | empty or water | the block is the dripstone block or lava or in `replaceable_blocks` (`isBaseOrLava(dripstone_block, replaceable_blocks)`) | only a `Range` is accepted (a ray or line returns false); `height`, `ceiling`, `floor` |
+| `underwater_magma` (35-5 §15) | `floor_search_range` | the block is `water` | the block is not `water` | only `getFloor` (the up scan and the ceiling are ignored; the only failure is "no floor") |
+
+*Corrected in this round:* §6.2 step 1 used to give the cluster's `target` as `isBaseOrLava(base_block, replaceable_blocks)`; the bootstrap method read for that call site is
+`SpeleothemUtils.isNeitherEmptyNorWater`. The cluster's ceiling and floor are thus the first non-air, non-water block above and below, whatever it is; the base/pointed-block and lava rules
+are applied afterwards by `placeBaseBlockIfPossible` and the lava tests of §6.2 steps 4 and 6.
 
 ### 2.5 Block entities during generation (supplements 35-1 section 4.1)
 
@@ -330,7 +383,7 @@ chance at max distance 0.1, edge distance 3, center distance 8. `sulfur_spike_cl
 
 `placeColumn(level, random, pos, dx, dz, wetness, chance, height, density)`:
 
-1. `Column.scan(level, pos, floor_to_ceiling_search_range, allowed = isEmptyOrWater, target = isBaseOrLava(base_block, replaceable_blocks))` (section 2.4). Empty: return (no draw). Let `ceiling` and `floor` be the optional y values; both absent: return.
+1. `Column.scan(level, pos, floor_to_ceiling_search_range, allowed = isEmptyOrWater, target = isNeitherEmptyNorWater)` (section 2.4; **corrected in the R3 round**: this line used to give the target as `isBaseOrLava(base_block, replaceable_blocks)`, which is the `large_dripstone` target, not this feature's). Empty: return (no draw). Let `ceiling` and `floor` be the optional y values (the y of the first block that is neither air nor water above and below `pos`, within `floor_to_ceiling_search_range - 1` cells; the block may be stone, lava, a dripstone block or anything else); both absent: return.
 2. **Pool.** `poolFlag = random.nextFloat() < wetness` (one draw, always at this point). When `poolFlag` and `floor` is present and `canPlacePool(pos at y = floor)` holds: write `water` (the default state of `minecraft:water`) at `pos.y = floor` (flags 2) and the working column becomes `withFloor(floor - 1)`; otherwise the working column is the scanned one. `floor2` denotes the working column's floor (absent, or `floor - 1`, or `floor`).
    `canPlacePool(p)`: false when the state at `p` is the block `minecraft:water`, the base block or the pointed block; false when the state at `p + up` has a water fluid (fluid tag `water`); otherwise true only when each of the four horizontal neighbours of `p` and the block below `p` "can be adjacent to water": the state is in the block tag `base_stone_overworld` **or** has a water fluid.
 3. `stalactiteFlag = random.nextDouble() < chance` (one draw).
@@ -688,7 +741,7 @@ A rule passes when all three predicates pass. The rule tests that the data uses 
 Block-entity modifiers: `passthrough` (the nbt unchanged); `append_loot` (`loot_table`): a copy of the nbt (an empty compound when none) with `LootTable = <the key>` and `LootTableSeed = random''.nextLong()` (the legacy source of the `rule` processor; one `nextLong` of the Java LCG, 10 section 2.6).
 Processor lists of the data (read): `fossil_rot` = `[block_rot 0.9, protected_blocks #features_cannot_replace]`; `fossil_coal` = `[block_rot 0.1, protected_blocks #features_cannot_replace]`;
 `fossil_diamonds` = `[block_rot 0.1, rule (coal_ore, always_true, always_true) to deepslate_diamond_ore, protected_blocks #features_cannot_replace]`.
-Other processors and rule tests exist in the jar (`block_ignore`, `block_age`, `blackstone_replace`, `capped`, `gravity`, `jigsaw_replacement`, `lava_submerged_block`, `nop`, `random_block_match`, `block_state_match`, `tag_match`, `all_of`, `any_of`, `not`, `height_match`, `linear_pos`, `axis_aligned_linear_pos`, ...): they are part of the structure round (RS20) and are not read here.
+Other processors, rule tests and position tests exist in the jar (`block_ignore`, `block_age`, `blackstone_replace`, `capped`, `gravity`, `jigsaw_replacement`, `lava_submerged_block`, `nop`, `linear_pos`, `axis_aligned_linear_pos`, ...): the processors and position tests are specified in 36-2 §8 and following, and the ten rule tests (`random_block_match`, `blockstate_match`, `tag_match`, `all_of`, `any_of`, `not`, `height_match`, ...; note the id is `blockstate_match`, with no underscore between `block` and `state`) in 35-4 §7.5.3.
 
 ---
 
@@ -795,7 +848,7 @@ An implementation must reproduce these (each is computed from the rules above or
 9. **Waterlogging pass of `placeInWorld`** (section 10.5 step 3) is now specified from the bytecode (record, list handling, loop). Still open: what `LiquidBlockContainer.placeLiquid` does for the pointed `sulfur_spike` block and for a `waterlogged` false state when `oldFluid` is empty or flowing (the implementing classes were not read; recalled, not verified), the interaction with `updateShape` of step 4, and the fluid ticks that `placeLiquid` may schedule on the generation level. The desert well palette (five entries, no waterlogged state) is not affected; the spring templates are.
 10. **Block-entity creation timing for the spawner and chests** relies on `WorldGenRegion.getBlockEntity` (section 2.5, read). The initial contents of a new `SpawnerBlockEntity` (which `SpawnData` the first `setEntityId` writes into: the data of `getOrCreateNextSpawnData` with an empty potential list) beyond the `id` string were not expanded (inferred: an otherwise empty entity compound).
 11. **Which block states `BlockState.rotate` changes** for every block that appears in templates is block-specific and belongs to the block registry (24); only `RotatedPillarBlock` was read here.
-12. **The `rule` processor's other rule tests and position tests** (`always_true` and `block_match` only were read in the data used by these three features) and the other processors are left to RS20.
+12. **The `rule` processor's other rule tests and position tests.** Closed for the rule tests: all ten kinds are specified in 35-4 §7.5.3; the processors and position tests are 36-2 §8.
 13. **`MultifaceSpreader` helper behaviour** is shared with 35-4 section 8.1; this document relies on that section for `canAttachTo` and `isValidStateForPlacement`, which reference block support shapes (24).
 14. **Worked-example numbers** for the geode noise value, the clamped normal samples of the cluster and the positions of a complete feature run (a seed to blocks table) were not produced; only the formulas and the computed tables of section 11 are provided.
 15. (Closed: `scattered_ore` is specified in 35-1 section 13; nothing remains open here.)

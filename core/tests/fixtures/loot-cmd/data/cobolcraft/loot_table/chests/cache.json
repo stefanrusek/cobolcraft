@@ -1,0 +1,36 @@
+{
+ "type": "minecraft:chest",
+ "random_sequence": "cobolcraft:chests/cache",
+ "pools": [
+  {
+   "rolls": 1,
+   "entries": [
+    {
+     "type": "minecraft:item",
+     "name": "cobolcraft:lucite",
+     "modifier": [
+      {
+       "type": "minecraft:set_count",
+       "count": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "rolls": 1,
+   "entries": [
+    {
+     "type": "minecraft:item",
+     "name": "cobolcraft:dump_shard",
+     "modifier": [
+      {
+       "type": "minecraft:set_count",
+       "count": 2
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

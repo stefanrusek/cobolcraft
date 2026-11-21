@@ -1,0 +1,150 @@
+ *> Eyes layers of the phantom and the breeze (34-1 8.5, 34-6 9.4 and 10): the posed model of the mob drawn once more with the eyes texture (phantom_eyes.png, breeze_eyes.png),
+*> full bright. The phantom's layer is the whole phantom mesh, the breeze's the `eyes` boxes only (BREEZE_EYES). Rows phantom_eyes and breeze_eyes (code E: posed as the mob).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTITY-EYES-MORE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY CLMODELS.
+ COPY CLEMM.
+ COPY TESTLIB.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-KEY24               PIC X(24).
+ 01 WS-ROW-AREA            PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG VALUE 10.5.
+ 01 WS-Y                   FLOAT-LONG VALUE 64.
+ 01 WS-Z                   FLOAT-LONG VALUE 10.5.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-MODEL               BINARY-LONG.
+ 01 WS-PARTS               BINARY-LONG.
+ 01 WS-CUBES-A             BINARY-LONG.
+ 01 WS-CUBES-B             BINARY-LONG.
+ 01 WS-BRIGHT-COUNT        BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-EYE-TABLE.
+    05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION.
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE 0 TO PK-COUNT
+     CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
+     MOVE 256 TO PL-HEIGHT
+     MOVE 0 TO SK-U
+     MOVE 10 TO WS-EYE(1) WS-EYE(3)
+     MOVE 64 TO WS-EYE(2)
+     MOVE 1 TO CT-OPEN
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2
+         CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+         MOVE 0 TO EA-MT-COUNT
+         IF WS-I = 1
+             MOVE "phantom" TO WS-KEY
+         ELSE
+             MOVE "breeze" TO WS-KEY
+         END-IF
+         CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+         MOVE 1 TO WS-ID
+         CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+         CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+         MOVE WS-KEY TO WS-KEY24
+         CALL "ENTITY-MODEL-FIND" USING WS-KEY24 WS-MODEL
+         CALL "ENTITY-MODEL-BUILD" USING EMM-MODEL WS-MODEL WS-STATUS
+         CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES-A
+         MOVE SPACES TO WS-KEY24
+         STRING FUNCTION TRIM(WS-KEY) "_eyes" DELIMITED BY SIZE INTO WS-KEY24
+         CALL "ENTITY-MODEL-FIND" USING WS-KEY24 WS-MODEL
+         MOVE SPACES TO TL-CASE TL-OBSERVED
+         MOVE "T" TO TL-MODE
+         STRING "acceptance eyes more " FUNCTION TRIM(WS-KEY) " eyes texture" DELIMITED BY SIZE INTO TL-CASE
+         IF WS-I = 1
+             MOVE "textures/entity/phantom/phantom_eyes.png" TO TL-EXPECTED
+         ELSE
+             MOVE "textures/entity/breeze/breeze_eyes.png" TO TL-EXPECTED
+         END-IF
+         IF WS-MODEL > 0
+             MOVE CL-MD-PATH(WS-MODEL) TO TL-OBSERVED
+             CALL "ENTITY-MODEL-BUILD" USING EMM-MODEL WS-MODEL WS-STATUS
+             CALL "EMM-STATS" USING EMM-MODEL WS-PARTS WS-CUBES-B
+         ELSE
+             MOVE 0 TO WS-CUBES-B
+         END-IF
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         MOVE "N" TO TL-MODE
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance eyes more " FUNCTION TRIM(WS-KEY) " eyes model has boxes" DELIMITED BY SIZE INTO TL-CASE
+         MOVE 1 TO TL-EXPECTED-N
+         MOVE 0 TO TL-OBSERVED-N
+         IF WS-CUBES-B > 0
+             MOVE 1 TO TL-OBSERVED-N
+         END-IF
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance eyes more " FUNCTION TRIM(WS-KEY) " draws the body and the eyes boxes" DELIMITED BY SIZE INTO TL-CASE
+         COMPUTE TL-EXPECTED-N = 36 * (WS-CUBES-A + WS-CUBES-B)
+         MOVE RL-EN-COUNT TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         MOVE 0 TO WS-BRIGHT-COUNT
+         PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > RL-EN-COUNT
+             IF RL-EN-B(WS-V) > 0.99
+                 ADD 1 TO WS-BRIGHT-COUNT
+             END-IF
+         END-PERFORM
+         MOVE SPACES TO TL-CASE
+         STRING "acceptance eyes more " FUNCTION TRIM(WS-KEY) " only the eyes layer is full bright" DELIMITED BY SIZE INTO TL-CASE
+         COMPUTE TL-EXPECTED-N = 36 * WS-CUBES-B
+         MOVE WS-BRIGHT-COUNT TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+     STOP RUN.
+ END PROGRAM TEST-ENTITY-EYES-MORE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MM-SPAWN.
+*> USING CLIENT-STATE, entity id, type (registry id), x y z (FLOAT-LONG), yaw (FLOAT-SHORT, also the head yaw): Add Entity.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-ADD                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-UUID                PIC X(16) VALUE LOW-VALUES.
+ 01 WS-V0                  FLOAT-LONG VALUE 0.
+ 01 WS-V1                  FLOAT-LONG VALUE 0.
+ 01 WS-V2                  FLOAT-LONG VALUE 0.
+ 01 WS-A0                  FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ID L-TYPE L-X L-Y L-Z L-YAW.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-V0 WS-V1 WS-V2
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER WS-A0
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-PACKET" USING CLIENT-STATE PB-BUFFER WS-ADD
+     GOBACK.
+ END PROGRAM MM-SPAWN.
+

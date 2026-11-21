@@ -1,0 +1,155 @@
+*> Test of the stacks a piglin barters (core/src/mob-21-barter.cob PIGLIN-STACK and PIGLIN-DROP; docs/protocol/21 section 5.5.1 barter table, 26 section 7 enchant_randomly; T9604): boots enchanted
+*> with soul speed, a book that becomes an enchanted book with that stored enchantment, potions of fire resistance and water, and the patch handle of the thrown item entity.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BARTER-STACKS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY CMENU.
+ COPY CSTACK.
+ COPY CITEMPHYS.
+ COPY CITEMS.
+ COPY CONTENT.
+ COPY COREAPI.
+ COPY PROTO.
+ 01 WS-DIR                 PIC X(1100) VALUE "core/tests/fixtures/itemcomp-registry".
+ 01 WS-REG-STATUS          BINARY-LONG.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-KEY112              PIC X(112).
+ 01 WS-KEY32               PIC X(32).
+ 01 WS-MOD                 BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-WANT                BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ 01 WS-SOUL                BINARY-LONG.
+ 01 WS-T13                 BINARY-LONG VALUE 13.
+ 01 WS-T45                 BINARY-LONG VALUE 45.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-PLAIN               BINARY-LONG.
+ 01 WS-POTION              BINARY-LONG.
+ 01 WS-ROWTEXT             PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG VALUE 1.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-HAS-COLOR           BINARY-LONG.
+ 01 WS-COLOR               BINARY-LONG.
+ 01 WS-CUSTOM              BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG VALUE 0.
+ 01 WS-X                   FLOAT-LONG VALUE 8.5.
+ 01 WS-Y                   FLOAT-LONG VALUE 65.
+ 01 WS-Z                   FLOAT-LONG VALUE 8.5.
+ 01 WS-V                   FLOAT-LONG VALUE 0.1.
+ 01 WS-V2                  FLOAT-LONG VALUE 0.1.
+ 01 WS-V3                  FLOAT-LONG VALUE 0.1.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(9)9.
+ 01 WS-E3                  PIC -(9)9.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE CT-TYPE-COBOLCRAFT TO CT-SET-TYPE
+     CALL "REGISTRY-LOAD-ALL" USING WS-DIR WS-REG-STATUS
+     CALL "TEST-STANDARD-TABLES"
+     MOVE "soul_speed" TO WS-KEY112
+     CALL "LOOT-ENCH-ID" USING WS-KEY112 WS-SOUL
+
+     MOVE "test barter stacks iron boots carry soul speed at a level of 1 to 3 in the enchantments component" TO TL-CASE
+     MOVE "iron_boots" TO WS-KEY
+     MOVE 1 TO WS-MOD
+     CALL "PIGLIN-STACK" USING WS-KEY WS-MOD WS-ITEM WS-HANDLE
+     MOVE "iron_boots" TO WS-KEY32
+     CALL "MERCHANT-ITEM-ID" USING WS-KEY32 WS-WANT
+     CALL "SC-ENCH-LEVEL" USING WS-HANDLE WS-T13 WS-SOUL WS-LEVEL
+     CALL "SC-ENCH-LEVEL" USING WS-HANDLE WS-T45 WS-SOUL WS-PLAIN
+     MOVE 0 TO WS-OK
+     IF WS-ITEM = WS-WANT AND WS-ITEM >= 0 AND WS-LEVEL >= 1 AND WS-LEVEL <= 3 AND WS-PLAIN = 0
+         MOVE 1 TO WS-OK
+     END-IF
+     MOVE WS-OK TO WS-E1
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     MOVE "1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test barter stacks a book becomes an enchanted book with soul speed in stored_enchantments only" TO TL-CASE
+     MOVE "book" TO WS-KEY
+     CALL "PIGLIN-STACK" USING WS-KEY WS-MOD WS-ITEM WS-HANDLE
+     MOVE "enchanted_book" TO WS-KEY32
+     CALL "MERCHANT-ITEM-ID" USING WS-KEY32 WS-WANT
+     CALL "SC-ENCH-LEVEL" USING WS-HANDLE WS-T45 WS-SOUL WS-LEVEL
+     CALL "SC-ENCH-LEVEL" USING WS-HANDLE WS-T13 WS-SOUL WS-PLAIN
+     MOVE 0 TO WS-OK
+     IF WS-ITEM = WS-WANT AND WS-ITEM >= 0 AND WS-LEVEL >= 1 AND WS-LEVEL <= 3 AND WS-PLAIN = 0
+         MOVE 1 TO WS-OK
+     END-IF
+     MOVE WS-OK TO WS-E1
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     MOVE "1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test barter stacks potion rows are potions of fire resistance (modifier 2) and water (modifier 3), splash too" TO TL-CASE
+     MOVE "potion" TO WS-KEY
+     MOVE 2 TO WS-MOD
+     CALL "PIGLIN-STACK" USING WS-KEY WS-MOD WS-ITEM WS-HANDLE
+     CALL "SC-POTION-GET" USING WS-HANDLE WS-POTION WS-HAS-COLOR WS-COLOR WS-CUSTOM
+     MOVE WS-POTION TO WS-E1
+     MOVE "splash_potion" TO WS-KEY
+     CALL "PIGLIN-STACK" USING WS-KEY WS-MOD WS-ITEM WS-HANDLE
+     MOVE "splash_potion" TO WS-KEY32
+     CALL "MERCHANT-ITEM-ID" USING WS-KEY32 WS-WANT
+     CALL "SC-POTION-GET" USING WS-HANDLE WS-POTION WS-HAS-COLOR WS-COLOR WS-CUSTOM
+     MOVE WS-POTION TO WS-E2
+     IF WS-ITEM NOT = WS-WANT
+         MOVE -9 TO WS-E2
+     END-IF
+     MOVE "potion" TO WS-KEY
+     MOVE 3 TO WS-MOD
+     CALL "PIGLIN-STACK" USING WS-KEY WS-MOD WS-ITEM WS-HANDLE
+     CALL "SC-POTION-GET" USING WS-HANDLE WS-POTION WS-HAS-COLOR WS-COLOR WS-CUSTOM
+     MOVE WS-POTION TO WS-E3
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "11 11 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test barter stacks a plain row has no patch and an unknown key has no item" TO TL-CASE
+     MOVE "gravel" TO WS-KEY
+     MOVE 0 TO WS-MOD
+     CALL "PIGLIN-STACK" USING WS-KEY WS-MOD WS-ITEM WS-HANDLE
+     MOVE WS-HANDLE TO WS-E1
+     MOVE "nope_item" TO WS-KEY
+     CALL "PIGLIN-STACK" USING WS-KEY WS-MOD WS-ITEM WS-HANDLE
+     MOVE WS-ITEM TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "0 -1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test barter stacks the item entity a piglin throws carries the patch handle" TO TL-CASE
+     MOVE "iron_boots" TO WS-KEY
+     MOVE 1 TO WS-MOD
+     CALL "PIGLIN-DROP" USING WS-DIM WS-X WS-Y WS-Z WS-V WS-V2 WS-V3 WS-KEY WS-MOD WS-COUNT
+     MOVE 0 TO WS-I
+     PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
+         IF EN-USED(WS-ROW) = 1 AND EN-TYPE(WS-ROW) = CR-LOOSE-ITEM
+             MOVE IP-I-VAR(WS-ROW) TO WS-I
+         END-IF
+     END-PERFORM
+     CALL "SC-ENCH-LEVEL" USING WS-I WS-T13 WS-SOUL WS-LEVEL
+     IF WS-I > 0 AND WS-LEVEL >= 1
+         MOVE "carried" TO TL-OBSERVED
+     ELSE
+         MOVE "lost" TO TL-OBSERVED
+     END-IF
+     MOVE "carried" TO TL-EXPECTED
+     PERFORM CHECK
+     STOP RUN.
+
+ CHECK.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-BARTER-STACKS.
+ COPY CORETEST.

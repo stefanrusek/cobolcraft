@@ -132,6 +132,8 @@ Rules for sibling tables:
 
 ### 4.2 Loading: lookup and unknown ids
 
+*CobolCraft note:* in the CobolCraft world folder an id missing from the opened world type's registries fails the whole chunk closed instead of being skipped (07 §9.7 rule 6, world-types WT-23); the steps below describe the artifact.
+
 `EntityType.create(ValueInput, level, request)` is the loader entry:
 
 1. Read `id` through the entity type registry's by-name codec (identifier string to type). Absent, malformed or unknown: no type.

@@ -300,8 +300,8 @@ With `len <= 0` no log is placed and the stump remains. The sturdy test passes t
 ## Open questions
 
 1. Stored leaf distances after 2.4 depend on hash-set iteration order. The `BlockPos` hash read is linear (`x + 31 y + 961 z`), so many keys collide in one bucket; Java's tree-shaped bins for heavily loaded buckets may reorder elements within a bucket (recalled, not verified), which affects bit-exact hash-order reproduction. The `BlockPos` hash and the `HashSet` container are read; the JDK table behaviour used to turn them into an order is (recalled, not verified). That the scheduled leaf ticks run at first chunk ticking and not during generation is (inferred) from the read fact that they are stored in the chunk tick container (2.5).
-2. Int providers other than constant and uniform are not described here (provider sibling).
-3. The decorator `Context` constructor's treatment of the three position sets (sorting) is 35 p4 §3.1 and was not read here.
+2. Int providers other than constant and uniform are not described here. Closed (R3 round): they are 23 §7.1 (the draw rules of `uniform`, `biased_to_bottom`, `very_biased_to_bottom`, `clamped`, `clamped_normal`, `weighted_list`, `trapezoid`; `uniform` re-read as `nextInt(max - min + 1) + min`).
+3. The decorator `Context` constructor's treatment of the three position sets (sorting) is 35 p4 §3.1 (closed: read there, with the stability and hash-set caveats of 35 p4 Open question 1).
 4. The contents of `soil_beneath_tree`, `replaceable_by_trees`, `logs`, `leaves` and `prevents_nearby_leaf_decay` are DATA and were not tabulated.
 5. Chunk-border behaviour of `setBlock` when a tree straddles chunks (35 p1 §4, 11 §6.5) is not restated.
 6. The `Mth.sin` table size (65536) is recorded as read from the static initialiser in 34 p5 §1.1 (`34-entity-models-5-...`, closed item 4), not re-read here; the mega jungle trunk (4.4) depends on it.

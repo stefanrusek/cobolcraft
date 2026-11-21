@@ -1,0 +1,112 @@
+*> Implementation test (002-lane-mobsa3; docs/protocol/44 part 4 section 15 "Anger and sharing"): the bees an angry bee alerts must be in line of sight of it (a wall between stops the alert).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MOB-19-16-LOS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY CONTENT.
+ COPY BRWORLD.
+ COPY EFFECTS.
+ COPY STDMOBS.
+ COPY RULES.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-BEE                 BINARY-LONG.
+ 01 WS-BEE2                BINARY-LONG.
+ 01 WS-BEE3                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X0                  BINARY-LONG.
+ 01 WS-Z0                  BINARY-LONG.
+ 01 WS-FLOOR               BINARY-LONG VALUE 40.
+ 01 WS-SIZE                BINARY-LONG VALUE 48.
+ 01 WS-STONE               BINARY-LONG VALUE 1.
+ 01 WS-PX                  FLOAT-LONG.
+ 01 WS-PZ                  FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-DAMAGE              BINARY-LONG VALUE 1.
+ 01 WS-CAUSE               BINARY-LONG.
+ 01 WS-BABY                BINARY-LONG.
+ 01 WS-WOOL                BINARY-LONG.
+ 01 WS-NEEDED              BINARY-LONG.
+ 01 WS-SPECIES             PIC X(24).
+ 01 WS-ITEM                PIC X(24).
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-SECONDS             BINARY-LONG.
+ 01 WS-LOVE                BINARY-LONG.
+ 01 WS-TAME                BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-WX                  BINARY-LONG.
+ 01 WS-WY                  BINARY-LONG.
+ 01 WS-WZ                  BINARY-LONG.
+ 01 WS-HEALTH0             BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     COMPUTE WS-X0 = FUNCTION INTEGER(PL-X(WS-PLAYER)) - 24
+     COMPUTE WS-Z0 = FUNCTION INTEGER(PL-Z(WS-PLAYER)) - 24
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-X0 WS-Z0 WS-SIZE WS-FLOOR WS-STONE
+     COMPUTE PL-X(WS-PLAYER) = WS-X0 + 24.5
+     COMPUTE PL-Y(WS-PLAYER) = WS-FLOOR + 1
+     COMPUTE PL-Z(WS-PLAYER) = WS-Z0 + 24.5
+     MOVE PL-X(WS-PLAYER) TO WS-PX
+     MOVE PL-Z(WS-PLAYER) TO WS-PZ
+     COMPUTE WS-Y = WS-FLOOR + 1
+     MOVE 6000 TO CW-TIME
+     MOVE 2 TO BW-DIFFICULTY
+     MOVE "minecraft:bee" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     CALL "STDMOB-INDEX" USING WS-TYPE WS-M
+     MOVE "N" TO TL-MODE
+
+     MOVE "acceptance US15 19§16 Bee: neutral 5, follow range 16, no panic when hit" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 5 * 10000 + 16 * 10
+     COMPUTE TL-OBSERVED-N = SM-NEUTRAL(WS-M) * 10000 + SM-FOLLOW(WS-M) * 10 + SM-PANIC-MILLI(WS-M)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A wall of stone between the hit bee and one bee: three cells wide and three high at x + 5.
+     COMPUTE WS-WX = FUNCTION INTEGER(WS-PX) + 5
+     COMPUTE WS-WZ = FUNCTION INTEGER(WS-PZ) - 2
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STATE
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 4
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 3
+             COMPUTE WS-WY = WS-FLOOR + WS-J
+             COMPUTE WS-N = WS-WZ + WS-I
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-WX WS-WY WS-N WS-STATE
+         END-PERFORM
+     END-PERFORM
+     COMPUTE WS-X = WS-PX + 3
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-PZ WS-YAW WS-BEE
+     COMPUTE WS-X = WS-PX + 7.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-PZ WS-YAW WS-BEE2
+     COMPUTE WS-X = WS-PX + 3
+     COMPUTE WS-Z = WS-PZ + 6
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-BEE3
+     MOVE 20 TO PL-HEALTH(WS-PLAYER)
+     MOVE 0 TO PL-HURT-COOLDOWN(WS-PLAYER)
+     MOVE CAUSE-PLAYER TO WS-CAUSE
+     CALL "HEALTH-MOB-DAMAGE" USING WS-BEE WS-DAMAGE WS-CAUSE WS-PLAYER
+     MOVE "acceptance US15 44-4§15 Bee: a bee in the open beside the angry one is alerted" TO TL-CASE
+     MOVE WS-PLAYER TO TL-EXPECTED-N
+     MOVE EN-TARGET(WS-BEE3) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 44-4§15 Bee: a bee behind a wall (no line of sight) is not alerted" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-TARGET(WS-BEE2) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-MOB-19-16-LOS.
+ COPY CORETEST.
+ COPY MOBSPTEST.

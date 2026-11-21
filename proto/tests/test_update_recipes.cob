@@ -1,0 +1,242 @@
+*> Implementation test of the Update Recipes body of proto/src/update-recipes.cob (05b 0x88, docs/protocol 27 4.3; T3662):
+*> the recipe property sets (key, item ids) and the stonecutter list (HolderSet input, SlotDisplay). The packet id is the
+*> caller's. A writer appends nothing and sets PB-ERROR for a value it cannot encode; a reader that fails sets PB-ERROR, leaves
+*> PB-POS where it was and yields an all-zero record and an empty table.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-UPDATE-RECIPES.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY TESTLIB.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     PERFORM PUT-CASES
+     PERFORM GET-CASES
+     PERFORM ERROR-CASES
+     CALL "PB-FREE" USING PB-BUFFER
+     STOP RUN.
+
+ PUT-CASES.
+     PERFORM BUILD-RECORD
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-UPDATE-RECIPES" USING PB-BUFFER PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE
+     MOVE "test update-recipes put of two property sets and two stonecutter entries (a list and a tag)" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "02176d696e6563726166743a736d697468696e675f62617365023e3f176d696e6563726166743a6675726e6163655f"
+         "696e7075740002023e050402000000106d696e6563726166743a706c616e6b730503010000"
+         DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK-BYTES
+     INITIALIZE PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE
+     CALL "PB-PUT-UPDATE-RECIPES" USING PB-BUFFER PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE
+     MOVE "test update-recipes put of an empty record is two zero counts" TO TL-CASE
+     MOVE "0000" TO TL-EXPECTED
+     PERFORM CHECK-BYTES.
+
+ GET-CASES.
+     MOVE SPACES TO WS-HEX
+     STRING "02 17 6d696e6563726166743a736d697468696e675f62617365 02 3e 3f 17 6d696e6563726166743a6675726e6163655f696e707574 00 "
+         "02 02 3e 05 04 02 00 00 00 10 6d696e6563726166743a706c616e6b73 05 03 01 00 00"
+         DELIMITED BY SIZE INTO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-UPDATE-RECIPES" USING PB-BUFFER PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE
+     MOVE "test update-recipes get of the same body: sets, items, entries, the nodes of the displays" TO TL-CASE
+     PERFORM DESCRIBE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "sets 2 | minecraft:smithing_base 62,63 | minecraft:furnace_input  | cuts 2 | list 62 disp 1 | "
+         "tag minecraft:planks disp 2 | nodes 2 pos 84 error 0" DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK-TEXT
+     MOVE "00 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-UPDATE-RECIPES" USING PB-BUFFER PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE
+     MOVE "test update-recipes get of two zero counts" TO TL-CASE
+     PERFORM DESCRIBE
+     MOVE "sets 0 | cuts 0 | nodes 0 pos 2 error 0" TO TL-EXPECTED
+     PERFORM CHECK-TEXT
+     MOVE "00 01 01 05 04 02 00 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-UPDATE-RECIPES" USING PB-BUFFER PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE
+     MOVE "test update-recipes get of an entry whose input is an empty list" TO TL-CASE
+     PERFORM DESCRIBE
+     MOVE "sets 0 | cuts 1 | list  disp 1 | nodes 1 pos 8 error 0" TO TL-EXPECTED
+     PERFORM CHECK-TEXT.
+
+ ERROR-CASES.
+     PERFORM BUILD-RECORD
+     MOVE 9 TO PB-UR-SET-COUNT
+     PERFORM PUT-EXPECT-ERROR
+     MOVE "test update-recipes put of 9 property sets sets PB-ERROR, appends nothing" TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     PERFORM BUILD-RECORD
+     MOVE 33 TO PB-UR-CUT-COUNT
+     PERFORM PUT-EXPECT-ERROR
+     MOVE "test update-recipes put of 33 stonecutter entries sets PB-ERROR, appends nothing" TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     PERFORM BUILD-RECORD
+     MOVE 257 TO PB-UR-ITEM-COUNT(1)
+     PERFORM PUT-EXPECT-ERROR
+     MOVE "test update-recipes put of a set of 257 items sets PB-ERROR, appends nothing" TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     PERFORM BUILD-RECORD
+     MOVE -1 TO PB-UR-ITEM(1, 2)
+     PERFORM PUT-EXPECT-ERROR
+     MOVE "test update-recipes put of the item -1 sets PB-ERROR, appends nothing" TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     PERFORM BUILD-RECORD
+     MOVE "Bad Key" TO PB-UR-KEY(1)
+     MOVE 7 TO PB-UR-KEY-LENGTH(1)
+     PERFORM PUT-EXPECT-ERROR
+     MOVE "test update-recipes put of an invalid key sets PB-ERROR, appends nothing" TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     PERFORM BUILD-RECORD
+     MOVE 9 TO PB-UC-INPUT-COUNT(1)
+     PERFORM PUT-EXPECT-ERROR
+     MOVE "test update-recipes put of an entry with 9 input items sets PB-ERROR, appends nothing" TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     PERFORM BUILD-RECORD
+     MOVE -1 TO PB-UC-INPUT(1, 1)
+     PERFORM PUT-EXPECT-ERROR
+     MOVE "test update-recipes put of an entry with the input item -1 sets PB-ERROR, appends nothing" TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     PERFORM BUILD-RECORD
+     MOVE 5 TO PB-UC-DISPLAY(2)
+     PERFORM PUT-EXPECT-ERROR
+     MOVE "test update-recipes put of an entry whose display node the table lacks sets PB-ERROR, appends nothing"
+         TO TL-CASE
+     PERFORM CHECK-PUT-ERROR
+     MOVE "09" TO WS-HEX
+     PERFORM FILL
+     PERFORM GET-EXPECT-ERROR
+     MOVE "test update-recipes get of 9 property sets sets PB-ERROR, PB-POS 0, zeros" TO TL-CASE
+     PERFORM CHECK-TEXT
+     MOVE "01 04 61 3a 62 63 81 02" TO WS-HEX
+     PERFORM FILL
+     PERFORM GET-EXPECT-ERROR
+     MOVE "test update-recipes get of a set of 257 items sets PB-ERROR, PB-POS 0, zeros" TO TL-CASE
+     PERFORM CHECK-TEXT
+     MOVE "00 21" TO WS-HEX
+     PERFORM FILL
+     PERFORM GET-EXPECT-ERROR
+     MOVE "test update-recipes get of 33 stonecutter entries sets PB-ERROR, PB-POS 0, zeros" TO TL-CASE
+     PERFORM CHECK-TEXT
+     MOVE "00 01 0a" TO WS-HEX
+     PERFORM FILL
+     PERFORM GET-EXPECT-ERROR
+     MOVE "test update-recipes get of an entry whose input is a list of 9 sets PB-ERROR, PB-POS 0, zeros" TO TL-CASE
+     PERFORM CHECK-TEXT
+     MOVE "00 01 02 3e 0b" TO WS-HEX
+     PERFORM FILL
+     PERFORM GET-EXPECT-ERROR
+     MOVE "test update-recipes get of an entry with a slot display type 11 sets PB-ERROR, PB-POS 0, zeros" TO TL-CASE
+     PERFORM CHECK-TEXT
+     MOVE "01 04 61 3a 62 63 02 3e" TO WS-HEX
+     PERFORM FILL
+     PERFORM GET-EXPECT-ERROR
+     MOVE "test update-recipes get cut after a set sets PB-ERROR, PB-POS 0, zeros" TO TL-CASE
+     PERFORM CHECK-TEXT.
+
+*> Two sets (smithing_base with the items 62 and 63, furnace_input with none), two entries: the list [62] with the display of
+*> node 1 (an item stack of 2 x item 4) and the tag minecraft:planks with node 2 (1 x item 3).
+ BUILD-RECORD.
+     INITIALIZE PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE
+     MOVE 2 TO PB-UR-SET-COUNT
+     MOVE "minecraft:smithing_base" TO PB-UR-KEY(1)
+     MOVE 23 TO PB-UR-KEY-LENGTH(1)
+     MOVE 2 TO PB-UR-ITEM-COUNT(1)
+     MOVE 62 TO PB-UR-ITEM(1, 1)
+     MOVE 63 TO PB-UR-ITEM(1, 2)
+     MOVE "minecraft:furnace_input" TO PB-UR-KEY(2)
+     MOVE 23 TO PB-UR-KEY-LENGTH(2)
+     MOVE 2 TO PB-UR-CUT-COUNT
+     MOVE 1 TO PB-UC-INPUT-COUNT(1)
+     MOVE 62 TO PB-UC-INPUT(1, 1)
+     MOVE 1 TO PB-UC-DISPLAY(1)
+     MOVE "minecraft:planks" TO PB-UC-TAG(2)
+     MOVE 16 TO PB-UC-TAG-LENGTH(2)
+     MOVE 2 TO PB-UC-DISPLAY(2)
+     MOVE 2 TO PB-SDT-COUNT
+     MOVE PB-SDX-ITEM-STACK TO PB-SDN-TYPE(1)
+     MOVE 4 TO PB-SDN-ITEM(1)
+     MOVE 2 TO PB-SDN-COUNT(1)
+     MOVE PB-SDX-ITEM-STACK TO PB-SDN-TYPE(2)
+     MOVE 3 TO PB-SDN-ITEM(2)
+     MOVE 1 TO PB-SDN-COUNT(2).
+
+ PUT-EXPECT-ERROR.
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-UPDATE-RECIPES" USING PB-BUFFER PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE.
+
+ GET-EXPECT-ERROR.
+     CALL "PB-GET-UPDATE-RECIPES" USING PB-BUFFER PB-UPDATE-RECIPES PB-SLOT-DISPLAY-TABLE
+     PERFORM DESCRIBE
+     MOVE "sets 0 | cuts 0 | nodes 0 pos 0 error 1" TO TL-EXPECTED.
+
+*> WS-TEXT-free: TL-OBSERVED = "sets n | <key> <ids> | ... | cuts n | list <ids> disp d | tag <key> disp d | nodes n pos p error e".
+ DESCRIBE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     MOVE PB-UR-SET-COUNT TO WS-EDIT
+     STRING "sets " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-UR-SET-COUNT
+         STRING " | " PB-UR-KEY(WS-I)(1:PB-UR-KEY-LENGTH(WS-I)) " " DELIMITED BY SIZE
+             INTO TL-OBSERVED WITH POINTER WS-PTR
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > PB-UR-ITEM-COUNT(WS-I)
+             MOVE PB-UR-ITEM(WS-I, WS-J) TO WS-EDIT
+             IF WS-J > 1
+                 STRING "," DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+             END-IF
+             STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-PERFORM
+     END-PERFORM
+     MOVE PB-UR-CUT-COUNT TO WS-EDIT
+     STRING " | cuts " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PB-UR-CUT-COUNT
+         IF PB-UC-TAG-LENGTH(WS-I) > 0
+             STRING " | tag " PB-UC-TAG(WS-I)(1:PB-UC-TAG-LENGTH(WS-I)) DELIMITED BY SIZE
+                 INTO TL-OBSERVED WITH POINTER WS-PTR
+         ELSE
+             STRING " | list " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > PB-UC-INPUT-COUNT(WS-I)
+                 MOVE PB-UC-INPUT(WS-I, WS-J) TO WS-EDIT
+                 IF WS-J > 1
+                     STRING "," DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+                 END-IF
+                 STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+             END-PERFORM
+         END-IF
+         MOVE PB-UC-DISPLAY(WS-I) TO WS-EDIT
+         STRING " disp " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     MOVE PB-SDT-COUNT TO WS-EDIT
+     STRING " | nodes " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE PB-POS TO WS-EDIT
+     STRING " pos " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE PB-ERROR TO WS-EDIT
+     STRING " error " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR.
+
+ CHECK-TEXT.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK-BYTES.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-BUFFER-HEX" USING PB-BUFFER TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PB-BUFFER.
+
+ CHECK-PUT-ERROR.
+     MOVE "N" TO TL-MODE
+     MOVE 10 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PB-ERROR * 10 + PB-LENGTH
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PB-BUFFER.
+
+ FILL.
+     CALL "TEST-FILL-HEX" USING WS-HEX PB-BUFFER.
+ END PROGRAM TEST-UPDATE-RECIPES.
+ COPY PROTOTEST.

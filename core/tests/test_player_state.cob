@@ -1,0 +1,141 @@
+*> Implementation test of the stored player state beyond item ids and counts (core/src/player-state.cob,
+*> core/src/player-nbt.cob; docs/protocol/45-entity-nbt-3-player-and-player-data.md section 2.3, 3.5, 4): a player who
+*> leaves and rejoins, and a player whose world is saved and opened again, gets back the data component patches of
+*> his slots, his armor and off-hand, the saturation and the recipe book (known, highlighted, settings).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PLAYER-STATE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CMENU.
+ COPY CTRECIPE.
+ COPY RECBOOK.
+ 01 WS-WORLD               PIC X(64) VALUE Z"build/core-test-world".
+ 01 WS-CREATED             BINARY-LONG.
+ 01 WS-ALICE-NAME          PIC X(16) VALUE "Alice".
+ 01 WS-ZED-NAME            PIC X(16) VALUE "Zed".
+ 01 WS-LENGTH-5            BINARY-LONG VALUE 5.
+ 01 WS-LENGTH-3            BINARY-LONG VALUE 3.
+ 01 WS-ALICE               BINARY-LONG.
+ 01 WS-ZED                 BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-NAME                PIC X(64) VALUE "Sunblade".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 8.
+ 01 WS-OUT-NAME            PIC X(64).
+ 01 WS-OUT-LENGTH          BINARY-LONG.
+ 01 WS-RECIPE              BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-PHASE               BINARY-LONG.
+ 01 WS-EDIT-ITEM           PIC 9(3).
+ 01 WS-EDIT-COUNT          PIC 9(3).
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-DEFAULT-MODE CS-HOSTILE-MOBS CS-WEATHER-CHANGES
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-JOIN" USING WS-ZED-NAME WS-LENGTH-3 WS-ZED
+     CALL "TEST-JOIN" USING WS-ALICE-NAME WS-LENGTH-5 WS-ALICE
+*>   A recipe every player knows from the join, which the book of Alice then marks as not yet seen.
+     MOVE 0 TO WS-RECIPE
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > RC-COUNT OR WS-RECIPE > 0
+         IF RR-SPECIAL(WS-K) = 0
+             MOVE WS-K TO WS-RECIPE
+         END-IF
+     END-PERFORM
+     MOVE CN-PLAYER(WS-ALICE) TO WS-ROW
+     MOVE 3 TO PL-SLOT-ITEM(WS-ROW, 4)
+     MOVE 1 TO PL-SLOT-COUNT(WS-ROW, 4)
+     MOVE 0 TO WS-HANDLE
+     MOVE 7 TO WS-DAMAGE
+     CALL "SP-SET-DAMAGE" USING WS-HANDLE WS-DAMAGE
+     MOVE WS-HANDLE TO PL-SLOT-VAR(WS-ROW, 4)
+     MOVE 5 TO MN-EQUIP-ITEM(WS-ROW, 3)
+     MOVE 1 TO MN-EQUIP-COUNT(WS-ROW, 3)
+     MOVE 0 TO WS-HANDLE
+     MOVE 11 TO WS-DAMAGE
+     CALL "SP-SET-DAMAGE" USING WS-HANDLE WS-DAMAGE
+     MOVE WS-HANDLE TO MN-EQUIP-VAR(WS-ROW, 3)
+     MOVE 17 TO MN-EQUIP-ITEM(WS-ROW, 5)
+     MOVE 3 TO MN-EQUIP-COUNT(WS-ROW, 5)
+     MOVE 0 TO WS-HANDLE
+     CALL "SP-SET-NAME" USING WS-HANDLE WS-NAME WS-NAME-LENGTH
+     MOVE WS-HANDLE TO MN-EQUIP-VAR(WS-ROW, 5)
+     MOVE 3 TO MN-EQUIP-ITEM(WS-ROW, 1)
+     MOVE 2 TO MN-EQUIP-COUNT(WS-ROW, 1)
+     MOVE 13 TO PL-FOOD(WS-ROW)
+     MOVE 2.5 TO PL-SATURATION(WS-ROW)
+     MOVE 1 TO RB-KNOWN(WS-ROW, WS-RECIPE) RB-HIGHLIGHT(WS-ROW, WS-RECIPE)
+     MOVE 1 TO RB-OPEN(WS-ROW, 2) RB-FILTER(WS-ROW, 3)
+     CALL "CORE-CONN-CLOSED" USING WS-ALICE
+     CALL "TEST-JOIN" USING WS-ALICE-NAME WS-LENGTH-5 WS-ALICE
+     MOVE CN-PLAYER(WS-ALICE) TO WS-ROW
+     MOVE 1 TO WS-PHASE
+     PERFORM CHECK-ALICE
+     CALL "CORE-CONN-CLOSED" USING WS-ALICE
+     CALL "CORE-SAVE"
+     CALL "CORE-WORLD-OPEN" USING WS-WORLD CORE-SETTINGS WS-CREATED
+     CALL "TEST-JOIN" USING WS-ALICE-NAME WS-LENGTH-5 WS-ALICE
+     MOVE CN-PLAYER(WS-ALICE) TO WS-ROW
+     MOVE 2 TO WS-PHASE
+     PERFORM CHECK-ALICE
+     STOP RUN.
+
+ CHECK-ALICE.
+     MOVE "test player state when a player leaves and rejoins then the damage of a slot is kept"
+         TO TL-CASE
+     IF WS-PHASE = 2
+         MOVE "test player state when the world is saved and opened again then the damage of a slot is kept"
+             TO TL-CASE
+     END-IF
+     CALL "SP-GET-DAMAGE" USING PL-SLOT-ITEM(WS-ROW, 4) PL-SLOT-VAR(WS-ROW, 4) WS-DAMAGE
+     MOVE "N" TO TL-MODE
+     MOVE 7 TO TL-EXPECTED-N
+     MOVE WS-DAMAGE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM CHECK-EQUIP
+     PERFORM CHECK-REST.
+
+ CHECK-EQUIP.
+     MOVE "test player state then the chestplate slot keeps its item and damage" TO TL-CASE
+     CALL "SP-GET-DAMAGE" USING MN-EQUIP-ITEM(WS-ROW, 3) MN-EQUIP-VAR(WS-ROW, 3) WS-DAMAGE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N = 5 * 1000 + 11
+     COMPUTE TL-OBSERVED-N = MN-EQUIP-ITEM(WS-ROW, 3) * 1000 + WS-DAMAGE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test player state then the off-hand keeps its count and custom name" TO TL-CASE
+     CALL "SP-GET-NAME" USING MN-EQUIP-VAR(WS-ROW, 5) WS-OUT-NAME WS-OUT-LENGTH
+     MOVE "T" TO TL-MODE
+     MOVE "017 003 Sunblade" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE MN-EQUIP-ITEM(WS-ROW, 5) TO WS-EDIT-ITEM
+     MOVE MN-EQUIP-COUNT(WS-ROW, 5) TO WS-EDIT-COUNT
+     STRING WS-EDIT-ITEM " " WS-EDIT-COUNT " " WS-OUT-NAME(1:WS-OUT-LENGTH)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test player state then the boots slot without a patch keeps item and count" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N = 3 * 1000 + 2
+     COMPUTE TL-OBSERVED-N = MN-EQUIP-ITEM(WS-ROW, 1) * 1000 + MN-EQUIP-COUNT(WS-ROW, 1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK-REST.
+     MOVE "test player state then the saturation is kept" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 2500 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = PL-SATURATION(WS-ROW) * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test player state then the recipe known and highlighted before is known and highlighted"
+         TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 11
+     COMPUTE TL-OBSERVED-N = RB-KNOWN(WS-ROW, WS-RECIPE) * 10 + RB-HIGHLIGHT(WS-ROW, WS-RECIPE)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test player state then the recipe book settings are kept" TO TL-CASE
+     COMPUTE TL-EXPECTED-N = 11
+     COMPUTE TL-OBSERVED-N = RB-OPEN(WS-ROW, 2) * 10 + RB-FILTER(WS-ROW, 3)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-PLAYER-STATE.
+
+ COPY CORETEST.

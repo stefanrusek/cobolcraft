@@ -1,0 +1,807 @@
+*> Test of 31-8 section 9, Potent sulfur (core/src/be-31-8.cob; T0983): the countdown key, the gas source search, the unobstructed count, the countdown machine, the reach and launch rules, the seed and the tickers.
+*> Each case runs its statements and shows the items joined by single spaces ("n" integers, "f" floats x 1e6, "t" text up to a stored length).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-8-9.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY CITEMS.
+ 01 WS-SHOW                PIC -(10)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-OUT                 PIC X(8192).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-T10                 BINARY-LONG VALUE 10.
+ 01 WS-FORM                BINARY-LONG VALUE 1.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-NM                  PIC X(32).
+ 01 WS-NML                 BINARY-LONG.
+ 01 WS-SV                  PIC X(256).
+ 01 WS-SVL                 BINARY-LONG.
+ 01 WS-NV                  BINARY-LONG.
+ 01 WS-LV                  BINARY-DOUBLE.
+ 01 WS-FV                  FLOAT-SHORT.
+ 01 WS-IA.
+    05 WS-IAV              BINARY-LONG OCCURS 8 TIMES.
+ 01 WS-LT                  BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG VALUE 0.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-A                 BINARY-LONG.
+ 01 WS-B                 BINARY-LONG.
+ 01 WS-C                 BINARY-LONG.
+ 01 WS-E                 BINARY-LONG.
+ 01 WS-F                 BINARY-LONG.
+ 01 WS-G                 BINARY-LONG.
+ 01 WS-H                 BINARY-LONG.
+ 01 WS-P                 BINARY-LONG.
+ 01 WS-Q                 BINARY-LONG.
+ 01 WS-R                 BINARY-LONG.
+ 01 WS-S                 BINARY-LONG.
+ 01 WS-U                 BINARY-LONG.
+ 01 WS-V                 BINARY-LONG.
+ 01 WS-W                 BINARY-LONG.
+ 01 WS-EV                BINARY-LONG.
+ 01 WS-O1                 BINARY-LONG.
+ 01 WS-O2                 BINARY-LONG.
+ 01 WS-O3                 BINARY-LONG.
+ 01 WS-O4                 BINARY-LONG.
+ 01 WS-O5                 BINARY-LONG.
+ 01 WS-O6                 BINARY-LONG.
+ 01 WS-O7                 BINARY-LONG.
+ 01 WS-FA                FLOAT-LONG.
+ 01 WS-FB                FLOAT-LONG.
+ 01 WS-FC                FLOAT-LONG.
+ 01 WS-FD                FLOAT-LONG.
+ 01 WS-FE                FLOAT-LONG.
+ 01 WS-FF                FLOAT-LONG.
+ 01 WS-FG                FLOAT-LONG.
+ 01 WS-FH                FLOAT-LONG.
+ 01 WS-FS1                FLOAT-SHORT.
+ 01 WS-FS2                FLOAT-SHORT.
+ 01 WS-FS3                FLOAT-SHORT.
+ 01 WS-FS4                FLOAT-SHORT.
+ 01 WS-N24                PIC X(24).
+ 01 WS-N48                PIC X(48).
+ 01 WS-T64                PIC X(64).
+ 01 WS-T256               PIC X(256).
+ 01 WS-T2                 PIC X(64).
+ 01 WS-TAB.
+    05 WS-TV              BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-TAB2.
+    05 WS-TV2            BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-TAB3.
+    05 WS-TV3            BINARY-LONG OCCURS 192 TIMES.
+ 01 WS-LONG1              BINARY-DOUBLE.
+ 01 WS-LONG2              BINARY-DOUBLE.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "acceptance US12 31-8§9 Potent sulfur: fields (9.1): countdown is written as an int (-1 when none) and read only when present; the update tag is empty" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:potent_sulfur" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 48 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE -1 TO BE-XI(WS-IDX, 1)
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "countdown" TO WS-NM
+     MOVE 9 TO WS-NML
+     MOVE 12 TO WS-NV
+     PERFORM NB-I
+     PERFORM LOAD-BUFFER
+     PERFORM SAVE-RENDER
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     PERFORM LOAD-BUFFER
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-TAG-ENTRIES" USING WS-IDX PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE "{countdown:-1} {countdown:12} 12 -1 {}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-8§9 Potent sulfur: gas source (9.4): scanning the cells above the sulfur, a water source with the water block or a passable block continues, the first air or passable cell that is no water source ends the scan" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 3 TO WS-TV(1)
+     MOVE 0 TO WS-TV(2)
+     MOVE 0 TO WS-TV(3)
+     MOVE 0 TO WS-TV(4)
+     MOVE 0 TO WS-TV(5)
+     CALL "BE8-SULFUR-SOURCE" USING WS-TAB WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-TV(1)
+     MOVE 1 TO WS-TV(2)
+     MOVE 1 TO WS-TV(3)
+     MOVE 3 TO WS-TV(4)
+     MOVE 0 TO WS-TV(5)
+     CALL "BE8-SULFUR-SOURCE" USING WS-TAB WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-TV(1)
+     MOVE 1 TO WS-TV(2)
+     MOVE 1 TO WS-TV(3)
+     MOVE 1 TO WS-TV(4)
+     MOVE 3 TO WS-TV(5)
+     CALL "BE8-SULFUR-SOURCE" USING WS-TAB WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-TV(1)
+     MOVE 1 TO WS-TV(2)
+     MOVE 1 TO WS-TV(3)
+     MOVE 1 TO WS-TV(4)
+     MOVE 1 TO WS-TV(5)
+     CALL "BE8-SULFUR-SOURCE" USING WS-TAB WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-TV(1)
+     MOVE 0 TO WS-TV(2)
+     MOVE 0 TO WS-TV(3)
+     MOVE 0 TO WS-TV(4)
+     MOVE 0 TO WS-TV(5)
+     CALL "BE8-SULFUR-SOURCE" USING WS-TAB WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-TV(1)
+     MOVE 2 TO WS-TV(2)
+     MOVE 3 TO WS-TV(3)
+     MOVE 0 TO WS-TV(4)
+     MOVE 0 TO WS-TV(5)
+     CALL "BE8-SULFUR-SOURCE" USING WS-TAB WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-TV(1)
+     MOVE 0 TO WS-TV(2)
+     MOVE 0 TO WS-TV(3)
+     MOVE 0 TO WS-TV(4)
+     MOVE 0 TO WS-TV(5)
+     CALL "BE8-SULFUR-SOURCE" USING WS-TAB WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-TV(1)
+     MOVE 1 TO WS-TV(2)
+     MOVE 2 TO WS-TV(3)
+     MOVE 0 TO WS-TV(4)
+     MOVE 0 TO WS-TV(5)
+     CALL "BE8-SULFUR-SOURCE" USING WS-TAB WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 3 4 -1 -1 -1 -1 -1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-8§9 Potent sulfur: unobstructed count (9.4): the limit is 6 * h cells; the first cell that is not passable ends the count (cells passable, h in)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-TV(1)
+     MOVE 1 TO WS-TV(2)
+     MOVE 1 TO WS-TV(3)
+     MOVE 1 TO WS-TV(4)
+     MOVE 1 TO WS-TV(5)
+     MOVE 1 TO WS-TV(6)
+     MOVE 1 TO WS-TV(7)
+     MOVE 1 TO WS-TV(8)
+     MOVE 1 TO WS-TV(9)
+     MOVE 1 TO WS-TV(10)
+     MOVE 1 TO WS-TV(11)
+     MOVE 1 TO WS-TV(12)
+     MOVE 1 TO WS-TV(13)
+     MOVE 1 TO WS-TV(14)
+     MOVE 1 TO WS-TV(15)
+     MOVE 1 TO WS-TV(16)
+     MOVE 1 TO WS-TV(17)
+     MOVE 1 TO WS-TV(18)
+     MOVE 1 TO WS-TV(19)
+     MOVE 1 TO WS-TV(20)
+     MOVE 1 TO WS-TV(21)
+     MOVE 1 TO WS-TV(22)
+     MOVE 1 TO WS-TV(23)
+     MOVE 1 TO WS-TV(24)
+     MOVE 0 TO WS-A
+     CALL "BE8-SULFUR-UNOBSTRUCTED" USING WS-TAB WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-TV(1)
+     MOVE 1 TO WS-TV(2)
+     MOVE 1 TO WS-TV(3)
+     MOVE 1 TO WS-TV(4)
+     MOVE 1 TO WS-TV(5)
+     MOVE 1 TO WS-TV(6)
+     MOVE 1 TO WS-A
+     CALL "BE8-SULFUR-UNOBSTRUCTED" USING WS-TAB WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-TV(1)
+     MOVE 1 TO WS-TV(2)
+     MOVE 0 TO WS-TV(3)
+     MOVE 1 TO WS-TV(4)
+     MOVE 1 TO WS-TV(5)
+     MOVE 1 TO WS-TV(6)
+     MOVE 1 TO WS-A
+     CALL "BE8-SULFUR-UNOBSTRUCTED" USING WS-TAB WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-TV(1)
+     MOVE 1 TO WS-TV(2)
+     MOVE 1 TO WS-TV(3)
+     MOVE 0 TO WS-TV(4)
+     MOVE 1 TO WS-TV(5)
+     MOVE 1 TO WS-TV(6)
+     MOVE 1 TO WS-TV(7)
+     MOVE 1 TO WS-TV(8)
+     MOVE 1 TO WS-TV(9)
+     MOVE 1 TO WS-TV(10)
+     MOVE 1 TO WS-TV(11)
+     MOVE 1 TO WS-TV(12)
+     MOVE 1 TO WS-TV(13)
+     MOVE 1 TO WS-TV(14)
+     MOVE 1 TO WS-TV(15)
+     MOVE 1 TO WS-TV(16)
+     MOVE 1 TO WS-TV(17)
+     MOVE 1 TO WS-TV(18)
+     MOVE 1 TO WS-TV(19)
+     MOVE 1 TO WS-TV(20)
+     MOVE 1 TO WS-TV(21)
+     MOVE 1 TO WS-TV(22)
+     MOVE 1 TO WS-TV(23)
+     MOVE 1 TO WS-TV(24)
+     MOVE 3 TO WS-A
+     CALL "BE8-SULFUR-UNOBSTRUCTED" USING WS-TAB WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-TV(1)
+     MOVE 1 TO WS-TV(2)
+     MOVE 1 TO WS-TV(3)
+     MOVE 1 TO WS-TV(4)
+     MOVE 1 TO WS-TV(5)
+     MOVE 1 TO WS-TV(6)
+     MOVE 1 TO WS-TV(7)
+     MOVE 1 TO WS-TV(8)
+     MOVE 1 TO WS-TV(9)
+     MOVE 1 TO WS-TV(10)
+     MOVE 1 TO WS-TV(11)
+     MOVE 1 TO WS-TV(12)
+     MOVE 1 TO WS-TV(13)
+     MOVE 1 TO WS-TV(14)
+     MOVE 1 TO WS-TV(15)
+     MOVE 1 TO WS-TV(16)
+     MOVE 1 TO WS-TV(17)
+     MOVE 1 TO WS-TV(18)
+     MOVE 1 TO WS-TV(19)
+     MOVE 1 TO WS-TV(20)
+     MOVE 1 TO WS-TV(21)
+     MOVE 1 TO WS-TV(22)
+     MOVE 1 TO WS-TV(23)
+     MOVE 1 TO WS-TV(24)
+     MOVE 4 TO WS-A
+     CALL "BE8-SULFUR-UNOBSTRUCTED" USING WS-TAB WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 6 2 3 24" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-8§9 Potent sulfur: waiting countdown (9.5, example 12.7): every 20 ticks with a source: when the countdown is not above 0 it becomes 10 * (h - 1) + draw (dormant, draw 15 to 30) or (h - 1) + draw (erupting," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:potent_sulfur" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 48 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE -1 TO BE-XI(WS-IDX, 1)
+     MOVE 2 TO WS-A
+     MOVE 40 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 3 TO WS-E
+     MOVE 20 TO WS-F
+     CALL "BE8-SULFUR-COUNTDOWN" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:potent_sulfur" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 48 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE -1 TO BE-XI(WS-IDX, 1)
+     MOVE 2 TO WS-A
+     MOVE 41 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 3 TO WS-E
+     MOVE 20 TO WS-F
+     CALL "BE8-SULFUR-COUNTDOWN" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:potent_sulfur" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 48 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE -1 TO BE-XI(WS-IDX, 1)
+     MOVE 2 TO WS-A
+     MOVE 40 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 3 TO WS-E
+     MOVE 20 TO WS-F
+     CALL "BE8-SULFUR-COUNTDOWN" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:potent_sulfur" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 48 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 5 TO BE-XI(WS-IDX, 1)
+     MOVE 2 TO WS-A
+     MOVE 40 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 3 TO WS-E
+     MOVE 20 TO WS-F
+     CALL "BE8-SULFUR-COUNTDOWN" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:potent_sulfur" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 48 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 1)
+     MOVE 2 TO WS-A
+     MOVE 40 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 3 TO WS-E
+     MOVE 20 TO WS-F
+     CALL "BE8-SULFUR-COUNTDOWN" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:potent_sulfur" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 48 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE -1 TO BE-XI(WS-IDX, 1)
+     MOVE 3 TO WS-A
+     MOVE 40 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 3 TO WS-E
+     MOVE 2 TO WS-F
+     CALL "BE8-SULFUR-COUNTDOWN" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:potent_sulfur" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 48 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE -1 TO BE-XI(WS-IDX, 1)
+     MOVE 3 TO WS-A
+     MOVE 40 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 1 TO WS-F
+     CALL "BE8-SULFUR-COUNTDOWN" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:potent_sulfur" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 48 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 1)
+     MOVE 3 TO WS-A
+     MOVE 40 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 3 TO WS-E
+     MOVE 2 TO WS-F
+     CALL "BE8-SULFUR-COUNTDOWN" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:potent_sulfur" TO WS-KEY
+     MOVE 23 TO WS-SVL
+     MOVE 48 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE -1 TO BE-XI(WS-IDX, 1)
+     MOVE 2 TO WS-A
+     MOVE 40 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 15 TO WS-F
+     CALL "BE8-SULFUR-COUNTDOWN" USING WS-IDX WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "39 2 0 -1 2 0 -1 2 0 4 2 0 0 3 0 3 3 0 0 2 1 0 2 1 4 2 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-8§9 Potent sulfur: nausea (9.5): the effect pass runs every 10 ticks with a source; an entity is reached when its eye block is passable, the squared distance to the source centre is at most 9, the lowered eye" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 10 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE8-SULFUR-NAUSEA" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 11 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE8-SULFUR-NAUSEA" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 10 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE8-SULFUR-NAUSEA" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE8-SULFUR-NAUSEA" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 9 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE8-SULFUR-REACH" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 10 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE8-SULFUR-REACH" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE8-SULFUR-REACH" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE8-SULFUR-REACH" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE8-SULFUR-REACH" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 0 0 1 1 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-8§9 Potent sulfur: launch (9.6): an entity is accelerated by +0.2 in y when its vertical velocity is below 0.3 + h * 0.1, unless it cannot simulate movement, flies, rides or is not affected by geysers (velocity" TO TL-CASE
+     PERFORM BEGIN-CASE
+     COMPUTE WS-FA = 0.0
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE8-SULFUR-LAUNCH" USING WS-FA WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FA = 0.59
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE8-SULFUR-LAUNCH" USING WS-FA WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FA = 0.61
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE8-SULFUR-LAUNCH" USING WS-FA WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FA = 0.29
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE8-SULFUR-LAUNCH" USING WS-FA WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FA = 0.31
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE8-SULFUR-LAUNCH" USING WS-FA WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FA = 0.0
+     MOVE 3 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE8-SULFUR-LAUNCH" USING WS-FA WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FA = 0.0
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE8-SULFUR-LAUNCH" USING WS-FA WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 1 0 1 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-8§9 Potent sulfur: geyser seed (9.4): the level seed exclusive or the constant -904011478 (64 bit; shown modulo 1000000007 and as the upper half)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-LONG1
+     CALL "BE8-GEYSER-SEED" USING WS-LONG1 WS-LONG2
+     MOVE FUNCTION MOD(WS-LONG2, 1000000007) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE FUNCTION INTEGER(WS-LONG2 / 4294967296) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-LONG1
+     CALL "BE8-GEYSER-SEED" USING WS-LONG1 WS-LONG2
+     MOVE FUNCTION MOD(WS-LONG2, 1000000007) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE FUNCTION INTEGER(WS-LONG2 / 4294967296) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 123456789 TO WS-LONG1
+     CALL "BE8-GEYSER-SEED" USING WS-LONG1 WS-LONG2
+     MOVE FUNCTION MOD(WS-LONG2, 1000000007) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE FUNCTION INTEGER(WS-LONG2 / 4294967296) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE -5 TO WS-LONG1
+     CALL "BE8-GEYSER-SEED" USING WS-LONG1 WS-LONG2
+     MOVE FUNCTION MOD(WS-LONG2, 1000000007) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE FUNCTION INTEGER(WS-LONG2 / 4294967296) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 9223372036854775807 TO WS-LONG1
+     CALL "BE8-GEYSER-SEED" USING WS-LONG1 WS-LONG2
+     MOVE FUNCTION MOD(WS-LONG2, 1000000007) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE FUNCTION INTEGER(WS-LONG2 / 4294967296) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "95988529 -1 95988530 -1 148960838 -1 904011473 0 612839473 -2147483648" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-8§9 Potent sulfur: tickers by state and side (9.3): dry none; wet server nausea (1) and client gas particles (1); dormant server countdown then nausea (2); erupting server launch then countdown (3) and client" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE8-SULFUR-TICKER" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE8-SULFUR-TICKER" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE8-SULFUR-TICKER" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE8-SULFUR-TICKER" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE8-SULFUR-TICKER" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE8-SULFUR-TICKER" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE8-SULFUR-TICKER" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE8-SULFUR-TICKER" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE8-SULFUR-TICKER" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE8-SULFUR-TICKER" USING WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0 1 1 2 1 3 2 4 3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-8§9 Potent sulfur: onPlace (9.2): only erupting and continuous queue the block event, play geyser_eruption_start (1) or geyser_continuous_start (2) and post block_activate" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     CALL "BE8-SULFUR-PLACE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     CALL "BE8-SULFUR-PLACE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     CALL "BE8-SULFUR-PLACE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     CALL "BE8-SULFUR-PLACE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     CALL "BE8-SULFUR-PLACE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0 0 0 0 0 0 0 0 1 1 1 1 2 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ ADD-N.
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> Saves entity WS-IDX in form WS-FORM, renders the compound and appends it to TL-OBSERVED.
+ SAVE-RENDER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-IDX WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> The NBT builders of the cases (name WS-NM and length WS-NML, text WS-SV and length WS-SVL, number WS-NV, list type WS-LT and count WS-LC).
+ NB-S.
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NM WS-NML WS-SV WS-SVL
+     .
+ NB-I.
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-LONG.
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WS-NM WS-NML WS-LV
+     .
+ NB-IA.
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WS-NM WS-NML WS-LC WS-IA
+     .
+ NB-FLOAT.
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WS-NM WS-NML WS-FV
+     .
+ NB-B.
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-C.
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NM WS-NML
+     .
+ NB-E.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     .
+ NB-STACK.
+     MOVE 0 TO WS-KP
+     CALL "PNBT-STACK-WRITE" USING PB-BUFFER WS-ITEM WS-NV WS-KP
+     .
+ NB-L.
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NM WS-NML WS-LT WS-LC
+     .
+
+*> Loads entity WS-IDX from the compound the case built in PB-BUFFER (the closing End tag is written here).
+ LOAD-BUFFER.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-IDX PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     .
+ END PROGRAM TEST-BE-31-8-9.
+
+ COPY CORETEST.

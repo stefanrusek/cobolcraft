@@ -2,7 +2,7 @@
 *> RAYCAST follows the look ray from the local player's eye (yaw 0 faces +Z, 90 faces -X; positive
 *> pitch looks down, as render-list.cob) cell by cell through the replica (a voxel walk: the next
 *> cell boundary crossed along any axis comes first) for at most CL-REACH blocks. The first cell
-*> that is not void is the target; the face the ray enters it through is the clicked face (05c
+*> whose outline shape the ray meets (a full cube for most blocks; docs/protocol/51) is the target; the face the ray enters it through is the clicked face (05c
 *> Direction: crossing a boundary towards +x enters the west face 4, towards -x the east face 5,
 *> towards +y the bottom 0, towards -y the top 1, towards +z the north face 2, towards -z the south
 *> face 3), and the point where it enters, relative to the block's lowest corner, is the cursor of
@@ -19,6 +19,7 @@
 *> USING CLIENT-STATE: sets TG-HIT and, on a hit, TG-X, TG-Y, TG-Z, TG-FACE and TG-CX, TG-CY, TG-CZ.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
  COPY CLCONST.
  01 WS-YAW                 FLOAT-LONG.
  01 WS-PITCH               FLOAT-LONG.
@@ -37,6 +38,7 @@
  01 WS-CY                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
+ 01 WS-SEEN                BINARY-LONG.
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-HIT                 FLOAT-LONG.
@@ -50,6 +52,31 @@
  01 WS-NEAR                FLOAT-LONG.
  01 WS-FAR                 FLOAT-LONG.
  01 WS-BEST                FLOAT-LONG.
+ 01 WS-SHAPE               BINARY-LONG.
+ 01 WS-ATTACK              BINARY-LONG.
+ 01 WS-BOX-HALF            FLOAT-LONG.
+ 01 WS-BOX-HEIGHT          FLOAT-LONG.
+ 01 WS-HT                  FLOAT-LONG.
+ 01 WS-HAX                 BINARY-LONG.
+ 01 WS-RT                  FLOAT-LONG.
+ 01 WS-RAX                 BINARY-LONG.
+ 01 WS-RORG.
+    05 WS-RO               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-RDIR.
+    05 WS-RD               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-ROFF.
+    05 WS-RF               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-HELD-ITEM           BINARY-LONG.
+ 01 WS-HNS                 PIC X(16).
+ 01 WS-HPATH               PIC X(40).
+ 01 WS-HMAX                BINARY-LONG.
+ 01 WS-HBLK                BINARY-LONG.
+ 01 WS-HTOOL               PIC X.
+ 01 WS-HFOOD               BINARY-LONG.
+ 01 WS-HKNOWN              BINARY-LONG.
+ 01 WS-OFX                 FLOAT-LONG.
+ 01 WS-OFY                 FLOAT-LONG.
+ 01 WS-OFZ                 FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
@@ -63,6 +90,10 @@
      MOVE PL-X TO WS-EYE(1)
      COMPUTE WS-EYE(2) = PL-Y + 1.6
      MOVE PL-Z TO WS-EYE(3)
+     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+         MOVE WS-EYE(WS-A) TO WS-RO(WS-A)
+         MOVE WS-DIR(WS-A) TO WS-RD(WS-A)
+     END-PERFORM
 *>   Per axis: the step direction, the ray distance to the first boundary and between boundaries
 *>   (an axis the ray does not move along is never crossed).
      PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
@@ -98,19 +129,61 @@
          MOVE WS-CELL(2) TO WS-CY
          MOVE WS-CELL(3) TO WS-CZ
          CALL "WORLD-CELL" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SKY WS-BLOCK
+*>       A liquid block has no outline shape (29a 1.2): the ray goes through water and lava (a wet plant or a waterlogged block is hit).
+*>       Any other block is hit where the ray meets a box of its outline shape (51 block shapes: a slab, a stair, a torch, a fence
+*>       and the rest are targeted where they are; the full cube is entered at the cell's face).
+         MOVE WS-STATE TO WS-SEEN
+         MOVE WS-T TO WS-HT
+         MOVE WS-A TO WS-HAX
          IF WS-STATE NOT = 0
+             CALL "STATE-TABLES-ENSURE" USING CLIENT-STATE
+             IF ST-FLUID(WS-STATE + 1) = 1 OR ST-FLUID(WS-STATE + 1) = 2
+                 MOVE 0 TO WS-SEEN
+             END-IF
+         END-IF
+         IF WS-SEEN NOT = 0
+             CALL "BSH-OUT-ID" USING WS-STATE WS-SHAPE
+*>           The light block is targeted as a full cube while the main hand holds a light item (51 section 1.5, rule R-A5); else it has no outline.
+             IF WS-STATE < BSH-MAX-STATES AND (WS-SHAPE = 0 OR BSH-N(WS-SHAPE + 1) = 0)
+                 IF BSH-CTX(WS-STATE + 1) = 1 AND PL-SLOT-COUNT(PL-HELD + 1) > 0
+                     MOVE PL-SLOT-ITEM(PL-HELD + 1) TO WS-HELD-ITEM
+                     CALL "CL-ITEM-INFO" USING CLIENT-STATE WS-HELD-ITEM WS-HNS WS-HPATH WS-HMAX WS-HBLK WS-HTOOL WS-HFOOD WS-HKNOWN
+                     IF WS-HKNOWN = 1 AND WS-HPATH = "light"
+                         MOVE 1 TO WS-SHAPE
+                     END-IF
+                 END-IF
+             END-IF
+             EVALUATE TRUE
+                 WHEN WS-SHAPE = 0
+                     MOVE 0 TO WS-SEEN
+                 WHEN WS-SHAPE > 1
+*>                   An offset plant's outline is moved by its model offset (51 section 1.4): the ray moves the other way.
+                     CALL "BSH-OFFSET" USING WS-STATE WS-CX WS-CY WS-CZ WS-OFX WS-OFY WS-OFZ
+                     COMPUTE WS-RF(1) = WS-RO(1) - WS-OFX
+                     COMPUTE WS-RF(2) = WS-RO(2) - WS-OFY
+                     COMPUTE WS-RF(3) = WS-RO(3) - WS-OFZ
+                     CALL "BSH-RAY" USING WS-SHAPE WS-CX WS-CY WS-CZ WS-ROFF WS-RDIR WS-RT WS-RAX
+                     IF WS-RT < 0 OR WS-RT > CL-REACH
+                         MOVE 0 TO WS-SEEN
+                     ELSE
+                         MOVE WS-RT TO WS-HT
+                         MOVE WS-RAX TO WS-HAX
+                     END-IF
+             END-EVALUATE
+         END-IF
+         IF WS-SEEN NOT = 0
              MOVE 1 TO TG-HIT
-             MOVE WS-T TO WS-BLOCK-T
+             MOVE WS-HT TO WS-BLOCK-T
              MOVE WS-CX TO TG-X
              MOVE WS-CY TO TG-Y
              MOVE WS-CZ TO TG-Z
-             COMPUTE TG-FACE = FUNCTION NUMVAL(WS-FACE-BASES(WS-A:1))
-                 + (1 - WS-STEP(WS-A)) / 2
-             COMPUTE WS-HIT = WS-EYE(1) + WS-DIR(1) * WS-T - TG-X
+             COMPUTE TG-FACE = FUNCTION NUMVAL(WS-FACE-BASES(WS-HAX:1))
+                 + (1 - WS-STEP(WS-HAX)) / 2
+             COMPUTE WS-HIT = WS-EYE(1) + WS-DIR(1) * WS-HT - TG-X
              COMPUTE TG-CX = FUNCTION MIN(1, FUNCTION MAX(0, WS-HIT))
-             COMPUTE WS-HIT = WS-EYE(2) + WS-DIR(2) * WS-T - TG-Y
+             COMPUTE WS-HIT = WS-EYE(2) + WS-DIR(2) * WS-HT - TG-Y
              COMPUTE TG-CY = FUNCTION MIN(1, FUNCTION MAX(0, WS-HIT))
-             COMPUTE WS-HIT = WS-EYE(3) + WS-DIR(3) * WS-T - TG-Z
+             COMPUTE WS-HIT = WS-EYE(3) + WS-DIR(3) * WS-HT - TG-Z
              COMPUTE TG-CZ = FUNCTION MIN(1, FUNCTION MAX(0, WS-HIT))
          END-IF
      END-PERFORM
@@ -118,14 +191,26 @@
      COMPUTE WS-BEST = FUNCTION MIN(WS-BLOCK-T, CL-ATTACK-REACH)
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
          COMPUTE WS-ET = EN-TYPE(WS-R) + 1
-         IF EN-USED(WS-R) = 1 AND WS-ET >= 1 AND WS-ET <= 4
-             IF CL-ET-ATTACK(WS-ET) = 1
-                 COMPUTE WS-LO(1) = EN-X(WS-R) - CL-ET-HALF(WS-ET)
-                 COMPUTE WS-HI(1) = EN-X(WS-R) + CL-ET-HALF(WS-ET)
+*>       The box of an entity of a standard world comes from its registry row (ENTITY-ATTACK-BOX), that of a stand-in type from CL-ENTITIES.
+         MOVE 0 TO WS-ATTACK
+         IF EN-USED(WS-R) = 1 AND EN-VANILLA(WS-R) = 1
+             MOVE EN-BOX-ATTACK(WS-R) TO WS-ATTACK
+             MOVE EN-BOX-HALF(WS-R) TO WS-BOX-HALF
+             MOVE EN-BOX-HEIGHT(WS-R) TO WS-BOX-HEIGHT
+         END-IF
+         IF EN-USED(WS-R) = 1 AND EN-VANILLA(WS-R) = 0 AND WS-ET >= 1 AND WS-ET <= 30
+             MOVE CL-ET-ATTACK(WS-ET) TO WS-ATTACK
+             MOVE CL-ET-HALF(WS-ET) TO WS-BOX-HALF
+             MOVE CL-ET-HEIGHT(WS-ET) TO WS-BOX-HEIGHT
+         END-IF
+         IF EN-USED(WS-R) = 1
+             IF WS-ATTACK = 1
+                 COMPUTE WS-LO(1) = EN-X(WS-R) - WS-BOX-HALF
+                 COMPUTE WS-HI(1) = EN-X(WS-R) + WS-BOX-HALF
                  MOVE EN-Y(WS-R) TO WS-LO(2)
-                 COMPUTE WS-HI(2) = EN-Y(WS-R) + CL-ET-HEIGHT(WS-ET)
-                 COMPUTE WS-LO(3) = EN-Z(WS-R) - CL-ET-HALF(WS-ET)
-                 COMPUTE WS-HI(3) = EN-Z(WS-R) + CL-ET-HALF(WS-ET)
+                 COMPUTE WS-HI(2) = EN-Y(WS-R) + WS-BOX-HEIGHT
+                 COMPUTE WS-LO(3) = EN-Z(WS-R) - WS-BOX-HALF
+                 COMPUTE WS-HI(3) = EN-Z(WS-R) + WS-BOX-HALF
                  MOVE 0 TO WS-NEAR
                  MOVE WS-BEST TO WS-FAR
                  PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3

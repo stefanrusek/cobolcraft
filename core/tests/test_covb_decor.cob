@@ -1,0 +1,260 @@
+*> Implementation test (lane covB; docs/protocol/44 part 8 section 4, part 9 sections 4 and 5): the decoration hooks the wire test leaves out: every minecart item on a rail (also on a slope),
+*> the glow item frame, a painting from the registry's variant list, Interact on an armor stand and on a minecart with an item that is not fuel, and Attack on an end crystal.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-COVB-DECOR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY PROTO.
+ COPY BRWORLD.
+ COPY PLAYPKT.
+ COPY PROJSTATE.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X0                  BINARY-LONG.
+ 01 WS-Y0                  BINARY-LONG.
+ 01 WS-Z0                  BINARY-LONG.
+ 01 WS-FX                  BINARY-LONG.
+ 01 WS-FZ                  BINARY-LONG.
+ 01 WS-GY                  BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG VALUE 96.
+ 01 WS-FKIND               BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-PAIRS               PIC X(160).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-STONE               BINARY-LONG.
+ 01 WS-RAIL                BINARY-LONG.
+ 01 WS-SLOPE               BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-STICK               BINARY-LONG.
+ 01 WS-HELD                BINARY-LONG.
+ 01 WS-SEQ                 BINARY-LONG VALUE 1.
+ 01 WS-FACE                BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-TARGET              BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-BOTTOM              BINARY-LONG VALUE 0.
+ 01 WS-CART-KEYS.
+    05 FILLER              PIC X(40) VALUE "minecraft:minecart".
+    05 FILLER              PIC X(40) VALUE "minecraft:chest_minecart".
+    05 FILLER              PIC X(40) VALUE "minecraft:hopper_minecart".
+    05 FILLER              PIC X(40) VALUE "minecraft:tnt_minecart".
+    05 FILLER              PIC X(40) VALUE "minecraft:command_block_minecart".
+ 01 WS-CART-TABLE REDEFINES WS-CART-KEYS.
+    05 WS-CART-KEY         PIC X(40) OCCURS 5 TIMES.
+ 01 WS-CART-CODES          PIC X(5) VALUE "12357".
+ 01 WS-CODES-TABLE REDEFINES WS-CART-CODES.
+    05 WS-CART-CODE        PIC 9 OCCURS 5 TIMES.
+ PROCEDURE DIVISION.
+     MOVE "N" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     MOVE 1 TO CS-HOSTILE-MOBS
+     MOVE "standard" TO CS-WORLD-TYPE
+     MOVE "core/tests/fixtures/covb-paint" TO CS-GENERATED-DIR
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-STANDARD-TABLES"
+     CALL "BR-WORLD-READY"
+     MOVE 2 TO BW-DIFFICULTY
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-PLAYER
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     COMPUTE WS-X0 = FUNCTION INTEGER(PL-X(WS-PLAYER))
+     COMPUTE WS-Y0 = FUNCTION INTEGER(PL-Y(WS-PLAYER))
+     COMPUTE WS-Z0 = FUNCTION INTEGER(PL-Z(WS-PLAYER))
+     COMPUTE WS-FX = WS-X0 - 48
+     COMPUTE WS-FZ = WS-Z0 - 48
+     COMPUTE WS-GY = WS-Y0 - 1
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX WS-FZ WS-SIZE WS-GY WS-FKIND
+     MOVE "stone" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-STONE
+     MOVE "rail" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-RAIL
+     MOVE "shape=ascending_east,waterlogged=false" TO WS-PAIRS
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-SLOPE
+     COMPUTE WS-HELD = PL-HELD(WS-PLAYER) + 1
+*>   Every minecart item on a rail makes the cart of its kind.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         COMPUTE WS-CX = WS-X0 - 4 - WS-I
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-Y0 WS-Z0 WS-RAIL
+         MOVE WS-CART-KEY(WS-I) TO WS-KEY
+         CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+         MOVE WS-ITEM TO PL-SLOT-ITEM(WS-PLAYER, WS-HELD)
+         MOVE 1 TO PL-SLOT-COUNT(WS-PLAYER, WS-HELD)
+         MOVE 1 TO WS-FACE
+         CALL "TEST-USE-ON" USING WS-CONN WS-CX WS-Y0 WS-Z0 WS-FACE WS-SEQ
+         MOVE 0 TO WS-COUNT
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > PJ-MAX
+             IF PJ-ENT(WS-J) > 0 AND PJ-KIND(WS-J) = 10 AND PJ-I1(WS-J) = WS-CART-CODE(WS-I)
+                 ADD 1 TO WS-COUNT
+             END-IF
+         END-PERFORM
+         MOVE SPACES TO TL-CASE
+         STRING "covB 44-8 4 the item " WS-CART-KEY(WS-I) " makes one cart of its kind" DELIMITED BY SIZE INTO TL-CASE
+         MOVE 1 TO TL-EXPECTED-N
+         MOVE WS-COUNT TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+*>   On a slope rail the cart stands half a block higher.
+     COMPUTE WS-CX = WS-X0 + 8
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-Y0 WS-Z0 WS-SLOPE
+     MOVE "minecraft:minecart" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO PL-SLOT-ITEM(WS-PLAYER, WS-HELD)
+     MOVE 1 TO PL-SLOT-COUNT(WS-PLAYER, WS-HELD)
+     MOVE 1 TO WS-FACE
+     CALL "TEST-USE-ON" USING WS-CONN WS-CX WS-Y0 WS-Z0 WS-FACE WS-SEQ
+     MOVE 0 TO WS-ROW
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > EN-COUNT
+         IF EN-USED(WS-J) = 1 AND FUNCTION INTEGER(EN-X(WS-J)) = WS-CX AND FUNCTION INTEGER(EN-Z(WS-J)) = WS-Z0
+             MOVE WS-J TO WS-ROW
+         END-IF
+     END-PERFORM
+     MOVE "covB 44-8 4 a cart on an ascending rail stands 0.5625 above its cell (hundredths)" TO TL-CASE
+     MOVE 56 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = (EN-Y(WS-ROW) - WS-Y0) * 100
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Interact with a stick on a minecart is not fuel: the cart's own use runs.
+     MOVE "minecraft:stick" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-STICK WS-ITEM-ROW WS-STATUS
+     MOVE WS-STICK TO PL-SLOT-ITEM(WS-PLAYER, WS-HELD)
+     MOVE 2 TO PL-SLOT-COUNT(WS-PLAYER, WS-HELD)
+     MOVE EN-ID(WS-ROW) TO PSB-TARGET
+     MOVE 0 TO PSB-HAND
+     MOVE 0 TO PSB-Y
+     CALL "MOB-INTERACT" USING WS-CONN PLAY-SERVERBOUND
+     MOVE "covB 44-8 4.6 a stick is not fuel for a minecart: it stays in the hand" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE PL-SLOT-COUNT(WS-PLAYER, WS-HELD) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A glow item frame on a wall block.
+     PERFORM VARYING WS-I FROM -1 BY 1 UNTIL WS-I > 1
+         PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 2
+             COMPUTE WS-CX = WS-X0 + 2 + WS-I
+             COMPUTE WS-CY = WS-Y0 + WS-J
+             COMPUTE WS-CZ = WS-Z0 + 2
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-CZ WS-STONE
+         END-PERFORM
+     END-PERFORM
+     MOVE "minecraft:glow_item_frame" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO PL-SLOT-ITEM(WS-PLAYER, WS-HELD)
+     MOVE 1 TO PL-SLOT-COUNT(WS-PLAYER, WS-HELD)
+     COMPUTE WS-CX = WS-X0 + 2
+     COMPUTE WS-CY = WS-Y0 + 1
+     COMPUTE WS-CZ = WS-Z0 + 2
+     MOVE 2 TO WS-FACE
+     CALL "TEST-USE-ON" USING WS-CONN WS-CX WS-CY WS-CZ WS-FACE WS-SEQ
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > PJ-MAX
+         IF PJ-ENT(WS-J) > 0 AND PJ-KIND(WS-J) = 12
+             ADD 1 TO WS-COUNT
+         END-IF
+     END-PERFORM
+     MOVE "covB 44-9 5.3 a glow item frame item makes one item frame" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A painting on a wall further along uses a variant of the registry.
+     PERFORM VARYING WS-I FROM -1 BY 1 UNTIL WS-I > 1
+         PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 2
+             COMPUTE WS-CX = WS-X0 - 6 + WS-I
+             COMPUTE WS-CY = WS-Y0 + WS-J
+             COMPUTE WS-CZ = WS-Z0 + 6
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-CZ WS-STONE
+         END-PERFORM
+     END-PERFORM
+     MOVE "minecraft:painting" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO PL-SLOT-ITEM(WS-PLAYER, WS-HELD)
+     MOVE 1 TO PL-SLOT-COUNT(WS-PLAYER, WS-HELD)
+     COMPUTE WS-CX = WS-X0 - 6
+     COMPUTE WS-CY = WS-Y0 + 1
+     MOVE 2 TO WS-FACE
+     CALL "TEST-USE-ON" USING WS-CONN WS-CX WS-CY WS-CZ WS-FACE WS-SEQ
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > PJ-MAX
+         IF PJ-ENT(WS-J) > 0 AND PJ-KIND(WS-J) = 13
+             ADD 1 TO WS-COUNT
+         END-IF
+     END-PERFORM
+     MOVE "covB 44-9 5.4 a painting item makes one painting" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-SLOT
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > PJ-MAX
+         IF PJ-ENT(WS-J) > 0 AND PJ-KIND(WS-J) = 13
+             MOVE WS-J TO WS-SLOT
+         END-IF
+     END-PERFORM
+     MOVE "covB 44-9 5.4 the painting remembers the registry id of its variant (the only one, 0)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PJ-I4(WS-SLOT) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   An armor stand: Interact with an empty hand leaves it standing.
+     MOVE "minecraft:armor_stand" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO PL-SLOT-ITEM(WS-PLAYER, WS-HELD)
+     MOVE 1 TO PL-SLOT-COUNT(WS-PLAYER, WS-HELD)
+     COMPUTE WS-CX = WS-X0 + 3
+     MOVE 1 TO WS-FACE
+     CALL "TEST-USE-ON" USING WS-CONN WS-CX WS-GY WS-Z0 WS-FACE WS-SEQ
+     MOVE 0 TO WS-ROW
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > PJ-MAX
+         IF PJ-ENT(WS-J) > 0 AND PJ-KIND(WS-J) = 11
+             MOVE PJ-ENT(WS-J) TO WS-TARGET
+             MOVE 1 TO WS-ROW
+         END-IF
+     END-PERFORM
+     MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, WS-HELD)
+     MOVE WS-TARGET TO PSB-TARGET
+     CALL "MOB-INTERACT" USING WS-CONN PLAY-SERVERBOUND
+     MOVE 0 TO WS-ROW
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > EN-COUNT
+         IF EN-USED(WS-J) = 1 AND EN-ID(WS-J) = WS-TARGET
+             MOVE WS-J TO WS-ROW
+         END-IF
+     END-PERFORM
+     MOVE "covB 44-9 4 Interact with an empty hand leaves the armor stand standing" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-ROW > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   An end crystal hit by a player blows up (removed).
+     MOVE 1 TO PL-MODE(WS-PLAYER)
+     COMPUTE WS-X = PL-X(WS-PLAYER) + 1.5
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     CALL "CRYSTAL-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-BOTTOM WS-ROW
+     MOVE EN-ID(WS-ROW) TO WS-TARGET
+     CALL "TEST-ATTACK" USING WS-CONN WS-TARGET
+     MOVE "covB 44-9 1 an Attack packet destroys an end crystal" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-USED(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-COVB-DECOR.
+ COPY CORETEST.
+ COPY MOBSPTEST.

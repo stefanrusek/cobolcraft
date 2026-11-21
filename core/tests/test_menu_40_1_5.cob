@@ -1,0 +1,89 @@
+*> Test of 40-1 section 5 (The generic container screen; T0997): centring with integer division (854 x 480: leftPos 339, topPos 129 for
+*> a 222 high image), the inventory label y, the hover highlight origin and the dispenser title x (worked examples 11.1).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MENU-40-1-5.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ 01 WS-TEXT                PIC X(8192).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-EDIT2               PIC -(9)9.
+ 01 WS-EDIT3               PIC -(9)9.
+ 01 WS-EDIT4               PIC -(9)9.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-TYPE10              BINARY-LONG VALUE 10.
+ 01 WS-E1 PIC -(9)9.
+ 01 WS-E2 PIC -(9)9.
+ 01 WS-E3 PIC -(9)9.
+ 01 WS-E4 PIC -(9)9.
+ 01 WS-E5 PIC -(9)9.
+ 01 WS-E6 PIC -(9)9.
+ 01 WS-E7 PIC -(9)9.
+ 01 WS-E8 PIC -(9)9.
+ 01 WS-E9 PIC -(9)9.
+ 01 WS-E10 PIC -(9)9.
+ 01 WS-E11 PIC -(9)9.
+ 01 WS-E12 PIC -(9)9.
+ 01 WS-A BINARY-LONG.
+ 01 WS-B BINARY-LONG.
+ 01 WS-C BINARY-LONG.
+ 01 WS-D BINARY-LONG.
+ 01 WS-F BINARY-LONG.
+ 01 WS-G BINARY-LONG.
+ 01 WS-H BINARY-LONG.
+ 01 WS-J BINARY-LONG.
+ 01 WS-K BINARY-LONG.
+ 01 WS-K32 PIC X(32).
+ 01 WS-KEY2 PIC X(32).
+ 01 WS-L BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "acceptance US12 40-1§5 container screen: 854 x 480, image 176 x 222 gives leftPos 339, topPos 129, inventory label y 128; image 176 x 168 gives topPos 156" TO TL-CASE
+     MOVE 854 TO WS-A
+     MOVE 480 TO WS-B
+     MOVE 176 TO WS-C
+     MOVE 222 TO WS-D
+     CALL "MENU-GEOMETRY" USING WS-A WS-B WS-C WS-D WS-F WS-G WS-H
+     MOVE 168 TO WS-D
+     CALL "MENU-GEOMETRY" USING WS-A WS-B WS-C WS-D WS-J WS-K WS-L
+     MOVE WS-F TO WS-E1
+     MOVE WS-G TO WS-E2
+     MOVE WS-H TO WS-E3
+     MOVE WS-J TO WS-E4
+     MOVE WS-K TO WS-E5
+     MOVE WS-L TO WS-E6
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) " " FUNCTION TRIM(WS-E4) " " FUNCTION TRIM(WS-E5) " " FUNCTION TRIM(WS-E6) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "339 129 128 339 156 74" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 40-1§5 container screen: the hover highlight sprite is drawn at (x - 4, y - 4); the dispenser title is centred ((176 - w) / 2)" TO TL-CASE
+     MOVE 98 TO WS-A
+     MOVE 35 TO WS-B
+     CALL "MENU-HIGHLIGHT" USING WS-A WS-B WS-C WS-D
+     MOVE 176 TO WS-F
+     MOVE 53 TO WS-G
+     CALL "MENU-TITLE-X" USING WS-F WS-G WS-H
+     MOVE WS-C TO WS-E1
+     MOVE WS-D TO WS-E2
+     MOVE WS-H TO WS-E3
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "94 31 61" TO TL-EXPECTED
+     PERFORM CHECK
+
+     GOBACK.
+
+ CHECK.
+     MOVE "T" TO TL-MODE
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-MENU-40-1-5.
+
+ COPY CORETEST.

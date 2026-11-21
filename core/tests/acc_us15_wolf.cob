@@ -1,0 +1,293 @@
+*> Acceptance test (US15; docs/protocol/18-mob-framework.md section 8.2, 19 section 6.1): a survival player tames a wolf with bones through the real play path (Interact 0x1A in;
+*> Entity Event 6 or 7, Set Entity Data out), the wolf becomes tame with the player as owner, 40 health and the sit order, the owner's empty hand toggles the sit order and
+*> another player's hand does not. The world has a stone floor of 9 x 9 blocks at y = floor.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US15-WOLF.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CONTENT.
+ COPY CITEMS.
+ COPY PROTO.
+ COPY BRWORLD.
+ COPY XORO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-STATE-TEXT          PIC X(5).
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-FLOOR               BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-XLO                BINARY-LONG.
+ 01 WS-XHI                BINARY-LONG.
+ 01 WS-ZLO                BINARY-LONG.
+ 01 WS-ZHI                BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-NEEDLE              PIC X(40).
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-COW-TYPE            BINARY-LONG.
+ 01 WS-WANT-KEY            PIC X(112).
+ 01 WS-WANT-TYPE           BINARY-LONG.
+ 01 WS-ITEM-ID             BINARY-LONG.
+ 01 WS-ITEM-KEY            PIC X(112).
+ 01 WS-GIVE-COUNT          BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-ROW-A               BINARY-LONG.
+ 01 WS-ROW-B               BINARY-LONG.
+ 01 WS-ROW-C               BINARY-LONG.
+ 01 WS-BABY                BINARY-LONG.
+ 01 WS-BABIES              BINARY-LONG.
+ 01 WS-ORBS                BINARY-LONG.
+ 01 WS-ORB-TYPE            BINARY-LONG.
+ 01 WS-COUNT-ITEM          BINARY-LONG.
+ 01 WS-COUNT-TOTAL         BINARY-LONG.
+ 01 WS-ID-A                BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-HAND0               BINARY-LONG VALUE 0.
+ 01 WS-SNEAK0              BINARY-LONG VALUE 0.
+ 01 WS-CASE                PIC X(240).
+ 01 WS-EXPECT              BINARY-DOUBLE.
+ 01 WS-OBSERVE             BINARY-DOUBLE.
+ 01 WS-SLOT-ITEM           BINARY-LONG.
+ 01 WS-WHEAT               BINARY-LONG.
+ 01 WS-HX                  FLOAT-LONG.
+ 01 WS-HZ                  FLOAT-LONG.
+ 01 WS-WALK                BINARY-LONG.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-COLOR               BINARY-LONG.
+ 01 WS-IDS                 PIC X(1024).
+ 01 WS-V-BABY              BINARY-LONG.
+ 01 WS-V-WOOL              BINARY-LONG.
+ 01 WS-V-NEEDED            BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 2 TO CS-VIEW-DISTANCE
+     MOVE 0 TO CS-HOSTILE-MOBS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-STANDARD-TABLES"
+     CALL "BR-WORLD-READY"
+     MOVE 2 TO BW-DIFFICULTY
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-PLAYER
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE 0 TO PL-HELD(WS-PLAYER)
+     MOVE 6000 TO CW-TIME
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:stone" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-STATE = FUNCTION NUMVAL(WS-STATE-TEXT)
+     COMPUTE WS-CX = FUNCTION INTEGER(PL-X(WS-PLAYER))
+     COMPUTE WS-CZ = FUNCTION INTEGER(PL-Z(WS-PLAYER))
+     COMPUTE WS-FLOOR = FUNCTION INTEGER(PL-Y(WS-PLAYER)) + 40
+     COMPUTE WS-XLO = WS-CX - 4
+     COMPUTE WS-XHI = WS-CX + 4
+     COMPUTE WS-ZLO = WS-CZ - 4
+     COMPUTE WS-ZHI = WS-CZ + 4
+     PERFORM VARYING WS-X FROM WS-XLO BY 1 UNTIL WS-X > WS-XHI
+         PERFORM VARYING WS-Z FROM WS-ZLO BY 1 UNTIL WS-Z > WS-ZHI
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-FLOOR WS-Z WS-STATE
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+                 COMPUTE WS-E = WS-FLOOR + WS-I
+                 CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-E WS-Z WS-AIR
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     COMPUTE PL-X(WS-PLAYER) = WS-CX + 0.5
+     COMPUTE PL-Y(WS-PLAYER) = WS-FLOOR + 1
+     COMPUTE PL-Z(WS-PLAYER) = WS-CZ + 0.5
+     MOVE "minecraft:experience_orb" TO WS-WANT-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-WANT-KEY WS-ORB-TYPE WS-ENTITY-ROW WS-STATUS
+     CALL "TEST-DRAIN-HUNGER" USING WS-CONN WS-TEXT
+
+*> A wild wolf has the wolf row: 8 health, not tame, no owner, not sitting
+     MOVE "wolf" TO WS-WANT-KEY
+     MOVE 2 TO WS-DX
+     MOVE 0 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-A
+     MOVE EN-ID(WS-ROW-A) TO WS-ID-A
+     MOVE "acceptance US15 19§6.1 Wolf: a new wolf has 8 health" TO WS-CASE
+     MOVE 8 TO WS-EXPECT
+     MOVE EN-HEALTH(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§6.1 Wolf: a new wolf is wild" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = EN-TAMED(WS-ROW-A) + EN-SIT(WS-ROW-A)
+     PERFORM CHECK-N
+*> An empty hand on a wild wolf does nothing
+     MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     CALL "TEST-DRAIN-HUNGER" USING WS-CONN WS-TEXT
+     MOVE "acceptance US15 19§6.1 Wolf: an empty hand does not tame or seat a wild wolf" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     COMPUTE WS-OBSERVE = EN-TAMED(WS-ROW-A) + EN-SIT(WS-ROW-A)
+     PERFORM CHECK-N
+*> Bones: each use takes one bone; a failed roll sends Entity Event 6, the winning one Event 7 and tames
+     MOVE "bone" TO WS-ITEM-KEY
+     MOVE 60 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     MOVE 0 TO WS-N WS-HITS
+     PERFORM UNTIL EN-TAMED(WS-ROW-A) = 1 OR WS-N >= 50
+         ADD 1 TO WS-N
+         CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+         CALL "TEST-DRAIN-HUNGER" USING WS-CONN WS-TEXT
+         IF EN-TAMED(WS-ROW-A) = 0
+             MOVE SPACES TO WS-NEEDLE
+             MOVE EN-ID(WS-ROW-A) TO WS-EDIT
+             STRING "event " DELIMITED BY SIZE FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE " 6" DELIMITED BY SIZE INTO WS-NEEDLE
+             MOVE 0 TO WS-COUNT-ITEM
+             INSPECT WS-TEXT TALLYING WS-COUNT-ITEM FOR ALL FUNCTION TRIM(WS-NEEDLE)
+             ADD WS-COUNT-ITEM TO WS-HITS
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 19§6.1 Wolf: a bone tames the wolf within 50 tries (1 in 3 each)" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE EN-TAMED(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+     COMPUTE WS-N = WS-N - 1
+     MOVE "acceptance US15 19§6.1 Wolf: every failed roll sent Entity Event 6" TO WS-CASE
+     MOVE WS-N TO WS-EXPECT
+     MOVE WS-HITS TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE SPACES TO WS-NEEDLE
+     MOVE EN-ID(WS-ROW-A) TO WS-EDIT
+     STRING "event " DELIMITED BY SIZE FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE " 7" DELIMITED BY SIZE INTO WS-NEEDLE
+     MOVE 0 TO WS-COUNT-ITEM
+     INSPECT WS-TEXT TALLYING WS-COUNT-ITEM FOR ALL FUNCTION TRIM(WS-NEEDLE)
+     MOVE "acceptance US15 19§6.1 Wolf: taming sent Entity Event 7" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-COUNT-ITEM TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§6.1 Wolf: a tame wolf has 40 health" TO WS-CASE
+     MOVE 40 TO WS-EXPECT
+     MOVE EN-HEALTH(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§6.1 Wolf: a tamed wolf sits" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE EN-SIT(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 19§6.1 Wolf: the owner is the player" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     IF EN-OWNER-UUID(WS-ROW-A) NOT = PL-UUID(WS-PLAYER)
+         MOVE 1 TO WS-EXPECT
+     END-IF
+     MOVE 0 TO WS-OBSERVE
+     PERFORM CHECK-N
+*> The owner's empty hand toggles the sit order and the viewers get Set Entity Data (0x65 = 101)
+     MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     MOVE 0 TO WS-COUNT-ITEM
+     INSPECT WS-IDS TALLYING WS-COUNT-ITEM FOR ALL "101"
+     MOVE "acceptance US15 18§8.2 Taming, ownership: the sit order change sends Set Entity Data" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-COUNT-ITEM TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance US15 18§8.2 Taming, ownership: the owner's empty hand makes a sitting wolf stand" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE EN-SIT(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 18§8.2 Taming, ownership: the owner's empty hand orders it to sit again" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE EN-SIT(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+*> Another player's hand does not change the order, and bones do not tame a tame wolf again
+     MOVE "x" TO EN-OWNER-UUID(WS-ROW-A)(1:1)
+     MOVE 0 TO EN-SIT(WS-ROW-A)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 18§8.2 Taming, ownership: a stranger's hand leaves the order" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE EN-SIT(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "bone" TO WS-ITEM-KEY
+     MOVE 5 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 19§6.1 Wolf: a bone on a tame wolf is not used" TO WS-CASE
+     MOVE 5 TO WS-EXPECT
+     MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-OBSERVE
+     PERFORM CHECK-N
+*> A viewer who meets a tame wolf is sent its entity data (the tamable flags and the owner)
+     CALL "MOB-DATA-VALUES" USING WS-ROW-A WS-V-BABY WS-V-WOOL WS-V-NEEDED
+     MOVE "acceptance US15 18§8.2 Taming, ownership: a tame wolf's entity data is sent when it is first seen" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-V-NEEDED TO WS-OBSERVE
+     PERFORM CHECK-N
+     STOP RUN.
+
+ SPAWN-MOB.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-WANT-KEY) DELIMITED BY SIZE INTO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-WANT-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-FX = WS-CX + 0.5 + WS-DX
+     COMPUTE WS-FY = WS-FLOOR + 1
+     COMPUTE WS-FZ = WS-CZ + 0.5 + WS-DZ
+     CALL "MOB-SPAWN" USING WS-DIM WS-WANT-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-E.
+
+ FIND-TYPE.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-WANT-KEY) DELIMITED BY SIZE INTO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-WANT-TYPE WS-ENTITY-ROW WS-STATUS.
+
+ GIVE-HELD.
+     MOVE SPACES TO WS-KEY
+     STRING "minecraft:" DELIMITED BY SIZE FUNCTION TRIM(WS-ITEM-KEY) DELIMITED BY SIZE INTO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM-ID WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM-ID TO PL-SLOT-ITEM(WS-PLAYER, 1)
+     MOVE WS-GIVE-COUNT TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     MOVE 0 TO PL-SLOT-VAR(WS-PLAYER, 1).
+
+ COUNT-BABIES.
+     MOVE 0 TO WS-BABIES
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+         IF EN-USED(WS-N) = 1 AND EN-PLAYER(WS-N) = 0 AND EN-MOBAGE(WS-N) < 0 AND EN-VARIANT(WS-N) = 1
+             ADD 1 TO WS-BABIES
+             MOVE WS-N TO WS-BABY
+         END-IF
+     END-PERFORM.
+
+ COUNT-ORBS.
+     MOVE 0 TO WS-ORBS
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+         IF EN-USED(WS-N) = 1 AND EN-TYPE(WS-N) = WS-ORB-TYPE
+             ADD 1 TO WS-ORBS
+         END-IF
+     END-PERFORM.
+
+ CHECK-N.
+     MOVE "N" TO TL-MODE
+     MOVE WS-CASE TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED-N
+     MOVE WS-OBSERVE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM ACC-US15-WOLF.
+ COPY CORETEST.

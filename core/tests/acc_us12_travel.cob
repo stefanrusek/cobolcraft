@@ -30,6 +30,8 @@
  01 WS-FACE                BINARY-LONG VALUE 1.
  01 WS-SEQUENCE            BINARY-LONG VALUE 0.
  01 WS-TWENTY              BINARY-LONG VALUE 20.
+ 01 WS-DRIZZLE             BINARY-LONG VALUE 2.
+ 01 WS-TIME                BINARY-LONG VALUE 100000.
  01 WS-INVENTORY           PIC X(288).
  01 WS-SAME                PIC X(4).
  01 WS-E1                  PIC -(9)9.
@@ -63,7 +65,7 @@
      PERFORM PLACE-PAD
      PERFORM USE-PAD
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
-     MOVE "4 84 65 107 18 106 99 115 39x4 96 12 46x25 11 73" TO TL-EXPECTED
+     MOVE "84 10 34 65 107 18 44 106 99 115 39 96 12 46x25 11 73 105 106 4" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US12-1 then she is in cobolcraft:subroutine at (6.5, 36, 12.5) on a new "
@@ -91,7 +93,7 @@
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
      PERFORM USE-PAD
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "respawn cobolcraft:main mode 0 keep 3 | health 20 food 15 | position 6.5 55.0 12.5"
+     MOVE "respawn cobolcraft:main mode 0 keep 3 | health 20 food 15 | position 6.5 55.0 12.5 | health 20 food 15"
          TO TL-EXPECTED
      PERFORM CHECK
 
@@ -108,9 +110,11 @@
      MOVE "pad 16 solid 1 pad 0 solid 0 dim 1" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12-1 given drizzle in cobolcraft:main when Alice travels to the Subroutine "
-         & "and back then she is sent each dimension's weather pair (clear, then drizzle)" TO TL-CASE
-     MOVE WK-DRIZZLE TO CW-WEATHER-KIND(DIM-MAIN)
+     MOVE "acceptance US12-1 given rain in cobolcraft:main when Alice travels to the Subroutine and back "
+         & "then she is sent nothing in the Subroutine (no weather there) and the rain pair (1, 7, 8) back "
+         & "in cobolcraft:main" TO TL-CASE
+     CALL "WEATHER-SET-KIND" USING WS-DRIZZLE WS-TIME
+     MOVE 1 TO CW-RAIN-LEVEL(DIM-MAIN)
      CALL "TEST-TICKS" USING WS-TWENTY
      CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-TEXT
      MOVE 54 TO WS-Y
@@ -126,11 +130,11 @@
      MOVE SPACES TO WS-TEXT
      STRING FUNCTION TRIM(TL-OBSERVED) " / " FUNCTION TRIM(WS-TEXT2) DELIMITED BY SIZE
          INTO WS-TEXT
-     MOVE "2 0.0 | 7 0.0 | 8 0.0 / 1 0.0 | 7 1.0 | 8 0.0" TO TL-EXPECTED
+     MOVE " / 1 0.0 | 7 1.0 | 8 0.0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US12-1 given creative Alice when she uses a goto_pad then she travels too (either "
-         & "game mode), and is sent no Set Health" TO TL-CASE
+         & "game mode), and is sent Set Health only as the refresh after Player Position" TO TL-CASE
      PERFORM OPEN-AND-JOIN
      MOVE 1 TO PL-MODE(WS-ROW)
      MOVE DIM-MAIN TO WS-DIM
@@ -138,7 +142,7 @@
      PERFORM PLACE-PAD
      PERFORM USE-PAD
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "respawn cobolcraft:subroutine mode 1 keep 3 | position 6.5 36.0 12.5" TO TL-EXPECTED
+     MOVE "respawn cobolcraft:subroutine mode 1 keep 3 | position 6.5 36.0 12.5 | health 20 food 20" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US12-1 given a block at y 126 of the Subroutine column (20, -20) when Alice "

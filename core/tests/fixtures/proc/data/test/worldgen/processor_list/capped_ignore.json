@@ -1,0 +1,14 @@
+{
+ "processors": [
+  {
+   "processor_type": "minecraft:capped",
+   "limit": 1,
+   "delegate": {
+    "processor_type": "minecraft:block_ignore",
+    "blocks": [
+     "minecraft:stone"
+    ]
+   }
+  }
+ ]
+}

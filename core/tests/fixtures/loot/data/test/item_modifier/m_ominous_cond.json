@@ -1,0 +1,7 @@
+{
+ "type": "minecraft:set_ominous_bottle_amplifier",
+ "amplifier": 2,
+ "condition": {
+  "type": "minecraft:killed_by_player"
+ }
+}

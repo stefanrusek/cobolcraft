@@ -1,0 +1,282 @@
+*> Acceptance test of docs/protocol/42-particles-2-effects-fire-smoke-magic.md section 2 (shared formulas):
+*> the light packings and emission ramp (2.1), the table cosine and sine index (2.2), colour options (2.3),
+*> the sprite selection by age and by draw (2.5) and the collision constants of Particle.move (2.6).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PARTICLES-42-2-2.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-L                   BINARY-LONG.
+ 01 WS-OUT                 BINARY-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-V                   FLOAT-LONG.
+ 01 WS-SCALE               BINARY-DOUBLE.
+ 01 WS-ARGB                BINARY-DOUBLE.
+ 01 WS-R                   FLOAT-LONG.
+ 01 WS-G                   FLOAT-LONG.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-A                   FLOAT-LONG.
+ 01 WS-AGE                 BINARY-LONG.
+ 01 WS-LIFE                BINARY-LONG.
+ 01 WS-AGE-D               PIC 9.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-PICK                BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-PHYS                BINARY-LONG.
+ 01 WS-MAXSQ               FLOAT-LONG.
+ 01 WS-FREEZE              FLOAT-LONG.
+ 01 WS-BLK                 BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE 15 TO WS-BLK
+     MOVE 15 TO WS-SKY
+     CALL "P2-LIGHT-LEVELS" USING WS-BLK WS-SKY WS-OUT
+     MOVE "smooth form of block 15 sky 15 is 15728880" TO WS-NAME
+     MOVE 15728880 TO TL-EXPECTED-N
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-BLK
+     CALL "P2-LIGHT-LEVELS" USING WS-BLK WS-SKY WS-OUT
+     MOVE "smooth form of block 0 sky 15 is 15728640" TO WS-NAME
+     MOVE 15728640 TO TL-EXPECTED-N
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 7 TO WS-BLK
+     MOVE 9 TO WS-SKY
+     CALL "P2-LIGHT-LEVELS" USING WS-BLK WS-SKY WS-OUT
+     CALL "PART-LIGHT-PACK" USING WS-BLK WS-SKY WS-L
+     MOVE "smooth and packed forms are the same integer for whole levels (7, 9)" TO WS-NAME
+     MOVE WS-L TO TL-EXPECTED-N
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-L
+     MOVE 0.5 TO WS-F
+     CALL "P2-LIGHT-EMIT" USING WS-L WS-F WS-OUT
+     MOVE "E(0, 0.5): block 120, sky 0 (flame example E2, cave)" TO WS-NAME
+     MOVE 120 TO TL-EXPECTED-N
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     COMPUTE WS-L = 240 * 65536
+     CALL "P2-LIGHT-EMIT" USING WS-L WS-F WS-OUT
+     MOVE "E(sky 240, 0.5): block 120 and sky 240 (E2, full daylight)" TO WS-NAME
+     COMPUTE TL-EXPECTED-N = 240 * 65536 + 120
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-L
+     MOVE 0.0625 TO WS-F
+     CALL "P2-LIGHT-EMIT" USING WS-L WS-F WS-OUT
+     MOVE "E(0, 0.0625): the conversion truncates, 15 (portal E5)" TO WS-NAME
+     MOVE 15 TO TL-EXPECTED-N
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 200 TO WS-L
+     MOVE 1.0 TO WS-F
+     CALL "P2-LIGHT-EMIT" USING WS-L WS-F WS-OUT
+     MOVE "E(block 200, 1.0): capped at 240" TO WS-NAME
+     MOVE 240 TO TL-EXPECTED-N
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 2.5 TO WS-F
+     CALL "P2-LIGHT-EMIT" USING WS-L WS-F WS-OUT
+     MOVE "E: f above 1 is clamped to 1" TO WS-NAME
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE -3.0 TO WS-F
+     CALL "P2-LIGHT-EMIT" USING WS-L WS-F WS-OUT
+     MOVE "E: f below 0 is clamped to 0, the light is unchanged" TO WS-NAME
+     MOVE 200 TO TL-EXPECTED-N
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     COMPUTE WS-L = 100 * 65536 + 33
+     CALL "P2-LIGHT-WITH-BLOCK" USING WS-L WS-OUT
+     MOVE "withBlock(L, 15) keeps sky 100 and sets block 240" TO WS-NAME
+     COMPUTE TL-EXPECTED-N = 100 * 65536 + 240
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0.0 TO WS-X
+     CALL "P2-MTH-COS" USING WS-X WS-V
+     MOVE "Mth.cos(0) is 1 (tenthousandths)" TO WS-NAME
+     MOVE 10000 TO WS-SCALE
+     MOVE 10000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 3.1415927 TO WS-X
+     CALL "P2-MTH-COS" USING WS-X WS-V
+     MOVE "Mth.cos(pi) is -1 within 1e-4" TO WS-NAME
+     MOVE -10000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 1.0471976 TO WS-X
+     CALL "P2-MTH-COS" USING WS-X WS-V
+     MOVE "Mth.cos(pi / 3) is 0.5 (thousandths)" TO WS-NAME
+     MOVE 500 TO TL-EXPECTED-N
+     MOVE 1000 TO WS-SCALE
+     PERFORM ASSERT-SCALED
+     MOVE 3.1415927 TO WS-X
+     CALL "P2-SIN-INDEX" USING WS-X WS-IDX
+     MOVE "sine table index of pi (f32) is 32768: half of the 65536 steps per turn" TO WS-NAME
+     MOVE 32768 TO TL-EXPECTED-N
+     MOVE WS-IDX TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 1.0 TO WS-X
+     CALL "P2-SIN-INDEX" USING WS-X WS-IDX
+     MOVE "sine table index of 1.0 is (long)(1 * 10430.378350470453) = 10430" TO WS-NAME
+     MOVE 10430 TO TL-EXPECTED-N
+     MOVE WS-IDX TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     COMPUTE WS-ARGB = 255 * 16777216 + 51 * 65536 + 102 * 256 + 153
+     CALL "P2-OPT-COLOR" USING WS-ARGB WS-R WS-G WS-B WS-A
+     MOVE "option colour 0x336699 red is 0.2 (thousandths)" TO WS-NAME
+     MOVE WS-R TO WS-V
+     MOVE 1000 TO WS-SCALE
+     MOVE 200 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "option colour 0x336699 blue is 0.6" TO WS-NAME
+     MOVE WS-B TO WS-V
+     MOVE 600 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "option alpha of 0xFF is 1.0" TO WS-NAME
+     MOVE WS-A TO WS-V
+     MOVE 1000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE 0.5 TO WS-A
+     MOVE 1.0 TO WS-R
+     MOVE 0.0 TO WS-G
+     MOVE 0.3 TO WS-B
+     CALL "PART-COLOR-PACK" USING WS-A WS-R WS-G WS-B WS-ARGB
+     MOVE "colorFromFloat(0.5, 1, 0, 0.3): 127, 255, 0, 76 (truncation, not rounding)" TO WS-NAME
+     COMPUTE TL-EXPECTED-N = 127 * 16777216 + 255 * 65536 + 76
+     MOVE WS-ARGB TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 8 TO WS-N
+     MOVE 4 TO WS-LIFE
+     MOVE 1 TO WS-PICK
+     MOVE 0.0 TO WS-V
+     PERFORM VARYING WS-AGE FROM 0 BY 1 UNTIL WS-AGE > 4
+         CALL "P2-SPRITE-SELECT" USING WS-PICK WS-N WS-AGE WS-LIFE WS-V WS-IDX
+         MOVE SPACES TO WS-NAME
+         MOVE WS-AGE TO WS-AGE-D
+         STRING "8 sprites, lifetime 4: age " WS-AGE-D " gives the index of the table 0 1 3 5 7"
+             DELIMITED BY SIZE INTO WS-NAME
+         EVALUATE WS-AGE
+             WHEN 0 MOVE 0 TO TL-EXPECTED-N
+             WHEN 1 MOVE 1 TO TL-EXPECTED-N
+             WHEN 2 MOVE 3 TO TL-EXPECTED-N
+             WHEN 3 MOVE 5 TO TL-EXPECTED-N
+             WHEN OTHER MOVE 7 TO TL-EXPECTED-N
+         END-EVALUATE
+         MOVE WS-IDX TO TL-OBSERVED-N
+         PERFORM ASSERT-NUMBER
+     END-PERFORM
+     MOVE 16 TO WS-N
+     MOVE 8 TO WS-LIFE
+     MOVE 4 TO WS-AGE
+     CALL "P2-SPRITE-SELECT" USING WS-PICK WS-N WS-AGE WS-LIFE WS-V WS-IDX
+     MOVE "16 sprites, lifetime 8, age 4 gives 7" TO WS-NAME
+     MOVE 7 TO TL-EXPECTED-N
+     MOVE WS-IDX TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 3 TO WS-N
+     MOVE 50 TO WS-LIFE
+     MOVE 25 TO WS-AGE
+     CALL "P2-SPRITE-SELECT" USING WS-PICK WS-N WS-AGE WS-LIFE WS-V WS-IDX
+     MOVE "3 sprites, lifetime 50, age 25 gives 1 (V12)" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-IDX TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 2 TO WS-PICK
+     MOVE 26 TO WS-N
+     MOVE 0.5 TO WS-V
+     CALL "P2-SPRITE-SELECT" USING WS-PICK WS-N WS-AGE WS-LIFE WS-V WS-IDX
+     MOVE "rnd pick of 26 sprites with draw 0.5 is nextInt(26) = 13" TO WS-NAME
+     MOVE 13 TO TL-EXPECTED-N
+     MOVE WS-IDX TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-PICK
+     CALL "P2-SPRITE-SELECT" USING WS-PICK WS-N WS-AGE WS-LIFE WS-V WS-IDX
+     MOVE "first pick is sprite 0 for life" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-IDX TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     CALL "P2-COLLISION-CONSTANTS" USING WS-MAXSQ WS-FREEZE
+     MOVE "maximum collision velocity squared is 100 squared = 10000" TO WS-NAME
+     MOVE WS-MAXSQ TO WS-V
+     MOVE 1 TO WS-SCALE
+     MOVE 10000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "freeze threshold is the float 1e-5 widened, 9.999999747E-6 (in 1e-9: 10000 after rounding)" TO WS-NAME
+     MOVE WS-FREEZE TO WS-V
+     MOVE 1000000000 TO WS-SCALE
+     MOVE 10000 TO TL-EXPECTED-N
+     PERFORM ASSERT-SCALED
+     MOVE "the widened float is below the double 1e-5 (in 1e-17 units 999999975)" TO WS-NAME
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER(WS-FREEZE * 100000000000000 + 0.5)
+     MOVE 999999975 TO TL-EXPECTED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-PHYS
+     MOVE 99.9 TO WS-DX
+     MOVE 0 TO WS-DY WS-DZ
+     CALL "P2-COLLISION-APPLIES" USING WS-PHYS WS-DX WS-DY WS-DZ WS-OUT
+     MOVE "collision is attempted at speed 99.9" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 100 TO WS-DX
+     CALL "P2-COLLISION-APPLIES" USING WS-PHYS WS-DX WS-DY WS-DZ WS-OUT
+     MOVE "collision is not attempted at squared speed 10000 (delta applied unchanged)" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-DX
+     CALL "P2-COLLISION-APPLIES" USING WS-PHYS WS-DX WS-DY WS-DZ WS-OUT
+     MOVE "collision is not attempted for an all-zero delta" TO WS-NAME
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-DX
+     MOVE 0 TO WS-PHYS
+     CALL "P2-COLLISION-APPLIES" USING WS-PHYS WS-DX WS-DY WS-DZ WS-OUT
+     MOVE "collision is not attempted without hasPhysics" TO WS-NAME
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE -0.5 TO WS-DY
+     MOVE 0 TO WS-V
+     CALL "P2-FREEZE-ON-GROUND" USING WS-DY WS-V WS-OUT WS-BLK
+     MOVE "requested dy -0.5 resolved to 0: stoppedByCollision set" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE "requested dy -0.5 resolved to 0: onGround set" TO WS-NAME
+     MOVE WS-BLK TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0.5 TO WS-DY
+     CALL "P2-FREEZE-ON-GROUND" USING WS-DY WS-V WS-OUT WS-BLK
+     MOVE "requested dy +0.5 resolved to 0 (ceiling): frozen" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BLK TO TL-OBSERVED-N
+     MOVE "ceiling hit leaves onGround clear" TO WS-NAME
+     PERFORM ASSERT-NUMBER
+     MOVE 0.000001 TO WS-DY
+     CALL "P2-FREEZE-ON-GROUND" USING WS-DY WS-V WS-OUT WS-BLK
+     MOVE "a tiny requested dy below the threshold never freezes" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-OUT TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     STOP RUN.
+
+ ASSERT-NUMBER.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-2§2 Shared formulas used here: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ASSERT-SCALED.
+     COMPUTE TL-OBSERVED-N = FUNCTION INTEGER(WS-V * WS-SCALE + 0.5)
+     PERFORM ASSERT-NUMBER.
+ END PROGRAM TEST-PARTICLES-42-2-2.

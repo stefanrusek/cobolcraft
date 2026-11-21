@@ -1,0 +1,13 @@
+# Core-local copy (T0376) of the contract fixture with the held slot numbered as the inventory menu does: hotbar 0 is menu slot 36.
+# Fixture: play-s2c-14-container-set-slot.hex
+# Container Set Slot (ClientboundContainerSetSlotPacket)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x14 (20).
+# Task T134. 09 §3.2 row: Container Set Slot (container 0, a state id, slot 0-35, stack).
+# Doc refs: 05a 0x14 (VarInt container id, VarInt state id, Short slot, ItemStack); 00 §12.1.
+# Stated inputs: container id 0; state id 2; slot 0; stack 63 x item 2 cobolcraft:greystone.
+
+14                                                            # packet id: VarInt 0x14 (20) Container Set Slot (play, clientbound)
+00                                                            # Container id: VarInt 0 (player inventory)
+02                                                            # State id: VarInt 2
+00 24                                                         # Slot: Short 36 (hotbar 0 of the inventory menu)
+3f 02 00 00                                                   # Item: ItemStack Count 63, Item RegistryId 2 (cobolcraft:greystone), DataComponentPatch AddedCount 0, RemovedCount 0

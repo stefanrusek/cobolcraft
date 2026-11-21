@@ -1,0 +1,179 @@
+*> Test of the dye, firework and banner components of a stack (core/src/stack-style.cob; docs/protocol/54 sections 17, 21, 22, 43 section 7.4 and 8; T9614): dyed_color (47) is an Int read and
+*> written as the stack's component, the leather mixing formula gives the worked example of 43 section 7.4, a firework_explosion (70) and a banner_patterns (74) layer list round trip.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-STACK-STYLE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY CMENU.
+ COPY CSTACK.
+ COPY CONTENT.
+ COPY COREAPI.
+ COPY PROTO.
+ COPY EXPREC.
+ 01 WS-H                   BINARY-LONG.
+ 01 WS-RGB                 BINARY-LONG.
+ 01 WS-HAS                 BINARY-LONG.
+ 01 WS-DYES.
+    05 WS-DYE              BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-TYPE47              BINARY-LONG VALUE 47.
+ 01 WS-VALUE               PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(9)9.
+ 01 WS-E3                  PIC -(9)9.
+ 01 WS-E4                  PIC -(9)9.
+ 01 WS-E5                  PIC -(9)9.
+ 01 WS-E6                  PIC -(9)9.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "T" TO TL-MODE
+
+     MOVE "test stack style dyed_color is four big-endian bytes, read back, and absent on a plain stack" TO TL-CASE
+     MOVE 0 TO WS-H
+     MOVE 11546150 TO WS-RGB
+     CALL "SC-DYE-SET" USING WS-H WS-RGB
+     CALL "SP-GET-COMPONENT" USING WS-H WS-TYPE47 WS-VALUE WS-LENGTH WS-FOUND
+     MOVE 0 TO WS-RGB
+     CALL "SC-DYE-GET" USING WS-H WS-RGB WS-HAS
+     MOVE WS-RGB TO WS-E1
+     MOVE WS-HAS TO WS-E2
+     MOVE WS-LENGTH TO WS-E3
+     MOVE 0 TO WS-A
+     CALL "SC-DYE-GET" USING WS-A WS-RGB WS-HAS
+     MOVE WS-HAS TO WS-E4
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " len=" FUNCTION TRIM(WS-E3) " plain=" FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "11546150 1 len=4 plain=0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test stack style undyed leather with red then blue mixes to AD5398 (43 7.4 worked example); red alone stays red" TO TL-CASE
+     MOVE 0 TO WS-H
+     MOVE 14 TO WS-DYE(1)
+     MOVE 11 TO WS-DYE(2)
+     MOVE 2 TO WS-N
+     CALL "SC-DYE-MIX" USING WS-H WS-N WS-DYES
+     CALL "SC-DYE-GET" USING WS-H WS-RGB WS-HAS
+     MOVE WS-RGB TO WS-E1
+     MOVE 0 TO WS-H
+     MOVE 1 TO WS-N
+     CALL "SC-DYE-MIX" USING WS-H WS-N WS-DYES
+     CALL "SC-DYE-GET" USING WS-H WS-RGB WS-HAS
+     MOVE WS-RGB TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "11359128 11546150" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test stack style an already dyed stack counts as one more colour in the mix" TO TL-CASE
+     MOVE 0 TO WS-H
+     MOVE 11546150 TO WS-RGB
+     CALL "SC-DYE-SET" USING WS-H WS-RGB
+     MOVE 11 TO WS-DYE(1)
+     MOVE 1 TO WS-N
+     CALL "SC-DYE-MIX" USING WS-H WS-N WS-DYES
+     CALL "SC-DYE-GET" USING WS-H WS-RGB WS-HAS
+     MOVE WS-RGB TO WS-E1
+     MOVE SPACES TO TL-OBSERVED
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     MOVE "11359128" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test stack style a firework explosion round trips: shape, colours, fade colours and the two flags" TO TL-CASE
+     INITIALIZE EX-REC
+     MOVE 2 TO EX-SHAPE
+     MOVE 2 TO EX-N
+     MOVE 16711680 TO EX-COLOR(1)
+     MOVE 255 TO EX-COLOR(2)
+     MOVE 1 TO EX-FN
+     MOVE 65280 TO EX-FADE(1)
+     MOVE 1 TO EX-TRAIL
+     MOVE 0 TO WS-H
+     CALL "SC-EXPLOSION-SET" USING WS-H EX-REC
+     INITIALIZE EX-REC
+     CALL "SC-EXPLOSION-GET" USING WS-H EX-REC WS-FOUND
+     MOVE EX-SHAPE TO WS-E1
+     MOVE EX-COLOR(2) TO WS-E2
+     MOVE EX-FADE(1) TO WS-E3
+     MOVE WS-FOUND TO WS-E4
+     MOVE EX-TRAIL TO WS-E5
+     MOVE EX-TWINKLE TO WS-E6
+     MOVE SPACES TO TL-OBSERVED
+     STRING "found=" FUNCTION TRIM(WS-E4) " " FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) " trail=" FUNCTION TRIM(WS-E5)
+         " twinkle=" FUNCTION TRIM(WS-E6) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "found=1 2 255 65280 trail=1 twinkle=0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test stack style banner layers append in order, are counted and read back; a stack without the component has none" TO TL-CASE
+     MOVE 0 TO WS-H
+     MOVE 3 TO WS-A
+     MOVE 14 TO WS-B
+     CALL "SC-BANNER-ADD" USING WS-H WS-A WS-B
+     MOVE 9 TO WS-A
+     MOVE 11 TO WS-B
+     CALL "SC-BANNER-ADD" USING WS-H WS-A WS-B
+     CALL "SC-BANNER-COUNT" USING WS-H WS-N
+     MOVE 2 TO WS-I
+     CALL "SC-BANNER-NTH" USING WS-H WS-I WS-A WS-B
+     MOVE WS-N TO WS-E1
+     MOVE WS-A TO WS-E2
+     MOVE WS-B TO WS-E3
+     MOVE 0 TO WS-C
+     CALL "SC-BANNER-COUNT" USING WS-C WS-N
+     MOVE WS-N TO WS-E4
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) "/" FUNCTION TRIM(WS-E3) " none=" FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "2 9/11 none=0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "test stack style edges: an opaque stored colour mixes by its RGB, black stays black, no colour and no dye is left alone, banners stop at 100 layers, absent components read as none" TO TL-CASE
+     MOVE 0 TO WS-H
+     MOVE -5231066 TO WS-RGB
+     CALL "SC-DYE-SET" USING WS-H WS-RGB
+     MOVE 0 TO WS-N
+     CALL "SC-DYE-MIX" USING WS-H WS-N WS-DYES
+     CALL "SC-DYE-GET" USING WS-H WS-RGB WS-HAS
+     MOVE WS-RGB TO WS-E1
+     MOVE 0 TO WS-H
+     MOVE 0 TO WS-RGB
+     CALL "SC-DYE-SET" USING WS-H WS-RGB
+     CALL "SC-DYE-MIX" USING WS-H WS-N WS-DYES
+     CALL "SC-DYE-GET" USING WS-H WS-RGB WS-HAS
+     MOVE WS-RGB TO WS-E2
+     MOVE 0 TO WS-H
+     CALL "SC-DYE-MIX" USING WS-H WS-N WS-DYES
+     CALL "SC-DYE-GET" USING WS-H WS-RGB WS-HAS
+     MOVE WS-HAS TO WS-E3
+     MOVE 0 TO WS-H
+     PERFORM 101 TIMES
+         MOVE 1 TO WS-A
+         MOVE 2 TO WS-B
+         CALL "SC-BANNER-ADD" USING WS-H WS-A WS-B
+     END-PERFORM
+     CALL "SC-BANNER-COUNT" USING WS-H WS-N
+     MOVE WS-N TO WS-E4
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-I
+     CALL "SC-BANNER-NTH" USING WS-A WS-I WS-B WS-C
+     CALL "SC-EXPLOSION-GET" USING WS-A EX-REC WS-FOUND
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-B TO WS-E5
+     MOVE WS-FOUND TO WS-E6
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) " " FUNCTION TRIM(WS-E4) " " FUNCTION TRIM(WS-E5) " " FUNCTION TRIM(WS-E6)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "11546150 0 0 100 -1 0" TO TL-EXPECTED
+     PERFORM CHECK
+     STOP RUN.
+
+ CHECK.
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-STACK-STYLE.
+ COPY CORETEST.

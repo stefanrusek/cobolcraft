@@ -23,6 +23,10 @@
  01 WS-ID                  BINARY-LONG.
  01 WS-UPLOADS             BINARY-LONG.
  01 WS-DRAWS               BINARY-LONG.
+ 01 WS-MARK1               PIC 9.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-PRES                PIC 9.
+ 01 WS-MARK2               PIC 9.
  PROCEDURE DIVISION.
      CALL "SYSTEM" USING "rm -rf build/client-test-submit"
      CALL "CL-INIT" USING CLIENT-STATE
@@ -45,6 +49,8 @@
      CALL "TEST-LOAD-HEX" USING WS-PATH PB-BUFFER
      CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID
      CALL "REPLICA-CHUNK-LOAD" USING CLIENT-STATE PB-BUFFER
+     MOVE 1 TO PL-SLOT-COUNT(1)
+     MOVE 1 TO PL-SLOT-ITEM(1)
      CALL "TEST-STEP" USING CLIENT-STATE
      MOVE RL-UPLOAD-COUNT TO WS-UPLOADS
      MOVE RL-DRAW-COUNT TO WS-DRAWS
@@ -65,6 +71,84 @@
      END-IF
      STRING FUNCTION TRIM(TL-OBSERVED) " " AT-UPLOAD(1) AT-UPLOAD(2) AT-UPLOAD(3) AT-UPLOAD(4)
          DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   An animated cell whose frame changed goes up alone (cc_vk_texture_update) and its mark clears; a
+*>   whole atlas upload clears the marks too.
+     MOVE 1 TO AN-COUNT
+     MOVE 1 TO AN-SPRITE(1) AN-DIRTY(1)
+     MOVE 16 TO AN-FRAME-W(1) AN-FRAME-H(1)
+     ALLOCATE 1024 CHARACTERS INITIALIZED RETURNING AN-OUT(1)
+     MOVE 0 TO AT-UPLOAD(1)
+     CALL "SUBMIT-FRAME" USING CLIENT-STATE WS-PRESENTED
+     MOVE AN-DIRTY(1) TO WS-MARK1
+     MOVE 1 TO AN-DIRTY(1) AT-UPLOAD(1)
+     CALL "SUBMIT-FRAME" USING CLIENT-STATE WS-PRESENTED
+     MOVE AN-DIRTY(1) TO WS-MARK2
+     FREE AN-OUT(1)
+     MOVE 0 TO AN-COUNT
+     MOVE "submit an animated cell is updated alone and its mark cleared; a whole atlas upload clears "
+         & "the marks too" TO TL-CASE
+     MOVE "0 0" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING WS-MARK1 " " WS-MARK2 DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The glint textures (54 section 19.3): textures 5 and 6 go up when marked (the item glint 8 x 8 with a mip chain, the armour glint 2 x 2 without) and the marks clear; the frame is
+*>   presented with the glint offset set.
+     ALLOCATE 256 CHARACTERS INITIALIZED RETURNING GT-ITEM-ADDR
+     ALLOCATE 16 CHARACTERS INITIALIZED RETURNING GT-ARMOR-ADDR
+     MOVE 8 TO GT-ITEM-W GT-ITEM-H
+     MOVE 2 TO GT-ARMOR-W GT-ARMOR-H
+     MOVE 1 TO AT-UPLOAD(6) AT-UPLOAD(7)
+     MOVE 0 TO WS-PRESENTED
+     CALL "SUBMIT-FRAME" USING CLIENT-STATE WS-PRESENTED
+     MOVE "submit the marked glint textures are uploaded (marks cleared) and the frame is presented" TO TL-CASE
+     MOVE "1 00" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-PRESENTED TO WS-MARK1
+     STRING WS-MARK1 " " AT-UPLOAD(6) AT-UPLOAD(7) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     FREE GT-ITEM-ADDR GT-ARMOR-ADDR
+     MOVE 0 TO GT-ITEM-W GT-ARMOR-W
+
+*>   The sky of a dimension with sky light at midnight (bug lane bugsky): the sun, the moon, the stars and the clouds (between two fog records, draw slot -2) go through the real
+*>   pipelines: the meshes are uploaded, the fog records set cc_vk_fog, and the frame is presented.
+     MOVE 1 TO PL-HAS-SKY
+     MOVE 18000 TO PL-TIME
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE 0 TO WS-DRAWS WS-UPLOADS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-DRAW-COUNT
+         IF RL-D-SLOT(WS-I) = -2
+             ADD 1 TO WS-DRAWS
+         END-IF
+         IF RL-D-SLOT(WS-I) >= MESH-SLOT-SUN AND RL-D-SLOT(WS-I) <= MESH-SLOT-CLOUDS
+             ADD 1 TO WS-UPLOADS
+         END-IF
+     END-PERFORM
+     MOVE 0 TO WS-PRESENTED
+     CALL "SUBMIT-FRAME" USING CLIENT-STATE WS-PRESENTED
+     MOVE "submit the sky of a dimension with sky light (sun, moon, stars, clouds between two fog records) is recorded and the frame is presented"
+         TO TL-CASE
+     MOVE "fog 2 sky 4 presented 1" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE WS-DRAWS TO WS-MARK1
+     MOVE WS-UPLOADS TO WS-MARK2
+     MOVE WS-PRESENTED TO WS-PRES
+     STRING "fog " WS-MARK1 " sky " WS-MARK2 " presented " WS-PRES DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A draw entry with a negative slot is the depth clear before the hand (cc_vk_clear_depth): the frame is still presented.
+     ADD 1 TO RL-DRAW-COUNT
+     MOVE -1 TO RL-D-SLOT(RL-DRAW-COUNT)
+     MOVE 0 TO WS-PRESENTED
+     CALL "SUBMIT-FRAME" USING CLIENT-STATE WS-PRESENTED
+     MOVE "submit a draw entry with a negative slot clears the depth buffer and the frame is presented" TO TL-CASE
+     MOVE "1" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     IF WS-PRESENTED = 1
+         MOVE "1" TO TL-OBSERVED
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      CALL "TEST-CLOSE-REQUEST"

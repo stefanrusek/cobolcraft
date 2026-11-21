@@ -1,0 +1,209 @@
+*> Acceptance test of docs/protocol/42-particles-6-emitters-blocks.md section 5: the emitter rules.
+*> Expected texts are computed independently by a script from the document's formulas; each case injects the draws in the documented order and
+*> compares the emission list (5 decimals), the sounds and the count of draws consumed.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PARTICLES-42-6-5.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLP6EM.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-CLASS               PIC X(24).
+ 01 WS-PT                  PIC X(80).
+ 01 WS-PRT                 PIC X(80).
+ 01 WS-DRT                 PIC X(4000).
+ 01 WS-EXP                 PIC X(4000).
+ 01 WS-OBS                 PIC X(12000).
+ 01 WS-OBS2                PIC X(12000).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-BLOCK.
+    05 WS-BP               BINARY-LONG OCCURS 3 TIMES.
+ 01 WS-PROPS.
+    05 WS-PR               BINARY-LONG OCCURS 12 TIMES.
+ 01 WS-LIST.
+    05 WS-NUM              FLOAT-LONG OCCURS 2100 TIMES.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-TEXT                PIC X(4000).
+ 01 WS-TOK                 PIC X(40).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-PTR2                BINARY-LONG.
+ 01 WS-ED                  PIC -(5)9.99999.
+ 01 WS-EDC                 PIC -(10)9.
+ 01 WS-EDS                 PIC 9.99.
+ 01 WS-EDR                 PIC 9.99999.
+ 01 WS-V                   FLOAT-LONG.
+ PROCEDURE DIVISION.
+     MOVE "water source underwater" TO WS-NAME
+     MOVE "water" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "1" TO WS-PRT
+     MOVE "0.05 0.1 0.2 0.3" TO WS-DRT
+     MOVE "underwater 10.10000 64.20000 -2.70000 0.00000 0.00000 0.00000 (4)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "water source miss" TO WS-NAME
+     MOVE "water" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "1" TO WS-PRT
+     MOVE "0.5" TO WS-DRT
+     MOVE " (1)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "water flowing sound" TO WS-NAME
+     MOVE "water" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0" TO WS-PRT
+     MOVE "0.005 0.3 0.7" TO WS-DRT
+     MOVE " # water.ambient (3)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "water flowing quiet" TO WS-NAME
+     MOVE "water" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0" TO WS-PRT
+     MOVE "0.5" TO WS-DRT
+     MOVE " (1)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "lava pop" TO WS-NAME
+     MOVE "lava" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "1" TO WS-PRT
+     MOVE "0.003 0.1 0.2 0.5" TO WS-DRT
+     MOVE "lava 10.10000 65.00000 -2.80000 0.00000 0.00000 0.00000 # lava.pop (4)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "lava ambient only" TO WS-NAME
+     MOVE "lava" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "1" TO WS-PRT
+     MOVE "0.5 0.001" TO WS-DRT
+     MOVE " # lava.ambient (2)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "lava quiet" TO WS-NAME
+     MOVE "lava" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "1" TO WS-PRT
+     MOVE "0.5 0.5" TO WS-DRT
+     MOVE " (2)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "lava pop and ambient" TO WS-NAME
+     MOVE "lava" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "1" TO WS-PRT
+     MOVE "0.003 0.1 0.2 0.001" TO WS-DRT
+     MOVE "lava 10.10000 65.00000 -2.80000 0.00000 0.00000 0.00000 # lava.pop # lava.ambient (4)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "lava covered" TO WS-NAME
+     MOVE "lava" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0" TO WS-PRT
+     MOVE "0.003" TO WS-DRT
+     MOVE " (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     STOP RUN.
+
+ RUN-CASE.
+     MOVE WS-PT TO WS-TEXT
+     PERFORM PARSE-LIST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         MOVE WS-NUM(WS-I) TO WS-BP(WS-I)
+     END-PERFORM
+     MOVE WS-PRT TO WS-TEXT
+     PERFORM PARSE-LIST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+         MOVE 0 TO WS-PR(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         MOVE WS-NUM(WS-I) TO WS-PR(WS-I)
+     END-PERFORM
+     MOVE WS-DRT TO WS-TEXT
+     PERFORM PARSE-LIST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2048
+         MOVE 0.5 TO EM-DRAW(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         MOVE WS-NUM(WS-I) TO EM-DRAW(WS-I)
+     END-PERFORM
+     CALL "P6-FLUID-TICK" USING WS-CLASS WS-BLOCK WS-PROPS P6-EMITS
+     PERFORM RENDER
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-OBS)) TO WS-LEN
+     IF WS-LEN > 1000
+         MOVE WS-OBS(1:480) TO WS-OBS2(1:480)
+         MOVE "..." TO WS-OBS2(481:3)
+         COMPUTE WS-START = WS-LEN - 479
+         MOVE WS-OBS(WS-START:480) TO WS-OBS2(484:480)
+         MOVE WS-OBS2 TO WS-OBS
+     END-IF
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-6§5 Fluid `animateTick`: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE WS-EXP TO TL-EXPECTED
+     MOVE WS-OBS TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ASSERT-NUMBER.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-6§5 Fluid `animateTick`: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ PARSE-LIST.
+     MOVE 0 TO WS-COUNT
+     MOVE 1 TO WS-PTR
+     PERFORM UNTIL WS-PTR > 4000 OR WS-TEXT(WS-PTR:) = SPACES
+         MOVE SPACES TO WS-TOK
+         UNSTRING WS-TEXT DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-PTR
+         IF WS-TOK NOT = SPACES
+             ADD 1 TO WS-COUNT
+             COMPUTE WS-NUM(WS-COUNT) = FUNCTION NUMVAL(WS-TOK)
+         END-IF
+     END-PERFORM.
+
+ RENDER.
+     MOVE SPACES TO WS-OBS
+     MOVE 1 TO WS-PTR2
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EM-COUNT
+         IF WS-I > 1
+             STRING " | " DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         END-IF
+         STRING FUNCTION TRIM(EM-NAME(WS-I)) " " DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         MOVE EM-X(WS-I) TO WS-V
+         PERFORM ADD-NUMBER
+         MOVE EM-Y(WS-I) TO WS-V
+         PERFORM ADD-NUMBER
+         MOVE EM-Z(WS-I) TO WS-V
+         PERFORM ADD-NUMBER
+         MOVE EM-VX(WS-I) TO WS-V
+         PERFORM ADD-NUMBER
+         MOVE EM-VY(WS-I) TO WS-V
+         PERFORM ADD-NUMBER
+         MOVE EM-VZ(WS-I) TO WS-V
+         PERFORM ADD-LAST-NUMBER
+         IF EM-COLOR(WS-I) NOT = 0
+             MOVE EM-COLOR(WS-I) TO WS-EDC
+             COMPUTE WS-EDS ROUNDED = EM-SCALE(WS-I)
+             STRING " c=" FUNCTION TRIM(WS-EDC) " s=" WS-EDS DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         END-IF
+         IF EM-COLOR(WS-I) = 0 AND EM-SCALE(WS-I) NOT = 0
+             COMPUTE WS-EDR ROUNDED = EM-SCALE(WS-I)
+             STRING " r=" WS-EDR DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         END-IF
+         IF EM-STATE(WS-I) NOT = 0
+             MOVE EM-STATE(WS-I) TO WS-EDC
+             STRING " st=" FUNCTION TRIM(WS-EDC) DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EM-SOUND-COUNT
+         STRING " # " FUNCTION TRIM(EM-SOUND(WS-I)) DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+     END-PERFORM
+     MOVE EM-CUR TO WS-EDC
+     STRING " (" FUNCTION TRIM(WS-EDC) ")" DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2.
+
+ ADD-NUMBER.
+     PERFORM ADD-LAST-NUMBER
+     STRING " " DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2.
+
+ ADD-LAST-NUMBER.
+     COMPUTE WS-ED ROUNDED = WS-V
+     STRING FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2.
+ END PROGRAM TEST-PARTICLES-42-6-5.

@@ -1,0 +1,629 @@
+*> The structure data compiler (docs/protocol/36-structures-1 sections 1 and 3; STRUCTDATA.cpy): the JSON of worldgen/structure_set and worldgen/structure elements
+*> and the biome tags they name, read from a folder <dir>/data/<namespace>/... (the generated vanilla-data folder of the world: content/src/load-36-*.cob only
+*> check the shapes and keep nothing), compiled into the tables of STRUCT-DATA. Nothing of an element is tabulated in code: every id, salt, spacing and weight is read.
+*> An element the schema rejects is left out and counted in SD-BAD. spawn_overrides are read and left out (section 10 is a later sub-batch); a tag value that is an
+*> object ({"id": ..., "required": ...}) is not read; an other_set that names no loaded set leaves the exclusion zone off.
+*>
+*> Entry points:
+*>   STRUCT-RESET                         empties the tables (the gate stays)
+*>   STRUCT-LOAD USING dir (PIC X(1100)), status out (0 loaded, 1 no structure_set folder): sets in registry listing order (sorted file names)
+*>   STRUCT-FIND-SET USING key (PIC X(80), with namespace), index out (0 absent)
+*>   STRUCT-FIND-STRUCT USING key, index out (0 absent)
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-RESET.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-I                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE 0 TO SD-BAD SD-SET-COUNT SD-EN-COUNT SD-ST-COUNT SD-BIOME-COUNT SD-RING-COUNT SD-POSS-DONE SD-START-COUNT SD-BLOCK-FIRST SD-BLOCK-COUNT SD-AL-COUNT SD-AL-ECOUNT SD-SURR-FIRST SD-SURR-COUNT
+     ADD 1 TO SD-EPOCH
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SD-MAX-RINGS
+         MOVE 0 TO SR-SET(WS-I)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM STRUCT-RESET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-FIND-SET.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(80).
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-INDEX.
+     MOVE 0 TO L-INDEX
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SD-SET-COUNT OR L-INDEX > 0
+         IF SS-KEY(WS-I) = L-KEY
+             MOVE WS-I TO L-INDEX
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM STRUCT-FIND-SET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-FIND-STRUCT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(80).
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-INDEX.
+     MOVE 0 TO L-INDEX
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SD-ST-COUNT OR L-INDEX > 0
+         IF SDT-KEY(WS-I) = L-KEY
+             MOVE WS-I TO L-INDEX
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM STRUCT-FIND-STRUCT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-READ.
+*> USING area (PIC X(24): "worldgen/structure_set", "worldgen/structure", "tags/worldgen/biome"), key (PIC X(80), with namespace), text area (PIC X(65536)),
+*> length out (0 when unread), status out (0 read): <SD-DIR>/data/<namespace>/<area>/<path>.json.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-COLON               BINARY-LONG.
+ 01 WS-NS                  PIC X(40).
+ 01 WS-NAME                PIC X(80).
+ 01 WS-PATH                PIC X(1100).
+ 01 WS-PATH-LEN            BINARY-LONG.
+ 01 WS-CAP                 BINARY-LONG VALUE 65536.
+ LINKAGE SECTION.
+ 01 L-AREA                 PIC X(24).
+ 01 L-KEY                  PIC X(80).
+ 01 L-TEXT                 PIC X(65536).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-STATUS               BINARY-LONG.
+ PROCEDURE DIVISION USING L-AREA L-KEY L-TEXT L-LENGTH L-STATUS.
+     MOVE 0 TO L-LENGTH WS-COLON
+     INSPECT L-KEY TALLYING WS-COLON FOR CHARACTERS BEFORE INITIAL ":"
+     MOVE SPACES TO WS-NS WS-NAME
+     MOVE L-KEY(1:WS-COLON) TO WS-NS
+     MOVE L-KEY(WS-COLON + 2:79 - WS-COLON) TO WS-NAME
+     MOVE SPACES TO WS-PATH
+     STRING FUNCTION TRIM(SD-DIR) "/data/" FUNCTION TRIM(WS-NS) "/" FUNCTION TRIM(L-AREA) "/" FUNCTION TRIM(WS-NAME) ".json"
+         DELIMITED BY SIZE INTO WS-PATH
+     COMPUTE WS-PATH-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-PATH))
+     CALL "FILE-READ-ALL" USING WS-PATH WS-PATH-LEN L-TEXT WS-CAP L-LENGTH L-STATUS
+     GOBACK.
+ END PROGRAM STRUCT-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-J-INT.
+*> USING doc, object node, member key (PIC X(40)), default, value out: the integer member, the default when absent.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ LINKAGE SECTION.
+ COPY JSONDOC.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-KEY                  PIC X(40).
+ 01 L-DEFAULT              BINARY-LONG.
+ 01 L-VALUE                BINARY-LONG.
+ PROCEDURE DIVISION USING JSON-DOC L-NODE L-KEY L-DEFAULT L-VALUE.
+     MOVE L-DEFAULT TO L-VALUE
+     CALL "FD-J-MEMBER" USING JSON-DOC L-NODE L-KEY WS-NODE
+     CALL "FD-J-INT" USING JSON-DOC WS-NODE WS-VALUE WS-OK
+     IF WS-OK = 1
+         MOVE WS-VALUE TO L-VALUE
+     END-IF
+     GOBACK.
+ END PROGRAM STRUCT-J-INT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-J-ENUM.
+*> USING doc, object node, member key (PIC X(40)), enum kind (STRUCT-ENUM-ID), default id, id out, ok out (0 for a name the enum does not have).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TEXT                PIC X(120).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-NAME                PIC X(40).
+ LINKAGE SECTION.
+ COPY JSONDOC.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-KEY                  PIC X(40).
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-DEFAULT              BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING JSON-DOC L-NODE L-KEY L-KIND L-DEFAULT L-ID L-OK.
+     MOVE L-DEFAULT TO L-ID
+     MOVE 1 TO L-OK
+     CALL "FD-J-STRING" USING JSON-DOC L-KEY L-NODE WS-TEXT WS-LEN
+     IF WS-LEN > 0
+         MOVE WS-TEXT TO WS-NAME
+         CALL "STRUCT-ENUM-ID" USING L-KIND WS-NAME L-ID
+         IF L-ID < 0
+             MOVE 0 TO L-OK
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM STRUCT-J-ENUM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-BIOME-ADD.
+*> USING biome key (PIC X(40)), first (the pool row the holder set being read began at): appends the key to the biome pool unless the holder set has it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-BIOME                PIC X(40).
+ 01 L-FIRST                BINARY-LONG.
+ PROCEDURE DIVISION USING L-BIOME L-FIRST.
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-I FROM L-FIRST BY 1 UNTIL WS-I > SD-BIOME-COUNT
+         IF SD-BIOME(WS-I) = L-BIOME
+             MOVE 1 TO WS-FOUND
+         END-IF
+     END-PERFORM
+     IF WS-FOUND = 0 AND SD-BIOME-COUNT < SD-MAX-BIOMES
+         ADD 1 TO SD-BIOME-COUNT
+         MOVE L-BIOME TO SD-BIOME(SD-BIOME-COUNT)
+     END-IF
+     GOBACK.
+ END PROGRAM STRUCT-BIOME-ADD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-TAG-BIOMES IS RECURSIVE.
+*> USING tag key (PIC X(80), with namespace, no "#"), first, depth: adds the biomes of data/<ns>/tags/worldgen/biome/<tag>.json (values; "#" entries are tags, read
+*> to depth 6; an unreadable tag adds nothing).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ COPY FDCONST.
+ LOCAL-STORAGE SECTION.
+ COPY JSONDOC.
+ 01 LS-TEXT                PIC X(65536).
+ 01 LS-LEN                 BINARY-LONG.
+ 01 LS-STATUS              BINARY-LONG.
+ 01 LS-AREA                PIC X(24).
+ 01 LS-VALUES              BINARY-LONG.
+ 01 LS-N                   BINARY-LONG.
+ 01 LS-I                   BINARY-LONG.
+ 01 LS-E                   BINARY-LONG.
+ 01 LS-ITEM                PIC X(120).
+ 01 LS-ITEM-LEN            BINARY-LONG.
+ 01 LS-TAIL                PIC X(120).
+ 01 LS-CAP                 BINARY-LONG VALUE 120.
+ 01 LS-KEY                 PIC X(80).
+ 01 LS-BIOME               PIC X(40).
+ 01 LS-DEPTH               BINARY-LONG.
+ 01 LS-VALUES-KEY          PIC X(40) VALUE "values".
+ LINKAGE SECTION.
+ 01 L-TAG                  PIC X(80).
+ 01 L-FIRST                BINARY-LONG.
+ 01 L-DEPTH                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TAG L-FIRST L-DEPTH.
+     MOVE "tags/worldgen/biome" TO LS-AREA
+     CALL "STRUCT-READ" USING LS-AREA L-TAG LS-TEXT LS-LEN LS-STATUS
+     IF LS-STATUS = 0
+         CALL "JSON-PARSE" USING JSON-DOC LS-TEXT LS-LEN
+         CALL "FD-J-MEMBER" USING JSON-DOC FC-N1 LS-VALUES-KEY LS-VALUES
+         MOVE 0 TO LS-N
+         IF LS-VALUES > 0
+             MOVE JN-COUNT(LS-VALUES) TO LS-N
+         END-IF
+         COMPUTE LS-DEPTH = L-DEPTH + 1
+         PERFORM VARYING LS-I FROM 0 BY 1 UNTIL LS-I >= LS-N
+             CALL "JSON-ELEMENT" USING JSON-DOC LS-VALUES LS-I LS-E
+             MOVE SPACES TO LS-ITEM
+             CALL "JSON-STRING" USING JSON-DOC LS-E LS-ITEM LS-CAP LS-ITEM-LEN
+             IF LS-ITEM(1:1) = "#"
+                 IF L-DEPTH < 6
+                     MOVE LS-ITEM(2:119) TO LS-TAIL
+                     CALL "FD-KEY" USING LS-TAIL LS-KEY
+                     CALL "STRUCT-TAG-BIOMES" USING LS-KEY L-FIRST LS-DEPTH
+                 END-IF
+             ELSE
+                 IF LS-ITEM-LEN > 0
+                     CALL "FD-KEY" USING LS-ITEM LS-KEY
+                     MOVE LS-KEY TO LS-BIOME
+                     CALL "STRUCT-BIOME-ADD" USING LS-BIOME L-FIRST
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-IF
+     GOBACK.
+ END PROGRAM STRUCT-TAG-BIOMES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-HOLDER-BIOMES.
+*> USING doc, node, first: a HolderSet of worldgen/biome (23 section 5.1): one id, a "#tag" or an array of ids and tags; adds the biome keys to the pool from the
+*> row first on. A node that is 0 (absent) adds nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-ITEM                PIC X(120).
+ 01 WS-ITEM-LEN            BINARY-LONG.
+ 01 WS-TAIL                PIC X(120).
+ 01 WS-CAP                 BINARY-LONG VALUE 120.
+ 01 WS-KEY                 PIC X(80).
+ 01 WS-BIOME               PIC X(40).
+ 01 WS-DEPTH               BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY JSONDOC.
+ 01 L-NODE                 BINARY-LONG.
+ 01 L-FIRST                BINARY-LONG.
+ PROCEDURE DIVISION USING JSON-DOC L-NODE L-FIRST.
+     MOVE 0 TO WS-N
+     IF L-NODE > 0
+         MOVE 1 TO WS-N
+         IF JN-TYPE(L-NODE) = JT-ARRAY
+             MOVE JN-COUNT(L-NODE) TO WS-N
+         END-IF
+     END-IF
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-N
+         MOVE L-NODE TO WS-E
+         IF JN-TYPE(L-NODE) = JT-ARRAY
+             CALL "JSON-ELEMENT" USING JSON-DOC L-NODE WS-I WS-E
+         END-IF
+         MOVE SPACES TO WS-ITEM
+         CALL "JSON-STRING" USING JSON-DOC WS-E WS-ITEM WS-CAP WS-ITEM-LEN
+         IF WS-ITEM(1:1) = "#"
+             MOVE WS-ITEM(2:119) TO WS-TAIL
+             CALL "FD-KEY" USING WS-TAIL WS-KEY
+             CALL "STRUCT-TAG-BIOMES" USING WS-KEY L-FIRST WS-DEPTH
+         ELSE
+             CALL "FD-KEY" USING WS-ITEM WS-KEY
+             MOVE WS-KEY TO WS-BIOME
+             CALL "STRUCT-BIOME-ADD" USING WS-BIOME L-FIRST
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM STRUCT-HOLDER-BIOMES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-STRUCT-LOAD.
+*> USING key (PIC X(80), with namespace), index out: reads worldgen/structure/<key>.json and appends it to the structure table (type, step, terrain_adaptation, the
+*> biomes of the HolderSet); 0 when the file is unreadable, malformed, of an unknown type, with an unknown step or adaptation or without biomes.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ COPY JSONDOC.
+ COPY FDKEYS.
+ COPY FDCONST.
+ 01 WS-TEXT                PIC X(65536).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-AREA                PIC X(24) VALUE "worldgen/structure".
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-STEP                BINARY-LONG.
+ 01 WS-ADAPT               BINARY-LONG.
+ 01 WS-OK-1                BINARY-LONG.
+ 01 WS-OK-2                BINARY-LONG.
+ 01 WS-OK-3                BINARY-LONG.
+ 01 WS-BIOMES              BINARY-LONG.
+ 01 WS-KIND-TYPE           BINARY-LONG VALUE 1.
+ 01 WS-KIND-STEP           BINARY-LONG VALUE 8.
+ 01 WS-KIND-ADAPT          BINARY-LONG VALUE 4.
+ 01 WS-DEFAULT-STEP        BINARY-LONG VALUE 4.
+ 01 WS-DEFAULT-NONE        BINARY-LONG VALUE 0.
+ 01 WS-DEFAULT-NO-TYPE     BINARY-LONG VALUE -1.
+ 01 WS-KEY-STEP            PIC X(40) VALUE "step".
+ 01 WS-KEY-ADAPT           PIC X(40) VALUE "terrain_adaptation".
+ 01 WS-KEY-BIOMES          PIC X(40) VALUE "biomes".
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-KEY-MST             PIC X(40) VALUE "mineshaft_type".
+ 01 WS-VARTEXT             PIC X(120).
+ 01 WS-VARLEN              BINARY-LONG.
+ 01 WS-KEY-BEACHED         PIC X(40) VALUE "is_beached".
+ 01 WS-BEACHED             BINARY-LONG.
+ 01 WS-KEY-TEMP            PIC X(40) VALUE "biome_temp".
+ 01 WS-KEY-LARGE           PIC X(40) VALUE "large_probability".
+ 01 WS-KEY-CLUSTER         PIC X(40) VALUE "cluster_probability".
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-DBL                 FLOAT-LONG.
+ 01 WS-F32                 FLOAT-SHORT.
+ 01 WS-DBL-OK              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(80).
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-INDEX.
+     MOVE 0 TO L-INDEX
+     CALL "STRUCT-READ" USING WS-AREA L-KEY WS-TEXT WS-LEN WS-STATUS
+     CALL "JSON-PARSE" USING JSON-DOC WS-TEXT WS-LEN
+     IF WS-STATUS NOT = 0 OR JD-ERROR NOT = 0 OR JD-COUNT = 0
+         GOBACK
+     END-IF
+     CALL "STRUCT-J-ENUM" USING JSON-DOC FC-N1 FK-TYPE WS-KIND-TYPE WS-DEFAULT-NO-TYPE WS-TYPE WS-OK-1
+     CALL "STRUCT-J-ENUM" USING JSON-DOC FC-N1 WS-KEY-STEP WS-KIND-STEP WS-DEFAULT-STEP WS-STEP WS-OK-2
+     CALL "STRUCT-J-ENUM" USING JSON-DOC FC-N1 WS-KEY-ADAPT WS-KIND-ADAPT WS-DEFAULT-NONE WS-ADAPT WS-OK-3
+     CALL "FD-J-MEMBER" USING JSON-DOC FC-N1 WS-KEY-BIOMES WS-BIOMES
+     IF WS-TYPE < 0 OR WS-OK-2 = 0 OR WS-OK-3 = 0 OR WS-BIOMES = 0
+         GOBACK
+     END-IF
+     ADD 1 TO SD-ST-COUNT
+     MOVE SD-ST-COUNT TO L-INDEX
+     MOVE L-KEY TO SDT-KEY(L-INDEX)
+     MOVE WS-TYPE TO SDT-TYPE(L-INDEX)
+     MOVE WS-STEP TO SDT-STEP(L-INDEX)
+     MOVE WS-ADAPT TO SDT-ADAPT(L-INDEX)
+     CALL "FD-J-STRING" USING JSON-DOC WS-KEY-MST FC-N1 WS-VARTEXT WS-VARLEN
+     MOVE 0 TO SDT-VARIANT(L-INDEX)
+     IF WS-VARTEXT(1:4) = "mesa"
+         MOVE 1 TO SDT-VARIANT(L-INDEX)
+     END-IF
+*>   the shipwreck's is_beached (36-6 section 4.2) is variant 1 too
+     CALL "FD-J-MEMBER" USING JSON-DOC FC-N1 WS-KEY-BEACHED WS-BEACHED
+     IF WS-BEACHED > 0
+         IF JN-TYPE(WS-BEACHED) = JT-TRUE
+             MOVE 1 TO SDT-VARIANT(L-INDEX)
+         END-IF
+     END-IF
+*>   the ocean ruin's biome_temp (36-6 section 3.1: warm is variant 1) and its two float probabilities (as float32, the compared value of the generator)
+     CALL "FD-J-STRING" USING JSON-DOC WS-KEY-TEMP FC-N1 WS-VARTEXT WS-VARLEN
+     IF WS-VARTEXT(1:4) = "warm"
+         MOVE 1 TO SDT-VARIANT(L-INDEX)
+     END-IF
+     MOVE 0 TO SDT-LARGE(L-INDEX) SDT-CLUSTER(L-INDEX)
+     CALL "FD-J-MEMBER" USING JSON-DOC FC-N1 WS-KEY-LARGE WS-NODE
+     CALL "FD-J-DOUBLE" USING JSON-DOC WS-NODE WS-DBL WS-DBL-OK
+     IF WS-DBL-OK = 1
+         MOVE WS-DBL TO WS-F32
+         MOVE WS-F32 TO SDT-LARGE(L-INDEX)
+     END-IF
+     CALL "FD-J-MEMBER" USING JSON-DOC FC-N1 WS-KEY-CLUSTER WS-NODE
+     CALL "FD-J-DOUBLE" USING JSON-DOC WS-NODE WS-DBL WS-DBL-OK
+     IF WS-DBL-OK = 1
+         MOVE WS-DBL TO WS-F32
+         MOVE WS-F32 TO SDT-CLUSTER(L-INDEX)
+     END-IF
+     CALL "STRUCT-JIG-READ" USING JSON-DOC L-INDEX
+     CALL "STRUCT-PORTAL-READ" USING JSON-DOC L-INDEX
+     COMPUTE WS-FIRST = SD-BIOME-COUNT + 1
+     CALL "STRUCT-HOLDER-BIOMES" USING JSON-DOC WS-BIOMES WS-FIRST
+     MOVE WS-FIRST TO SDT-BIOME-FIRST(L-INDEX)
+     COMPUTE SDT-BIOME-COUNT(L-INDEX) = SD-BIOME-COUNT - WS-FIRST + 1
+     GOBACK.
+ END PROGRAM STRUCT-STRUCT-LOAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-SET-LOAD.
+*> USING key (PIC X(80), with namespace), ok out: reads worldgen/structure_set/<key>.json (placement and structures) and appends the set row (1 accepted, 0 rejected and
+*> counted in SD-BAD). A structure that no file gives, or the schema rejects, rejects the set; so does a weight below 1 and spacing not above separation.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ COPY JSONDOC.
+ COPY FDKEYS.
+ COPY FDCONST.
+ 01 WS-TEXT                PIC X(65536).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-AREA                PIC X(24) VALUE "worldgen/structure_set".
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-F                   BINARY-LONG.
+ 01 WS-STRUCTS             BINARY-LONG.
+ 01 WS-ENTRY               BINARY-LONG.
+ 01 WS-STRUCT              BINARY-LONG.
+ 01 WS-WEIGHT              BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-FLOAT-OK            BINARY-LONG.
+ 01 WS-TEXT-OTHER          PIC X(120).
+ 01 WS-LEN-OTHER           BINARY-LONG.
+ 01 WS-KEY80               PIC X(80).
+ 01 WS-LOC                 BINARY-LONG.
+ 01 WS-COMPONENT           BINARY-LONG.
+ 01 WS-OFFSET-X            BINARY-LONG.
+ 01 WS-OFFSET-Y            BINARY-LONG.
+ 01 WS-OFFSET-Z            BINARY-LONG.
+ 01 WS-KIND-PLACEMENT      BINARY-LONG VALUE 2.
+ 01 WS-KIND-SPREAD         BINARY-LONG VALUE 6.
+ 01 WS-KIND-METHOD         BINARY-LONG VALUE 7.
+ 01 WS-DEFAULT-NO-KIND     BINARY-LONG VALUE -1.
+ 01 WS-DEFAULT-0           BINARY-LONG VALUE 0.
+ 01 WS-DEFAULT-1           BINARY-LONG VALUE 1.
+ 01 WS-DEFAULT-SALT        BINARY-LONG VALUE 0.
+ 01 WS-KEY-PLACEMENT       PIC X(40) VALUE "placement".
+ 01 WS-KEY-STRUCTURES      PIC X(40) VALUE "structures".
+ 01 WS-KEY-STRUCTURE       PIC X(40) VALUE "structure".
+ 01 WS-KEY-SPACING         PIC X(40) VALUE "spacing".
+ 01 WS-KEY-SEPARATION      PIC X(40) VALUE "separation".
+ 01 WS-KEY-SPREAD-TYPE     PIC X(40) VALUE "spread_type".
+ 01 WS-KEY-SALT            PIC X(40) VALUE "salt".
+ 01 WS-KEY-FREQUENCY       PIC X(40) VALUE "frequency".
+ 01 WS-KEY-METHOD          PIC X(40) VALUE "frequency_reduction_method".
+ 01 WS-KEY-LOCATE          PIC X(40) VALUE "locate_offset".
+ 01 WS-KEY-EXCLUSION       PIC X(40) VALUE "exclusion_zone".
+ 01 WS-KEY-OTHER           PIC X(40) VALUE "other_set".
+ 01 WS-KEY-CHUNKS          PIC X(40) VALUE "chunk_count".
+ 01 WS-KEY-DISTANCE        PIC X(40) VALUE "distance".
+ 01 WS-KEY-RING-SPREAD     PIC X(40) VALUE "spread".
+ 01 WS-KEY-COUNT           PIC X(40) VALUE "count".
+ 01 WS-KEY-PREFERRED       PIC X(40) VALUE "preferred_biomes".
+ 01 WS-EN-START            BINARY-LONG.
+ 01 WS-PREF                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(80).
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-OK.
+     MOVE 0 TO L-OK WS-BAD
+     CALL "STRUCT-READ" USING WS-AREA L-KEY WS-TEXT WS-LEN WS-STATUS
+     CALL "JSON-PARSE" USING JSON-DOC WS-TEXT WS-LEN
+     IF WS-STATUS NOT = 0 OR JD-ERROR NOT = 0 OR JD-COUNT = 0
+         ADD 1 TO SD-BAD
+         GOBACK
+     END-IF
+     COMPUTE WS-ROW = SD-SET-COUNT + 1
+     INITIALIZE SD-SET(WS-ROW)
+     MOVE L-KEY TO SS-KEY(WS-ROW)
+     MOVE 1.0 TO SS-FREQ(WS-ROW)
+     MOVE SD-EN-COUNT TO WS-EN-START
+
+*>   the placement, dispatched on its type over the placement registry
+     CALL "FD-J-MEMBER" USING JSON-DOC FC-N1 WS-KEY-PLACEMENT WS-P
+     MOVE -1 TO WS-KIND
+     IF WS-P > 0
+         CALL "STRUCT-J-ENUM" USING JSON-DOC WS-P FK-TYPE WS-KIND-PLACEMENT WS-DEFAULT-NO-KIND WS-KIND WS-OK
+     END-IF
+     IF WS-KIND < 0
+         MOVE 1 TO WS-BAD
+     END-IF
+     MOVE WS-KIND TO SS-KIND(WS-ROW)
+     IF WS-KIND = 0 OR WS-KIND = 2
+         CALL "STRUCT-J-INT" USING JSON-DOC WS-P WS-KEY-SALT WS-DEFAULT-SALT SS-SALT(WS-ROW)
+         CALL "STRUCT-J-ENUM" USING JSON-DOC WS-P WS-KEY-METHOD WS-KIND-METHOD WS-DEFAULT-0 SS-METHOD(WS-ROW) WS-OK
+         CALL "FD-J-MEMBER" USING JSON-DOC WS-P WS-KEY-FREQUENCY WS-F
+         CALL "FD-J-DOUBLE" USING JSON-DOC WS-F SS-FREQ(WS-ROW) WS-FLOAT-OK
+         IF WS-FLOAT-OK = 0
+             MOVE 1.0 TO SS-FREQ(WS-ROW)
+         END-IF
+         CALL "FD-J-MEMBER" USING JSON-DOC WS-P WS-KEY-LOCATE WS-LOC
+         IF WS-LOC > 0
+             CALL "JSON-ELEMENT" USING JSON-DOC WS-LOC 0 WS-COMPONENT
+             CALL "FD-J-INT" USING JSON-DOC WS-COMPONENT SS-LOC-X(WS-ROW) WS-OK
+             CALL "JSON-ELEMENT" USING JSON-DOC WS-LOC 1 WS-COMPONENT
+             CALL "FD-J-INT" USING JSON-DOC WS-COMPONENT SS-LOC-Y(WS-ROW) WS-OK
+             CALL "JSON-ELEMENT" USING JSON-DOC WS-LOC 2 WS-COMPONENT
+             CALL "FD-J-INT" USING JSON-DOC WS-COMPONENT SS-LOC-Z(WS-ROW) WS-OK
+         END-IF
+         CALL "FD-J-MEMBER" USING JSON-DOC WS-P WS-KEY-EXCLUSION WS-E
+         IF WS-E > 0
+             CALL "FD-J-STRING" USING JSON-DOC WS-KEY-OTHER WS-E WS-TEXT-OTHER WS-LEN-OTHER
+             CALL "FD-KEY" USING WS-TEXT-OTHER SS-EX-KEY(WS-ROW)
+             CALL "STRUCT-J-INT" USING JSON-DOC WS-E WS-KEY-CHUNKS WS-DEFAULT-1 SS-EX-COUNT(WS-ROW)
+         END-IF
+     END-IF
+     IF WS-KIND = 2
+         CALL "STRUCT-J-INT" USING JSON-DOC WS-P WS-KEY-SPACING WS-DEFAULT-0 SS-SPACING(WS-ROW)
+         CALL "STRUCT-J-INT" USING JSON-DOC WS-P WS-KEY-SEPARATION WS-DEFAULT-0 SS-SEPARATION(WS-ROW)
+         CALL "STRUCT-J-ENUM" USING JSON-DOC WS-P WS-KEY-SPREAD-TYPE WS-KIND-SPREAD WS-DEFAULT-0 SS-SPREAD(WS-ROW) WS-OK
+         IF SS-SPACING(WS-ROW) <= SS-SEPARATION(WS-ROW)
+             MOVE 1 TO WS-BAD
+         END-IF
+     END-IF
+     IF WS-KIND = 0
+         CALL "STRUCT-J-INT" USING JSON-DOC WS-P WS-KEY-DISTANCE WS-DEFAULT-0 SS-DISTANCE(WS-ROW)
+         CALL "STRUCT-J-INT" USING JSON-DOC WS-P WS-KEY-RING-SPREAD WS-DEFAULT-0 SS-RING-SPREAD(WS-ROW)
+         CALL "STRUCT-J-INT" USING JSON-DOC WS-P WS-KEY-COUNT WS-DEFAULT-0 SS-RING-COUNT(WS-ROW)
+         CALL "FD-J-MEMBER" USING JSON-DOC WS-P WS-KEY-PREFERRED WS-PREF
+         COMPUTE SS-PREF-FIRST(WS-ROW) = SD-BIOME-COUNT + 1
+         CALL "STRUCT-HOLDER-BIOMES" USING JSON-DOC WS-PREF SS-PREF-FIRST(WS-ROW)
+         COMPUTE SS-PREF-COUNT(WS-ROW) = SD-BIOME-COUNT - SS-PREF-FIRST(WS-ROW) + 1
+     END-IF
+
+*>   the structures: structure id and weight, in file order
+     COMPUTE SS-EN-FIRST(WS-ROW) = SD-EN-COUNT + 1
+     CALL "FD-J-MEMBER" USING JSON-DOC FC-N1 WS-KEY-STRUCTURES WS-STRUCTS
+     MOVE 0 TO WS-N
+     IF WS-STRUCTS > 0
+         MOVE JN-COUNT(WS-STRUCTS) TO WS-N
+     END-IF
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-N OR SD-EN-COUNT >= SD-MAX-ENTRIES
+         CALL "JSON-ELEMENT" USING JSON-DOC WS-STRUCTS WS-I WS-ENTRY
+         CALL "FD-J-STRING" USING JSON-DOC WS-KEY-STRUCTURE WS-ENTRY WS-TEXT-OTHER WS-LEN-OTHER
+         CALL "FD-KEY" USING WS-TEXT-OTHER WS-KEY80
+         CALL "STRUCT-FIND-STRUCT" USING WS-KEY80 WS-STRUCT
+         IF WS-STRUCT = 0 AND SD-ST-COUNT < SD-MAX-STRUCTS
+             CALL "STRUCT-STRUCT-LOAD" USING WS-KEY80 WS-STRUCT
+         END-IF
+         CALL "STRUCT-J-INT" USING JSON-DOC WS-ENTRY FK-WEIGHT WS-DEFAULT-0 WS-WEIGHT
+         IF WS-STRUCT = 0 OR WS-WEIGHT < 1
+             MOVE 1 TO WS-BAD
+         ELSE
+             ADD 1 TO SD-EN-COUNT
+             MOVE WS-STRUCT TO SE-STRUCT(SD-EN-COUNT)
+             MOVE WS-WEIGHT TO SE-WEIGHT(SD-EN-COUNT)
+         END-IF
+     END-PERFORM
+     COMPUTE SS-EN-COUNT(WS-ROW) = SD-EN-COUNT - SS-EN-FIRST(WS-ROW) + 1
+     IF WS-BAD = 1
+         MOVE WS-EN-START TO SD-EN-COUNT
+         ADD 1 TO SD-BAD
+     ELSE
+         MOVE WS-ROW TO SD-SET-COUNT
+         MOVE 1 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM STRUCT-SET-LOAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-LOAD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-PATH                PIC X(1100).
+ 01 WS-DIRZ                PIC X(1101).
+ 01 WS-LIST                PIC X(16384).
+ 01 WS-LIST-CAPACITY       BINARY-LONG VALUE 16384.
+ 01 WS-LIST-COUNT          BINARY-LONG.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-ENTRY               PIC X(256).
+ 01 WS-ENTRY-LEN           BINARY-LONG.
+ 01 WS-NAME-LEN            BINARY-LONG.
+ 01 WS-KEY                 PIC X(80).
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-BLOCK-KEY           PIC X(80) VALUE "minecraft:mineshaft_blocking".
+ 01 WS-SURR-KEY            PIC X(80) VALUE "minecraft:required_ocean_monument_surrounding".
+ 01 WS-DEPTH0              BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-DIR                  PIC X(1100).
+ 01 L-STATUS               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIR L-STATUS.
+     CALL "STRUCT-RESET"
+     MOVE L-DIR TO SD-DIR
+     MOVE 1 TO L-STATUS
+     MOVE SPACES TO WS-PATH
+     STRING FUNCTION TRIM(L-DIR) "/data/minecraft/worldgen/structure_set" DELIMITED BY SIZE INTO WS-PATH
+     MOVE LOW-VALUES TO WS-DIRZ
+     COMPUTE WS-NAME-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-PATH))
+     MOVE WS-PATH(1:WS-NAME-LEN) TO WS-DIRZ(1:WS-NAME-LEN)
+     MOVE 0 TO WS-LIST-COUNT
+     CALL STATIC "cc_fs_list" USING BY REFERENCE WS-DIRZ BY REFERENCE WS-LIST
+         BY VALUE WS-LIST-CAPACITY BY REFERENCE WS-LIST-COUNT RETURNING WS-RC
+     IF WS-RC NOT = 0
+         GOBACK
+     END-IF
+     MOVE 0 TO L-STATUS
+     MOVE 1 TO WS-PTR
+     PERFORM WS-LIST-COUNT TIMES
+         MOVE SPACES TO WS-ENTRY
+         MOVE 0 TO WS-ENTRY-LEN
+         UNSTRING WS-LIST DELIMITED BY X"0A" INTO WS-ENTRY COUNT IN WS-ENTRY-LEN WITH POINTER WS-PTR
+         IF WS-ENTRY(1:1) = "F" AND WS-ENTRY-LEN > 6 AND WS-ENTRY(WS-ENTRY-LEN - 4:5) = ".json" AND SD-SET-COUNT < SD-MAX-SETS
+             COMPUTE WS-NAME-LEN = WS-ENTRY-LEN - 6
+             MOVE SPACES TO WS-KEY
+             STRING "minecraft:" WS-ENTRY(2:WS-NAME-LEN) DELIMITED BY SIZE INTO WS-KEY
+             CALL "STRUCT-SET-LOAD" USING WS-KEY WS-OK
+         END-IF
+     END-PERFORM
+*>   the exclusion zones name sets by id: resolved once every set is loaded (a name no set has leaves the zone off)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SD-SET-COUNT
+         IF SS-EX-KEY(WS-I) NOT = SPACES
+             CALL "STRUCT-FIND-SET" USING SS-EX-KEY(WS-I) WS-K
+             MOVE WS-K TO SS-EX-SET(WS-I)
+         END-IF
+     END-PERFORM
+*>   the biomes where a mineshaft piece is never placed (36-5 2.9)
+     COMPUTE SD-BLOCK-FIRST = SD-BIOME-COUNT + 1
+     CALL "STRUCT-TAG-BIOMES" USING WS-BLOCK-KEY SD-BLOCK-FIRST WS-DEPTH0
+     COMPUTE SD-BLOCK-COUNT = SD-BIOME-COUNT - SD-BLOCK-FIRST + 1
+*>   the biomes around an ocean monument (36-6 5.1 step 3)
+     COMPUTE SD-SURR-FIRST = SD-BIOME-COUNT + 1
+     CALL "STRUCT-TAG-BIOMES" USING WS-SURR-KEY SD-SURR-FIRST WS-DEPTH0
+     COMPUTE SD-SURR-COUNT = SD-BIOME-COUNT - SD-SURR-FIRST + 1
+     GOBACK.
+ END PROGRAM STRUCT-LOAD.

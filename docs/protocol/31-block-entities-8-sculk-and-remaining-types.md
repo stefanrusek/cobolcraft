@@ -190,7 +190,65 @@ Steps, each returning false (event not accepted) on failure:
 
 ### 3.6 Occlusion
 
-`isOccluded(level, eventPos, listenerPos)`: both positions are snapped to the centre of their block (`floor(coordinate) + 0.5` on each axis). For each of the six directions `d` (`Direction.values()` order), take the point `snappedEvent` moved by `0.00001` (9.999999747378752E-6) in direction `d` and ask the level whether a ray from that point to `snappedListener` meets a block state in block tag `occludes_vibration_signals` (`Level.isBlockInLine` with a `ClipBlockStateContext` and that predicate; a result of type BLOCK means such a block was met; that reading of the method is inferred from its name and use). If **any** of the six rays does not meet such a block the vibration is not occluded; it is occluded only when all six rays meet one.
+`VibrationSystem$Listener.isOccluded(level, eventPos, listenerPos)` decides whether a vibration is blocked on its way. Summary (the exact rules are 3.6.1 to 3.6.6):
+
+1. Both positions are snapped to the centre of their block (`floor(coordinate) + 0.5` on each axis). All later geometry therefore happens between two block centres.
+2. Six rays are cast, one per direction `d` in the order DOWN, UP, NORTH, SOUTH, WEST, EAST (`Direction.values()`); ray `d` starts at the snapped event centre moved by `0.00001` (the double `9.999999747378752E-6`, the float 1e-5 widened) along the unit vector of `d`, and ends at the snapped listener centre.
+3. A ray is **blocked** when a cell it passes through (the start cell and the end cell included, 3.6.2) holds a block state in the block tag `occludes_vibration_signals` (3.6.3). The 16 wool blocks are the only members (30-8 section 3.5.1); carpets, wool slabs and wool stairs are NOT in this tag.
+4. The vibration is occluded **only when all six rays are blocked**; one clear ray lets it through (3.6.4).
+
+#### 3.6.1 The six start points
+
+Let `E` be the snapped event centre (`Ex`, `Ey`, `Ez` are each an integer plus 0.5) and `L` the snapped listener centre. The unit vectors are DOWN (0, -1, 0), UP (0, 1, 0), NORTH (0, 0, -1), SOUTH (0, 0, 1), WEST (-1, 0, 0), EAST (1, 0, 0). Ray `d` runs from `E + 0.00001 d` to `L`. Because the offset (1e-5) is far smaller than the 0.5 distance from a centre to a cell face, the start point is always inside the event's own block cell; the offset exists only to break the ties of 3.6.2 in six different ways. The end point is not offset.
+
+#### 3.6.2 The cell traversal (`BlockGetter.isBlockInLine`, which calls `BlockGetter.traverseBlocks`)
+
+Inputs: a start point `A`, an end point `B`, a per-cell test (3.6.3) that either returns a hit or nothing, and a miss result. Output: the first hit in traversal order, else the miss (the occlusion code tests only whether the result type is BLOCK).
+
+1. When `A` and `B` are equal in all three coordinates, no cell is tested and the result is a miss. (Not reachable for the six rays, whose start points differ from the end point by at least 1e-5.)
+2. Extend the segment very slightly at both ends, by one ten-millionth of its vector: `S = A - 1e-7 (B - A)` and `T = B + 1e-7 (B - A)` (per axis, in double arithmetic: `S = A + (-1e-7)(B - A)`, `T = B + (-1e-7)(A - B)`).
+3. The start cell is `c = floor(S)` per axis. It is **tested first**; a hit ends the traversal. (So the start cell counts.)
+4. Let `D = T - S`, and for each axis `i`: `sign_i` = -1, 0 or 1 by the sign of `D_i` (exactly 0 gives 0); `step_i` = `1 / |D_i|` when `sign_i` is not 0, else the largest double (1.7976931348623157E308); `tmax_i = step_i x (1 - frac(S_i))` when `sign_i > 0`, else `step_i x frac(S_i)`, where `frac(x) = x - floor(x)`. `tmax_i` is the segment parameter (0 at `S`, 1 at `T`) at which the walk next leaves the current cell along axis `i`.
+5. While at least one `tmax_i <= 1`: take the axis with the smallest `tmax`; when two or three are equal the tie goes to **Z over Y over X** (Z wins every tie it takes part in; Y wins a tie with X). Move `c` by `sign` on that axis, add `step` to that `tmax`, test the new cell, and end with the first hit.
+6. When the loop ends (all `tmax_i > 1`) the result is a miss. The final cell tested is the one that contains `T`, so the **end cell counts** too; when `B` lies exactly on a cell boundary the cell beyond it (where `T` is) is the one tested, the cell on the near side having been tested one step earlier.
+7. There is no constant limit on the number of steps. Each pass crosses exactly one cell boundary, so a segment visits at most `1 + |dx| + |dy| + |dz|` cells where `dx`, `dy`, `dz` are the numbers of cell boundaries crossed (for events within the listener radius of 8 or 16 blocks at most 1 + 3 x 16 cells).
+8. Zero direction components: an axis with `sign_i = 0` never advances (its `tmax` is about 1.8e308 times a fraction, far above 1). One quirk: when such an axis has `frac(S_i) = 0` exactly (a start coordinate that is an exact integer) its `tmax` is 0, it is chosen once, the cell does not move, the same cell is tested a second time and the `tmax` then becomes the huge value; the walk continues normally. It cannot occur for the six occlusion rays, whose coordinates are block centres (`frac = 0.5`) or a block centre plus 1e-5.
+
+#### 3.6.3 The per-cell test
+
+For each visited cell `p` the test is `level.getBlockState(p)` and then the predicate "the state is in block tag `occludes_vibration_signals`". Nothing else is consulted: no collision or occlusion shape, no fluid, no light, no block entity, no entity. A positive test returns a block hit located at the end point, so the traversal stops at the first wool cell in traversal order. `Level.getBlockState` returns void air for a position outside the world's valid bounds and otherwise reads the chunk at `FULL` status through the level's chunk lookup, which (inferred from the 4-argument `getChunk` with its create flag; the 3-argument overload was not decoded) can load or generate a chunk the ray crosses. Whether that can really happen for a vibration is Open question 16.
+
+#### 3.6.4 How the six rays combine
+
+The six rays are evaluated one after the other in the order of 3.6.1; the first ray that finds **no** wool returns "not occluded" at once. The vibration is occluded only if every ray finds wool. The rays differ only in how ties of 3.6.2 resolve: when the segment passes exactly through a cell edge or corner (for example a perfect diagonal between block centres) different offsets send different rays through the two side cells, so one wool block beside the diagonal does not occlude, while a wool block that every ray must cross does.
+
+#### 3.6.5 Worked examples
+
+Cells are written `(x, y, z)`; wool is the only blocker; the listener block is `(0, 0, 0)` and its centre `(0.5, 0.5, 0.5)`.
+
+| # | Event position | Wool cells | Result |
+|---|---|---|---|
+| 1 | `(3.5, 0.5, 0.5)` (block `(3, 0, 0)`) | `(1, 0, 0)` | Occluded: all six rays visit `(3,0,0), (2,0,0), (1,0,0), (0,0,0)`. Wool at `(2, 0, 0)` gives the same result; wool at `(1, 1, 0)` is on no ray: not occluded |
+| 2 | `(2.5, 2.5, 0.5)` (block `(2, 2, 0)`, perfect diagonal) | `(1, 1, 0)` | Occluded: every ray passes `(1,1,0)` |
+| 2b | same | `(2, 1, 0)` only | Not occluded: DOWN, NORTH, SOUTH and EAST rays visit `(2,2,0), (2,1,0), (1,1,0), (1,0,0), (0,0,0)` but UP and WEST visit `(2,2,0), (1,2,0), (1,1,0), (0,1,0), (0,0,0)` |
+| 2c | same | `(1, 2, 0)` only | Not occluded (DOWN, NORTH, SOUTH, EAST pass beside it) |
+| 2d | same | `(2, 1, 0)` and `(1, 2, 0)` | Occluded: each ray crosses one of them (the corner-touching case) |
+| 2e | same | `(1, 0, 0)` only, or `(0, 1, 0)` only | Not occluded |
+| 3 | `(3.5, 1.5, 0.5)` (block `(3, 1, 0)`) | `(2, 0, 0)` only | Not occluded: DOWN, NORTH, SOUTH, EAST rays visit `(3,1,0), (2,1,0), (2,0,0), (1,0,0), (0,0,0)`; UP and WEST visit `(3,1,0), (2,1,0), (1,1,0), (1,0,0), (0,0,0)`. Wool at `(2,0,0)` and `(1,1,0)` together: occluded. Wool at `(2,1,0)` or at `(1,0,0)`: occluded (all six rays cross either) |
+| 4 | `(2.5, 2.5, 2.5)` (3-D diagonal) | `(1, 1, 1)` | Occluded (the six rays take six different cell sequences, all through `(1,1,1)`) |
+| 5 | `(0.5, 3.5, 0.5)` straight above | `(0, 2, 0)` | Occluded |
+| 6 | event block = listener block (event at `(0.7, 0.2, 0.9)`) | none | The only cell is `(0, 0, 0)`: not occluded |
+| 7 | event position inside a wool block (a `block_place` of wool is posted at the block centre of the wool itself; the event cell is the start cell) | that cell | Occluded: the first tested cell of every ray is wool |
+| 8 | event at the unsnapped position `(3.9, 0.1, 0.99)`, listener at unsnapped `(0.01, 0.99, 0.5)` | `(1, 0, 0)` | Occluded: the snapped centres are `(3.5, 0.5, 0.5)` and `(0.5, 0.5, 0.5)` (case 1) |
+
+(The cell sequences listed are the sequences produced by the rules of 3.6.1 and 3.6.2.)
+
+#### 3.6.6 Consequences for the sensors
+
+- A step ON a wool block is not silenced by occlusion but by the dampening test of 30-8 section 3.5 (the affected state of the step event is the block stood on); the occlusion test only sees the event cell, which is the air cell the entity's position is in.
+- A wool block between the event and the sensor on the straight line silences the vibration completely; a single wool block off the line, or only one of the two blocks beside a diagonal, does not.
+- A wool block as the **listener's own cell** or as the event cell blocks every ray at once.
+- Carpets and the other wool-family blocks are in `dampens_vibrations` (they silence events whose affected state is that block) but do not occlude.
 
 ### 3.7 Candidate selection (`VibrationSelector`)
 
@@ -601,7 +659,7 @@ A conforming implementation satisfies these checks.
 3. **Strength.** `max(1, 15 - floor((15.0 / r) * d))`: for `r = 8`, the values 15, 14, 12, 10, 8, 6, 4, 2, 1 for `d` = 0 to 8; for `r = 16` and `d` = 0, 4, 16: 15, 12, 1.
 4. **Delivery.** A listener in a section outside the event's notification-radius box receives nothing; a listener inside the box but farther than its own radius receives nothing; `BY_DISTANCE` listeners run after all `UNSPECIFIED` ones, nearest first.
 5. **Selector.** Replacement only in the same tick; closer wins; equal distance resolves to the strictly higher frequency; `chosenCandidate(now)` needs `tick < now`.
-6. **Ticker.** A vibration chosen at time `S` with distance `d >= 1` is delivered at `S + floor(d) - 1`; with `d < 1` at `S`; while it is in flight no new event is accepted (`handleGameEvent` returns false); if the 3 by 3 chunk area is not ticking, delivery is retried every tick and the travel time stays 0.
+6. **Ticker.** A vibration chosen at time `S` (the selection tick: the tick after the post tick `T`, so `S` is `T + 1` at the earliest; 30-8 section 3.4 counts from `T`: `T + max(floor(d), 1)`) with distance `d >= 1` is delivered at `S + floor(d) - 1`; with `d < 1` at `S`; while it is in flight no new event is accepted (`handleGameEvent` returns false); if the 3 by 3 chunk area is not ticking, delivery is retried every tick and the travel time stays 0.
 7. **Persistence round trip.** The sensor's compound has the keys `last_vibration_frequency` and `listener`; the listener compound has `selector` (with `tick`) always, `event_delay` always, `event` only when a vibration is in flight; a missing `selector` yields a fresh `Data`; `tick` is -1 when no candidate exists.
 8. **Sensor phases.** `inactive` receives; `active` lasts 30 ticks (10 calibrated), then `cooldown` 10 ticks, then `inactive`; the comparator reads `last_vibration_frequency` only while `active`; stepping on a sensor skips occlusion and the tag check; a warden stepping does nothing.
 9. **Shrieker.** `warning_level` and `listener` round trip; `canReceiveVibration` is false while `shrieking`; the player is resolved from the projectile owner first, then the source entity.
@@ -618,15 +676,16 @@ A conforming implementation satisfies these checks.
 1. **Registry count of the brief.** The brief names 50 types; the artifact has 49 (section above and 11). If the brief counted something else (for example a type registered by a data pack at run time), that is not in the client jar.
 2. **Reconciliation with 31-5 and 31-6.** 31-6 owns `structure_block`, `command_block` and `jigsaw`; 31-5 owns the six types of section 11.1. Searched: the `docs/protocol/` directory listing, 31-5 sections 6 (creaking heart) and open question 5. Two divergences were found and reported in the table of section 11.1 (creaking heart hurt sound volume and pitch; the gateway counter 16 marked inferred in 31-5); 31-5 is expected to follow this part's table.
 3. **`components` encoding.** For a block entity with an empty component map (the statue before `createStatue`, every type without components), whether `DataComponentMap.CODEC` writes an empty compound or omits the key was not read (it is a codec detail). Section 1 states the key is always stored (inferred from the unconditional store call).
-4. **`Level.isBlockInLine` semantics.** Section 3.6 reads the ray test as "the ray meets a block state matching the predicate"; the `ClipBlockStateContext` traversal class was not read (inferred from the name and from the use as a boolean "type == BLOCK" test).
+4. **`Level.isBlockInLine` semantics.** (closed: read in `BlockGetter.isBlockInLine`, `BlockGetter.traverseBlocks` and `ClipBlockStateContext`; the rules are 3.6.1 to 3.6.6.)
 5. **Codec shapes.** `Vec3` (three doubles), UUID (four ints) and block position (three ints) lengths are inferred from the codec composition; the exact length validation was not read.
 6. **Level random source.** `SculkCatalystBlockEntity.serverTick` and `SculkBlock` draws use `Level.getRandom()` and the cursor `RandomSource` parameter; the concrete generator of a `ServerLevel` (its seeding and thread behaviour) belongs to 33 and was not re-read, so a bit-exact replay of live sculk growth needs that document.
 7. **Client use of level event 3006.** The data layout (level and packed facings) is given from the server side; its consumer is 42-6 section 6 and was not re-read here.
 8. **Test instance framework.** The reset, save, export, beam (cleared, running, success, required-failed, optional-failed) and error-marker logic of `TestInstanceBlockEntity`, the `test_instance_block.*` messages and the export-disabled path, and the screens of both test blocks were not read; only the persistence is specified. They are test-only and are readable in the artifact if full coverage is wanted.
-9. **Tag membership.** The tags listed in the scope note are data. Their contents (notably which game events are in `vibrations`, `ignore_vibrations_sneaking` and `shrieker_can_listen`, which blocks are in `dampens_vibrations`, `occludes_vibration_signals`, `vibration_resonators`) were not read in this round; they come from the data pack.
+9. **Tag membership.** The tags listed in the scope note are data. Their contents (notably which game events are in `vibrations`, `ignore_vibrations_sneaking` and `shrieker_can_listen`, which blocks are in `dampens_vibrations`, `occludes_vibration_signals`, `vibration_resonators`) come from the data pack. (answered for the game-event tags `vibrations`, `ignore_vibrations_sneaking`, `shrieker_can_listen`, `warden_can_listen`, `allay_can_listen` and for the block tags `dampens_vibrations`, `occludes_vibration_signals` and `vibration_resonators`, and the item tag `dampens_vibrations`, in 30-8 section 3.5.1.)
 10. **Order of ticker and event within a tick.** The sensor timeline (worked example 2) states both orders; which order the level tick produces for a given emitter depends on 33 section 2 (block-entity tick versus entity tick order), not re-derived here.
 11. **Experience reward and entity positions.** `getExperienceReward` per entity type and the position at which `entity_die` is posted (`Entity.gameEvent(Holder)`) are entity-document facts not re-read here.
 12. **Sculk vein sound position.** The position of the `sculk_block_spread` sound in `attemptPlaceSculk` is inferred from a local-variable slot, not from a named accessor.
 13. **`sculk_sensor` redstone neighbours.** `Level.getSignal` (used by the calibrated sensor's back signal) and the neighbour-update ordering of `updateNeighbours` belong to the redstone engine (30) and are cited, not re-specified.
 14. **Section 11.1 residue.** Not read in this part (see 31-5 for what it read): `findValidSpawnInChunk`, `findTallestBlock`, the island feature key, the piston's entity-pushing and sticky maths, and the creaking heart's `spawnProtector` and `spreadResin`. The gateway chunk-search counter 16 and the piston default state (air) were read and are no longer open.
 15. **Reload particle with zero total travel time.** Section 3.9 divides by `calculateTravelTimeInTicks(distance)`, 0 for a distance below 1. What the client does with a non-finite particle position was not read; the case needs a hand-edited save.
+16. **Chunk loading by the occlusion ray.** `Level.getBlockState` reads the chunk through `Level.getChunk(int, int)` at `FULL` status; whether the 3-argument `getChunk` passes a create flag of true (so that a ray crossing an unloaded chunk loads or generates it) was not decoded, and the 3 by 3 chunk neighbourhood requirement of 3.10 applies at reception time, not here. Searched: `Level.getBlockState`, `Level.getChunk` (the 2- and the 4-argument forms), `BlockGetter.isBlockInLine`.
