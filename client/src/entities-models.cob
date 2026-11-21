@@ -273,6 +273,7 @@
        10 WS-CA            FLOAT-LONG OCCURS 3 TIMES.
  01 WS-VIS-TABLE.
     05 WS-VIS              PIC 9 OCCURS 41 TIMES.
+ 01 WS-PART-NO             BINARY-LONG.
  01 WS-ANG                 FLOAT-LONG OCCURS 3 TIMES.
  01 WS-P                   BINARY-LONG.
  01 WS-C                   BINARY-LONG.
@@ -594,6 +595,10 @@
 *>   A minecart's shift (34-9 3.2) is a function of its entity id.
      IF WS-ANIM = "M"
          MOVE EN-ID(WS-ROW) TO WS-KN(33)
+     END-IF
+*>   A player's skin parts decide which overlay cuboids the mesh holds.
+     IF EN-KEY(WS-ROW) = "player"
+         MOVE EN-PARTS(WS-ROW) TO WS-KN(33)
      END-IF
      COMPUTE WS-KN(36) = EN-AX-T(WS-ROW, 1) + EN-AX-T(WS-ROW, 2) * 11 + EN-AX-T(WS-ROW, 3) * 121 + EN-AX-T(WS-ROW, 4) * 1331
          + EN-AX-BS(WS-ROW) * 20000 + EN-AX-BT(WS-ROW) * 200000
@@ -983,6 +988,24 @@
      END-PERFORM
 *>   Per part: visibility (WS-VIS(p + 1); entry 1 is the visible root's parent, so a hidden part hides its children, whose parents come
 *>   first) and the trigonometry of its rotation.
+*>   A player's overlay layers (the hat, jacket, sleeves and pants of 12 section 7.4) show only for the skin parts of Set Entity Data entry 16 (47 section 5.3).
+     IF CL-MD-KEY(EN-MODEL(WS-ROW)) = "player" OR "player_slim"
+         PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > MM-COUNT
+             MOVE -1 TO WS-PART-NO
+             EVALUATE MM-NAME(WS-P)
+                 WHEN "jacket" MOVE 1 TO WS-PART-NO
+                 WHEN "left_sleeve" MOVE 2 TO WS-PART-NO
+                 WHEN "right_sleeve" MOVE 3 TO WS-PART-NO
+                 WHEN "left_pants" MOVE 4 TO WS-PART-NO
+                 WHEN "right_pants" MOVE 5 TO WS-PART-NO
+                 WHEN "hat" MOVE 6 TO WS-PART-NO
+                 WHEN OTHER CONTINUE
+             END-EVALUATE
+             IF WS-PART-NO >= 0
+                 CALL "PLAYER-PART-SHOWN" USING EN-PARTS(WS-ROW) WS-PART-NO MM-VISIBLE(WS-P)
+             END-IF
+         END-PERFORM
+     END-IF
      MOVE 1 TO WS-VIS(1)
      PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > MM-COUNT
          COMPUTE WS-VIS(WS-P + 1) = MM-VISIBLE(WS-P) * WS-VIS(MM-PARENT(WS-P) + 1)
