@@ -9,6 +9,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CLSIGN.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
@@ -19,6 +20,11 @@
  01 WS-SIDE-ID             BINARY-LONG.
  01 WS-SIDE                BINARY-LONG.
  01 WS-SCREEN              BINARY-LONG VALUE SCR-SIGN.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-SKY                 BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-KEY                 BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  COPY PROTO.
@@ -49,7 +55,13 @@
          END-IF
          MOVE 0 TO SG-LINE SG-ANCHOR BK-ADVANCE
          MOVE SG-LEN(1) TO SG-CURSOR
+*>       The line width limit of the block entity (40-8 section 6.2 step 5): 90 font pixels for a sign, 60 for a hanging sign (ceiling or wall).
          MOVE 90 TO SG-MAXW
+         CALL "WORLD-CELL" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE WS-SKY WS-BLOCK
+         CALL "SGR-KIND" USING CLIENT-STATE WS-STATE WS-KIND WS-KEY
+         IF WS-KIND = SGR-HANGING OR WS-KIND = SGR-WALL-HANGING
+             MOVE 60 TO SG-MAXW
+         END-IF
          CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
      END-IF
      GOBACK.

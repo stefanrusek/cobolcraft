@@ -7,8 +7,9 @@
 *> here) and shades the rest by the LEVEL lights of 12 section 6.10 (normals in world orientation, HAND-VIEW-ROT) and the light at the eye. HAND-PROJECT is the hand's own
 *> projection (fixed 70 degrees, 6.9). RENDER-LIST-BUILD draws the mesh with that projection alone, after a depth clear (a draw record with slot -1; SUBMIT-FRAME calls
 *> cc_vk_clear_depth), so it is never inside a block; the shim's solid pipeline tests less-or-equal with writes, the conventional form of the document's
-*> greater-or-equal on a depth cleared to 0. Not done: the arm of an empty hand (6.5), the left hand and off hand, the use poses (6.6), view bobbing, sway and the hurt
-*> tilt (6.1), the cooldown dip (6.2), the glint, the level light map (the light at the eye is a brightness factor) and the death fov.
+*> greater-or-equal on a depth cleared to 0. Done in the files of this family: the arm of an empty hand (6.5; hand-arm.cob, T28300), the left hand and off hand (mainHand),
+*> the use poses (6.6; use-item.cob and hand-pose.cob, T28200, T23000), view bobbing, sway, the cooldown dip (6.2) and the hurt tilt (6.1; hand-pose.cob, T23000, T23002), the
+*> death tilt (T28000) and the glint (T23002). Not done: the level light map (the light at the eye is a brightness factor), the death fov (6.9) and the world shake of the bob (53 15.2).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HAND-INPUT.
