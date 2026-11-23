@@ -217,57 +217,21 @@
  END PROGRAM STRUCT-PORTAL-RBI.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. STRUCT-PORTAL-TEMP.
-*> USING biome (PIC X(40), with or without the namespace), temperature out (FLOAT-LONG), ok out: the base temperature of the biome, the "temperature" of worldgen/biome/<biome>.json (ok 0 when the
-*> file is absent, not JSON or has none).
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY JSONDOC.
- 01 WS-REGISTRY            PIC X(32) VALUE "biome".
- 01 WS-KEY                 PIC X(80).
- 01 WS-TEXT                PIC X(65536).
- 01 WS-LEN                 BINARY-LONG.
- 01 WS-STATUS              BINARY-LONG.
- 01 WS-NODE                BINARY-LONG.
- 01 WS-COLONS              BINARY-LONG.
- 01 K-TEMPERATURE          PIC X(40) VALUE "temperature".
- LINKAGE SECTION.
- 01 L-BIOME                PIC X(40).
- 01 L-TEMPERATURE          FLOAT-LONG.
- 01 L-OK                   BINARY-LONG.
- PROCEDURE DIVISION USING L-BIOME L-TEMPERATURE L-OK.
-     MOVE 0 TO L-OK L-TEMPERATURE
-     MOVE SPACES TO WS-KEY
-     MOVE 0 TO WS-COLONS
-     INSPECT L-BIOME TALLYING WS-COLONS FOR ALL ":"
-     IF WS-COLONS = 0
-         STRING "minecraft:" FUNCTION TRIM(L-BIOME) DELIMITED BY SIZE INTO WS-KEY
-     ELSE
-         MOVE L-BIOME TO WS-KEY
-     END-IF
-     CALL "FD-FETCH" USING WS-REGISTRY WS-KEY WS-TEXT WS-LEN WS-STATUS
-     IF WS-STATUS NOT = 0
-         GOBACK
-     END-IF
-     CALL "JSON-PARSE" USING JSON-DOC WS-TEXT WS-LEN
-     IF JD-ERROR NOT = 0 OR JD-COUNT = 0
-         GOBACK
-     END-IF
-     CALL "FD-J-MEMBER" USING JSON-DOC 1 K-TEMPERATURE WS-NODE
-     CALL "FD-J-DOUBLE" USING JSON-DOC WS-NODE L-TEMPERATURE L-OK
-     GOBACK.
- END PROGRAM STRUCT-PORTAL-TEMP.
-
- IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-PORTAL-COLD.
-*> USING x, y, z (the stub), flag out: Biome.coldEnoughToSnow(pos, sea level 63) of the biome at the stub (33 section 4.5): the base temperature of the biome adjusted above sea level + 17
-*> by (y - 80) * 0.05 / 40, below 0.15. Deviations: the noise term N of 33 4.5 and the frozen modifier of the frozen biomes are not made (N is 0, the base temperature stands); the biome
-*> comes from STRUCT-PORTAL-BIOME (struct-portal-biome.cob, a program of its own).
+*> USING x, y, z (the stub), flag out: Biome.coldEnoughToSnow(pos, sea level 63) of the biome at the stub (33 section 4.5; 36-4 8.2 step 9): 1 when the temperature of the biome of the registry at the
+*> position is below 0.15, the temperature being FR-TEMPERATURE of feat-freeze.cob (the base temperature, the frozen modifier of the frozen biomes, the noise term above sea level + 17). The biome comes
+*> from STRUCT-PORTAL-BIOME (struct-portal-biome.cob, a program of its own) and is looked up by its key in the registry table CORE-BIOMES; a biome the table has not is not cold.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
  01 WS-BIOME               PIC X(40).
  01 WS-T                   FLOAT-LONG.
- 01 WS-OK                  BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-NEXT                BINARY-LONG.
+ 01 WS-SEA                 BINARY-LONG VALUE 63.
+ 01 WS-LIMIT               FLOAT-LONG VALUE 0.15.
  LINKAGE SECTION.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
@@ -276,12 +240,19 @@
  PROCEDURE DIVISION USING L-X L-Y L-Z L-FLAG.
      MOVE 0 TO L-FLAG
      CALL "STRUCT-PORTAL-BIOME" USING L-X L-Y L-Z WS-BIOME
-     CALL "STRUCT-PORTAL-TEMP" USING WS-BIOME WS-T WS-OK
-     IF WS-OK = 1
-         IF L-Y > 80
-             COMPUTE WS-T = WS-T - (L-Y - 80) * 0.05 / 40
+     MOVE -1 TO WS-ID
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CBI-COUNT
+         MOVE CBI-KEY-LENGTH(WS-I) TO WS-LEN
+         IF WS-LEN > 0 AND WS-LEN <= 40
+             COMPUTE WS-NEXT = WS-LEN + 1
+             IF CBI-KEY(WS-I)(1:WS-LEN) = WS-BIOME(1:WS-LEN) AND WS-BIOME(WS-NEXT:1) = SPACE
+                 COMPUTE WS-ID = WS-I - 1
+             END-IF
          END-IF
-         IF WS-T < 0.15
+     END-PERFORM
+     IF WS-ID >= 0
+         CALL "FR-TEMPERATURE" USING WS-ID L-X L-Y L-Z WS-SEA WS-T
+         IF WS-T < WS-LIMIT
              MOVE 1 TO L-FLAG
          END-IF
      END-IF
