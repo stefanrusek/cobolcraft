@@ -36,6 +36,10 @@
          IF SM-KIND(WS-M) = 0 OR SM-KEY(WS-M) = "squid" OR "glow_squid" OR "dolphin"
              MOVE 1 TO L-OK
          END-IF
+*>       A camel husk can be leashed only while it is not mob-controlled, that is while its first passenger is no mob (20 section 4.4, 44-4 section 2.3).
+         IF SM-KEY(WS-M) = "camel_husk" AND EN-PASS(L-ROW) = 0
+             MOVE 1 TO L-OK
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM MOB-LEASHABLE.

@@ -7,6 +7,8 @@
 *>   ZOMBIE-HORSE-BORN USING row                                                        19 3.6: jump strength 0.5 + (r1 + r2 + r3) / 15 (EN-HORSE-JUMP) and speed (9 + r1 + r2 + r3) / 42.16 (WC-ZH-SPEED, millionths)
 *>   ZOMBIE-HORSE-JOCKEY USING xoro state, zombie horse row                             19 3.6 "Zombie horse spawn extra": a natural zombie horse carries a zombie (JOCKEY) with an iron spear
 *>   SKELETON-HORSE-BORN USING row                                                      19 3.2: the jump strength of the shared horse formula; health stays 15
+*>   CAMEL-HUSK-FEED USING player row, husk row, used out                                  19 3.8: the rabbit foot heals a hurt husk by 2
+*>   MOB-CHARGE-MODIFIER USING vehicle row, modifier out (thousandths)                      44-4 2.3: chargeSpeedModifier, 4.0 for the camel husk, else 1.0
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HUSK-CAMEL-BOX.
@@ -219,3 +221,22 @@
      END-IF
      GOBACK.
  END PROGRAM CAMEL-HUSK-FEED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-CHARGE-MODIFIER.
+*> USING vehicle row, modifier out (BINARY-LONG thousandths): the chargeSpeedModifier of a mob that carries a mob rider (44-4 section 2.3): the camel husk 4.0, every other vehicle 1.0. The spear goal's
+*> approach path runs at its own speed modifier times this one (20 section 3, SpearUseGoal).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-KEY                 PIC X(24).
+ LINKAGE SECTION.
+ 01 L-VEHICLE              BINARY-LONG.
+ 01 L-MODIFIER             BINARY-LONG.
+ PROCEDURE DIVISION USING L-VEHICLE L-MODIFIER.
+     MOVE 1000 TO L-MODIFIER
+     CALL "MOB-SPECIES-KEY" USING L-VEHICLE WS-KEY
+     IF WS-KEY = "camel_husk"
+         MOVE 4000 TO L-MODIFIER
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-CHARGE-MODIFIER.

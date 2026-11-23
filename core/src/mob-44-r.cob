@@ -55,7 +55,7 @@
      IF WS-MOB > 0 AND L-STRENGTH > 0
          CALL "MOB-SPECIES-KEY" USING WS-MOB WS-KEY
          EVALUATE WS-KEY
-             WHEN "camel"
+             WHEN "camel" WHEN "camel_husk"
                  CALL "M44-CAMEL-RIDER-JUMP" USING WS-MOB L-STRENGTH L-JUMPED
              WHEN "nautilus" WHEN "zombie_nautilus"
                  CALL "NAUTILUS-RIDER-JUMP" USING WS-MOB L-JUMPED
