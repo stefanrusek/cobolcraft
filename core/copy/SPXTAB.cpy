@@ -2,8 +2,8 @@
 *> read and written by core/src/entity-spx.cob into the EK-SPX slots (1 to 20: a number or a text, a tag payload kept up to 256 bytes) and EK-BIG slots (21 to 23: a tag payload kept up to 1024).
 *> A row is SPX-SPECIES (the standard mob key), SPX-KEY, SPX-TAG (the NBT tag type: 1 Byte, 2 Short, 3 Int, 4 Long, 5 Float, 8 String, 9 List, 10 Compound, 11 Int Array), SPX-DEF (the number written
 *> when the key was not read), SPX-TEXT (the text written then), SPX-MODE (A written always, C only when read, Y always the payload read or an empty list, Z the same but only when ENTITY-SPX-WRITE-Z is asked for the key (the writer of the species puts it where the document has it), X only when the first number of the species is 1 and Z always: the payload read or an empty list),
-*> SPX-SLOT. Keys that other core programs already write are not here.
- 78 SPX-ROWS             VALUE 129.
+*> SPX-SLOT. Keys that other core programs already write are not here (ChestedHorse and Items of the donkey, mule and llamas: MOB-NBT-WRITE and MNT-INV-READ, core/src/mob-mount-screen.cob; SkeletonTrap and SkeletonTrapTime: MOB-NBT-WRITE, WC-TRAP and WC-TRAP-TICKS).
+ 78 SPX-ROWS             VALUE 121.
  01 SPX-TABLE-VALUES.
     05 FILLER              PIC X(24) VALUE "rabbit".
     05 FILLER              PIC X(24) VALUE "RabbitType".
@@ -26,62 +26,6 @@
     05 FILLER              PIC X(24) VALUE SPACES.
     05 FILLER              PIC X VALUE "A".
     05 FILLER              PIC 99 VALUE 1.
-    05 FILLER              PIC X(24) VALUE "skeleton_horse".
-    05 FILLER              PIC X(24) VALUE "SkeletonTrap".
-    05 FILLER              PIC 99 VALUE 1.
-    05 FILLER              PIC S9(10) SIGN LEADING SEPARATE VALUE 0.
-    05 FILLER              PIC X(24) VALUE SPACES.
-    05 FILLER              PIC X VALUE "A".
-    05 FILLER              PIC 99 VALUE 1.
-    05 FILLER              PIC X(24) VALUE "skeleton_horse".
-    05 FILLER              PIC X(24) VALUE "SkeletonTrapTime".
-    05 FILLER              PIC 99 VALUE 3.
-    05 FILLER              PIC S9(10) SIGN LEADING SEPARATE VALUE 0.
-    05 FILLER              PIC X(24) VALUE SPACES.
-    05 FILLER              PIC X VALUE "A".
-    05 FILLER              PIC 99 VALUE 2.
-    05 FILLER              PIC X(24) VALUE "llama".
-    05 FILLER              PIC X(24) VALUE "ChestedHorse".
-    05 FILLER              PIC 99 VALUE 1.
-    05 FILLER              PIC S9(10) SIGN LEADING SEPARATE VALUE 0.
-    05 FILLER              PIC X(24) VALUE SPACES.
-    05 FILLER              PIC X VALUE "A".
-    05 FILLER              PIC 99 VALUE 1.
-    05 FILLER              PIC X(24) VALUE "trader_llama".
-    05 FILLER              PIC X(24) VALUE "ChestedHorse".
-    05 FILLER              PIC 99 VALUE 1.
-    05 FILLER              PIC S9(10) SIGN LEADING SEPARATE VALUE 0.
-    05 FILLER              PIC X(24) VALUE SPACES.
-    05 FILLER              PIC X VALUE "A".
-    05 FILLER              PIC 99 VALUE 1.
-    05 FILLER              PIC X(24) VALUE "donkey".
-    05 FILLER              PIC X(24) VALUE "Items".
-    05 FILLER              PIC 99 VALUE 9.
-    05 FILLER              PIC S9(10) SIGN LEADING SEPARATE VALUE 0.
-    05 FILLER              PIC X(24) VALUE SPACES.
-    05 FILLER              PIC X VALUE "X".
-    05 FILLER              PIC 99 VALUE 21.
-    05 FILLER              PIC X(24) VALUE "mule".
-    05 FILLER              PIC X(24) VALUE "Items".
-    05 FILLER              PIC 99 VALUE 9.
-    05 FILLER              PIC S9(10) SIGN LEADING SEPARATE VALUE 0.
-    05 FILLER              PIC X(24) VALUE SPACES.
-    05 FILLER              PIC X VALUE "X".
-    05 FILLER              PIC 99 VALUE 21.
-    05 FILLER              PIC X(24) VALUE "llama".
-    05 FILLER              PIC X(24) VALUE "Items".
-    05 FILLER              PIC 99 VALUE 9.
-    05 FILLER              PIC S9(10) SIGN LEADING SEPARATE VALUE 0.
-    05 FILLER              PIC X(24) VALUE SPACES.
-    05 FILLER              PIC X VALUE "X".
-    05 FILLER              PIC 99 VALUE 21.
-    05 FILLER              PIC X(24) VALUE "trader_llama".
-    05 FILLER              PIC X(24) VALUE "Items".
-    05 FILLER              PIC 99 VALUE 9.
-    05 FILLER              PIC S9(10) SIGN LEADING SEPARATE VALUE 0.
-    05 FILLER              PIC X(24) VALUE SPACES.
-    05 FILLER              PIC X VALUE "X".
-    05 FILLER              PIC 99 VALUE 21.
     05 FILLER              PIC X(24) VALUE "trader_llama".
     05 FILLER              PIC X(24) VALUE "DespawnDelay".
     05 FILLER              PIC 99 VALUE 3.

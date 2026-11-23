@@ -3,6 +3,8 @@
 *> (SST-FIRST, SST-N); a start is valid when it has a piece. A piece keeps the base fields of 6.1 (SPC-TYPE the registry id of 2.4 or the builder's own type number when the piece type has no registry name,
 *> SPC-ORIENT -1 or the 2D data value of 6.7, SPC-DEPTH the genDepth, the box) and for a jigsaw piece SPC-JIG 1 (rigid) or 2 (terrain_matching), SPC-GROUND the ground level delta and its junctions (SPC-J-FIRST,
 *> SPC-J-N rows of SST-JUNC: source x, ground y, z). A reference is the set entry of 7.1: chunk C (SSR-CX, SSR-CZ) is reached by the start of SSR-STRUCT held by chunk S (SSR-SX, SSR-SZ), in insertion order.
+*> The type-specific keys of a piece (36-4 section 10, 36-5 section 3.9; core/copy/STRUCTPKEYS.cpy has the key table) are kept in SPC-K(1 to 8), the values of the keys the table lists for the piece type in the order of its
+*> slots (a boolean 0 or 1, an enum its ordinal: Rotation 0 to 3, Mirror 0 to 2, VerticalPlacement 0 to 5, EntryDoor 0 to 3 as OPENING WOOD_DOOR GRATES IRON_DOOR), and SPC-TPL, the `Template` string of a template piece.
 *> The store is a working set: a full table is emptied and refilled (the starts are a pure function of the seed, so a lost start is rebuilt by STRUCT-DECORATE).
  78 SST-MAX-STARTS        VALUE 512.
  78 SST-MAX-PIECES        VALUE 4096.
@@ -38,6 +40,9 @@
        10 SPC-X1            BINARY-LONG.
        10 SPC-Y1            BINARY-LONG.
        10 SPC-Z1            BINARY-LONG.
+       10 SPC-KS.
+          15 SPC-K          BINARY-LONG OCCURS 8 TIMES.
+       10 SPC-TPL           PIC X(64).
     05 SST-JUNC OCCURS 2048 TIMES.
        10 SJ-X              BINARY-LONG.
        10 SJ-Y              BINARY-LONG.

@@ -344,10 +344,15 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-EQUIP-WRITE.
+*> The saddle (EN-SADDLE) of the species that wear one and the body slot of a mount (WC-BODY of WCSTATE.cpy: horse armor, llama carpet, nautilus armor; 45-4 section 6.1: equipment.saddle and
+*> equipment.body, no SaddleItem or ArmorItem key) are written after the armour and the wolf's body item.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY WCSTATE.
  COPY CITEMS.
+ 01 WS-MOUNT               BINARY-LONG.
+ 01 WS-BODY                BINARY-LONG.
  01 WN                     PIC X(32).
  01 WL                     BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
@@ -375,11 +380,17 @@
          COMPUTE WS-SLOTS = FUNCTION MOD(EN-EQUIP(L-ROW), 10)
      END-IF
      CALL "STDMOB-HAND-KEY" USING EN-HAND(L-ROW) WS-HAND-KEY
-     IF EN-SADDLE(L-ROW) = 1 AND (L-KEY = "pig" OR "horse" OR "donkey" OR "mule" OR "camel")
+     IF EN-SADDLE(L-ROW) = 1 AND (L-KEY = "pig" OR "horse" OR "donkey" OR "mule" OR "camel" OR "camel_husk" OR "skeleton_horse" OR "zombie_horse" OR "nautilus" OR "zombie_nautilus")
          MOVE 1 TO WS-SADDLED
      END-IF
+     MOVE 0 TO WS-BODY
+     CALL "MNT-KIND" USING L-ROW WS-MOUNT
+     IF WS-MOUNT > 0
+         CALL "WC-ROW-OPEN" USING L-ROW
+         MOVE WC-BODY(L-ROW) TO WS-BODY
+     END-IF
      MOVE 0 TO WS-ANY
-     IF WS-SLOTS > 0 OR WS-HAND-KEY NOT = SPACES OR WS-SADDLED = 1 OR (L-KEY = "wolf" AND EN-WOLF-ARM(L-ROW) > 0)
+     IF WS-SLOTS > 0 OR WS-HAND-KEY NOT = SPACES OR WS-SADDLED = 1 OR WS-BODY > 0 OR (L-KEY = "wolf" AND EN-WOLF-ARM(L-ROW) > 0)
          MOVE 1 TO WS-ANY
      END-IF
      IF WS-ANY = 0
@@ -423,6 +434,13 @@
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-WOLF-ARM-DMG(L-ROW)
          CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
          CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     END-IF
+     IF WS-BODY > 0
+         MOVE "body" TO WS-SLOT MOVE 4 TO WS-SLOT-LENGTH
+         COMPUTE WS-VALUE = WS-BODY + 1
+         CALL "PERSIST-NAMESPACED" USING IT-KEY(WS-VALUE) IT-KEY-LENGTH(WS-VALUE) WS-NS-KEY WS-NS-LENGTH
+         MOVE WS-NS-KEY(1:WS-NS-LENGTH) TO WS-ITEM-KEY
+         CALL "EQUIP-ITEM-WRITE" USING PB-BUFFER WS-SLOT WS-SLOT-LENGTH WS-ITEM-KEY WS-ZERO
      END-IF
      IF WS-SADDLED = 1
          MOVE "saddle" TO WS-SLOT MOVE 6 TO WS-SLOT-LENGTH

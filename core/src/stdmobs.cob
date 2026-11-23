@@ -351,6 +351,7 @@
              CALL "FOX-DROP-HELD" USING L-ROW
              CALL "PIGLIN-DROP-INVENTORY" USING L-ROW
              CALL "WOLF-ARMOR-DROP" USING L-ROW
+             CALL "MNT-DROP" USING L-ROW
              CALL "STDMOB-XP-GEAR" USING L-ROW WS-GEAR
              CALL "STDMOB-XP-VARIANT" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED EN-VARIANT(L-ROW) WS-GEAR
          END-IF
@@ -1175,6 +1176,12 @@
      END-IF
      IF SM-KEY(WS-M) = "zombie_villager"
          CALL "ZV-TICK" USING WS-ROW
+         IF EN-USED(WS-ROW) = 0
+             GOBACK
+         END-IF
+     END-IF
+     IF SM-KEY(WS-M) = "skeleton_horse"
+         CALL "SKELETON-HORSE-TICK" USING WS-ROW
          IF EN-USED(WS-ROW) = 0
              GOBACK
          END-IF
