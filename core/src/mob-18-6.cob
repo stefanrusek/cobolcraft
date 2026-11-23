@@ -1286,6 +1286,8 @@
                  CALL "CONTENT-ENTITY-BY-KEY" USING WS-EKEY WS-TYPE WS-ENTITY-ROW WS-STATUS
                  CALL "MOB-SPAWN" USING L-DIM WS-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-NEW
                  CALL "STDMOB-FINALIZE" USING L-STATE WS-NEW
+*>               A natural husk's camel husk jockey (20 section 4.3: one attempt, the group's first husk) and a natural zombie horse's zombie (19 section 3.6).
+                 CALL "MS6-PACK-EXTRA" USING L-STATE WS-NEW WS-IN-PACK
 *>               A group shares the first member's variant (wolf, fox, llama).
                  IF WS-IN-PACK = 0
                      MOVE WS-NEW TO WS-FIRST

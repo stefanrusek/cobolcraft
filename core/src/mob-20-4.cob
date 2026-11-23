@@ -65,6 +65,7 @@
  COPY CORESTATE.
  COPY STDMOBS.
  COPY EVKSTATE.
+ COPY WCSTATE.
  01 WS-RV-SLOT             BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
@@ -82,6 +83,10 @@
      END-IF
      IF EN-VARIANT(L-ROW) = 1 AND (SM-KEY(L-M) = "zombie" OR SM-KEY(L-M) = "zombie_villager" OR SM-KEY(L-M) = "husk")
          COMPUTE L-SPEED = L-SPEED * 2.25
+     END-IF
+*>   A zombie horse's drawn speed gene (19 section 3.6): the stroll modifier 0.7 on the attribute, squared / 0.454.
+     IF SM-KEY(L-M) = "zombie_horse" AND WC-ID(L-ROW) = EN-ID(L-ROW) AND WC-ZH-SPEED(L-ROW) > 0
+         COMPUTE L-SPEED = (WC-ZH-SPEED(L-ROW) / 1000000 * 0.7) ** 2 / 0.454
      END-IF
      IF EN-FX-SPEED(L-ROW) NOT = 0
          COMPUTE L-SPEED = L-SPEED * 1.2

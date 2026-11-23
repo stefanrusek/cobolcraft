@@ -24,8 +24,15 @@
 *>  The strider has no passenger attachment in 18 section 1.1.1 (open): 0.
     05 FILLER              PIC X(24) VALUE "strider".
     05 FILLER              FLOAT-LONG VALUE 0.
+*>  The mounts of 20 sections 4.4 and 18.3: the camel husk is a camel (seat 2.0), the zombie and skeleton horse sit at 1.31875 (18 section 1.1.1).
+    05 FILLER              PIC X(24) VALUE "camel_husk".
+    05 FILLER              FLOAT-LONG VALUE 2.0.
+    05 FILLER              PIC X(24) VALUE "zombie_horse".
+    05 FILLER              FLOAT-LONG VALUE 1.31875.
+    05 FILLER              PIC X(24) VALUE "skeleton_horse".
+    05 FILLER              FLOAT-LONG VALUE 1.31875.
  01 WS-TABLE REDEFINES WS-SEATS.
-    05 WS-SEAT OCCURS 6 TIMES.
+    05 WS-SEAT OCCURS 9 TIMES.
        10 WS-SEAT-KEY      PIC X(24).
        10 WS-SEAT-Y        FLOAT-LONG.
  01 WS-I                   BINARY-LONG.
@@ -34,7 +41,7 @@
  01 L-SEAT                 FLOAT-LONG.
  PROCEDURE DIVISION USING L-KEY L-SEAT.
      MOVE 0 TO L-SEAT
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
          IF WS-SEAT-KEY(WS-I) = L-KEY
              COMPUTE L-SEAT = WS-SEAT-Y(WS-I) - 0.6
          END-IF
@@ -72,7 +79,7 @@
          END-IF
          IF WS-RIDER > 0
              MOVE 0 TO WS-Z
-             IF WS-KEY = "camel"
+             IF WS-KEY = "camel" OR "camel_husk"
                  MOVE 0.5 TO WS-Z
                  IF WS-SLOT = 2
                      MOVE -0.7 TO WS-Z
@@ -187,11 +194,12 @@
      MOVE 0 TO L-STARTED WS-TAKEN
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
      IF PL-SNEAKING(L-PLAYER) = 0 AND EN-VEHICLE(PL-ENTITY-ROW(L-PLAYER)) = 0 AND EN-MOBAGE(L-ROW) >= 0
+             AND (WS-KEY NOT = "skeleton_horse" OR EN-TAMED(L-ROW) = 1)
          EVALUATE TRUE
              WHEN EN-RIDER(L-ROW) = 0 AND (EN-SADDLE(L-ROW) = 1 OR (WS-KEY NOT = "pig" AND WS-KEY NOT = "strider"))
                  MOVE L-PLAYER TO EN-RIDER(L-ROW)
                  MOVE 1 TO WS-TAKEN
-             WHEN EN-RIDER(L-ROW) > 0 AND EN-RIDER2(L-ROW) = 0 AND WS-KEY = "camel"
+             WHEN EN-RIDER(L-ROW) > 0 AND EN-RIDER2(L-ROW) = 0 AND (WS-KEY = "camel" OR "camel_husk")
                  MOVE L-PLAYER TO EN-RIDER2(L-ROW)
                  MOVE 1 TO WS-TAKEN
          END-EVALUATE
@@ -316,7 +324,7 @@
              END-IF
          END-IF
      END-IF
-     IF EN-TAMED(L-ROW) = 0 AND WS-KEY NOT = "pig" AND WS-KEY NOT = "camel" AND WS-KEY NOT = "strider"
+     IF EN-TAMED(L-ROW) = 0 AND WS-KEY NOT = "pig" AND WS-KEY NOT = "camel" AND WS-KEY NOT = "camel_husk" AND WS-KEY NOT = "strider"
          MOVE EN-ID(L-ROW) TO WS-ARG(1)
          MOVE CW-TIME TO WS-ARG(2)
          MOVE 41 TO WS-ARG(3)

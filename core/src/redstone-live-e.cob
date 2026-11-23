@@ -230,9 +230,18 @@
                  IF LS-OK = 0
                      MOVE 1001 TO LS-EVENT
                  END-IF
-*>               a projectile (4.1) launches with the launch sound
-                 IF LS-HANDLED = 1 AND LS-CONSUMED = 3
-                     MOVE 1002 TO LS-EVENT
+*>               a projectile (4.1) launches with the launch sound 1002, the fire charge 1018, the wind charge 1051, the firework rocket 1004 (consumed 3 to 6)
+                 IF LS-HANDLED = 1
+                     EVALUATE LS-CONSUMED
+                         WHEN 3
+                             MOVE 1002 TO LS-EVENT
+                         WHEN 4
+                             MOVE 1018 TO LS-EVENT
+                         WHEN 5
+                             MOVE 1051 TO LS-EVENT
+                         WHEN 6
+                             MOVE 1004 TO LS-EVENT
+                     END-EVALUATE
                  END-IF
                  CALL "LEVEL-EVENT" USING L-DIM LS-EVENT L-X L-Y L-Z LS-DATA LS-EXCLUDED
                  MOVE 2000 TO LS-EVENT
