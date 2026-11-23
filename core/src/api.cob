@@ -570,6 +570,10 @@
  01 WS-PORTAL-SWAMP        PIC X(80) VALUE "minecraft:ruined_portal_swamp".
  01 WS-PORTAL-MOUNTAIN     PIC X(80) VALUE "minecraft:ruined_portal_mountain".
  01 WS-PORTAL-OCEAN        PIC X(80) VALUE "minecraft:ruined_portal_ocean".
+ 01 WS-MONUMENT            PIC X(80) VALUE "minecraft:monument".
+ 01 WS-ANCIENT-CITY        PIC X(80) VALUE "minecraft:ancient_city".
+ 01 WS-TRIAL-CHAMBERS      PIC X(80) VALUE "minecraft:trial_chambers".
+ 01 WS-TRAIL-RUINS         PIC X(80) VALUE "minecraft:trail_ruins".
  LINKAGE SECTION.
  01 L-TYPE                 PIC X(10).
  01 L-DIR                  PIC X(1024).
@@ -627,6 +631,11 @@
 *>       the end city (36-8 section 8), placed by the End's own chunk generator (struct-endcity-place.cob)
          CALL "STRUCT-GATE-ON" USING WS-END-CITY
          CALL "STRUCT-GATE-ON" USING WS-BASTION
+*>       the ocean monument (36-6, struct-monument.cob, struct-mon-build.cob) and the three jigsaw structures of 36-10: the ancient city, the trial chambers and the trail ruins (struct-jig.cob engine)
+         CALL "STRUCT-GATE-ON" USING WS-MONUMENT
+         CALL "STRUCT-GATE-ON" USING WS-ANCIENT-CITY
+         CALL "STRUCT-GATE-ON" USING WS-TRIAL-CHAMBERS
+         CALL "STRUCT-GATE-ON" USING WS-TRAIL-RUINS
          MOVE 1 TO FI-GATE
          CALL "GEN-QUEUE-RESET"
      END-IF
