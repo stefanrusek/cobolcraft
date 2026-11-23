@@ -16,6 +16,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY WCSTATE.
  COPY CITEMS.
  COPY STDMOBS.
  01 WN                     PIC X(32).
@@ -89,6 +90,12 @@
          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-TAMED(L-ROW)
          MOVE "Temper" TO WN MOVE 6 TO WL
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-TEMPER(L-ROW)
+     END-IF
+*>   AbstractChestedHorse (45-4 section 6.5): the chest flag of a donkey or mule.
+     IF WS-KEY = "donkey" OR "mule"
+         CALL "WC-ROW-OPEN" USING L-ROW
+         MOVE "ChestedHorse" TO WN MOVE 12 TO WL
+         CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WC-CHEST(L-ROW)
      END-IF
      IF WS-KEY = "ocelot"
          MOVE "Trusting" TO WN MOVE 8 TO WL
@@ -293,6 +300,8 @@
              CALL "PB-GET-INT" USING PB-BUFFER MQ-STRENGTH
          WHEN L-NAME = "Temper" AND L-TYPE = 3
              CALL "PB-GET-INT" USING PB-BUFFER MQ-TEMPER
+         WHEN L-NAME = "ChestedHorse" AND L-TYPE = 1
+             CALL "PB-GET-BYTE" USING PB-BUFFER MQ-CHEST
          WHEN L-NAME = "EggLayTime" AND L-TYPE = 3
              CALL "PB-GET-INT" USING PB-BUFFER MQ-EGG
          WHEN L-NAME = "MainGene" AND L-TYPE = 8
@@ -351,6 +360,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY WCSTATE.
  COPY STDMOBS.
  01 WS-KEY                 PIC X(24).
  01 WS-CATKEY              PIC X(48).
@@ -407,6 +417,10 @@
      IF WS-KEY = "horse" OR "donkey" OR "mule" OR "llama" OR "trader_llama" OR "camel"
          MOVE MQ-TAME TO EN-TAMED(L-ROW)
          MOVE MQ-TEMPER TO EN-TEMPER(L-ROW)
+         IF WS-KEY = "donkey" OR "mule"
+             CALL "WC-ROW-OPEN" USING L-ROW
+             MOVE MQ-CHEST TO WC-CHEST(L-ROW)
+         END-IF
          IF MQ-OWNER NOT = SPACES
              MOVE MQ-OWNER TO EN-OWNER-UUID(L-ROW)
          END-IF
