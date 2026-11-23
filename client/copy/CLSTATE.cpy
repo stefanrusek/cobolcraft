@@ -264,6 +264,14 @@
        10 PL-STACK-CHARGED   BINARY-LONG.    *> 1 when the item stack last decoded has charged_projectiles (51) that are not empty (a loaded crossbow), taken over by the slot it is set into like the foil
        10 PL-OFFHAND-CHARGED BINARY-LONG.
        10 PL-SLOT-CHARGED    BINARY-LONG OCCURS 36 TIMES.
+*>     The tint facts of the item stack last decoded (STACK-TINT, stack-look.cob; 43 section 7): PL-STACK-DYE the dyed_color 47 RGB plus 1 and PL-STACK-POTION the potion_contents 53 potion id plus 1
+*>     (0 = the stack has none), taken over by the slot it is set into like the foil (PL-SLOT-DYE and PL-SLOT-POTION the player slots 0 to 35, PL-OFFHAND-DYE and PL-OFFHAND-POTION the off hand).
+       10 PL-STACK-DYE       BINARY-LONG.
+       10 PL-OFFHAND-DYE     BINARY-LONG.
+       10 PL-SLOT-DYE        BINARY-LONG OCCURS 36 TIMES.
+       10 PL-STACK-POTION    BINARY-LONG.
+       10 PL-OFFHAND-POTION  BINARY-LONG.
+       10 PL-SLOT-POTION     BINARY-LONG OCCURS 36 TIMES.
 *>     banner_patterns 74 of the last item stack decoded (STACK-BANNER) and of each slot (1 to 36 the slots, 37 the off hand), taken over like the foil: the number of layers kept
 *>     (at most 16), each layer's pattern holder (the registry position + 1, 0 an inline pattern) and dye id (hand-banner.cob; 54 section 22).
        10 PL-STACK-BN.
@@ -1270,6 +1278,8 @@
        10 IT-SPRITE          BINARY-LONG OCCURS 18 TIMES.
 *>     The same for the items of a standard set, found on first use (ITEM-SPRITE-OF, models-lazy.cob): 0 = not looked up yet.
        10 IS-SPRITE          BINARY-LONG OCCURS 2048 TIMES.
+*>     The second layer of a flat item's icon (a model of builtin/generated with a layer1 texture: the leather armour's overlay, the potion's bottle, a spawn egg's spots), its sprite (ITEM-SPRITE-OF), 0 = none.
+       10 IS-LAYER1          BINARY-LONG OCCURS 2048 TIMES.
 *>     The faces of a block item's model (ITEM-FACE-SPRITE): IS-FACE-DONE(i + 1) = 1 when the item is a block model, and IS-FACE-SPRITE(i * 6 + d) is
 *>     the sprite of face d (DIR-DOWN to DIR-EAST) of its first element, the up sprite where the model has no such face.
 *>     The first person display transform of each item's model (ITEM-SPRITE-OF; 08 section 5.6, 12 section 8.2): IS-FP-STATE(i + 1) = 1 when its model chain
@@ -1289,6 +1299,7 @@
        10 IG-USED            BINARY-LONG.
        10 IG-QUAD OCCURS 8192 TIMES.
           15 IG-SPRITE       BINARY-LONG.
+          15 IG-TINT         BINARY-LONG.    *> the face's tintindex (-1 none), the layer of the item's tint list (43 section 7)
           15 IG-BRIGHT       FLOAT-SHORT.
           15 IG-CORNER OCCURS 4 TIMES.
              20 IG-X         FLOAT-SHORT.

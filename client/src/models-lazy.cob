@@ -202,6 +202,9 @@
  01 WS-CAP                 BINARY-LONG VALUE 80.
  01 WS-GENERATED           BINARY-LONG.
  01 WS-LAYER               PIC X(80) VALUE "#layer0".
+ 01 WS-LAYER1              PIC X(80) VALUE "#layer1".
+ 01 WS-LAYER1-SPRITE       BINARY-LONG.
+ 01 WS-LS                  BINARY-LONG.
  01 WS-SPRITE              BINARY-LONG.
  01 WS-F                   BINARY-LONG.
  01 WS-FACES               PIC 9.
@@ -232,7 +235,7 @@
          GOBACK
      END-IF
      MOVE 1 TO WS-SPRITE
-     MOVE 0 TO WS-FACES
+     MOVE 0 TO WS-FACES WS-LAYER1-SPRITE
      MOVE 0 TO MR-FP-PRESENT WS-SPECIAL MR-DX-PRESENT(1) MR-DX-PRESENT(2) MR-DX-PRESENT(3)
      CALL "CL-ITEM-INFO" USING CLIENT-STATE L-ITEM WS-NS WS-NAME WS-MAX WS-BLOCK WS-TOOL WS-FOOD
          WS-KNOWN
@@ -265,6 +268,12 @@
                      WS-GENERATED
                  IF WS-GENERATED = 1
                      CALL "MODEL-SPRITE" USING CLIENT-STATE MODEL-RESOLVED WS-LAYER WS-SPRITE
+*>                   The second layer of the flat model (the leather armour's overlay, the potion's bottle, the spots of a spawn egg): drawn over layer 0 (item-tint.cob ITEM-FLAT-ICON).
+                     PERFORM VARYING WS-LS FROM 1 BY 1 UNTIL WS-LS > MR-SLOT-COUNT
+                         IF MS-NAME(WS-LS) = "layer1"
+                             CALL "MODEL-SPRITE" USING CLIENT-STATE MODEL-RESOLVED WS-LAYER1 WS-LAYER1-SPRITE
+                         END-IF
+                     END-PERFORM
                  ELSE
                  IF WS-SPECIAL = 1
                      CALL "MODEL-SPRITE" USING CLIENT-STATE MODEL-RESOLVED WS-PARTICLE WS-SPRITE
@@ -330,6 +339,7 @@
              MOVE WS-FACE-SPRITE(WS-D) TO IS-FACE-SPRITE(WS-SLOT)
          END-PERFORM
      END-IF
+     MOVE WS-LAYER1-SPRITE TO IS-LAYER1(L-ITEM + 1)
      MOVE WS-SPRITE TO IS-SPRITE(L-ITEM + 1)
      MOVE WS-SPRITE TO L-SPRITE
      GOBACK.

@@ -301,6 +301,8 @@
  01 WS-SL2                 BINARY-LONG.
  01 WS-SDYE                BINARY-LONG.
  01 WS-SDRAWN              BINARY-LONG.
+ 01 WS-DYE                 BINARY-LONG.
+ 01 WS-POTION              BINARY-LONG.
  01 WS-GX                  BINARY-LONG.
  01 WS-GY                  BINARY-LONG.
  01 WS-X                   BINARY-LONG.
@@ -326,6 +328,7 @@
  PROCEDURE DIVISION USING CLIENT-STATE L-W.
      MOVE SM-W-ARG(L-W) TO WS-ARG
      CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-COUNT WS-ITEM WS-DAMAGE
+     CALL "MENU-STACK-TINT" USING CLIENT-STATE WS-ARG WS-DYE WS-POTION
      IF SM-W-ARG(L-W) NOT = 36
          MOVE SW-PANEL TO WS-SWATCH
 *>       State 3 is a bare slot: the screen's own art (the hotbar sprite) carries the well.
@@ -362,9 +365,10 @@
 *>           fit the icon layer) is the flat icon of its sprite.
              COMPUTE WS-GX = SM-W-X(L-W) + WS-INSET
              COMPUTE WS-GY = SM-W-Y(L-W) + WS-INSET
-             CALL "ITEM-GUI-ICON" USING CLIENT-STATE WS-ITEM WS-GX WS-GY WS-SDRAWN
+             CALL "ITEM-GUI-ICON" USING CLIENT-STATE WS-ITEM WS-GX WS-GY WS-DYE WS-POTION WS-SDRAWN
              IF WS-SDRAWN = 0
-                 CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+*>               The flat icon: layer 0 and a second layer where the model has one, each in the colour of its tint (43 section 7).
+                 CALL "ITEM-FLAT-ICON" USING CLIENT-STATE WS-ITEM WS-SPRITE WS-DYE WS-POTION WS-X0 WS-Y0 WS-X1 WS-Y1
              END-IF
          ELSE
 *>           A code-drawn model (a chest, a shulker box, a banner: item-special.cob) is drawn as its model, not as the icon of its particle texture.
