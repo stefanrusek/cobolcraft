@@ -2,9 +2,9 @@
 *> A piece tag is {id, BB (int array of 6), O (-1 or 0 south, 1 west, 2 north, 3 east), GD}; a start tag {id, ChunkX, ChunkZ, references, Children}, or {id: "INVALID"} for a start without a piece; the
 *> `structures` compound of a chunk is {starts: {<structure key>: start}, References: {<structure key>: long array of packed chunk positions}}. Packed position: (x & 0xFFFFFFFF) | ((z & 0xFFFFFFFF) << 32).
 *> The base fields of 6.7 and the type-specific keys of the scattered pieces, the igloo, the ruined portal, the nether fossil (36-4 10), the mineshaft pieces (36-5 2.5, 2.6, 2.11, 2.12: the room's Entrances list of
-*> boxes is read into the store's SST-ENT), the stronghold pieces (36-5 3.9) and the fortress pieces (36-8 3.5) are written and read (STRUCT-PIECE-KEYS-WRITE, STRUCT-PIECE-KEY-SET, struct-piece-keys.cob); the keys
-*> of the other families (36-2 to 36-3, 36-6 to 36-8) are not (the pieces are rebuilt from the seed by STRUCT-DECORATE, which is the source of truth), and a piece whose type has no registry name (a builder type of
-*> the other template pieces above 55) is left out of Children, so a start that has only such pieces is written as INVALID.
+*> boxes is read into the store's SST-ENT), the stronghold pieces (36-5 3.9), the fortress pieces (36-8 3.5), the shipwreck and the ocean ruin (36-6 4.3, 2.4), the woodland mansion (36-7 3) and the end city (36-8 9.1)
+*> are written and read (STRUCT-PIECE-KEYS-WRITE, STRUCT-PIECE-KEY-SET, struct-piece-keys.cob); the keys of the other families (the jigsaw pieces of 36-2 to 36-3 keep their own fields, the monument's children are
+*> never saved) are not, and a piece whose type has no registry name (a builder type of the other template pieces above 55) is left out of Children, so a start that has only such pieces is written as INVALID.
 *> Loading follows 7.3: a start whose key names no loaded structure is dropped, INVALID loads as an empty start, a piece with an unknown id or without BB is skipped (the rename table of 6.7 is in
 *> STRUCT-ENUM-ID), ChunkX, ChunkZ and references default to 0, a reference to a chunk at Chebyshev distance above 8 from the chunk being loaded is dropped. Not loaded here: the ocean monument's regenerated piece list.
 *>
