@@ -19,7 +19,7 @@
  PROCEDURE DIVISION USING L-PLAYER L-ENTITY L-HELD L-HANDLED.
      MOVE 0 TO L-HANDLED
      CALL "MOB-SPECIES-KEY" USING L-ENTITY WS-KEY
-     IF (WS-KEY = "donkey" OR "mule") AND L-HELD = "chest" AND EN-TAMED(L-ENTITY) = 1 AND EN-MOBAGE(L-ENTITY) >= 0
+     IF (WS-KEY = "donkey" OR "mule" OR "llama" OR "trader_llama") AND L-HELD = "chest" AND EN-TAMED(L-ENTITY) = 1 AND EN-MOBAGE(L-ENTITY) >= 0
          CALL "WC-ROW-OPEN" USING L-ENTITY
          IF WC-CHEST(L-ENTITY) = 0
              MOVE 1 TO WC-CHEST(L-ENTITY)
@@ -52,7 +52,7 @@
          MOVE 2 TO EQ-MD-INT
          CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER EQ-METADATA-ENTRY
      END-IF
-     IF WS-KEY = "donkey" OR "mule"
+     IF WS-KEY = "donkey" OR "mule" OR "llama" OR "trader_llama"
          CALL "WC-ROW-OPEN" USING L-ROW
          IF WC-CHEST(L-ROW) = 1
              INITIALIZE EQ-METADATA-ENTRY
