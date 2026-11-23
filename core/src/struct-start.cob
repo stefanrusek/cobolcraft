@@ -143,6 +143,8 @@
      MOVE L-X1 TO SPC-X1(L-ROW)
      MOVE L-Y1 TO SPC-Y1(L-ROW)
      MOVE L-Z1 TO SPC-Z1(L-ROW)
+     MOVE 0 TO SPC-K(L-ROW, 1) SPC-K(L-ROW, 2) SPC-K(L-ROW, 3) SPC-K(L-ROW, 4) SPC-K(L-ROW, 5) SPC-K(L-ROW, 6) SPC-K(L-ROW, 7) SPC-K(L-ROW, 8)
+     MOVE SPACES TO SPC-TPL(L-ROW)
      GOBACK.
  END PROGRAM STRUCT-START-PIECE-ADD.
 
@@ -514,7 +516,8 @@
  PROGRAM-ID. STRUCT-START-CAPTURE.
 *> USING structure row, chunk x, chunk z, start row out: stores the start whose pieces are in the builder (STRUCTPIECE.cpy, after STRUCT-FIND-POINT and the placement) as the start of that structure
 *> held by the chunk, once: a start already in the store is left as it is (its row is returned). A piece of the jigsaw assembler (builder type 60) is stored with the registry id of the jigsaw piece,
-*> its projection (SP-T-AUX: 0 rigid, 1 terrain_matching), ground level delta (SP-F2) and the junctions of STRUCTJIG.cpy that it owns; any other builder type keeps its own number.
+*> its projection (SP-T-AUX: 0 rigid, 1 terrain_matching), ground level delta (SP-F2) and the junctions of STRUCTJIG.cpy that it owns; the scattered pieces (101 to 104) and the template pieces of the igloo, the
+*> ruined portal and the nether fossil get their registry ids (tedp, tejp, tesh, btp, iglu, rupo, nefos) and their type-specific keys (STRUCT-PIECE-KEYS-CAPTURE, struct-piece-keys.cob); any other builder type keeps its own number.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTSTART.
@@ -538,6 +541,7 @@
  01 WS-Z1                  BINARY-LONG.
  01 WS-ORIENT              BINARY-LONG.
  01 WS-DEPTH               BINARY-LONG.
+ 01 WS-PNAME               PIC X(40).
  LINKAGE SECTION.
  01 L-STRUCT               BINARY-LONG.
  01 L-CX                   BINARY-LONG.
@@ -554,10 +558,30 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SP-COUNT
          MOVE SP-TYPE(WS-I) TO WS-TYPE
          MOVE 0 TO WS-JIG WS-GROUND
-         IF WS-TYPE = 60
-             MOVE WS-JIGSAW TO WS-TYPE
-             COMPUTE WS-JIG = SP-T-AUX(WS-I) + 1
-             MOVE SP-F2(WS-I) TO WS-GROUND
+         MOVE SPACES TO WS-PNAME
+*>       the builder types that have a registry name (36-1 2.4): the scattered pieces 101 to 103 and the buried treasure 104, a template piece of the igloo (kind 1), the ruined portal (4) and the nether fossil (0)
+         EVALUATE TRUE
+             WHEN WS-TYPE = 60
+                 MOVE WS-JIGSAW TO WS-TYPE
+                 COMPUTE WS-JIG = SP-T-AUX(WS-I) + 1
+                 MOVE SP-F2(WS-I) TO WS-GROUND
+             WHEN WS-TYPE = 101
+                 MOVE "tedp" TO WS-PNAME
+             WHEN WS-TYPE = 102
+                 MOVE "tejp" TO WS-PNAME
+             WHEN WS-TYPE = 103
+                 MOVE "tesh" TO WS-PNAME
+             WHEN WS-TYPE = 104
+                 MOVE "btp" TO WS-PNAME
+             WHEN WS-TYPE = 100 AND SP-T-KIND(WS-I) = 0
+                 MOVE "nefos" TO WS-PNAME
+             WHEN WS-TYPE = 100 AND SP-T-KIND(WS-I) = 1
+                 MOVE "iglu" TO WS-PNAME
+             WHEN WS-TYPE = 100 AND SP-T-KIND(WS-I) = 4
+                 MOVE "rupo" TO WS-PNAME
+         END-EVALUATE
+         IF WS-PNAME NOT = SPACES
+             CALL "STRUCT-ENUM-ID" USING WS-KIND WS-PNAME WS-TYPE
          END-IF
          MOVE SP-ORIENT(WS-I) TO WS-ORIENT
          MOVE SP-DEPTH(WS-I) TO WS-DEPTH
@@ -568,6 +592,9 @@
          MOVE SP-Y1(WS-I) TO WS-Y1
          MOVE SP-Z1(WS-I) TO WS-Z1
          CALL "STRUCT-START-PIECE-ADD" USING L-ROW WS-TYPE WS-ORIENT WS-DEPTH WS-JIG WS-GROUND WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 WS-PROW
+         IF WS-PROW > 0
+             CALL "STRUCT-PIECE-KEYS-CAPTURE" USING WS-I WS-PROW
+         END-IF
          IF WS-JIG > 0 AND WS-PROW > 0
              PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > JJ-COUNT
                  IF JJ-OWNER(WS-J) = WS-I

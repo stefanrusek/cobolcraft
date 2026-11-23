@@ -1,7 +1,7 @@
 *> The scattered feature pieces: swamp hut, jungle temple (docs/protocol/36-structures-4-scattered-and-small.md sections 2.3, 4, 5; the desert pyramid of section 3 is added in
 *> struct-scatter-gen.cob and struct-scatter-desert.cob). A piece is built at (16 cx, 64, 16 cz) with a random horizontal direction from the start random; its postProcess writes the blocks of the
 *> document's tables (struct-scatter-gen.cob: one line per operation, run by SCP-RUN), clipped to the chunk being placed (SP-WBOX) like every piece.
-*> Piece types (SP-TYPE): 101 desert pyramid, 102 jungle temple, 103 swamp hut. SP-F1 to SP-F4 are the placed flags of the containers (jungle: trap 1, trap 2, main chest, hidden chest).
+*> Piece types (SP-TYPE): 101 desert pyramid, 102 jungle temple, 103 swamp hut. SP-F1 to SP-F4 are the placed flags of the containers (desert: chests 0 to 3; jungle: trap 1, trap 2, main chest, hidden chest; swamp hut SP-F1 the witch, SP-F2 the cat), SP-T-AUX the height position (HPos, -1 until the ground adjuster ran).
 *>
 *> Heights: the document's ground adjusters (2.3) read the live heightmap MOTION_BLOCKING_NO_LEAVES of the chunks being generated, which makes the piece's height depend on which chunk is
 *> decorated first. Here the piece's height is the same for every pass: updateAverageGroundHeight takes the average over every column of the piece's box (vanilla counts only the columns inside
@@ -487,6 +487,8 @@
          COMPUTE WS-TARGET = FUNCTION INTEGER(WS-SUM / WS-COUNT)
      END-IF
      COMPUTE WS-DY = WS-TARGET - SP-Y0(L-ROW) + L-OFFSET
+*>   the saved heightPosition (HPos, 36-4 10)
+     MOVE WS-TARGET TO SP-T-AUX(L-ROW)
      ADD WS-DY TO SP-Y0(L-ROW) SP-Y1(L-ROW)
      GOBACK.
  END PROGRAM SCP-GROUND.
@@ -663,6 +665,9 @@
      MOVE WS-DIR-OF(WS-I) TO WS-DIR
      CALL "SPB-MAKE-BOX" USING WS-X0 WS-Y64 WS-Z0 WS-DIR WS-W WS-H WS-D WS-BOX
      CALL "SPB-ADD" USING WS-TYPE WS-DIR WS-ZERO WS-ZERO2 WS-BOX WS-ROW
+     IF WS-ROW > 0
+         MOVE -1 TO SP-T-AUX(WS-ROW)
+     END-IF
      GOBACK.
  END PROGRAM STRUCT-SCATTER-FIND-POINT.
 

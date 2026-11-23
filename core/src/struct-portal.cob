@@ -513,7 +513,7 @@
      IF RP-COLD(WS-ROW) = 1
          CALL "STRUCT-PORTAL-COLD" USING L-X L-Y L-Z WS-COLD
      END-IF
-     COMPUTE WS-AUX = WS-AIR + RP-OVERGROWN(WS-ROW) * 2 + RP-VINES(WS-ROW) * 4 + WS-COLD * 8 + RP-BLACK(WS-ROW) * 16 + WS-PLACEMENT * 32
+     COMPUTE WS-AUX = WS-AIR + RP-OVERGROWN(WS-ROW) * 2 + RP-VINES(WS-ROW) * 4 + WS-COLD * 8 + RP-BLACK(WS-ROW) * 16 + WS-PLACEMENT * 32 + RP-MOSS(WS-ROW) * 256
      MOVE WS-AIR TO WS-AIRD
      MOVE 0 TO WS-OCEAND
      IF WS-PLACEMENT = 2
@@ -862,7 +862,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-PORTAL-AUX.
-*> USING aux, placement out, air out, overgrown out, vines out, cold out, nether out: the properties packed in a ruined portal piece's AUX (STRUCT-PORTAL-FIND-POINT).
+*> USING aux, placement out, air out, overgrown out, vines out, cold out, nether out: the properties packed in a ruined portal piece's AUX (STRUCT-PORTAL-FIND-POINT; the mossiness above 256 is read by STRUCT-PIECE-KEYS-CAPTURE).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-REST                BINARY-LONG.
@@ -876,7 +876,8 @@
  01 L-COLD                 BINARY-LONG.
  01 L-NETHER               BINARY-LONG.
  PROCEDURE DIVISION USING L-AUX L-PLACEMENT L-AIR L-OVERGROWN L-VINES L-COLD L-NETHER.
-     DIVIDE L-AUX BY 32 GIVING L-PLACEMENT REMAINDER WS-REST
+     DIVIDE L-AUX BY 256 GIVING WS-Q REMAINDER WS-REST
+     DIVIDE WS-REST BY 32 GIVING L-PLACEMENT REMAINDER WS-REST
      DIVIDE WS-REST BY 2 GIVING WS-Q REMAINDER L-AIR
      DIVIDE WS-Q BY 2 GIVING WS-REST REMAINDER L-OVERGROWN
      DIVIDE WS-REST BY 2 GIVING WS-Q REMAINDER L-VINES
@@ -891,7 +892,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-PORTAL-SPREAD.
 *> USING piece row: spreadNetherrack (8.5) then addNetherrackDripColumnsBelowPortal (8.6) for the piece in the window of one chunk. The piece's box is SP-X0.. of the row, its properties the AUX
-*> (air 1, overgrown 2, vines 4, cold 8, blackstone 16, 32 times the placement). The heights are the live heightmap of the window (FL-HEIGHT-OF: WORLD_SURFACE_WG, OCEAN_FLOOR_WG for
+*> (air 1, overgrown 2, vines 4, cold 8, blackstone 16, 32 times the placement, 256 times the mossiness in tenths). The heights are the live heightmap of the window (FL-HEIGHT-OF: WORLD_SURFACE_WG, OCEAN_FLOOR_WG for
 *> the ocean floor); a column of another chunk reads as air there, so the cells outside the chunk of the pass are skipped (they cannot be replaced) as are their draws after the test.
  DATA DIVISION.
  WORKING-STORAGE SECTION.

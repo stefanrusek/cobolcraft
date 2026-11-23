@@ -415,6 +415,10 @@
      CALL "FL-SET-STATE" USING WS-WX WS-WY WS-WZ WS-STATE WS-FLAGS WS-OK
      CALL "MSP-RNG-LONG" USING WS-SEED
      CALL "GBE-ADD" USING WS-WX WS-WY WS-WZ WS-KIND L-LOOT WS-SEED WS-TEXT
+*>   the chest corridor saves that its chest was placed (36-5 3.9 key Chest)
+     IF SP-TYPE(L-ROW) = 19
+         MOVE 1 TO SP-F2(L-ROW)
+     END-IF
      GOBACK.
  END PROGRAM SHP-CHEST.
 
@@ -624,6 +628,8 @@
      IF WS-IN = 1
          CALL "MSP-PLACE-RAW" USING WS-WX WS-WY WS-WZ SBK-S-SPAWNER
          CALL "GBE-ADD" USING WS-WX WS-WY WS-WZ WS-KIND WS-NOLOOT WS-SEED WS-FISH
+*>       the portal room saves that its spawner was placed (36-5 3.9 key Mob)
+         MOVE 1 TO SP-F2(L-ROW)
      END-IF
      GOBACK.
  END PROGRAM SH-POST-PORTAL.
