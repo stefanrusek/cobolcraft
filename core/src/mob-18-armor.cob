@@ -2,7 +2,7 @@
 *>
 *> Entry points:
 *>   MOB-ARMOR-POINTS USING row, armor out, toughness out (tenths) the armor attribute: the base of the species (the zombie family 2.0) plus the pieces
-*>                                                          worn (EN-EQUIP: tier and count, head first; a broken helmet counts nothing)
+*>                                                          worn (EN-EQUIP: tier and count, head first; a broken helmet counts nothing; a piece the mob picked up, WC-EQ-ITEM, replaces its slot's)
 *>   MOB-HEALTH-LOSE USING row, amount, cause                the health lost by a hit of amount (whole points before armour): the causes that are not in the
 *>                                                          tag bypasses_armor (a player, a mob, an explosion, an arrow, lava) go through CombatRules.getDamageAfterAbsorb;
 *>                                                          the fraction is carried in EN-HEALTH-MILLI. Health 0 is for the caller to handle.
@@ -14,6 +14,10 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CITEMS.
+ COPY WCSTATE.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
  01 WS-KEY                 PIC X(24).
  01 WS-TIER                BINARY-LONG.
  01 WS-SLOTS               BINARY-LONG.
@@ -32,6 +36,7 @@
  01 L-ARMOR                BINARY-LONG.
  01 L-TOUGHNESS            BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-ARMOR L-TOUGHNESS.
+     CALL "WC-ROW-OPEN" USING L-ROW
      MOVE 0 TO L-ARMOR L-TOUGHNESS WS-SLOTS WS-TIER
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
      IF WS-KEY = "zombie" OR "zombie_villager" OR "husk"
@@ -45,16 +50,26 @@
          COMPUTE WS-TIER = EN-EQUIP(L-ROW) / 10 - 1
          COMPUTE WS-SLOTS = FUNCTION MOD(EN-EQUIP(L-ROW), 10)
      END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-SLOTS
-         IF NOT (WS-I = 1 AND EN-HEAD-WEAR(L-ROW) = -1)
-             CALL "STDMOB-EQUIP-KEY" USING WS-TIER WS-I WS-KEY40
-             MOVE WS-KEY40 TO WS-KEY48
-             CALL "TOOL-ARMOR-ITEM" USING WS-KEY48 WS-FOUND WS-DURABILITY WS-DEFENSE WS-TOUGHNESS WS-KNOCKBACK
-                 WS-ENCHANT WS-REPAIR
-             IF WS-FOUND = 1
-                 ADD WS-DEFENSE TO L-ARMOR
-                 ADD WS-TOUGHNESS TO L-TOUGHNESS
-             END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         MOVE 0 TO WS-FOUND
+         EVALUATE TRUE
+*>           A piece the mob picked up (mob-18-7-equip.cob) is the worn stack of its slot.
+             WHEN WC-EQ-ITEM(L-ROW, WS-I) > 0
+                 MOVE WC-EQ-ITEM(L-ROW, WS-I) TO WS-ITEM
+                 MOVE IT-KEY-LENGTH(WS-ITEM + 1) TO WS-LEN
+                 MOVE SPACES TO WS-KEY48
+                 MOVE IT-KEY(WS-ITEM + 1)(1:WS-LEN) TO WS-KEY48
+                 CALL "TOOL-ARMOR-ITEM" USING WS-KEY48 WS-FOUND WS-DURABILITY WS-DEFENSE WS-TOUGHNESS WS-KNOCKBACK
+                     WS-ENCHANT WS-REPAIR
+             WHEN WS-I <= WS-SLOTS AND NOT (WS-I = 1 AND EN-HEAD-WEAR(L-ROW) = -1)
+                 CALL "STDMOB-EQUIP-KEY" USING WS-TIER WS-I WS-KEY40
+                 MOVE WS-KEY40 TO WS-KEY48
+                 CALL "TOOL-ARMOR-ITEM" USING WS-KEY48 WS-FOUND WS-DURABILITY WS-DEFENSE WS-TOUGHNESS WS-KNOCKBACK
+                     WS-ENCHANT WS-REPAIR
+         END-EVALUATE
+         IF WS-FOUND = 1
+             ADD WS-DEFENSE TO L-ARMOR
+             ADD WS-TOUGHNESS TO L-TOUGHNESS
          END-IF
      END-PERFORM
      GOBACK.

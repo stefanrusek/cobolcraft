@@ -270,6 +270,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CONTENT.
+ COPY WCSTATE.
  COPY PROTO REPLACING LEADING ==PB-== BY ==EQ-==.
  01 WS-PACKET-ID           BINARY-LONG VALUE 104.
  01 WS-TIER                BINARY-LONG.
@@ -286,6 +287,10 @@
  01 WS-ITEM                BINARY-LONG.
  01 WS-ITEM-ROW            PIC X(270).
  01 WS-STATUS              BINARY-LONG.
+ 01 WS-OVER                BINARY-LONG.
+ 01 WS-OVER-ITEM           BINARY-LONG.
+ 01 WS-PREFIX              BINARY-LONG.
+ 01 WS-SLOT-I              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  COPY PROTO.
@@ -312,6 +317,24 @@
              END-IF
          END-PERFORM
      END-IF
+*>   A piece the mob picked up (WC-EQ-ITEM, mob-18-7-equip.cob) is sent in its slot, in head to feet order with the slots EN-EQUIP wears.
+     CALL "WC-ROW-OPEN" USING L-ROW
+     MOVE 0 TO WS-OVER
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         IF WC-EQ-ITEM(L-ROW, WS-I) > 0
+             MOVE 1 TO WS-OVER
+         END-IF
+     END-PERFORM
+     IF WS-OVER = 1
+         MOVE WS-SLOTS TO WS-PREFIX
+         MOVE 0 TO WS-SLOTS
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+             IF WS-I <= WS-PREFIX OR WC-EQ-ITEM(L-ROW, WS-I) > 0
+                 ADD 1 TO WS-SLOTS
+                 MOVE WS-I TO WS-SLOT-NO(WS-SLOTS)
+             END-IF
+         END-PERFORM
+     END-IF
      MOVE WS-SLOTS TO WS-TOTAL
      IF EN-HAND(L-ROW) > 0
          ADD 1 TO WS-TOTAL
@@ -322,7 +345,10 @@
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-TOTAL
+         MOVE 0 TO WS-OVER-ITEM
          IF WS-I <= WS-SLOTS
+             MOVE WS-SLOT-NO(WS-I) TO WS-SLOT-I
+             MOVE WC-EQ-ITEM(L-ROW, WS-SLOT-I) TO WS-OVER-ITEM
              CALL "STDMOB-EQUIP-KEY" USING WS-TIER WS-SLOT-NO(WS-I) WS-KEY40
              COMPUTE WS-ORDINAL = 6 - WS-SLOT-NO(WS-I)
              IF WS-SLOT-NO(WS-I) = 1 AND EN-HEAD-WEAR(L-ROW) = -1
@@ -334,7 +360,12 @@
          END-IF
          MOVE SPACES TO WS-KEY
          MOVE WS-KEY40 TO WS-KEY
-         CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+         IF WS-OVER-ITEM > 0
+             MOVE WS-OVER-ITEM TO WS-ITEM
+             MOVE CT-OK TO WS-STATUS
+         ELSE
+             CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+         END-IF
          IF WS-I < WS-TOTAL
              ADD 128 TO WS-ORDINAL
          END-IF
@@ -892,6 +923,8 @@
              MOVE 1 TO EN-PH-CW(L-ROW)
              MOVE 20 TO EN-PH-SCAN(L-ROW)
      END-EVALUATE
+*>   Mob.finalizeSpawn: canPickUpLoot with probability 0.55 x the special multiplier (the zombie and skeleton families; mob-18-7-equip.cob).
+     CALL "MOB-LOOT-ROLL" USING L-ROW WS-SPECIAL
      CALL "STDMOB-VARIANT-SEND" USING L-ROW
      CALL "STDMOB-EQUIP-SEND" USING L-ROW
      GOBACK.
