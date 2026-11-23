@@ -232,7 +232,7 @@
                  MOVE WS-VX TO EN-VX(WS-ROW)
                  MOVE WS-VY TO EN-VY(WS-ROW)
                  MOVE WS-VZ TO EN-VZ(WS-ROW)
-                 MOVE 0 TO EN-STACK-COUNT(WS-ROW) EN-STACK-ITEM(WS-ROW)
+                 MOVE 0 TO EN-STACK-COUNT(WS-ROW) EN-STACK-ITEM(WS-ROW) EN-STACK-FOIL(WS-ROW)
 *>               A world of the standard set: EN-TYPE is the entity_type registry id, so keep its key and the model row
 *>               of CL-MODELS that draws it (0 = none); a cobolcraft world's EN-TYPE is a stand-in type.
                  MOVE 0 TO EN-BOX-ATTACK(WS-ROW)
@@ -343,6 +343,7 @@
                              OR (MD-MD-INDEX = 9 AND EN-VANILLA(WS-ROW) = 1 AND (EN-KEY(WS-ROW) = "item_frame" OR "glow_item_frame")))
                      MOVE MD-MD-IS-COUNT TO EN-STACK-COUNT(WS-ROW)
                      MOVE MD-MD-IS-ITEM TO EN-STACK-ITEM(WS-ROW)
+                     MOVE MD-MX-IS-FOIL TO EN-STACK-FOIL(WS-ROW)
                  END-IF
 *>               The orb's value (entry 8) and the creeper's swell direction (entry 16), both INT: the swell counter is kept as it was when
 *>               the direction changes (CREEPER-SWELL), then runs from there.

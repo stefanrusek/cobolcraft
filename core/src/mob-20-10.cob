@@ -238,6 +238,8 @@
  01 WS-ARGS.
     05 WS-ARG              BINARY-DOUBLE OCCURS 16 TIMES.
  01 WS-R                   BINARY-DOUBLE.
+ 01 WS-EVIL-ARMOR          BINARY-LONG.
+ 01 WS-EVIL-DAMAGE         BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
@@ -267,6 +269,12 @@
      END-IF
      IF SM-KEY(L-M) = "phantom"
          ADD EN-VARIANT(L-ROW) TO L-DAMAGE
+     END-IF
+*>   The killer bunny (19 section 4): attack_damage 3 and the evil modifier +5 (RABBIT-EVIL).
+     IF SM-KEY(L-M) = "rabbit"
+         MOVE 3 TO L-DAMAGE
+         CALL "RABBIT-EVIL" USING EN-WOOL(L-ROW) WS-EVIL-ARMOR WS-EVIL-DAMAGE
+         ADD WS-EVIL-DAMAGE TO L-DAMAGE
      END-IF
      IF EN-FX-STRENGTH(L-ROW) NOT = 0
          ADD 3 TO L-DAMAGE
