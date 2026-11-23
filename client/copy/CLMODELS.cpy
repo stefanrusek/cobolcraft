@@ -30,6 +30,7 @@
 *>                kind of row; CL-MD-BABY of an adult armor row is the baby row of its slot. The row banner is only an atlas image holder for the sprites of a banner held
 *> in first person (hand-banner.cob; the texture codes 9000 + a pattern holder), and the rows guardian_beam and end_crystal_beam the images of the guardian's beam and the crystal
 *>   beam (entities-beam.cob); The rows
+*>   painting (code L, entities-painting.cob) draws the quads of its cells: its own image is the back sprite, the front sprite is the variant's image (texture code variant + 1).
 *>   item_frame and glow_item_frame (code F) draw no model: the frame's item is drawn into the ground item mesh (item-held.cob ENTITY-FRAME-EMIT, 34-9 section 10). The row
 *>   shulker_box is the image holder of the shulker
 *>   boxes drawn by the block entity renderer (shulker-box.cob, texture code 7000 + the colour). The row shield is the image holder of the shield's sprites (hand-shield.cob: code
@@ -43,7 +44,7 @@
 *>   rowing times
 *>                and drawn with their own render sequence (34-8 7.4).
 *>                The atlas holds the models on screen at once, at most 64 rows (EA-MT).
- 78 CL-MODEL-COUNT           VALUE 233.
+ 78 CL-MODEL-COUNT           VALUE 234.
  01 CL-MODEL-DATA.
     05 FILLER PIC X(24) VALUE "cow".
     05 FILLER PIC 9 VALUE 4.
@@ -2142,8 +2143,17 @@
     05 FILLER PIC X(64) VALUE "textures/entity/player/slim/steve.png".
     05 FILLER PIC 999 VALUE 0.
     05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC X(24) VALUE "painting".
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC X(24) VALUE " ".
+    05 FILLER PIC 999 VALUE 16.
+    05 FILLER PIC 999 VALUE 16.
+    05 FILLER PIC X VALUE "L".
+    05 FILLER PIC X(64) VALUE "textures/painting/back.png".
+    05 FILLER PIC 999 VALUE 0.
+    05 FILLER PIC 999 VALUE 0.
  01 CL-MODELS REDEFINES CL-MODEL-DATA.
-    05 CL-MD OCCURS 233 TIMES.
+    05 CL-MD OCCURS 234 TIMES.
        10 CL-MD-KEY      PIC X(24).
        10 CL-MD-FAMILY   PIC 9.
        10 CL-MD-LAYER    PIC X(24).

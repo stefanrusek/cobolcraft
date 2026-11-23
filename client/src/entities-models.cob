@@ -152,6 +152,7 @@
  01 WS-OVB                 FLOAT-LONG.
  01 WS-OVM                 BINARY-LONG.
  01 WS-PLAYER-KEY          PIC X(24).
+ 01 WS-DRAWN               BINARY-LONG.
  COPY CLCONST.
  COPY CONTENT.
  LINKAGE SECTION.
@@ -160,11 +161,23 @@
      MOVE 0 TO WS-NEW
      ADD 1 TO EA-MT-STAMP
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
-         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND CL-MD-ANIM(EN-MODEL(WS-R)) NOT = "F"
+*>       A painting whose variant the registry does not hold draws nothing and takes no slot (PAINTING-DRAWN).
+         MOVE 1 TO WS-DRAWN
+         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
+             IF CL-MD-ANIM(EN-MODEL(WS-R)) = "L"
+                 CALL "PAINTING-DRAWN" USING CLIENT-STATE WS-R WS-DRAWN
+             END-IF
+         END-IF
+         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND CL-MD-ANIM(EN-MODEL(WS-R)) NOT = "F" AND WS-DRAWN = 1
 *>           A baby of a type with a baby row is drawn from that row (CL-MD-BABY).
              CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-R WS-EM
              CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-R WS-EM WS-TEX
              CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
+*>           A painting draws two images: the variant's sprite (the slot above) and the back sprite (code 0, the row's own image).
+             IF CL-MD-ANIM(WS-EM) = "L"
+                 MOVE 0 TO WS-TEX
+                 CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
+             END-IF
 *>           The extra layer of the row's model (the sheep's wool) has its own slot.
              MOVE CL-MD-EXTRA(WS-EM) TO WS-X
              IF WS-X > 0

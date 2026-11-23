@@ -94,8 +94,8 @@
                  MOVE 0 TO EN-RS(L-ROW)
              END-IF
              MOVE L-INT TO EN-TGT(L-ROW)
-*>   An item frame's direction (entry 8, DIRECTION) and the rotation of its item (entry 10, INT, stored modulo 8; 44-9 section 5.3).
-         WHEN (EN-KEY(L-ROW) = "item_frame" OR "glow_item_frame") AND L-INDEX = 8 AND L-SERIALIZER = 12
+*>   An item frame's or a painting's direction (entry 8, DIRECTION) and the rotation of a frame's item (entry 10, INT, stored modulo 8; 44-9 section 5.3).
+         WHEN (EN-KEY(L-ROW) = "item_frame" OR "glow_item_frame" OR "painting") AND L-INDEX = 8 AND L-SERIALIZER = 12
              MOVE L-INT TO EN-FDIR(L-ROW)
          WHEN (EN-KEY(L-ROW) = "item_frame" OR "glow_item_frame") AND L-INDEX = 10 AND L-SERIALIZER = 1
              COMPUTE EN-FROT(L-ROW) = FUNCTION MOD(L-INT, 8)
@@ -182,6 +182,10 @@
              WHEN OTHER
                  CONTINUE
          END-EVALUATE
+     END-IF
+*>   A painting's front sprite is its variant's: the variant id (EN-X1, 0 until told) plus 1 (PAINTING-TEX-PATH names the image; code 0 is the back sprite, the row's own image).
+     IF EN-KEY(L-ROW) = "painting" AND WS-BASE = "painting"
+         COMPUTE L-CODE = EN-X1(L-ROW) + 1
      END-IF
 *>   A player wears the default skin of its UUID (47 section 2.2): the skin index plus 1 (ENTITY-TEX-PATH names the image).
      IF EN-KEY(L-ROW) = "player" AND (WS-BASE = "player" OR "player_slim")

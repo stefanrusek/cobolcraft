@@ -114,7 +114,12 @@
 *>       A model slot with a variant texture (ENTITY-TEX-PATH) asks the pack stack for it first and falls back to the row's own image.
          IF WS-K > 3 AND EA-MT-TEX(WS-M) > 0
              MOVE SPACES TO WS-VPATH
-             CALL "ENTITY-TEX-PATH" USING CL-MD-KEY(WS-MD) EA-MT-TEX(WS-M) WS-VPATH
+             IF CL-MD-ANIM(WS-MD) = "L"
+*>               A painting's front sprite comes from the painting_variant registry (entities-painting.cob).
+                 CALL "PAINTING-TEX-PATH" USING CLIENT-STATE EA-MT-TEX(WS-M) WS-VPATH
+             ELSE
+                 CALL "ENTITY-TEX-PATH" USING CL-MD-KEY(WS-MD) EA-MT-TEX(WS-M) WS-VPATH
+             END-IF
              IF WS-VPATH NOT = SPACES
                  MOVE SPACES TO WS-VFULL
                  MOVE 1 TO WS-PTR
@@ -290,6 +295,9 @@
 *>               An item frame draws no entity model: its item is in the ground item mesh (ENTITY-FRAME-EMIT).
                  WHEN CL-MD-ANIM(EN-MODEL(WS-R)) = "F"
                      CONTINUE
+*>               A painting is its cells' quads (34-9 section 11, entities-painting.cob).
+                 WHEN CL-MD-ANIM(EN-MODEL(WS-R)) = "L"
+                     CALL "ENTITY-PAINTING-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  WHEN CL-MD-FAMILY(EN-MODEL(WS-R)) = 0 AND CL-MD-ANIM(EN-MODEL(WS-R)) = "A"
                      CALL "ENTITY-ARROW-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  WHEN CL-MD-FAMILY(EN-MODEL(WS-R)) = 0
