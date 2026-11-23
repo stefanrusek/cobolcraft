@@ -1,8 +1,8 @@
 *> The creative inventory screen (docs/protocol/40-menus-7-creative-inventory.md sections 1, 3, 5, 6, 7, 8, 9) on the engines of creative.cob: in creative mode the inventory key opens it (screens/
 *> common.cob) in place of the survival-style inventory screen. CREATIVE-OPEN selects the remembered tab; CREATIVE-BUILD draws the panel (195 x 136 at the screen centre), the displayed tabs, the
 *> title, the 45 grid slots (argument 901 to 945), the 9 hotbar slots (argument 0 to 8), the scroller, the carried stack and the slot tooltip; CREATIVE-INPUT takes the wheel, the scroller drag, the
-*> search text and clicks outside; CREATIVE-ACTION the tab, grid and hotbar clicks (left button, no shift); The survival inventory tab shows no inventory slots (its wrapper
-*> layout, the delete slot and the player preview are not drawn), a tab is selected on press (not release) and the right button works only outside the image.
+*> search text and clicks outside; CREATIVE-ACTION the tab, grid and hotbar clicks (left button, no shift); The survival inventory tab shows no grid, the player model (preview.cob: 40-7 7.1 rule 8) and its slots
+*> (the wrapper layout of the armour slots is the client's), a tab is selected on press (not release) and the right button works only outside the image.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CREATIVE-GRID-STACK.
@@ -184,6 +184,15 @@
      END-IF
 *>   6.4: the survival tab shows the 27 main slots (arguments 9 to 35 at (9 + 18 col, 54 + 18 row); the armour and off-hand wrappers are not kept by this client) and the delete slot at (173, 112).
      IF WS-TYPE = 2
+*>       The player model (40-7 7.1 rule 8): the box (leftPos + 73, topPos + 6) to (leftPos + 105, topPos + 49), model scale 20, drawn by preview.cob after the panel.
+         COMPUTE WS-X = WS-LEFT + 73
+         COMPUTE WS-Y = WS-TOP + 6
+         MOVE 32 TO WS-W
+         MOVE 43 TO WS-H
+         MOVE 20 TO WS-ARG
+         MOVE WK-PREVIEW TO WS-KIND
+         MOVE ACT-NONE TO WS-ACTION
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-ARG WS-X WS-Y WS-W WS-H WS-NOTEXT WS-ZERO WS-STATE
          PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 26
              COMPUTE WS-K = 9 + WS-I
              COMPUTE WS-X = WS-LEFT + 9 - 1 + 18 * FUNCTION MOD(WS-I, 9)

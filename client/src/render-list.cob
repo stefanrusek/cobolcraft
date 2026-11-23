@@ -665,6 +665,13 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
          MOVE RL-D-MATRIX(RL-DRAW-COUNT, WS-I) TO WS-PV(WS-I)
      END-PERFORM
+*>   The player-model preview of the inventory screen (49 section 4), with the UI's matrix right after the UI layer (the sheet and its widgets) and under the item icons.
+     CALL "PREVIEW-MESH" USING CLIENT-STATE
+     MOVE MESH-SLOT-PREVIEW TO WS-SLOT
+     MOVE CC-PIPE-UI TO WS-PIPE
+     MOVE CC-TEX-ENTITIES TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-PV-VERTEX(1) RL-PV-COUNT RL-PV-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
      MOVE MESH-SLOT-ICONS TO WS-SLOT
      MOVE CC-PIPE-UI TO WS-PIPE
      MOVE CC-TEX-BLOCKS TO WS-TEX

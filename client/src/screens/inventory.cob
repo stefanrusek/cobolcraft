@@ -85,6 +85,10 @@
  01 WS-NONE                BINARY-LONG VALUE ACT-NONE.
  01 WS-CURSOR              BINARY-LONG VALUE 36.
  01 WS-SHEET-KIND          BINARY-LONG VALUE WK-SHEET.
+ 01 WS-PREVIEW-KIND        BINARY-LONG VALUE WK-PREVIEW.
+ 01 WS-PREVIEW-SCALE       BINARY-LONG VALUE 30.
+ 01 WS-PREVIEW-W           BINARY-LONG VALUE 49.
+ 01 WS-PREVIEW-H           BINARY-LONG VALUE 70.
  01 WS-SHEET-ROW           BINARY-LONG.
  01 WS-W                   BINARY-LONG VALUE 176.
  01 WS-H                   BINARY-LONG VALUE 166.
@@ -118,6 +122,13 @@
      END-IF
      CALL "WIDGET-ADD" USING CLIENT-STATE WS-SHEET-KIND WS-NONE WS-SHEET-ROW WS-LEFT WS-TOP WS-W WS-H
          WS-TEXT WS-LENGTH WS-STATE
+*>   The player model of the inventory (49 section 4.1): the box (leftPos + 26, topPos + 8) to (leftPos + 75, topPos + 78), model scale 30; drawn after the sheet (preview.cob).
+     IF L-TYPE = 0
+         COMPUTE WS-X = WS-LEFT + 26
+         COMPUTE WS-Y = WS-TOP + 8
+         CALL "WIDGET-ADD" USING CLIENT-STATE WS-PREVIEW-KIND WS-NONE WS-PREVIEW-SCALE WS-X WS-Y WS-PREVIEW-W WS-PREVIEW-H
+             WS-TEXT WS-LENGTH WS-STATE
+     END-IF
 *>   The title: "Crafting" at x 97 in the inventory, 29 in the bench; y 6.
      COMPUTE WS-X = WS-LEFT + 97
      IF L-TYPE = 12

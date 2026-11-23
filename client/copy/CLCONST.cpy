@@ -51,6 +51,8 @@
  78 WK-LOADGRID             VALUE 12.  *> the loading screen's chunk status grid (docs/protocol/50 section 2.5): x, y, width and height of the 35 x 35 cells, 2 GUI pixels each, SM-LOAD-CELLS
  78 WK-CLIP                 VALUE 13.  *> the left w pixels of a GUI sprite (GSP-* row in the argument) at x, y, h tall, w at most the sprite's own width, not stretched
                                        *> (the experience bar's progress); never clicked
+ 78 WK-PREVIEW              VALUE 14.  *> the player-model preview of an inventory screen (preview.cob; 49 section 4): x, y, w and h the box, the argument the model scale (GUI pixels per block); drawn
+                                       *> by RENDER-LIST-BUILD in its own layer, never by UI-RENDER, never clicked
  78 WK-SHEET                VALUE 10.  *> a region of a 256 x 256 sheet (GSP-SHEET-* row in the argument), x, y on the
                                        *> screen, w x h the region size from the sheet's origin (state 1: origin (1, 1); SM-W-SPRITE adds rows to the origin's v)
  78 WK-METER                VALUE 9.   *> hearts (argument 1) or food (argument 2): state the value in half icons,
@@ -239,6 +241,8 @@
  78 MESH-SLOT-HAND-FIRE     VALUE 65021.
 *> The glint of the items that mobs hold (one mesh, eye-relative, texture 5, glint pipeline; item-held.cob).
  78 MESH-SLOT-GLINT-HELD    VALUE 65022.
+*> The player-model preview of the inventory screens (one mesh, screen space like the UI, texture 1, UI pipeline; preview.cob; 49 section 4).
+ 78 MESH-SLOT-PREVIEW       VALUE 65023.
  78 CL-SWING-MS             VALUE 300.  *> the hand's swing, milliseconds
 
 *> Weather kinds (standin-content §14.1), from the Game Event pair (rain level, thunder level).
@@ -321,6 +325,7 @@
  78 CL-MAX-ICON-VERTICES    VALUE 6144.
  78 CL-MAX-TOP-VERTICES     VALUE 6144.
  78 CL-MAX-HL-VERTICES      VALUE 144.
+ 78 CL-MAX-PV-VERTICES      VALUE 288.  *> the preview: 48 faces of 6 vertices
  78 CL-ITEM-COUNT           VALUE 18.  *> item ids 0 to 17 (standin-content §2)
  78 CL-SLOT-SIZE            VALUE 20.  *> slot widget, GUI pixels (16-pixel icon, 2-pixel inset)
 *> Chat (client-surface §4; 05c Chat Message String(max 256)): messages kept, messages shown, how

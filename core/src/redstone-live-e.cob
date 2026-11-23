@@ -11,7 +11,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RL-INSERT-ONE.
-*> USING block entity index, item, variant, left out (0 when one item went in): HopperBlockEntity.addItem of a single item into the container of the entity (stacks first, then an empty slot).
+*> USING block entity index, item, variant, left out (0 when one item went in): HopperBlockEntity.addItem of a single item into the container of the entity (31-2 5.6): the first slot in order that is
+*> empty or holds the same stack with room takes it.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BESTATE.
@@ -19,7 +20,6 @@
  01 WS-SIZE                BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-LIMIT               BINARY-LONG.
- 01 WS-EMPTY               BINARY-LONG.
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
@@ -29,23 +29,19 @@
      MOVE 1 TO L-LEFT
      CALL "BE-CONTAINER-SIZE" USING BE-TYPE(L-INDEX) WS-SIZE
      CALL "BE-MAX-STACK" USING IT-MAX-STACK(L-ITEM + 1) WS-LIMIT
-     MOVE 0 TO WS-EMPTY
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-SIZE OR L-LEFT = 0
-         IF BE-SLOT-COUNT(L-INDEX, WS-S) > 0 AND BE-SLOT-ITEM(L-INDEX, WS-S) = L-ITEM AND BE-SLOT-VAR(L-INDEX, WS-S) = L-VAR
-                 AND BE-SLOT-COUNT(L-INDEX, WS-S) < WS-LIMIT
-             ADD 1 TO BE-SLOT-COUNT(L-INDEX, WS-S)
-             MOVE 0 TO L-LEFT
-         END-IF
-         IF BE-SLOT-COUNT(L-INDEX, WS-S) = 0 AND WS-EMPTY = 0
-             MOVE WS-S TO WS-EMPTY
-         END-IF
+         EVALUATE TRUE
+             WHEN BE-SLOT-COUNT(L-INDEX, WS-S) = 0
+                 MOVE L-ITEM TO BE-SLOT-ITEM(L-INDEX, WS-S)
+                 MOVE L-VAR TO BE-SLOT-VAR(L-INDEX, WS-S)
+                 MOVE 1 TO BE-SLOT-COUNT(L-INDEX, WS-S)
+                 MOVE 0 TO L-LEFT
+             WHEN BE-SLOT-ITEM(L-INDEX, WS-S) = L-ITEM AND BE-SLOT-VAR(L-INDEX, WS-S) = L-VAR
+                     AND BE-SLOT-COUNT(L-INDEX, WS-S) < WS-LIMIT
+                 ADD 1 TO BE-SLOT-COUNT(L-INDEX, WS-S)
+                 MOVE 0 TO L-LEFT
+         END-EVALUATE
      END-PERFORM
-     IF L-LEFT = 1 AND WS-EMPTY > 0
-         MOVE L-ITEM TO BE-SLOT-ITEM(L-INDEX, WS-EMPTY)
-         MOVE L-VAR TO BE-SLOT-VAR(L-INDEX, WS-EMPTY)
-         MOVE 1 TO BE-SLOT-COUNT(L-INDEX, WS-EMPTY)
-         MOVE 0 TO L-LEFT
-     END-IF
      IF L-LEFT = 0
          CALL "BE-MARK-CHUNK" USING L-INDEX
      END-IF

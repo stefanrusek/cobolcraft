@@ -107,6 +107,8 @@
  01 LS-POWER               FLOAT-LONG.
  01 LS-UNCERTAIN           FLOAT-LONG.
  01 LS-PJ                  BINARY-LONG.
+ 01 LS-FAMILY              BINARY-LONG.
+ 01 LS-BASE                BINARY-LONG VALUE 2000.
  01 LS-NEW-KEY             PIC X(48).
  01 LS-ROW-TEXT            PIC X(819).
  01 LS-STATUS              BINARY-LONG.
@@ -385,6 +387,27 @@
                      MOVE "minecraft:experience_bottle" TO LS-TYPE-KEY
                      CALL "THROWN-SPAWN" USING LS-PJ LS-TYPE-KEY L-DIM LS-FX LS-FY LS-FZ LS-VX LS-VY LS-VZ LS-ZERO LS-ROW
              END-EVALUATE
+             IF LS-ROW > 0
+                 MOVE 1 TO L-HANDLED
+                 MOVE 3 TO L-CONSUMED
+             END-IF
+         WHEN LS-BARE = "arrow" OR LS-BARE = "spectral_arrow" OR LS-BARE = "tipped_arrow"
+*>           4.1: an arrow is shot like the thrown items (power 1.1, uncertainty 6.0, launch sound 1002); a tipped arrow is an arrow here (its potion contents are not modelled), a spectral arrow glows its target
+             COMPUTE LS-FX = L-X - LS-DX + 0.5 + 0.7 * LS-DX
+             COMPUTE LS-FY = L-Y - LS-DY + 0.5 + 0.7 * LS-DY + 0.1
+             COMPUTE LS-FZ = L-Z - LS-DZ + 0.5 + 0.7 * LS-DZ
+             MOVE LS-DX TO LS-VX
+             MOVE LS-DY TO LS-VY
+             MOVE LS-DZ TO LS-VZ
+             MOVE 1.1 TO LS-POWER
+             MOVE 6.0 TO LS-UNCERTAIN
+             CALL "THROWN-JITTER" USING LS-VX LS-VY LS-VZ LS-POWER LS-UNCERTAIN
+             MOVE 1 TO LS-FAMILY
+             IF LS-BARE = "spectral_arrow"
+                 MOVE 2 TO LS-FAMILY
+             END-IF
+             MOVE 0 TO LS-ROW
+             CALL "ARROW-SPAWN-AS" USING LS-FAMILY L-DIM LS-FX LS-FY LS-FZ LS-VX LS-VY LS-VZ LS-BASE LS-ZERO LS-ROW
              IF LS-ROW > 0
                  MOVE 1 TO L-HANDLED
                  MOVE 3 TO L-CONSUMED

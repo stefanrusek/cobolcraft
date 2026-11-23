@@ -1,7 +1,7 @@
 *> Boats and rafts, with and without chest (docs/protocol/21 section 8.8; 44 part 8 section 3: 3.1 constants, 3.2 the tick, 3.3 the status, 3.4 floatBoat, 3.6 the seat, 2 and 3.9 hurt,
 *> destroy and boarding). Each boat is a tracker row of its entity type (EN-BT-KIND 1 boat or raft, 2 chest boat or raft; EN-HEALTH 1 marks it alive for the damage entry points
 *> and EN-SADDLE 1 that the rider's client moves it with Move Vehicle, see MOB-RIDE-MOVE). The rider is a player row (EN-RIDER of the boat, EN-VEHICLE of the player's entity).
-*> Open (not built): a second passenger, the paddle input and animation, pushing and loading of other entities, bubble columns, leads, the ground friction scan (every solid cell under
+*> Open (not built): a second passenger that is a mob (two players seat, 3.6), the paddle input and animation, pushing and loading of other entities, bubble columns, leads, the ground friction scan (every solid cell under
 *> the boat has friction 0.6), the dismount location search, the chest menu of a chest boat and the scattering of its contents, the boat item and the dispenser, explosions, saving.
 *>   BOAT-KIND USING type, kind out                         0 not a boat, 1 boat or raft, 2 chest boat or chest raft
 *>   BOAT-SPAWN USING dim, x, y, z, yaw (FLOAT-LONG), entity key (PIC X(112)), row out    a boat of that type (row 0 when the key is no boat)
@@ -484,8 +484,12 @@
      ELSE
          MOVE 0 TO EN-BT-OOC(L-ROW)
      END-IF
-     IF EN-BT-OOC(L-ROW) >= 60 AND EN-RIDER(L-ROW) > 0
-         CALL "MOB-RIDE-STOP" USING L-ROW
+     IF EN-BT-OOC(L-ROW) >= 60
+         PERFORM 2 TIMES
+             IF EN-RIDER(L-ROW) > 0
+                 CALL "MOB-RIDE-STOP" USING L-ROW
+             END-IF
+         END-PERFORM
      END-IF
      IF EN-BT-HURT(L-ROW) > 0
          SUBTRACT 1 FROM EN-BT-HURT(L-ROW)
@@ -523,17 +527,22 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BOAT-SYNC.
-*> USING row: the rider takes the seat of 3.6: (0, rideHeight, zOffset) turned by the boat's yaw about the vertical axis, the ride height being height / 3 = 0.1875 for a boat and
-*> 0.5 for a raft, less the player's own attachment 0.6, and the offset 0.15 for a chest boat or raft. The rider's entity is moved for the other viewers.
+*> USING row: each rider takes the seat of 3.6: (0, rideHeight, zOffset) turned by the boat's yaw about the vertical axis, the ride height being height / 3 = 0.1875 for a boat and
+*> 0.5 for a raft, less the player's own attachment 0.6, and the single-passenger offset 0.15 for a chest boat or raft. With two passengers (boats and rafts only) the first has
+*> zOffset + 0.2 and the second zOffset - 0.6 (a mob rider, which the core cannot seat, would add 0.2 more). A player rider's yaw is clamped to 105 degrees either side of the boat's
+*> (clampRotation, 3.6). The riders' entities are moved for the other viewers.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY MOB181.
  01 WS-RIDER               BINARY-LONG.
+ 01 WS-SEAT                BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
  01 WS-OFFSET              FLOAT-LONG.
  01 WS-ANGLE               FLOAT-LONG.
+ 01 WS-DELTA               FLOAT-LONG.
+ 01 WS-CLAMPED             FLOAT-LONG.
  01 WS-KEY                 PIC X(24).
  01 WS-N                   BINARY-LONG.
  01 WS-TAIL5               PIC X(5).
@@ -541,7 +550,6 @@
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
-     MOVE EN-RIDER(L-ROW) TO WS-RIDER
      COMPUTE WS-ROW = EN-TYPE(L-ROW) + 1
      MOVE M1-KEY(WS-ROW) TO WS-KEY
      COMPUTE WS-N = FUNCTION LENGTH(FUNCTION TRIM(WS-KEY))
@@ -550,23 +558,48 @@
      IF WS-TAIL5 = "_raft"
          MOVE 0.5 TO WS-HEIGHT
      END-IF
-     MOVE 0 TO WS-OFFSET
-     IF EN-BT-KIND(L-ROW) = 2
-         MOVE 0.15 TO WS-OFFSET
-     END-IF
      COMPUTE WS-ANGLE = EN-YAW(L-ROW) * FUNCTION PI / 180
-     COMPUTE PL-X(WS-RIDER) = EN-X(L-ROW) - WS-OFFSET * FUNCTION SIN(WS-ANGLE)
-     COMPUTE PL-Y(WS-RIDER) = EN-Y(L-ROW) + WS-HEIGHT - 0.6
-     COMPUTE PL-Z(WS-RIDER) = EN-Z(L-ROW) + WS-OFFSET * FUNCTION COS(WS-ANGLE)
-     CALL "ENTITY-MOVE" USING PL-ENTITY-ROW(WS-RIDER) PL-X(WS-RIDER) PL-Y(WS-RIDER) PL-Z(WS-RIDER)
-         PL-YAW(WS-RIDER) PL-PITCH(WS-RIDER) WS-GROUND
+     PERFORM VARYING WS-SEAT FROM 1 BY 1 UNTIL WS-SEAT > 2
+         IF WS-SEAT = 1
+             MOVE EN-RIDER(L-ROW) TO WS-RIDER
+         ELSE
+             MOVE EN-RIDER2(L-ROW) TO WS-RIDER
+         END-IF
+         IF WS-RIDER > 0
+             MOVE 0 TO WS-OFFSET
+             IF EN-BT-KIND(L-ROW) = 2
+                 MOVE 0.15 TO WS-OFFSET
+             END-IF
+             IF EN-RIDER2(L-ROW) > 0 AND WS-SEAT = 1
+                 ADD 0.2 TO WS-OFFSET
+             END-IF
+             IF EN-RIDER2(L-ROW) > 0 AND WS-SEAT = 2
+                 SUBTRACT 0.6 FROM WS-OFFSET
+             END-IF
+             COMPUTE PL-X(WS-RIDER) = EN-X(L-ROW) - WS-OFFSET * FUNCTION SIN(WS-ANGLE)
+             COMPUTE PL-Y(WS-RIDER) = EN-Y(L-ROW) + WS-HEIGHT - 0.6
+             COMPUTE PL-Z(WS-RIDER) = EN-Z(L-ROW) + WS-OFFSET * FUNCTION COS(WS-ANGLE)
+             COMPUTE WS-DELTA = PL-YAW(WS-RIDER) - EN-YAW(L-ROW)
+             COMPUTE WS-DELTA = WS-DELTA - 360 * FUNCTION INTEGER((WS-DELTA + 180) / 360)
+             MOVE WS-DELTA TO WS-CLAMPED
+             IF WS-CLAMPED > 105
+                 MOVE 105 TO WS-CLAMPED
+             END-IF
+             IF WS-CLAMPED < -105
+                 MOVE -105 TO WS-CLAMPED
+             END-IF
+             COMPUTE PL-YAW(WS-RIDER) = PL-YAW(WS-RIDER) + WS-CLAMPED - WS-DELTA
+             CALL "ENTITY-MOVE" USING PL-ENTITY-ROW(WS-RIDER) PL-X(WS-RIDER) PL-Y(WS-RIDER) PL-Z(WS-RIDER)
+                 PL-YAW(WS-RIDER) PL-PITCH(WS-RIDER) WS-GROUND
+         END-IF
+     END-PERFORM
      GOBACK.
  END PROGRAM BOAT-SYNC.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BOAT-USE.
 *> USING player row, boat row, used out: the main hand of an alive player on a boat (3.9 interact): within the interaction reach of the boat's box, the player not sneaking, riding
-*> nothing, the boat free (one passenger here), not out of control (EN-BT-OOC below 60) and not under water: the player boards (Set Passengers to the viewers). A chest boat opens its menu
+*> nothing, the boat free (one passenger, two on a boat or raft without a chest), not out of control (EN-BT-OOC below 60) and not under water: the player boards (Set Passengers to the viewers). A chest boat opens its menu
 *> when the player sneaks (open: it does nothing). used is 1 when the player boarded.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -596,9 +629,14 @@
      IF WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ > WS-REACH * WS-REACH
          GOBACK
      END-IF
-     IF PL-SNEAKING(L-PLAYER) = 0 AND EN-VEHICLE(PL-ENTITY-ROW(L-PLAYER)) = 0 AND EN-RIDER(L-ROW) = 0
+     IF PL-SNEAKING(L-PLAYER) = 0 AND EN-VEHICLE(PL-ENTITY-ROW(L-PLAYER)) = 0
              AND EN-BT-OOC(L-ROW) < 60 AND EN-BT-STATUS(L-ROW) NOT = 1 AND EN-BT-STATUS(L-ROW) NOT = 2
-         MOVE L-PLAYER TO EN-RIDER(L-ROW)
+             AND (EN-RIDER(L-ROW) = 0 OR (EN-RIDER2(L-ROW) = 0 AND EN-BT-KIND(L-ROW) = 1))
+         IF EN-RIDER(L-ROW) = 0
+             MOVE L-PLAYER TO EN-RIDER(L-ROW)
+         ELSE
+             MOVE L-PLAYER TO EN-RIDER2(L-ROW)
+         END-IF
          MOVE L-ROW TO EN-VEHICLE(PL-ENTITY-ROW(L-PLAYER))
          CALL "BOAT-SYNC" USING L-ROW
          CALL "MOB-RIDE-SEND" USING L-ROW
@@ -685,9 +723,11 @@
          END-IF
      END-IF
      IF WS-CREATIVE = 0 AND EN-BT-DAMAGE(L-ROW) > 40
-         IF EN-RIDER(L-ROW) > 0
-             CALL "MOB-RIDE-STOP" USING L-ROW
-         END-IF
+         PERFORM 2 TIMES
+             IF EN-RIDER(L-ROW) > 0
+                 CALL "MOB-RIDE-STOP" USING L-ROW
+             END-IF
+         END-PERFORM
          CALL "BR-RULE-GET" USING WS-RULE-NAME WS-RULE
          IF WS-RULE NOT = 0
              COMPUTE WS-ROW = EN-TYPE(L-ROW) + 1
@@ -701,9 +741,11 @@
          GOBACK
      END-IF
      IF WS-CREATIVE = 1
-         IF EN-RIDER(L-ROW) > 0
-             CALL "MOB-RIDE-STOP" USING L-ROW
-         END-IF
+         PERFORM 2 TIMES
+             IF EN-RIDER(L-ROW) > 0
+                 CALL "MOB-RIDE-STOP" USING L-ROW
+             END-IF
+         END-PERFORM
          CALL "ENTITY-REMOVE" USING L-ROW
          GOBACK
      END-IF
