@@ -1,6 +1,7 @@
 *> Acceptance test (US12 dimension rules; docs/protocol/37-nether-1 section 3.1 water_evaporates): a survival player in the Nether who empties a water bucket into the air
 *> in front of her places no water (the cell stays air), hears the fire.extinguish Sound and sees the 8 large_smoke particles (Sound 0x77 and Level Particles 0x30 reach her), and
-*> the bucket is spent (an empty bucket in the hand); the same use in the overworld places the water. Needs the generated packs (a pass without them).
+*> the bucket is spent (an empty bucket in the hand); the same use in the overworld places the water. The same holds for a water bucket aimed at a dry waterloggable block (a top slab): in the
+*> Nether the slab is not waterlogged and the bucket is spent with the sound and the smoke, in the overworld the slab is waterlogged. Needs the generated packs (a pass without them).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-F2US12-NETHER-WATER.
  DATA DIVISION.
@@ -32,6 +33,8 @@
  01 WS-IDS                 PIC X(1024).
  01 WS-COUNT               BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
+ 01 WS-SLAB                BINARY-LONG.
+ 01 WS-PROPS               PIC X(160).
  PROCEDURE DIVISION.
      MOVE "N" TO TL-MODE
      CALL "PT-OPEN" USING WS-SKIP
@@ -104,6 +107,54 @@
      IF WS-STATE NOT = 0
          MOVE 1 TO TL-OBSERVED-N
      END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A top slab at the wall's cell (the ray at the eye height 70.62 meets its upper half): in the Nether a water bucket does not waterlog it.
+     MOVE "oak_slab" TO WS-KEY48
+     MOVE "type=top,waterlogged=false" TO WS-PAIRS
+     CALL "PT-STATE" USING WS-KEY48 WS-PAIRS WS-SLAB
+     MOVE SPACES TO WS-PAIRS
+     MOVE WS-WATER-BUCKET TO PL-SLOT-ITEM(WS-ROW, 1)
+     MOVE 1 TO PL-SLOT-COUNT(WS-ROW, 1)
+     MOVE DIM-STANDARD-NETHER TO WS-DIM
+     MOVE 24 TO WS-Z
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-SLAB
+     MOVE WS-DIM TO PL-DIM(WS-ROW)
+     CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-IDS
+     CALL "TEST-USE-ITEM" USING WS-ALICE
+     CALL "TEST-DRAIN-IDS" USING WS-ALICE WS-IDS
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     CALL "BLOCKS-STATE-PROPS" USING WS-STATE WS-PROPS
+     MOVE "acceptance US12 37§3 3.1 nether water: a top slab is not waterlogged by a water bucket" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "type=top,waterlogged=false" TO TL-EXPECTED
+     MOVE WS-PROPS TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US12 37§3 3.1 nether water: the bucket on the slab is spent (an empty bucket in the hand)" TO TL-CASE
+     MOVE WS-BUCKET TO TL-EXPECTED-N
+     MOVE PL-SLOT-ITEM(WS-ROW, 1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-COUNT
+     INSPECT WS-IDS TALLYING WS-COUNT FOR ALL "119"
+     MOVE "acceptance US12 37§3 3.1 nether water: the slab use sends the fire.extinguish Sound (0x77)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-COUNT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The overworld control: the same slab is waterlogged.
+     MOVE WS-WATER-BUCKET TO PL-SLOT-ITEM(WS-ROW, 1)
+     MOVE 1 TO PL-SLOT-COUNT(WS-ROW, 1)
+     MOVE DIM-STANDARD-OVERWORLD TO WS-DIM
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-SLAB
+     MOVE WS-DIM TO PL-DIM(WS-ROW)
+     CALL "TEST-USE-ITEM" USING WS-ALICE
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     CALL "BLOCKS-STATE-PROPS" USING WS-STATE WS-PROPS
+     MOVE "acceptance US12 37§3 3.1 nether water: in the overworld the top slab is waterlogged" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "type=top,waterlogged=true" TO TL-EXPECTED
+     MOVE WS-PROPS TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM ACC-F2US12-NETHER-WATER.
