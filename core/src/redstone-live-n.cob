@@ -1,8 +1,8 @@
 *> Live redstone, more registered behaviours of the dispenser (docs/protocol/30-redstone-4 section 4), reached from RL-DISP-BEHAVE for an item none of its own rules took: the glowstone (4.17) and the chest
 *> (4.3). Glowstone: a respawn anchor in front with fewer than 4 charges takes one (the item is spent, click 1000); with 4 charges nothing happens and the item stays (click 1001); any other block
-*> leaves the item to the default drop. Chest: a tamed donkey, mule, llama or trader llama in front (its box overlaps the front cell) with no chest takes the chest item (the flag of the Byte key
-*> ChestedHorse, slot 1 of its EK-SPX slots, SPXTAB.cpy), the item is spent; with none, the default drop.
-*> Not done: the respawn anchor's charge sound (the document names `RespawnAnchorBlock.charge` and no sound), the chest on the client's view of the animal (no entity data flag is sent), the 27 slots of the new inventory.
+*> leaves the item to the default drop. Chest: a tamed donkey, mule, llama or trader llama in front (its box overlaps the front cell) with no chest takes the chest item (WC-CHEST of WCSTATE.cpy, saved as ChestedHorse; the
+*> viewers get Set Entity Data as for a player's chest, mob-19-3c.cob), the item is spent; with none, the default drop.
+*> Not done: the respawn anchor's charge sound (the document names `RespawnAnchorBlock.charge` and no sound), the llama's chest flag is not saved or sent (mob-19-3c.cob handles the donkey and the mule), the 27 slots of the new inventory.
 *> Entry points:
 *>   RL-DISP-MORE USING dim, front x, y, z, facing, item key (PIC X(48), bare), handled out, consumed out    handled 1 when a rule ran (consumed: 1 the item is spent, 0 the dry click 1001); 0 for the default
 
@@ -14,7 +14,7 @@
  COPY CITEMS.
  COPY CORESTATE.
  COPY STDMOBS.
- COPY ENKEEP.
+ COPY WCSTATE.
  01 WS-CHARGES             PIC X(16) VALUE "charges".
  01 WS-KEEP                PIC X(16) VALUE "keep".
  01 WS-DIGITS              PIC X(5) VALUE "01234".
@@ -79,7 +79,10 @@
                  IF EN-USED(LS-I) = 1 AND EN-DIM(LS-I) = L-DIM AND EN-HEALTH(LS-I) > 0 AND EN-TAMED(LS-I) = 1
                      CALL "STDMOB-INDEX" USING EN-TYPE(LS-I) LS-M
                      IF LS-M > 0
-                         IF (SM-KEY(LS-M) = "donkey" OR "mule" OR "llama" OR "trader_llama") AND EK-SPX-NUM(LS-I, 1) = 0
+                         IF SM-KEY(LS-M) = "donkey" OR "mule" OR "llama" OR "trader_llama"
+                             CALL "WC-ROW-OPEN" USING LS-I
+                         END-IF
+                         IF (SM-KEY(LS-M) = "donkey" OR "mule" OR "llama" OR "trader_llama") AND WC-CHEST(LS-I) = 0
                              COMPUTE LS-HALF-W = ET-WIDTH-MILLI(EN-TYPE(LS-I) + 1) / 2000
                              COMPUTE LS-HEIGHT = ET-HEIGHT-MILLI(EN-TYPE(LS-I) + 1) / 1000
 *>                           the box of the animal against the cell: it must overlap it on all three axes
@@ -97,8 +100,8 @@
                                  MOVE 0 TO LS-OVERLAP
                              END-IF
                              IF LS-OVERLAP = 1
-                                 MOVE 1 TO EK-SPX-SET(LS-I, 1)
-                                 MOVE 1 TO EK-SPX-NUM(LS-I, 1)
+                                 MOVE 1 TO WC-CHEST(LS-I)
+                                 CALL "MOB-DATA-SEND" USING LS-I
                                  MOVE 1 TO L-HANDLED L-CONSUMED
                              END-IF
                          END-IF
