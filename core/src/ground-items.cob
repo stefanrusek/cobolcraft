@@ -29,36 +29,78 @@
 *>     (BINARY-LONG)                                              a new ground item
 *>   GROUND-ITEMS-TICK                                            the per-tick rules (CORE-TICK)
 *> Builders (append id + body to the caller's PB-BUFFER):
-*>   SET-ENTITY-DATA-ITEM-BUILD USING entity id, item, count, PB-BUFFER
+*>   SET-ENTITY-DATA-ITEM-BUILD USING entity id, item, count, PB-BUFFER    the stack with the empty patch
+*>   SET-ENTITY-DATA-STACK-BUILD USING entity id, item, count, patch handle, PB-BUFFER    the stack with its component patch (enchantments: the glint)
+*>   GI-DATA-BUILD USING tracker row, PB-BUFFER                            the stack of a ground item row with its patch
 *>   SET-ENTITY-MOTION-BUILD USING entity id, vx, vy, vz (FLOAT-LONG), PB-BUFFER
 *>   TAKE-ITEM-ENTITY-BUILD USING collected id, collector id, amount, PB-BUFFER
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. SET-ENTITY-DATA-ITEM-BUILD.
-*> USING entity id, item, count (BINARY-LONG), PB-BUFFER: Set Entity Data 0x65 (05b; 09 §3.3): the
-*> entity id, one metadata entry (index 0, serializer 7 ITEM_STACK, the stack), the 0xFF end.
+ PROGRAM-ID. SET-ENTITY-DATA-STACK-BUILD.
+*> USING entity id, item, count (BINARY-LONG), patch handle (CSTACK.cpy; 0 none), PB-BUFFER: Set Entity Data 0x65 (05b; 09 §3.3): the
+*> entity id, one metadata entry (index 0, serializer 7 ITEM_STACK, the stack with its data component patch as 00 §12.2 gives it: the
+*> components that differ from the item's prototype, enchantments among them, so a viewer draws the glint), the 0xFF end.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
  01 WS-PACKET-ID           BINARY-LONG VALUE 101.
+ 01 WS-INDEX               BINARY-LONG VALUE 0.
+ 01 WS-SERIALIZER          BINARY-LONG VALUE 7.
+ 01 WS-END                 BINARY-LONG VALUE 255.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ENTITY-ID            BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-HANDLE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ENTITY-ID L-ITEM L-COUNT L-HANDLE PB-BUFFER.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ENTITY-ID
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-INDEX
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SERIALIZER
+     CALL "SP-EXPORT" USING L-ITEM L-COUNT L-HANDLE MD-ITEMSTACK-X
+     CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER MD-ITEMSTACK-X
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-END
+     GOBACK.
+ END PROGRAM SET-ENTITY-DATA-STACK-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SET-ENTITY-DATA-ITEM-BUILD.
+*> USING entity id, item, count (BINARY-LONG), PB-BUFFER: Set Entity Data 0x65 (05b; 09 §3.3) of a stack with no data component
+*> (SET-ENTITY-DATA-STACK-BUILD with the empty patch).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ENTITY-ID            BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
  01 L-COUNT                BINARY-LONG.
  PROCEDURE DIVISION USING L-ENTITY-ID L-ITEM L-COUNT PB-BUFFER.
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
-     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ENTITY-ID
-     INITIALIZE MD-METADATA-ENTRY
-     MOVE 0 TO MD-MD-INDEX
-     MOVE MD-MDS-ITEM-STACK TO MD-MD-SERIALIZER
-     MOVE L-COUNT TO MD-MD-IS-COUNT
-     MOVE L-ITEM TO MD-MD-IS-ITEM
-     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
-     MOVE MD-MD-END TO MD-MD-INDEX
-     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     CALL "SET-ENTITY-DATA-STACK-BUILD" USING L-ENTITY-ID L-ITEM L-COUNT WS-NONE PB-BUFFER
      GOBACK.
  END PROGRAM SET-ENTITY-DATA-ITEM-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GI-DATA-BUILD.
+*> USING tracker row of a ground item, PB-BUFFER: its Set Entity Data (SET-ENTITY-DATA-STACK-BUILD) with the row's component patch (IP-I-VAR of the
+*> item record when that record belongs to the row's entity, else the empty patch).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMPHYS.
+ 01 WS-HANDLE              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW PB-BUFFER.
+     MOVE 0 TO WS-HANDLE
+     IF IP-I-ID(L-ROW) = EN-ID(L-ROW)
+         MOVE IP-I-VAR(L-ROW) TO WS-HANDLE
+     END-IF
+     CALL "SET-ENTITY-DATA-STACK-BUILD" USING EN-ID(L-ROW) EN-ITEM(L-ROW) EN-ITEM-COUNT(L-ROW) WS-HANDLE PB-BUFFER
+     GOBACK.
+ END PROGRAM GI-DATA-BUILD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SET-ENTITY-MOTION-BUILD.
@@ -508,7 +550,7 @@
          WHEN WS-LEFT < WS-BEFORE-COUNT
              MOVE WS-LEFT TO EN-ITEM-COUNT(L-ROW)
              CALL "PB-RESET" USING PB-BUFFER
-             CALL "SET-ENTITY-DATA-ITEM-BUILD" USING EN-ID(L-ROW) EN-ITEM(L-ROW) EN-ITEM-COUNT(L-ROW) PB-BUFFER
+             CALL "GI-DATA-BUILD" USING L-ROW PB-BUFFER
              CALL "GI-VIEWERS-SEND" USING L-ROW PB-BUFFER
      END-EVALUATE
      GOBACK.
