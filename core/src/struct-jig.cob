@@ -607,6 +607,12 @@
      COMPUTE WS-PX = L-CX * 16
      MOVE SDT-JIG-Y(L-STRUCT) TO WS-PY
      COMPUTE WS-PZ = L-CZ * 16
+*>   36-3 15 (generateJigsaw): the start is the given position, whatever the chunk
+     IF JO-AT = 1
+         MOVE JO-X TO WS-PX
+         MOVE JO-Y TO WS-PY
+         MOVE JO-Z TO WS-PZ
+     END-IF
 *>   8.2 step 2: a uniform start height draws one value from the start random (lo + nextInt(hi - lo + 1); no draw when lo > hi), before the rotation
      IF SDT-JIG-YKIND(L-STRUCT) = 1 AND SDT-JIG-Y2(L-STRUCT) > SDT-JIG-Y(L-STRUCT)
          COMPUTE WS-BOUND = SDT-JIG-Y2(L-STRUCT) - SDT-JIG-Y(L-STRUCT) + 1
@@ -690,7 +696,10 @@
      IF SDT-JIG-SIZE(L-STRUCT) <= 0
          GOBACK
      END-IF
-     CALL "JIG-BIOME-OK" USING L-STRUCT L-X L-Y L-Z WS-FLAG
+     MOVE 1 TO WS-FLAG
+     IF JO-AT = 0
+         CALL "JIG-BIOME-OK" USING L-STRUCT L-X L-Y L-Z WS-FLAG
+     END-IF
      IF WS-FLAG = 0
          GOBACK
      END-IF

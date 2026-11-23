@@ -14,6 +14,8 @@
 *>  the data (VarInt) in PSB-DATA.
     05 PSB-TARGET             BINARY-LONG.
     05 PSB-DATA               BINARY-LONG.
+*>  0x1B Jigsaw Generate: the block position in PSB-BX..BZ, the levels (VarInt) in PSB-DATA and keepJigsaws (Boolean) here.
+    05 PSB-KEEP-JIGSAWS       BINARY-LONG.
 *>  0x0B Chunk Batch Received
     05 PSB-CHUNK-RATE         FLOAT-SHORT.
 *>  0x0E Client Information (03 layout; only the view distance and the model customisation byte are kept)

@@ -1,6 +1,7 @@
 *> Acceptance test of docs/protocol/16-commands-catalog.md §7.5 `place` (permission level 2): feature, jigsaw, structure and template with every argument form. This world has
-*> no template, structure, jigsaw pool or placeable configured feature, so feature, jigsaw and structure answer commands.place.<kind>.failed and a template commands.place.template.invalid
-*> [template id] (the success messages cannot happen). Opal holds operator status.
+*> no template, structure, jigsaw pool or placeable configured feature, so feature and structure answer commands.place.<kind>.failed, a jigsaw commands.place.jigsaw.invalid [pool key]
+*> (36-3 15: there is no template pool; the success and failed answers with the data are in test_struct_36_3_15) and a template commands.place.template.invalid [template id] (the success
+*> messages cannot happen). Opal holds operator status.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-CMD-PLACE.
  DATA DIVISION.
@@ -37,12 +38,13 @@
      MOVE "acceptance US13 /place feature at a position" TO TL-CASE
      MOVE "place feature minecraft:oak 1 70 1" TO WS-LINE
      PERFORM RUN-TEXT
-     MOVE "acceptance US13 /place jigsaw: Failed to generate jigsaw" TO TL-CASE
+     MOVE "acceptance US13 /place jigsaw: There is no template pool of that key" TO TL-CASE
      MOVE "place jigsaw minecraft:village/plains/town_centers minecraft:empty 5" TO WS-LINE
-     MOVE "commands.place.jigsaw.failed()" TO WS-EXPECTED
+     MOVE "commands.place.jigsaw.invalid(minecraft:village/plains/town_centers)" TO WS-EXPECTED
      PERFORM RUN-TEXT
      MOVE "acceptance US13 /place jigsaw at a position" TO TL-CASE
      MOVE "place jigsaw minecraft:pool minecraft:empty 20 ~ ~ ~" TO WS-LINE
+     MOVE "commands.place.jigsaw.invalid(minecraft:pool)" TO WS-EXPECTED
      PERFORM RUN-TEXT
      MOVE "acceptance US13 /place jigsaw the depth is at most 20" TO TL-CASE
      MOVE "place jigsaw minecraft:pool minecraft:empty 21" TO WS-LINE

@@ -19,6 +19,7 @@
  COPY STRUCTPROC.
  COPY STRUCTJIG.
  01 WS-KEY                 PIC X(80).
+ 01 WS-KEY2                PIC X(80).
  01 WS-LEGACY              PIC 9.
  01 WS-PROJ                PIC 9.
  01 WS-NAME                PIC X(80).
@@ -60,6 +61,12 @@
      MOVE JE-PROJ(L-EL) TO WS-PROJ
      MOVE SPACES TO WS-KEY
      STRING "cobolcraft:compose/" WS-LEGACY "/" WS-PROJ "/" FUNCTION TRIM(JE-PROC(L-EL)) DELIMITED BY SIZE INTO WS-KEY
+*>   keepJigsaws (36-3 15, JO-KEEP): the lists without the jigsaw replacement are other lists
+     IF JO-KEEP = 1
+         MOVE SPACES TO WS-KEY2
+         STRING FUNCTION TRIM(WS-KEY) "/keep" DELIMITED BY SIZE INTO WS-KEY2
+         MOVE WS-KEY2 TO WS-KEY
+     END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SP-LIST-COUNT
          IF SPL-KEY(WS-I) = WS-KEY
              MOVE WS-I TO L-LIST
@@ -69,7 +76,10 @@
 *>   the lists that make it: the ones of the code (4: ignore, 5: air ignore, 6: replacement, 7: gravity) and the element's own (0 when it names none or none exists)
      CALL "STRUCT-PROC-LOAD" USING K-IGNORE-BLOCK WS-A
      CALL "STRUCT-PROC-LOAD" USING K-IGNORE-AIR WS-E
-     CALL "STRUCT-PROC-LOAD" USING K-REPLACE WS-B
+     MOVE 0 TO WS-B
+     IF JO-KEEP = 0
+         CALL "STRUCT-PROC-LOAD" USING K-REPLACE WS-B
+     END-IF
      MOVE 0 TO WS-C WS-D
      IF JE-PROC(L-EL) NOT = SPACES
          MOVE JE-PROC(L-EL) TO WS-NAME
@@ -84,7 +94,9 @@
      ELSE
          ADD SPL-N(WS-E) TO WS-N
      END-IF
-     ADD SPL-N(WS-B) TO WS-N
+     IF WS-B > 0
+         ADD SPL-N(WS-B) TO WS-N
+     END-IF
      IF WS-C > 0
          ADD SPL-N(WS-C) TO WS-N
      END-IF
@@ -104,8 +116,10 @@
          MOVE WS-A TO WS-SRC
          PERFORM COPY-LIST
      END-IF
-     MOVE WS-B TO WS-SRC
-     PERFORM COPY-LIST
+     IF WS-B > 0
+         MOVE WS-B TO WS-SRC
+         PERFORM COPY-LIST
+     END-IF
      IF WS-C > 0
          MOVE WS-C TO WS-SRC
          PERFORM COPY-LIST
