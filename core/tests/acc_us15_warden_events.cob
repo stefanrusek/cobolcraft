@@ -67,6 +67,7 @@
  01 WS-NONE2               BINARY-LONG VALUE 0.
  01 WS-POWER               FLOAT-LONG VALUE 0.1.
  01 WS-DESTROY             BINARY-LONG VALUE 0.
+ 01 WS-NO-FIRE             BINARY-LONG VALUE 0.
  01 WS-CX                  FLOAT-LONG.
  01 WS-CY                  FLOAT-LONG.
  01 WS-CZ                  FLOAT-LONG.
@@ -305,7 +306,7 @@
      COMPUTE WS-CY = 201.5
      COMPUTE WS-CZ = WS-BZ + 0.5 - 8
      MOVE GE-COUNT TO WS-COUNT0
-     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-DESTROY WS-NONE
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-DESTROY WS-NONE WS-NO-FIRE
      MOVE "an explosion posts explode" TO TL-CASE
      MOVE "explode" TO TL-EXPECTED
      MOVE GE-NAME TO TL-OBSERVED
@@ -330,7 +331,7 @@
 
 *>   An explosion whose source is the zombie: the event carries the zombie.
      PERFORM NEW-SCENE
-     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-DESTROY WS-ZOMBIE
+     CALL "EXPLODE-RUN" USING WS-DIM WS-CX WS-CY WS-CZ WS-POWER WS-DESTROY WS-ZOMBIE WS-NO-FIRE
      MOVE "an explosion of a mob names the mob as the source" TO TL-CASE
      MOVE WS-ZOMBIE TO TL-EXPECTED-N
      MOVE GE-SOURCE TO TL-OBSERVED-N

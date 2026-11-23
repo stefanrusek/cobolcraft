@@ -26,6 +26,13 @@
  01 WS-GET                 BINARY-LONG VALUE 3.
  01 WS-ROW                 BINARY-LONG.
  01 WS-INACTIVE            BINARY-LONG VALUE 0.
+ 01 WS-YES                 BINARY-LONG VALUE 1.
+ 01 WS-CX                  FLOAT-LONG.
+ 01 WS-CY                  FLOAT-LONG.
+ 01 WS-CZ                  FLOAT-LONG.
+ 01 WS-RCID                BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE "N" TO TL-MODE
@@ -120,6 +127,33 @@
      MOVE "covB 21 6.4.5 stage 4 counts its ticks" TO TL-CASE
      MOVE 46 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = EF-STAGE * 10 + EF-TIME
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Stage 4 at tick 100 discards the respawn crystals with an explosion (power 6, no fire) each, and the sequence ends (stage 0).
+     COMPUTE WS-CX = WS-BX + 0.5
+     MOVE 120 TO WS-CY
+     COMPUTE WS-CZ = WS-BZ + 0.5
+     CALL "CRYSTAL-SPAWN" USING WS-DIM WS-CX WS-CY WS-CZ WS-YES WS-ROW
+     MOVE 1 TO FR-RC-N
+     MOVE EN-ID(WS-ROW) TO WS-RCID
+     MOVE WS-RCID TO FR-RC(1)
+     MOVE 4 TO EF-STAGE
+     MOVE 100 TO EF-TIME
+     CALL "END-FIGHT-IO" USING WS-SET END-FIGHT
+     CALL "FIGHT-RESPAWN-TICK" USING WS-DIM
+     CALL "END-FIGHT-IO" USING WS-GET END-FIGHT
+     MOVE "covB 21 6.4.5 stage 4 ends the sequence at tick 100 (stage 0, no respawn crystal left)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = EF-STAGE + FR-RC-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-LEFT
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > EN-COUNT
+         IF EN-USED(WS-J) = 1 AND EN-ID(WS-J) = WS-RCID
+             ADD 1 TO WS-LEFT
+         END-IF
+     END-PERFORM
+     MOVE "covB 21 6.4.5 and the respawn crystal's entity is gone (its row may be the new dragon's)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-LEFT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The first scan (FR-SCANNED 0), with a known portal block that is active: the dragon was killed before.
      MOVE 0 TO FR-SCANNED
