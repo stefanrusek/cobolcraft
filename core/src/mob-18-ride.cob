@@ -294,6 +294,9 @@
                  CALL "MOB-SADDLE-USE" USING L-PLAYER L-ROW L-HANDLED
              WHEN L-HELD = SPACES
                  CALL "MOB-RIDE-START" USING L-PLAYER L-ROW L-HANDLED
+                 IF WS-KEY = "nautilus" OR "zombie_nautilus"
+                     CALL "NAUTILUS-RIDE-END" USING L-PLAYER L-ROW
+                 END-IF
          END-EVALUATE
      END-IF
      GOBACK.
