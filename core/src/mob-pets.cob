@@ -6,6 +6,8 @@
 *>   PET-TICK USING row, hx, hz, walk out               one tick of a tame wolf: sit, defend the owner, follow the owner
 *>   GOLEM-KIND USING dim, x, y, z, kind out            the block at a position: 1 carved pumpkin or jack o'lantern, 2 iron block, 3 snow block, 0 other
 *>   GOLEM-BUILD USING dim, x, y, z                     the build patterns of the golems (19 sections 19 and 20) after a block was placed at x, y, z
+*>   GOLEM-FIND USING dim, x, y, z, golem out (0 none, 1 snow, 2 iron), axis out       the base pattern under a pumpkin at x, y, z (the pumpkin's own cell is not read)
+*>   GOLEM-CAN-BUILD USING dim, x, y, z, can out                                      CarvedPumpkinBlock.canSpawnGolem: a base pattern of the snow, iron or copper golem matches
 *>   GOLEM-TICK USING row, hx, hz, walk out             one tick of an iron golem: it fights the nearest hostile mob
 *>   GOLEM-HURT USING row, attacker player row          HurtByTarget: a hit by a player angers a golem that no player built
 *>   GOLEM-OFFER-TICK USING row, roll                   OfferFlower: the 400 tick flower pose at night near a villager
@@ -230,6 +232,120 @@
  END PROGRAM GOLEM-KIND.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. GOLEM-FIND.
+*> USING dim, x, y, z, golem out (0 none, 1 snow, 2 iron), axis out (0 arms along x, 1 along z): the base pattern of the snow and iron golems under a carved pumpkin or jack o'lantern at x, y, z (24 section 7.12:
+*> `canSpawnGolem`; the pumpkin's own cell is not read, so it may be an air cell a dispenser is about to fill): two snow blocks below it, or an iron block below and a T of iron blocks (the body two blocks tall, an arm
+*> on each side along x, else along z, the four other cells of the 3 x 3 pattern air).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-K1                  BINARY-LONG.
+ 01 WS-K2                  BINARY-LONG.
+ 01 WS-K3                  BINARY-LONG.
+ 01 WS-K4                  BINARY-LONG.
+ 01 WS-S1                  BINARY-LONG.
+ 01 WS-S2                  BINARY-LONG.
+ 01 WS-S3                  BINARY-LONG.
+ 01 WS-S4                  BINARY-LONG.
+ 01 WS-Y1                  BINARY-LONG.
+ 01 WS-Y2                  BINARY-LONG.
+ 01 WS-X1                  BINARY-LONG.
+ 01 WS-X2                  BINARY-LONG.
+ 01 WS-Z1                  BINARY-LONG.
+ 01 WS-Z2                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-GOLEM               BINARY-LONG.
+ 01 L-AXIS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-GOLEM L-AXIS.
+     MOVE 0 TO L-AXIS
+     COMPUTE WS-Y1 = L-Y - 1
+     COMPUTE WS-Y2 = L-Y - 2
+     CALL "GOLEM-KIND" USING L-DIM L-X WS-Y1 L-Z WS-K1
+     CALL "GOLEM-KIND" USING L-DIM L-X WS-Y2 L-Z WS-K2
+     MOVE 0 TO L-GOLEM
+     IF WS-K1 = 3 AND WS-K2 = 3
+         MOVE 1 TO L-GOLEM
+     END-IF
+     IF WS-K1 = 2 AND WS-K2 = 2
+*>       The arms: along x, else along z; the four corner cells of the pattern are air.
+         COMPUTE WS-X1 = L-X - 1
+         COMPUTE WS-X2 = L-X + 1
+         COMPUTE WS-Z1 = L-Z - 1
+         COMPUTE WS-Z2 = L-Z + 1
+         CALL "GOLEM-KIND" USING L-DIM WS-X1 WS-Y1 L-Z WS-K3
+         CALL "GOLEM-KIND" USING L-DIM WS-X2 WS-Y1 L-Z WS-K4
+         IF WS-K3 = 2 AND WS-K4 = 2
+             MOVE 2 TO L-GOLEM
+             MOVE 0 TO L-AXIS
+         ELSE
+             CALL "GOLEM-KIND" USING L-DIM L-X WS-Y1 WS-Z1 WS-K3
+             CALL "GOLEM-KIND" USING L-DIM L-X WS-Y1 WS-Z2 WS-K4
+             IF WS-K3 = 2 AND WS-K4 = 2
+                 MOVE 2 TO L-GOLEM
+                 MOVE 1 TO L-AXIS
+             END-IF
+         END-IF
+         IF L-GOLEM = 2
+             IF L-AXIS = 0
+                 CALL "WORLD-GET-BLOCK" USING L-DIM WS-X1 L-Y L-Z WS-S1
+                 CALL "WORLD-GET-BLOCK" USING L-DIM WS-X2 L-Y L-Z WS-S2
+                 CALL "WORLD-GET-BLOCK" USING L-DIM WS-X1 WS-Y2 L-Z WS-S3
+                 CALL "WORLD-GET-BLOCK" USING L-DIM WS-X2 WS-Y2 L-Z WS-S4
+             ELSE
+                 CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y WS-Z1 WS-S1
+                 CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y WS-Z2 WS-S2
+                 CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-Y2 WS-Z1 WS-S3
+                 CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-Y2 WS-Z2 WS-S4
+             END-IF
+             IF WS-S1 NOT = 0 OR WS-S2 NOT = 0 OR WS-S3 NOT = 0 OR WS-S4 NOT = 0
+                 MOVE 0 TO L-GOLEM
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM GOLEM-FIND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GOLEM-CAN-BUILD.
+*> USING dim, x, y, z, can out: CarvedPumpkinBlock.canSpawnGolem(level, pos) (24 section 7.12): a base pattern of the snow golem, the iron golem (GOLEM-FIND) or the copper golem (any block of the tag copper
+*> below) matches around x, y, z.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CBLOCKS.
+ 01 WS-GOLEM               BINARY-LONG.
+ 01 WS-AXIS                BINARY-LONG.
+ 01 WS-BELOW               BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-REGISTRY            PIC X(48) VALUE "block".
+ 01 WS-TAG                 PIC X(112) VALUE "minecraft:copper".
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-CAN                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-CAN.
+     MOVE 0 TO L-CAN
+     CALL "GOLEM-FIND" USING L-DIM L-X L-Y L-Z WS-GOLEM WS-AXIS
+     IF WS-GOLEM > 0
+         MOVE 1 TO L-CAN
+         GOBACK
+     END-IF
+     COMPUTE WS-BELOW = L-Y - 1
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-BELOW L-Z WS-STATE
+     IF WS-STATE > 0
+         MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLOCK
+         CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG WS-BLOCK L-CAN
+     END-IF
+     GOBACK.
+ END PROGRAM GOLEM-CAN-BUILD.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. GOLEM-BUILD.
 *> USING dim, x, y, z: after a block was placed at x, y, z, the build patterns of CarvedPumpkinBlock (19 sections 19 and 20): a carved pumpkin or jack o'lantern with two snow blocks below
 *> it makes a snow golem; with an iron block below and a T of iron blocks (the body two blocks tall, an arm on each side along x, else along z, the four other cells of the 3 x 3
@@ -239,16 +355,6 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  01 WS-KIND                BINARY-LONG.
- 01 WS-K1                  BINARY-LONG.
- 01 WS-K2                  BINARY-LONG.
- 01 WS-K3                  BINARY-LONG.
- 01 WS-K4                  BINARY-LONG.
- 01 WS-A                   BINARY-LONG.
- 01 WS-B                   BINARY-LONG.
- 01 WS-S1                  BINARY-LONG.
- 01 WS-S2                  BINARY-LONG.
- 01 WS-S3                  BINARY-LONG.
- 01 WS-S4                  BINARY-LONG.
  01 WS-AXIS                BINARY-LONG.
  01 WS-GOLEM               BINARY-LONG.
  01 WS-Y1                  BINARY-LONG.
@@ -279,47 +385,12 @@
      END-IF
      COMPUTE WS-Y1 = L-Y - 1
      COMPUTE WS-Y2 = L-Y - 2
-     CALL "GOLEM-KIND" USING L-DIM L-X WS-Y1 L-Z WS-K1
-     CALL "GOLEM-KIND" USING L-DIM L-X WS-Y2 L-Z WS-K2
-     MOVE 0 TO WS-GOLEM
-     IF WS-K1 = 3 AND WS-K2 = 3
-         MOVE 1 TO WS-GOLEM
-     END-IF
-     IF WS-K1 = 2 AND WS-K2 = 2
-*>       The arms: along x, else along z; the four corner cells of the pattern are air.
+     CALL "GOLEM-FIND" USING L-DIM L-X L-Y L-Z WS-GOLEM WS-AXIS
+     IF WS-GOLEM = 2
          COMPUTE WS-X1 = L-X - 1
          COMPUTE WS-X2 = L-X + 1
          COMPUTE WS-Z1 = L-Z - 1
          COMPUTE WS-Z2 = L-Z + 1
-         CALL "GOLEM-KIND" USING L-DIM WS-X1 WS-Y1 L-Z WS-K3
-         CALL "GOLEM-KIND" USING L-DIM WS-X2 WS-Y1 L-Z WS-K4
-         IF WS-K3 = 2 AND WS-K4 = 2
-             MOVE 2 TO WS-GOLEM
-             MOVE 0 TO WS-AXIS
-         ELSE
-             CALL "GOLEM-KIND" USING L-DIM L-X WS-Y1 WS-Z1 WS-K3
-             CALL "GOLEM-KIND" USING L-DIM L-X WS-Y1 WS-Z2 WS-K4
-             IF WS-K3 = 2 AND WS-K4 = 2
-                 MOVE 2 TO WS-GOLEM
-                 MOVE 1 TO WS-AXIS
-             END-IF
-         END-IF
-         IF WS-GOLEM = 2
-             IF WS-AXIS = 0
-                 CALL "WORLD-GET-BLOCK" USING L-DIM WS-X1 L-Y L-Z WS-S1
-                 CALL "WORLD-GET-BLOCK" USING L-DIM WS-X2 L-Y L-Z WS-S2
-                 CALL "WORLD-GET-BLOCK" USING L-DIM WS-X1 WS-Y2 L-Z WS-S3
-                 CALL "WORLD-GET-BLOCK" USING L-DIM WS-X2 WS-Y2 L-Z WS-S4
-             ELSE
-                 CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y WS-Z1 WS-S1
-                 CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y WS-Z2 WS-S2
-                 CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-Y2 WS-Z1 WS-S3
-                 CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-Y2 WS-Z2 WS-S4
-             END-IF
-             IF WS-S1 NOT = 0 OR WS-S2 NOT = 0 OR WS-S3 NOT = 0 OR WS-S4 NOT = 0
-                 MOVE 0 TO WS-GOLEM
-             END-IF
-         END-IF
      END-IF
      IF WS-GOLEM = 0
 *>       A carved pumpkin on a copper block makes a copper golem (19 section 21).
