@@ -99,6 +99,12 @@
              MOVE L-INT TO EN-FDIR(L-ROW)
          WHEN (EN-KEY(L-ROW) = "item_frame" OR "glow_item_frame") AND L-INDEX = 10 AND L-SERIALIZER = 1
              COMPUTE EN-FROT(L-ROW) = FUNCTION MOD(L-INT, 8)
+*>   A snow golem's pumpkin flags (entry 16, BYTE; bit 16 set = the pumpkin head is on, the default): EN-X1 is 1 once it is shorn (19 section 20, 34-3 8).
+         WHEN EN-KEY(L-ROW) = "snow_golem" AND L-INDEX = 16 AND L-SERIALIZER = 0
+             MOVE 1 TO EN-X1(L-ROW)
+             IF FUNCTION MOD(FUNCTION INTEGER(L-INT / 16), 2) = 1
+                 MOVE 0 TO EN-X1(L-ROW)
+             END-IF
 *>   An axolotl's playing-dead flag (entry 19, BOOLEAN, 19 section 18).
          WHEN EN-KEY(L-ROW) = "axolotl" AND L-INDEX = 19 AND L-SERIALIZER = 8
              MOVE L-INT TO EN-AX-PD(L-ROW)
@@ -261,6 +267,7 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-TRIM                PIC X(10).
+ 01 WS-FILE                PIC X(18).
  LINKAGE SECTION.
  01 L-KEY                  PIC X(20).
  01 L-CODE                 BINARY-LONG.
@@ -334,7 +341,7 @@
                  COMPUTE WS-I = 26 + WS-CD
                  STRING "textures/entity/horse/horse_markings_" FUNCTION TRIM(WS-OV(WS-I)) FUNCTION TRIM(WS-BABY) ".png"
                      DELIMITED BY SIZE INTO L-PATH
-             WHEN WS-KIND = 6 AND WS-CD >= 1 AND WS-CD <= 8 AND (WS-BASE = "armor_head" OR "armor_chest" OR "armor_legs" OR "armor_feet")
+             WHEN WS-KIND = 6 AND ((WS-CD >= 1 AND WS-CD <= 8) OR WS-CD = 101) AND (WS-BASE = "armor_head" OR "armor_chest" OR "armor_legs" OR "armor_feet")
                  MOVE "humanoid" TO WS-NAME
                  IF WS-BASE = "armor_legs"
                      MOVE "humanoid_leggings" TO WS-NAME
@@ -343,8 +350,14 @@
                  IF WS-BABY NOT = SPACES
                      MOVE "humanoid_baby" TO WS-NAME
                  END-IF
-                 COMPUTE WS-I = 30 + WS-CD
-                 STRING "textures/entity/equipment/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-OV(WS-I)) ".png"
+*>               The second layer of leather (57-1 section 4.2): code 6101, the file leather_overlay.png of the same layer type.
+                 IF WS-CD = 101
+                     MOVE "leather_overlay" TO WS-FILE
+                 ELSE
+                     COMPUTE WS-I = 30 + WS-CD
+                     MOVE WS-OV(WS-I) TO WS-FILE
+                 END-IF
+                 STRING "textures/entity/equipment/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-FILE) ".png"
                      DELIMITED BY SIZE INTO L-PATH
              WHEN WS-KIND = 7 AND WS-CD >= 1 AND WS-CD <= 27
                  AND (WS-BASE = "horse_armor" OR "undead_horse_armor" OR "wolf_armor" OR "llama_decor" OR "nautilus_armor")

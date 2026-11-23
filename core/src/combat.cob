@@ -340,6 +340,92 @@
  END PROGRAM COMBAT-SHIELD.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. COMBAT-TOTEM.
+*> USING player row, cause: LivingEntity.checkTotemDeathProtection (17 section 4.10) for a player whose health ran out (HEALTH-HURT calls it before the death): a totem_of_undying in either hand
+*> (the main hand first) that the damage may not bypass (void and /kill bypass invulnerability) shrinks by 1 (TOOL-TOTEM-USE; creative cannot be hurt but by the bypassing void, so the
+*> keep rule never applies here), health becomes 1.0, all effects go, Regeneration II 900, Absorption II 100 and Fire Resistance I 800 are applied (TOOL-TOTEM-EFFECT), Entity Event 35 goes
+*> to the player and the viewers and item_interact_finish is posted at the player (30-8 14.3.8: "after a totem triggered"). The item_used statistic and the advancement trigger are not kept.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CMENU.
+ COPY RULES.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-MAIN                BINARY-LONG.
+ 01 WS-OFF                 BINARY-LONG.
+ 01 WS-CREATIVE            BINARY-LONG VALUE 0.
+ 01 WS-BYPASS              BINARY-LONG.
+ 01 WS-SAVED               BINARY-LONG.
+ 01 WS-HAND                BINARY-LONG.
+ 01 WS-HEALTH              BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-WHERE               BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-AMP                 BINARY-LONG.
+ 01 WS-DUR                 BINARY-LONG.
+ 01 WS-EFFECT              BINARY-LONG.
+ 01 WS-EFFECT-IDS.
+    05 FILLER              BINARY-LONG VALUE 9.
+    05 FILLER              BINARY-LONG VALUE 21.
+    05 FILLER              BINARY-LONG VALUE 11.
+ 01 WS-EFFECT-ID REDEFINES WS-EFFECT-IDS.
+    05 WS-EID              BINARY-LONG OCCURS 3 TIMES.
+ 01 WS-FLAGS               BINARY-LONG VALUE 6.
+ 01 WS-EVENT               BINARY-LONG.
+ 01 WS-EV-FINISH           PIC X(32) VALUE "item_interact_finish".
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-CAUSE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-CAUSE.
+     MOVE 0 TO WS-MAIN WS-OFF WS-BYPASS
+     COMPUTE WS-SLOT = PL-HELD(L-ROW) + 1
+     IF PL-SLOT-COUNT(L-ROW, WS-SLOT) > 0
+         CALL "TOOLUSE-KEY" USING PL-SLOT-ITEM(L-ROW, WS-SLOT) WS-KEY
+         IF WS-KEY = "totem_of_undying"
+             MOVE 1 TO WS-MAIN
+         END-IF
+     END-IF
+     IF MN-EQUIP-COUNT(L-ROW, 5) > 0
+         CALL "TOOLUSE-KEY" USING MN-EQUIP-ITEM(L-ROW, 5) WS-KEY
+         IF WS-KEY = "totem_of_undying"
+             MOVE 1 TO WS-OFF
+         END-IF
+     END-IF
+     IF L-CAUSE = CAUSE-VOID OR L-CAUSE = CAUSE-COMMAND
+         MOVE 1 TO WS-BYPASS
+     END-IF
+     CALL "TOOL-TOTEM-USE" USING WS-MAIN WS-OFF WS-CREATIVE WS-BYPASS WS-SAVED WS-HAND WS-HEALTH
+     IF WS-SAVED = 0
+         GOBACK
+     END-IF
+     EVALUATE WS-HAND
+         WHEN 1
+             MOVE 2 TO WS-WHERE
+             CALL "RANGED-TAKE-AMMO" USING L-ROW WS-WHERE WS-SLOT
+         WHEN OTHER
+             MOVE 1 TO WS-WHERE
+             CALL "RANGED-TAKE-AMMO" USING L-ROW WS-WHERE WS-SLOT
+     END-EVALUATE
+     COMPUTE PL-HEALTH(L-ROW) = WS-HEALTH / 1000
+     CALL "EFFECT-CLEAR-ALL" USING L-ROW
+     PERFORM VARYING WS-INDEX FROM 1 BY 1 UNTIL WS-INDEX > 3
+         CALL "TOOL-TOTEM-EFFECT" USING WS-INDEX WS-KEY WS-AMP WS-DUR
+         MOVE WS-EID(WS-INDEX) TO WS-EFFECT
+         CALL "EFFECT-ADD" USING L-ROW WS-EFFECT WS-AMP WS-DUR WS-FLAGS
+     END-PERFORM
+     CALL "TOOL-TOTEM-EVENT" USING WS-EVENT
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "ENTITY-EVENT-BUILD" USING PL-ENTITY-ID(L-ROW) WS-EVENT PB-BUFFER
+     CALL "CORE-SEND" USING PL-CONN(L-ROW) PB-BUFFER
+     CALL "HEALTH-VIEWERS-SEND" USING PL-ENTITY-ROW(L-ROW) PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "GAME-EVENT-AT" USING WS-EV-FINISH PL-ENTITY-ROW(L-ROW)
+     GOBACK.
+ END PROGRAM COMBAT-TOTEM.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. HEALTH-HURT.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -540,6 +626,9 @@
          CALL "CORE-SEND" USING PL-CONN(WS-ROW) PB-BUFFER
          CALL "HEALTH-VIEWERS-SEND" USING PL-ENTITY-ROW(WS-ROW) PB-BUFFER
          CALL "PB-FREE" USING PB-BUFFER
+     END-IF
+     IF PL-HEALTH(WS-ROW) <= 0
+         CALL "COMBAT-TOTEM" USING WS-ROW WS-CAUSE
      END-IF
      CALL "HEALTH-SEND" USING WS-ROW
      IF PL-HEALTH(WS-ROW) <= 0

@@ -153,7 +153,8 @@
 *> paused the tick clock is held, so resuming does not catch up), the console lines, and the end
 *> of hosting: run state 1 (the shutdown command) quits the world; a game connection that has
 *> ended (a Disconnect, or lost) stops the core, leaving the screen the disconnect chose. The
-*> pause holds on the pause menu and the open-to-others screen of a world not opened to others;
+*> pause holds on the pause menu, the open-to-others screen and the screens whose isPauseScreen is true (the book editor, 40-8 section 3; the command block, test block
+*> and jigsaw screens, 40-9 section 3; not the sign editor, 40-8 section 6.2, nor the container screens, 40-1 section 5.7) of a world not opened to others;
 *> once opened, guests are accepted and received from before the ticks and sent to after them.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -168,7 +169,8 @@
  PROCEDURE DIVISION USING CLIENT-STATE.
      MOVE SP-SETTINGS TO CORE-SETTINGS
      MOVE 0 TO SP-PAUSED
-     IF (SM-SCREEN = SCR-PAUSE OR SM-SCREEN = SCR-OPEN-TO-OTHERS) AND CS-HOST-KIND = 1
+     IF (SM-SCREEN = SCR-PAUSE OR SM-SCREEN = SCR-OPEN-TO-OTHERS OR SM-SCREEN = SCR-BOOK OR SM-SCREEN = SCR-CMDBLOCK
+             OR SM-SCREEN = SCR-FORM) AND CS-HOST-KIND = 1
          MOVE 1 TO SP-PAUSED
          COMPUTE SP-NEXT-TICK = CL-NOW-MS + CL-TICK-MS
      END-IF

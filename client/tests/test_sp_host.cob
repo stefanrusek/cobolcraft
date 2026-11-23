@@ -51,6 +51,7 @@
  01 WS-E4                  PIC -(9)9.
  01 WS-E5                  PIC -(9)9.
  01 WS-E6                  PIC -(9)9.
+ 01 WS-SAVED-SCREEN        BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SP-START" USING CLIENT-STATE WS-DIR WS-DIR-LENGTH
      CALL "SP-OPEN" USING CLIENT-STATE WS-FOLDER WS-FOLDER-LENGTH WS-NAME WS-NAME-LENGTH WS-MODE
@@ -178,6 +179,43 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO CS-HOST-KIND
      MOVE CORE-SETTINGS TO SP-SETTINGS
+
+*>   The screens that pause the integrated game (T59912): the book editor (40-8 section 3: isPauseScreen true, the Screen default), the command block, test block and
+*>   jigsaw screens (40-9 section 3: the default too); not the sign editor (40-8 section 6.2: isPauseScreen false) and not a container screen (40-1 section 5.7).
+     MOVE SM-SCREEN TO WS-SAVED-SCREEN
+     MOVE "N" TO TL-MODE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+         EVALUATE WS-I
+             WHEN 1
+                 MOVE SCR-BOOK TO SM-SCREEN
+                 MOVE 1 TO TL-EXPECTED-N
+                 MOVE "sp host the book editor screen pauses the tick (40-8 section 3)" TO TL-CASE
+             WHEN 2
+                 MOVE SCR-CMDBLOCK TO SM-SCREEN
+                 MOVE 1 TO TL-EXPECTED-N
+                 MOVE "sp host the command block screen pauses the tick (40-9 section 3)" TO TL-CASE
+             WHEN 3
+                 MOVE SCR-FORM TO SM-SCREEN
+                 MOVE 1 TO TL-EXPECTED-N
+                 MOVE "sp host the test block and jigsaw screen pauses the tick (40-9 section 3)" TO TL-CASE
+             WHEN 4
+                 MOVE SCR-SIGN TO SM-SCREEN
+                 MOVE 0 TO TL-EXPECTED-N
+                 MOVE "sp host the sign editor does not pause the tick (40-8 section 6.2: isPauseScreen false)" TO TL-CASE
+             WHEN 5
+                 MOVE SCR-CONTAINER TO SM-SCREEN
+                 MOVE 0 TO TL-EXPECTED-N
+                 MOVE "sp host a container screen does not pause the tick (40-1 section 5.7)" TO TL-CASE
+             WHEN 6
+                 MOVE SCR-WORLD TO SM-SCREEN
+                 MOVE 0 TO TL-EXPECTED-N
+                 MOVE "sp host the world screen does not pause the tick" TO TL-CASE
+         END-EVALUATE
+         CALL "SP-PUMP" USING CLIENT-STATE
+         MOVE SP-PAUSED TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+     MOVE WS-SAVED-SCREEN TO SM-SCREEN
 
 *>   Quitting (US16-5): the pause menu's quit-world control saves through CORE-STOP and returns
 *>   to the title screen. level.dat is removed first, so finding it afterwards shows the save.

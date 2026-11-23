@@ -6,7 +6,9 @@
 *>   VILLOOK-CODE USING row, type out, profession id out, level out   the look of the villager row (plains, 0, 1 for a row without state)
 *>   VILLOOK-DATA USING row, PB-BUFFER                                the entry 19 when the row is a villager (always, the caller decides when to send)
 *>   VILLOOK-CHANGED USING row, changed out                           1 when the look differs from the one last seen for this entity (and remember it)
-*>   VILLOOK-SYNC USING row                                           a changed look is sent to the viewers (MOB-DATA-SEND)
+*>   VILLOOK-SYNC USING row                                           a changed look is sent to the viewers (MOB-DATA-SEND); the head shake counts down
+*>   VL-UNHAPPY-SHAKE USING entity row                                the unhappy counter 40 (19 section 22.4), sent as entity data 18
+*>   VL-UNHAPPY-TICK USING row                                        the counter counts down 1 and every value (the final 0 too) is sent
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. VILLOOK-CODE.
@@ -40,7 +42,10 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY VILSTATE.
  COPY PROTO REPLACING LEADING ==PB-== BY ==VK-==.
+ 01 WS-NO                  BINARY-LONG VALUE 0.
+ 01 WS-SLOT                BINARY-LONG.
  01 WS-KEY                 PIC X(24).
  01 WS-TYPE                BINARY-LONG.
  01 WS-PROF                BINARY-LONG.
@@ -52,6 +57,15 @@
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
      IF WS-KEY = "villager"
          CALL "VILLOOK-CODE" USING L-ROW WS-TYPE WS-PROF WS-LEVEL
+*>       The head shake (19 section 22, index 18 INT the unhappy counter): sent while it counts down and once more with the final 0.
+         CALL "VL-FIND" USING EN-ID(L-ROW) WS-NO WS-SLOT
+         IF WS-SLOT > 0 AND (VL-UNHAPPY(WS-SLOT) > 0 OR VL-UNHAPPY-ZERO(WS-SLOT) = 1)
+             INITIALIZE VK-METADATA-ENTRY-X
+             MOVE 18 TO VK-MX-INDEX
+             MOVE 1 TO VK-MX-SERIALIZER
+             MOVE VL-UNHAPPY(WS-SLOT) TO VK-MX-INT
+             CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER VK-METADATA-ENTRY-X
+         END-IF
          INITIALIZE VK-METADATA-ENTRY-X
          MOVE 19 TO VK-MX-INDEX
          MOVE 18 TO VK-MX-SERIALIZER
@@ -94,7 +108,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. VILLOOK-SYNC.
-*> Called once a tick for a villager: a look not seen before (the first tick, a claimed workstation, a level up) is sent to the viewers.
+*> Called once a tick for a villager: a look not seen before (the first tick, a claimed workstation, a level up) is sent to the viewers, and the head shake counts down (VL-UNHAPPY-TICK).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-CHANGED             BINARY-LONG.
@@ -105,5 +119,51 @@
      IF WS-CHANGED = 1
          CALL "MOB-DATA-SEND" USING L-ROW
      END-IF
+     CALL "VL-UNHAPPY-TICK" USING L-ROW
      GOBACK.
  END PROGRAM VILLOOK-SYNC.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VL-UNHAPPY-SHAKE.
+*> USING entity row of a villager: the head shake of 19 section 22.4 (setUnhappy): the unhappy counter is 40 and goes to the viewers as entity data 18.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY VILSTATE.
+ 01 WS-NO                  BINARY-LONG VALUE 0.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ENTITY               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ENTITY.
+     CALL "VL-FIND" USING EN-ID(L-ENTITY) WS-NO WS-SLOT
+     IF WS-SLOT > 0
+         MOVE 40 TO VL-UNHAPPY(WS-SLOT)
+         CALL "MOB-DATA-SEND" USING L-ENTITY
+     END-IF
+     GOBACK.
+ END PROGRAM VL-UNHAPPY-SHAKE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. VL-UNHAPPY-TICK.
+*> USING entity row of a villager, once a tick: a running head shake counts down 1 and every value is sent to the viewers, the 0 that ends it too (VILLOOK-DATA carries it while
+*> VL-UNHAPPY-ZERO is 1).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY VILSTATE.
+ 01 WS-NO                  BINARY-LONG VALUE 0.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "VL-FIND" USING EN-ID(L-ROW) WS-NO WS-SLOT
+     IF WS-SLOT > 0 AND VL-UNHAPPY(WS-SLOT) > 0
+         SUBTRACT 1 FROM VL-UNHAPPY(WS-SLOT)
+         IF VL-UNHAPPY(WS-SLOT) = 0
+             MOVE 1 TO VL-UNHAPPY-ZERO(WS-SLOT)
+         END-IF
+         CALL "MOB-DATA-SEND" USING L-ROW
+         MOVE 0 TO VL-UNHAPPY-ZERO(WS-SLOT)
+     END-IF
+     GOBACK.
+ END PROGRAM VL-UNHAPPY-TICK.

@@ -146,8 +146,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GAME-EVENT-FLAP.
-*> USING context: processFlappingMovement: isFlapping() of the entities that flap, then flap at the entity's own position (30-8 14.1.6): a bat on every tickCount that is a multiple of 10 (a resting bat is not
-*> modelled by the core, so every bat flaps), an allay off the ground, a bee off the ground on every second tick, a phantom when (id mod 25 + tickCount) mod 25 = 0 (the unique flap offset is the entity id
+*> USING context: processFlappingMovement: isFlapping() of the entities that flap, then flap at the entity's own position (30-8 14.1.6): a bat on every tickCount that is a multiple of 10 while it is not resting
+*> (EN-PH-PHASE 0; a resting bat hangs and does not flap), an allay off the ground, a bee off the ground on every second tick, a phantom when (id mod 25 + tickCount) mod 25 = 0 (the unique flap offset is the entity id
 *> mod 25), a vex every fourth tick. The chicken and parrot (flyDist against nextFlap) and the dragon's phase are not here.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -163,7 +163,7 @@
      MOVE 0 TO WS-FLAPS
      EVALUATE MV-KEY
          WHEN "bat"
-             IF FUNCTION MOD(WS-TICK, 10) = 0
+             IF EN-PH-PHASE(MV-ROW) = 0 AND FUNCTION MOD(WS-TICK, 10) = 0
                  MOVE 1 TO WS-FLAPS
              END-IF
          WHEN "allay"

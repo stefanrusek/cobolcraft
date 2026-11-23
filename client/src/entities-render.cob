@@ -311,7 +311,11 @@
                  MOVE WS-SAVED-MODEL TO EN-MODEL(WS-R)
              END-IF
 *>           The overlay layers (ENTITY-OVERLAY: villager type, profession and level, horse markings, collars): the model again with the layer's texture.
-             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 12
+             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 20
+*>               Layers 13 to 16 are the glints, drawn below: go on with the leather overlay passes, 17 to 20 (57-1 section 4.3).
+                 IF WS-OV = 13
+                     MOVE 17 TO WS-OV
+                 END-IF
                  CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-OV-CODE WS-OV-R WS-OV-G WS-OV-B WS-OV-M
                  IF WS-OV-CODE > 0 AND CL-MD-FAMILY(EN-MODEL(WS-R)) > 0
                      MOVE WS-OV-CODE TO EN-OVL(WS-R)
@@ -668,7 +672,7 @@
  01 L-EYE-TABLE.
     05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
  PROCEDURE DIVISION USING CLIENT-STATE L-EYE-TABLE.
-     MOVE 0 TO RL-GI-COUNT
+     MOVE 0 TO RL-GI-COUNT RL-WG-COUNT
      COMPUTE WS-TRG-1 = PL-YAW * WS-PIF / 180
      COMPUTE WS-RX = - FUNCTION COS(WS-TRG-1)
      COMPUTE WS-TRG-1 = PL-YAW * WS-PIF / 180
@@ -765,6 +769,9 @@
                      CALL "ENTITY-TNT-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  WHEN "falling_block"
                      CALL "ENTITY-FALLING-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+*>               The blocks mobs carry (T9905: snow golem pumpkin, iron golem poppy, enderman block, copper golem antenna block).
+                 WHEN "snow_golem" WHEN "iron_golem" WHEN "enderman" WHEN "copper_golem"
+                     CALL "ENTITY-CARRY-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  WHEN OTHER
                      CONTINUE
              END-EVALUATE
@@ -782,8 +789,8 @@
 *> 34 part 1 section 7.4). An entity whose shared flags byte (EN-FLAGS, entry 0) has bit 0 set, and the local player's own figure in a third-person view (PL-ON-FIRE
 *> from Set Entity Data of its own id), shows two layers of the block atlas sprites fire_0 and fire_1 (a pack without one shows the other in both layers; without
 *> either nothing is drawn): the box of the entity (EN-BOX-HALF, EN-BOX-HEIGHT; 0.6 x 1.8 where the row has none) gives the quads of EM7-FIRE. The animation is the
-*> atlas's own (ANIM-TICK writes the frame of the sprite into its cell). Where a first-person overlay of the flames would be drawn the documents say nothing (recorded
-*> in tasks T11107).
+*> atlas's own (ANIM-TICK writes the frame of the sprite into its cell). The first-person overlay of the flames of the local player is FIRE-OVERLAY-MESH
+*> (fire-overlay.cob, 57-1 section 1, T11106).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-R                   BINARY-LONG.

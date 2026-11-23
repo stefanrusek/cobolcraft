@@ -301,6 +301,8 @@
  01 WS-SL2                 BINARY-LONG.
  01 WS-SDYE                BINARY-LONG.
  01 WS-SDRAWN              BINARY-LONG.
+ 01 WS-DYE                 BINARY-LONG.
+ 01 WS-POTION              BINARY-LONG.
  01 WS-GX                  BINARY-LONG.
  01 WS-GY                  BINARY-LONG.
  01 WS-X                   BINARY-LONG.
@@ -326,6 +328,7 @@
  PROCEDURE DIVISION USING CLIENT-STATE L-W.
      MOVE SM-W-ARG(L-W) TO WS-ARG
      CALL "MENU-STACK-GET" USING CLIENT-STATE WS-ARG WS-COUNT WS-ITEM WS-DAMAGE
+     CALL "MENU-STACK-TINT" USING CLIENT-STATE WS-ARG WS-DYE WS-POTION
      IF SM-W-ARG(L-W) NOT = 36
          MOVE SW-PANEL TO WS-SWATCH
 *>       State 3 is a bare slot: the screen's own art (the hotbar sprite) carries the well.
@@ -362,9 +365,10 @@
 *>           fit the icon layer) is the flat icon of its sprite.
              COMPUTE WS-GX = SM-W-X(L-W) + WS-INSET
              COMPUTE WS-GY = SM-W-Y(L-W) + WS-INSET
-             CALL "ITEM-GUI-ICON" USING CLIENT-STATE WS-ITEM WS-GX WS-GY WS-SDRAWN
+             CALL "ITEM-GUI-ICON" USING CLIENT-STATE WS-ITEM WS-GX WS-GY WS-DYE WS-POTION WS-SDRAWN
              IF WS-SDRAWN = 0
-                 CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
+*>               The flat icon: layer 0 and a second layer where the model has one, each in the colour of its tint (43 section 7).
+                 CALL "ITEM-FLAT-ICON" USING CLIENT-STATE WS-ITEM WS-SPRITE WS-DYE WS-POTION WS-X0 WS-Y0 WS-X1 WS-Y1
              END-IF
          ELSE
 *>           A code-drawn model (a chest, a shulker box, a banner: item-special.cob) is drawn as its model, not as the icon of its particle texture.
@@ -419,12 +423,18 @@
          END-IF
      END-IF
 *>   State 4 is a bare slot whose count is crossed out (a merchant row's first cost at a discount, 40-5 section 2.10): the strike-through 9 x 2 at (7, 12) of
-*>   the item, opaque red, on the layer over the icons and the count.
+*>   the item, the sprite container/villager/discount_strikethrough (GSP-VIL-STRIKE) on the layer over the icons and the count; an opaque red
+*>   swatch when the pack has no such sprite.
      IF SM-W-STATE(L-W) = 4 AND WS-COUNT > 0
          COMPUTE WS-X = SM-W-X(L-W) + 7
          COMPUTE WS-Y = SM-W-Y(L-W) + 12
          MOVE 1 TO RL-UI-LAYER
-         CALL "UI-SWATCH-QUAD" USING CLIENT-STATE WS-X WS-Y WS-NINE WS-TWO SW-BAR-0
+         IF GS-W(GSP-VIL-STRIKE) > 0
+             MOVE GSP-VIL-STRIKE TO WS-SPRITE-ROW
+             CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-SPRITE-ROW WS-X WS-Y WS-NINE WS-TWO
+         ELSE
+             CALL "UI-SWATCH-QUAD" USING CLIENT-STATE WS-X WS-Y WS-NINE WS-TWO SW-BAR-0
+         END-IF
          MOVE 0 TO RL-UI-LAYER
      END-IF
      GOBACK.

@@ -138,6 +138,29 @@
  END PROGRAM MENU-STACK-FOIL.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. MENU-STACK-TINT.
+*> USING CLIENT-STATE, widget argument, dye out, potion out: the dyed_color RGB and the potion id of the stack of a player slot (0 to 35) or the off hand (37), as the server's last
+*> slot update gave them (STACK-TINT; 43 section 7: the tint sources dye and potion); -1 for a stack without them and for an argument that is no player slot.
+ DATA DIVISION.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ARG                  BINARY-LONG.
+ 01 L-DYE                  BINARY-LONG.
+ 01 L-POTION               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ARG L-DYE L-POTION.
+     MOVE -1 TO L-DYE L-POTION
+     IF L-ARG >= 0 AND L-ARG <= 35
+         COMPUTE L-DYE = PL-SLOT-DYE(L-ARG + 1) - 1
+         COMPUTE L-POTION = PL-SLOT-POTION(L-ARG + 1) - 1
+     END-IF
+     IF L-ARG = 37
+         COMPUTE L-DYE = PL-OFFHAND-DYE - 1
+         COMPUTE L-POTION = PL-OFFHAND-POTION - 1
+     END-IF
+     GOBACK.
+ END PROGRAM MENU-STACK-TINT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MENU-STACK-PUT.
 *> USING CLIENT-STATE, widget argument, count, item, damage: an argument with no stack changes nothing; a count of 0 or less
 *> empties the stack (item and damage 0).
@@ -168,6 +191,7 @@
              MOVE WS-DAMAGE TO PL-SLOT-DAMAGE(L-ARG + 1)
              IF WS-COUNT = 0
                  MOVE 0 TO PL-SLOT-FOIL(L-ARG + 1) PL-SLOT-CHARGED(L-ARG + 1) PL-SLOT-BN-COUNT(L-ARG + 1)
+                 MOVE 0 TO PL-SLOT-DYE(L-ARG + 1) PL-SLOT-POTION(L-ARG + 1)
              END-IF
          WHEN L-ARG = 36
              MOVE WS-COUNT TO PL-CARRIED-COUNT
@@ -176,6 +200,9 @@
              MOVE WS-COUNT TO PL-OFFHAND-COUNT
              MOVE WS-ITEM TO PL-OFFHAND-ITEM
              MOVE WS-DAMAGE TO PL-OFFHAND-DAMAGE
+             IF WS-COUNT = 0
+                 MOVE 0 TO PL-OFFHAND-DYE PL-OFFHAND-POTION
+             END-IF
          WHEN L-ARG >= 401 AND L-ARG <= 464
              COMPUTE WS-N = L-ARG - 400
              MOVE WS-COUNT TO BX-COUNT(WS-N)
@@ -309,9 +336,11 @@
          MOVE PL-STACK-FOIL TO PL-SLOT-FOIL(L-ARG + 1)
          MOVE PL-STACK-CHARGED TO PL-SLOT-CHARGED(L-ARG + 1)
          MOVE PL-STACK-BN TO PL-SLOT-BN(L-ARG + 1)
+         MOVE PL-STACK-DYE TO PL-SLOT-DYE(L-ARG + 1)
+         MOVE PL-STACK-POTION TO PL-SLOT-POTION(L-ARG + 1)
          IF L-COUNT <= 0
              MOVE 0 TO PL-SLOT-COUNT(L-ARG + 1) PL-SLOT-ITEM(L-ARG + 1) PL-SLOT-DAMAGE(L-ARG + 1) PL-SLOT-FOIL(L-ARG + 1)
-                 PL-SLOT-CHARGED(L-ARG + 1)
+                 PL-SLOT-CHARGED(L-ARG + 1) PL-SLOT-DYE(L-ARG + 1) PL-SLOT-POTION(L-ARG + 1)
              MOVE 0 TO PL-SLOT-BN-COUNT(L-ARG + 1)
          END-IF
      END-IF
@@ -322,8 +351,11 @@
          MOVE PL-STACK-FOIL TO PL-OFFHAND-FOIL
          MOVE PL-STACK-CHARGED TO PL-OFFHAND-CHARGED
          MOVE PL-STACK-BN TO PL-SLOT-BN(37)
+         MOVE PL-STACK-DYE TO PL-OFFHAND-DYE
+         MOVE PL-STACK-POTION TO PL-OFFHAND-POTION
          IF L-COUNT <= 0
              MOVE 0 TO PL-OFFHAND-COUNT PL-OFFHAND-ITEM PL-OFFHAND-DAMAGE PL-OFFHAND-FOIL PL-OFFHAND-CHARGED
+                 PL-OFFHAND-DYE PL-OFFHAND-POTION
              MOVE 0 TO PL-SLOT-BN-COUNT(37)
          END-IF
      END-IF

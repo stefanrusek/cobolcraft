@@ -1105,3 +1105,65 @@
      END-IF
      GOBACK.
  END PROGRAM SUGGESTIONS-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLP-CLIENT-INFO.
+*> USING PB-BUFFER, skin parts byte: Client Information in play (05c 0x0E, the 03 layout of the configuration packet): en_us, view distance 8, full chat, colours, the
+*> skin parts, the right hand, no text filtering, listing allowed, all particles.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ID                  BINARY-LONG VALUE 14.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-EIGHT               BINARY-LONG VALUE 8.
+ 01 WS-LANGUAGE            PIC X(5) VALUE "en_us".
+ 01 WS-LANGUAGE-LENGTH     BINARY-LONG VALUE 5.
+ 01 WS-MAX16               BINARY-LONG VALUE 16.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-PARTS                BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-PARTS.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-LANGUAGE WS-LANGUAGE-LENGTH WS-MAX16
+     CALL "PB-PUT-BYTE" USING PB-BUFFER WS-EIGHT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-PARTS
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     GOBACK.
+ END PROGRAM CLP-CLIENT-INFO.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CLIENT-INFO-BROADCAST.
+*> USING CLIENT-STATE: Options.broadcastOptions (47 section 5.2, called by every OPTIONS-SAVE): in play, the Client Information built from the options goes to the server
+*> again when its skin parts byte differs from the one last sent (PL-INFO-PARTS), so that a changed modelPart_* option shows on the other players' screens and the
+*> server's entity data at once. In any other phase nothing is sent (configuration sends it at its start).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ 01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
+ 01 WS-PARTS               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     IF CN-PHASE(WS-CONN) = PH-PLAY
+         CALL "PLAYER-PARTS-OPTIONS" USING CLIENT-STATE WS-PARTS
+         IF WS-PARTS NOT = PL-INFO-PARTS
+             IF WS-READY = 0
+                 CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+                 MOVE 1 TO WS-READY
+             END-IF
+             MOVE WS-PARTS TO PL-INFO-PARTS
+             CALL "PB-RESET" USING PB-BUFFER
+             CALL "CLP-CLIENT-INFO" USING PB-BUFFER WS-PARTS
+             CALL "NET-SEND" USING CLIENT-STATE WS-CONN PB-BUFFER
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CLIENT-INFO-BROADCAST.

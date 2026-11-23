@@ -155,7 +155,7 @@ Configuration (order of 03 "Configuration sequence"; no Code of Conduct, no Serv
 |---|---|---|---|---|
 | S→C | 0x01 (1) | Custom Payload | Channel `minecraft:brand`, String `cobolcraft`. | `config-s2c-01-custom-payload-brand.hex` |
 | C→S | 0x02 (2) | Custom Payload | Channel `minecraft:brand`, String `cobolcraft`. | `config-c2s-02-custom-payload-brand.hex` |
-| C→S | 0x00 (0) | Client Information | Language `en_us`; view distance = the client's view distance setting; chat visibility 0 (full); chat colors true; model customisation 0; main hand 1 (right); text filtering false; allows listing true; particle status 0 (all). The server reads only the view distance. | `config-c2s-00-client-information.hex` |
+| C→S | 0x00 (0) | Client Information | Language `en_us`; view distance = the client's view distance setting; chat visibility 0 (full); chat colors true; model customisation 0 (the fixture is the packet of a client whose seven skin parts are all off; the cobolcraft client sends the parts of its `modelPart_*` options, 127 by default, and the core keeps the byte and sends it as entry 16 of Set Entity Data, 47 section 5.3); main hand 1 (right); text filtering false; allows listing true; particle status 0 (all). The server reads the view distance and the model customisation byte. | `config-c2s-00-client-information.hex` |
 | S→C | 0x0D (13) | Update Enabled Features | One feature, `minecraft:vanilla` (Open question 1). | `config-s2c-0d-update-enabled-features.hex` |
 | S→C | 0x0F (15) | Select Known Packs | Empty list, in both world types (04 §2 guidance, CORE §2). | `config-s2c-0f-select-known-packs.hex` |
 | C→S | 0x07 (7) | Select Known Packs | Empty list. | `config-c2s-07-select-known-packs.hex` |

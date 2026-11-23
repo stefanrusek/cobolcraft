@@ -114,7 +114,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CLP-CONFIG-START.
 *> USING CLIENT-STATE, connection: the client's opening of configuration: brand "cobolcraft" and
-*> Client Information (en_us, view distance 8, full chat, colours, right hand, listing allowed).
+*> Client Information (en_us, view distance 8, full chat, colours, the skin parts of the options modelPart_* (PLAYER-PARTS-OPTIONS: 127 by default), right hand,
+*> listing allowed).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY PROTO.
@@ -124,6 +125,7 @@
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-EIGHT               BINARY-LONG VALUE 8.
+ 01 WS-PARTS               BINARY-LONG.
  01 WS-CHANNEL             PIC X(15) VALUE "minecraft:brand".
  01 WS-CHANNEL-LENGTH      BINARY-LONG VALUE 15.
  01 WS-BRAND               PIC X(10) VALUE "cobolcraft".
@@ -152,7 +154,9 @@
      CALL "PB-PUT-BYTE" USING PB-BUFFER WS-EIGHT
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
-     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-ZERO
+     CALL "PLAYER-PARTS-OPTIONS" USING CLIENT-STATE WS-PARTS
+     MOVE WS-PARTS TO PL-INFO-PARTS
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-PARTS
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE

@@ -175,7 +175,11 @@
              CALL "ENTITY-BANNER-SLOTS" USING CLIENT-STATE WS-R WS-NEW
              CALL "ENTITY-SHIELD-SLOTS" USING CLIENT-STATE WS-R WS-NEW
 *>           The overlay layers (ENTITY-OVERLAY) draw the model again with a texture of their own.
-             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 12
+             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 20
+*>               Layers 13 to 16 (the glints) use the pieces' own textures, which layers 5 to 8 have ensured: go on with the leather overlay passes, 17 to 20.
+                 IF WS-OV = 13
+                     MOVE 17 TO WS-OV
+                 END-IF
                  CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-TEX WS-OVR WS-OVG WS-OVB WS-OVM
                  IF WS-TEX > 0 AND WS-OVM = 0
                      CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
@@ -381,6 +385,11 @@
           15 WS-BK-HFRV        FLOAT-LONG OCCURS 6 TIMES VALUE 0.
        10 WS-BK-HFL.
           15 WS-BK-HFLV        FLOAT-LONG OCCURS 6 TIMES VALUE 0.
+       10 WS-BK-PI            BINARY-LONG VALUE 0.
+       10 WS-BK-RF.
+          15 WS-BK-RFV         FLOAT-LONG OCCURS 12 TIMES VALUE 0.
+       10 WS-BK-HFP.
+          15 WS-BK-HFPV        FLOAT-LONG OCCURS 6 TIMES VALUE 0.
        10 WS-BK-OK            BINARY-LONG VALUE 0.
        10 WS-BK-OFX           FLOAT-LONG VALUE 0.
        10 WS-BK-OFY           FLOAT-LONG VALUE 0.
@@ -413,7 +422,7 @@
     05 WS-POOL-LAYER       BINARY-LONG OCCURS 768 TIMES VALUE 0.
  01 WS-INDEX-TABLE.
     05 WS-IX-ROW OCCURS 256 TIMES.
-       10 WS-IX            BINARY-LONG OCCURS 10 TIMES VALUE 0.
+       10 WS-IX            BINARY-LONG OCCURS 14 TIMES VALUE 0.
  01 WS-NEXT                BINARY-LONG VALUE 0.
  01 WS-LA                  BINARY-LONG.
  01 WS-LB                  BINARY-LONG.
@@ -456,6 +465,7 @@
  01 WS-FK                  PIC X(24).
  01 WS-FM                  BINARY-LONG.
  01 WS-HK                  BINARY-LONG.
+ 01 WS-ANCHOR              PIC X(8).
  01 WS-HI                  BINARY-LONG.
  01 WS-HP.
     05 WS-HPV               FLOAT-LONG OCCURS 3 TIMES.
@@ -482,6 +492,11 @@
          END-IF
      END-IF
      MOVE 0 TO WS-SLOT
+*>   The part that anchors a block the mob carries on its head (T9905).
+     MOVE SPACES TO WS-ANCHOR
+     IF EN-KEY(WS-ROW) = "snow_golem" OR "copper_golem"
+         MOVE "head" TO WS-ANCHOR
+     END-IF
      CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-ROW EN-MODEL(WS-ROW) WS-TEXC
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
          IF EA-MT-MODEL(WS-S) = EN-MODEL(WS-ROW) AND EA-MT-TEX(WS-S) = WS-TEXC
@@ -558,9 +573,14 @@
          COMPUTE WS-HOOK-Y = WS-HOOK-Y * (1 + 0.003 * EN-OVN(WS-ROW))
      END-IF
 *>   The trim layers (9 to 12) lie over the armor piece (layers 5 to 8): the same enlargement by the layer's distance from the piece's own.
-     IF EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 9
+     IF EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 9 AND EN-OVN(WS-ROW) <= 16
          COMPUTE WS-HOOK-X = WS-HOOK-X * (1 + 0.003 * (EN-OVN(WS-ROW) - 8))
          COMPUTE WS-HOOK-Y = WS-HOOK-Y * (1 + 0.003 * (EN-OVN(WS-ROW) - 8))
+     END-IF
+*>   The overlay pass of a leather piece (layers 17 to 20, 57-1 section 4.3) lies over the piece itself and under its trim (1.003 to 1.012): 0.1 percent per layer number.
+     IF EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 17
+         COMPUTE WS-HOOK-X = WS-HOOK-X * (1 + 0.001 * (EN-OVN(WS-ROW) - 16))
+         COMPUTE WS-HOOK-Y = WS-HOOK-Y * (1 + 0.001 * (EN-OVN(WS-ROW) - 16))
      END-IF
 *>   The scale attribute (34-1 6.3 state.scale, Update Attributes): the whole model about the entity origin (a row nobody set has 0: no scale). A slime or magma cube takes its size from entry 18 instead.
      IF EN-ATTR-SCALE(WS-ROW) > 0 AND EN-ATTR-SCALE(WS-ROW) NOT = 1 AND NOT (EN-KEY(WS-ROW) = "slime" OR "magma_cube")
@@ -684,14 +704,19 @@
 *>   Every layer of a row keeps its own baked mesh in a pool (768 entries, recycled in turn when it is full): layer 1 the model, 2 the extra layer (the second
 *>   model of the same entity), 2 + n the overlay layer n. The entry whose key is the key is used; else the layer's own entry is baked again.
      MOVE 0 TO WS-HIT WS-E
-     IF EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 1 AND EN-OVN(WS-ROW) <= 8
-         COMPUTE WS-LA = EN-OVN(WS-ROW) + 2
-         MOVE WS-LA TO WS-LB WS-LC
-     ELSE
-         MOVE 1 TO WS-LA
-         MOVE 2 TO WS-LB
-         MOVE 1 TO WS-LC
-     END-IF
+     EVALUATE TRUE
+         WHEN EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 1 AND EN-OVN(WS-ROW) <= 8
+             COMPUTE WS-LA = EN-OVN(WS-ROW) + 2
+             MOVE WS-LA TO WS-LB WS-LC
+*>           The overlay passes of leather pieces (layers 17 to 20) keep entries 11 to 14.
+         WHEN EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 17 AND EN-OVN(WS-ROW) <= 20
+             COMPUTE WS-LA = EN-OVN(WS-ROW) - 6
+             MOVE WS-LA TO WS-LB WS-LC
+         WHEN OTHER
+             MOVE 1 TO WS-LA
+             MOVE 2 TO WS-LB
+             MOVE 1 TO WS-LC
+     END-EVALUATE
      IF WS-IX(WS-ROW, WS-LA) > 0
          IF WS-BK-KEY(WS-IX(WS-ROW, WS-LA)) = WS-KEY-NOW AND WS-BK-N(WS-IX(WS-ROW, WS-LA)) > 0
              MOVE 1 TO WS-HIT
@@ -753,7 +778,7 @@
          ADD 1 TO RL-EN-BAKES
          MOVE 0 TO WS-BN WS-NC
          MOVE 0 TO WS-BK-OK(WS-E)
-         MOVE 0 TO WS-BK-HR(WS-E) WS-BK-HL(WS-E)
+         MOVE 0 TO WS-BK-HR(WS-E) WS-BK-HL(WS-E) WS-BK-PI(WS-E)
 *>   The model: built once per row of the table, then copied.
      MOVE EN-MODEL(WS-ROW) TO WS-K
      IF WS-HAVE(WS-K) = 0
@@ -939,6 +964,10 @@
              CALL "EF7-SETUP-ROTATIONS" USING WS-SR-IN WS-SR-OUT
      END-EVALUATE
      MOVE WS-SRO(1) TO WS-NOPS
+*>   The model root of an enderman (where its carried block is drawn, T9905), kept with the bake.
+     IF EN-KEY(WS-ROW) = "enderman"
+         CALL "ENTITY-ROOT-FRAME" USING WS-SR-OUT WS-BK-RF(WS-E)
+     END-IF
 *>   A player lying flat (swim amount above 0, 53 section 13): after the body yaw, the rotation about X by amount x T (T = -90 - pitch in water, -90 on
 *>   land) and the translation (0, -1, 0.3) that the pose SWIMMING adds before it (the vertex is moved first, then rotated, then yawed).
      IF WS-ANIM = "H" AND EN-SWIM(WS-ROW) > 0
@@ -1133,6 +1162,11 @@
                  IF MM-NAME(WS-P) = "arms" AND WS-BK-HR(WS-E) = 0
                      COMPUTE WS-BK-HR(WS-E) = 0 - WS-NC
                  END-IF
+*>               The part that anchors a carried block (the head of a snow golem and a copper golem, T9905): its first cuboid and where that lies in the part.
+                 IF WS-ANCHOR NOT = SPACES AND MM-NAME(WS-P) = WS-ANCHOR AND WS-BK-PI(WS-E) = 0
+                     MOVE WS-NC TO WS-BK-PI(WS-E)
+                     CALL "ENTITY-ARM-LOCAL" USING WS-BOX-IN WS-BK-HFP(WS-E)
+                 END-IF
 *>               The six faces: down, up, west, north, east, south.
                  PERFORM VARYING WS-F FROM 0 BY 1 UNTIL WS-F > 5
                      COMPUTE WS-A = WS-F * 4
@@ -1228,7 +1262,7 @@
          MOVE WS-OZ TO WS-BK-OFZ(WS-E)
      END-IF
 *>   The hands of a mob that holds an item (the base model only): where GROUND-ITEMS-MESH draws what the mob holds (ENTITY-HAND-FIND).
-     IF EN-OVL(WS-ROW) = 0 AND (EN-EQ(WS-ROW, 1) > 0 OR EN-EQ(WS-ROW, 2) > 0)
+     IF EN-OVL(WS-ROW) = 0 AND (EN-EQ(WS-ROW, 1) > 0 OR EN-EQ(WS-ROW, 2) > 0 OR (EN-KEY(WS-ROW) = "iron_golem" AND EN-FLW(WS-ROW) > 0))
          IF WS-BK-HR(WS-E) NOT = 0
              MOVE 1 TO WS-HK
              MOVE WS-BK-HR(WS-E) TO WS-HI
@@ -1255,6 +1289,18 @@
              END-PERFORM
              CALL "ENTITY-HAND-FRAME" USING WS-BK-CORNER(WS-E, WS-BK-HL(WS-E)) WS-BK-HFL(WS-E) EN-HAND-FG(WS-ROW, 2)
              MOVE 1 TO EN-HAND-FOK(WS-ROW, 2)
+         END-IF
+     END-IF
+*>   The anchor of a carried block (T9905): the frame of the head part, or for an enderman that carries a block the model root (the render sequence alone).
+     IF EN-OVL(WS-ROW) = 0
+         MOVE 0 TO EN-ANC-OK(WS-ROW)
+         IF WS-BK-PI(WS-E) > 0
+             CALL "ENTITY-HAND-FRAME" USING WS-BK-CORNER(WS-E, WS-BK-PI(WS-E)) WS-BK-HFP(WS-E) EN-ANC-FG(WS-ROW)
+             MOVE 1 TO EN-ANC-OK(WS-ROW)
+         END-IF
+         IF EN-KEY(WS-ROW) = "enderman" AND EN-CARRY(WS-ROW) > 0
+             MOVE WS-BK-RF(WS-E) TO EN-ANC-FG(WS-ROW)
+             MOVE 1 TO EN-ANC-OK(WS-ROW)
          END-IF
      END-IF
      GOBACK.

@@ -264,6 +264,16 @@
        10 PL-STACK-CHARGED   BINARY-LONG.    *> 1 when the item stack last decoded has charged_projectiles (51) that are not empty (a loaded crossbow), taken over by the slot it is set into like the foil
        10 PL-OFFHAND-CHARGED BINARY-LONG.
        10 PL-SLOT-CHARGED    BINARY-LONG OCCURS 36 TIMES.
+*>     The tint facts of the item stack last decoded (STACK-TINT, stack-look.cob; 43 section 7): PL-STACK-DYE the dyed_color 47 RGB plus 1 and PL-STACK-POTION the potion_contents 53 potion id plus 1
+*>     (0 = the stack has none), taken over by the slot it is set into like the foil (PL-SLOT-DYE and PL-SLOT-POTION the player slots 0 to 35, PL-OFFHAND-DYE and PL-OFFHAND-POTION the off hand).
+       10 PL-STACK-DYE       BINARY-LONG.
+       10 PL-OFFHAND-DYE     BINARY-LONG.
+       10 PL-SLOT-DYE        BINARY-LONG OCCURS 36 TIMES.
+       10 PL-STACK-POTION    BINARY-LONG.
+       10 PL-OFFHAND-POTION  BINARY-LONG.
+       10 PL-SLOT-POTION     BINARY-LONG OCCURS 36 TIMES.
+*>     The skin parts byte of the Client Information last sent (CLP-CONFIG-START in configuration, CLIENT-INFO-BROADCAST in play; 47 section 5.2): the packet goes again only when the options give another.
+       10 PL-INFO-PARTS      BINARY-LONG.
 *>     banner_patterns 74 of the last item stack decoded (STACK-BANNER) and of each slot (1 to 36 the slots, 37 the off hand), taken over like the foil: the number of layers kept
 *>     (at most 16), each layer's pattern holder (the registry position + 1, 0 an inline pattern) and dye id (hand-banner.cob; 54 section 22).
        10 PL-STACK-BN.
@@ -860,6 +870,12 @@
           15 EN-CREEPY       PIC 9.
           15 EN-ATK          BINARY-LONG.
           15 EN-FLW          BINARY-LONG.
+*>        The anchor frame of a block a mob carries (T9905; ENTITY-MODEL-EMIT, ENTITY-CARRY-EMIT): EN-ANC-OK 1 when the model drawn this frame gave it, then 12 values as
+*>        EN-HAND-F (the origin and the three axes, a block long, entity-relative): the frame of the head part of a snow golem (34-3 8) and a copper golem (9.3, the antenna
+*>        block), of the model root of an enderman that carries a block (34-6 3.3). A snow golem's EN-X1 is 1 once its pumpkin is shorn (Set Entity Data entry 16, bit 16 clear).
+          15 EN-ANC-OK        BINARY-LONG.
+          15 EN-ANC-FG.
+             20 EN-ANC-F     FLOAT-LONG OCCURS 12 TIMES.
 *>        The armadillo (34-5 10.3, ENTITY-ARMADILLO-SET and ENTITIES-ANIM-TICK): ARMADILLO_STATE (Set Entity Data entry 18, serializer 36: 0 idle, 1 rolling, 2 scared,
 *>        3 unrolling), inStateTicks (client ticks since the state changed), the start ticks of the roll-out, roll-up and peek animation states (-2147483648 is stopped)
 *>        and the "peek received" flag of Entity Event 64.
@@ -1270,6 +1286,8 @@
        10 IT-SPRITE          BINARY-LONG OCCURS 18 TIMES.
 *>     The same for the items of a standard set, found on first use (ITEM-SPRITE-OF, models-lazy.cob): 0 = not looked up yet.
        10 IS-SPRITE          BINARY-LONG OCCURS 2048 TIMES.
+*>     The second layer of a flat item's icon (a model of builtin/generated with a layer1 texture: the leather armour's overlay, the potion's bottle, a spawn egg's spots), its sprite (ITEM-SPRITE-OF), 0 = none.
+       10 IS-LAYER1          BINARY-LONG OCCURS 2048 TIMES.
 *>     The faces of a block item's model (ITEM-FACE-SPRITE): IS-FACE-DONE(i + 1) = 1 when the item is a block model, and IS-FACE-SPRITE(i * 6 + d) is
 *>     the sprite of face d (DIR-DOWN to DIR-EAST) of its first element, the up sprite where the model has no such face.
 *>     The first person display transform of each item's model (ITEM-SPRITE-OF; 08 section 5.6, 12 section 8.2): IS-FP-STATE(i + 1) = 1 when its model chain
@@ -1289,6 +1307,7 @@
        10 IG-USED            BINARY-LONG.
        10 IG-QUAD OCCURS 8192 TIMES.
           15 IG-SPRITE       BINARY-LONG.
+          15 IG-TINT         BINARY-LONG.    *> the face's tintindex (-1 none), the layer of the item's tint list (43 section 7)
           15 IG-BRIGHT       FLOAT-SHORT.
           15 IG-CORNER OCCURS 4 TIMES.
              20 IG-X         FLOAT-SHORT.
@@ -1510,6 +1529,22 @@
           15 RL-GL-R         FLOAT-SHORT.
           15 RL-GL-G         FLOAT-SHORT.
           15 RL-GL-BLUE      FLOAT-SHORT.
+*>     The glint of the items that mobs hold (eye-relative, texture 5, pipeline CC-PIPE-GLINT; item-held.cob, HAND-QUAD mode 6; 54 section 19.3): the item's quads over its opaque
+*>     texels again, vertices as RL-GL-VERTEX with the glint coordinates of the item scale 8.
+       10 RL-WG-COUNT        BINARY-LONG.
+       10 RL-WG-UPLOADED     BINARY-LONG.
+       10 RL-WG-VERTEX OCCURS 8192 TIMES.
+          15 RL-WG-X         FLOAT-SHORT.
+          15 RL-WG-Y         FLOAT-SHORT.
+          15 RL-WG-Z         FLOAT-SHORT.
+          15 RL-WG-U         FLOAT-SHORT.
+          15 RL-WG-V         FLOAT-SHORT.
+          15 RL-WG-B         FLOAT-SHORT.
+          15 RL-WG-A         FLOAT-SHORT.
+          15 RL-WG-SKY       FLOAT-SHORT.
+          15 RL-WG-R         FLOAT-SHORT.
+          15 RL-WG-G         FLOAT-SHORT.
+          15 RL-WG-BLUE      FLOAT-SHORT.
 *>     The glint of the item in the hand (hand.cob; 54 section 19.3, texture 5, glint pipeline, the hand's projection): the quads of the hand mesh over the opaque
 *>     texels (a flat item: one quad per opaque texel on each face and the edge quads; a block: its faces) with the glint coordinates of the item scale 8.
        10 RL-HG-COUNT        BINARY-LONG.
@@ -1697,6 +1732,21 @@
           15 RL-HA-R         FLOAT-SHORT.
           15 RL-HA-G         FLOAT-SHORT.
           15 RL-HA-BLUE      FLOAT-SHORT.
+*>     The first-person fire overlay (view space, the block atlas texture 0, the hand's projection, translucent; fire-overlay.cob; 57-1 section 1): two quads of fire_1.
+       10 RL-HF-COUNT        BINARY-LONG.
+       10 RL-HF-UPLOADED     BINARY-LONG.
+       10 RL-HF-VERTEX OCCURS 12 TIMES.
+          15 RL-HF-X         FLOAT-SHORT.
+          15 RL-HF-Y         FLOAT-SHORT.
+          15 RL-HF-Z         FLOAT-SHORT.
+          15 RL-HF-U         FLOAT-SHORT.
+          15 RL-HF-V         FLOAT-SHORT.
+          15 RL-HF-B         FLOAT-SHORT.
+          15 RL-HF-A         FLOAT-SHORT.
+          15 RL-HF-SKY       FLOAT-SHORT.
+          15 RL-HF-R         FLOAT-SHORT.
+          15 RL-HF-G         FLOAT-SHORT.
+          15 RL-HF-BLUE      FLOAT-SHORT.
 *>     The weather quads (eye-relative, texture 3; weather-render.cob).
        10 RL-WX-COUNT        BINARY-LONG.
        10 RL-WX-UPLOADED     BINARY-LONG.

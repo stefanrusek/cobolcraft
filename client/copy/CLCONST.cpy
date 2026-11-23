@@ -235,6 +235,10 @@
  78 MESH-SLOT-HAND-GLINT    VALUE 65018.
 *> The arm of an empty main hand (one mesh, view space, texture 1; hand-arm.cob).
  78 MESH-SLOT-HAND-ARM      VALUE 65019.
+*> The first-person fire overlay (one mesh, view space, texture 0, translucent; fire-overlay.cob). 65020 is MESH-SLOT-SIGNS (CLSIGN.cpy).
+ 78 MESH-SLOT-HAND-FIRE     VALUE 65021.
+*> The glint of the items that mobs hold (one mesh, eye-relative, texture 5, glint pipeline; item-held.cob).
+ 78 MESH-SLOT-GLINT-HELD    VALUE 65022.
  78 CL-SWING-MS             VALUE 300.  *> the hand's swing, milliseconds
 
 *> Weather kinds (standin-content §14.1), from the Game Event pair (rain level, thunder level).

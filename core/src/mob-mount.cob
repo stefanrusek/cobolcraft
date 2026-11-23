@@ -158,19 +158,39 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-MOUNT-GONE.
-*> USING row (called by ENTITY-REMOVE before the row is cleared): a vehicle's rider is left standing (EN-MOUNT cleared) and a rider's vehicle has no rider.
+*> USING row (called by ENTITY-REMOVE before the row is cleared): a vehicle's rider is left standing (EN-MOUNT cleared) and a rider's vehicle has no rider. Entity.removeVehicle posts
+*> entity_dismount at the vehicle's position with the rider as the source (30-8 14.1.9) when the rider has no removal reason or one that destroys it: every removal of this core destroys
+*> (death, despawn, pickup), except a player row, which leaves with its connection (unloaded: nothing is posted for it).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ 01 WS-EV-DISMOUNT         PIC X(32) VALUE "entity_dismount".
+ 01 WS-RIDER               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      IF EN-PASS(L-ROW) > 0
-         MOVE 0 TO EN-MOUNT(EN-PASS(L-ROW)) EN-MOUNT-ID(EN-PASS(L-ROW))
+         MOVE EN-PASS(L-ROW) TO WS-RIDER
+         MOVE 0 TO EN-MOUNT(WS-RIDER) EN-MOUNT-ID(WS-RIDER)
+         CALL "GAME-EVENT-BY" USING WS-EV-DISMOUNT L-ROW WS-RIDER
+     END-IF
+*>   Players riding the vehicle (EN-RIDER, a camel's EN-RIDER2): they get off the vehicle that goes.
+     IF EN-RIDER(L-ROW) > 0
+         MOVE PL-ENTITY-ROW(EN-RIDER(L-ROW)) TO WS-RIDER
+         MOVE 0 TO EN-VEHICLE(WS-RIDER)
+         CALL "GAME-EVENT-BY" USING WS-EV-DISMOUNT L-ROW WS-RIDER
+     END-IF
+     IF EN-RIDER2(L-ROW) > 0
+         MOVE PL-ENTITY-ROW(EN-RIDER2(L-ROW)) TO WS-RIDER
+         MOVE 0 TO EN-VEHICLE(WS-RIDER)
+         CALL "GAME-EVENT-BY" USING WS-EV-DISMOUNT L-ROW WS-RIDER
      END-IF
      IF EN-MOUNT(L-ROW) > 0
          IF EN-PASS(EN-MOUNT(L-ROW)) = L-ROW
              MOVE 0 TO EN-PASS(EN-MOUNT(L-ROW))
+             IF EN-PLAYER(L-ROW) = 0
+                 CALL "GAME-EVENT-BY" USING WS-EV-DISMOUNT EN-MOUNT(L-ROW) L-ROW
+             END-IF
          END-IF
      END-IF
      GOBACK.

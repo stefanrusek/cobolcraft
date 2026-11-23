@@ -186,6 +186,36 @@
      END-PERFORM
      .
 
+*> The same count over the quads of the layer over the icons (RL-UT, layer 1: the strike-through of a discounted cost), after FIND-SPRITE has computed the expected corners.
+ FIND-TOP-SPRITE.
+     PERFORM FIND-SPRITE
+     MOVE 0 TO WS-FOUND
+     PERFORM VARYING WS-Q FROM 0 BY 1 UNTIL WS-Q * 6 + 6 > RL-UT-COUNT
+         COMPUTE WS-V1 = WS-Q * 6 + 1
+         COMPUTE WS-V3 = WS-Q * 6 + 3
+         IF RL-UT-X(WS-V1) > WS-EX0 - 0.01 AND RL-UT-X(WS-V1) < WS-EX0 + 0.01
+                 AND RL-UT-Y(WS-V1) > WS-EY0 - 0.01 AND RL-UT-Y(WS-V1) < WS-EY0 + 0.01
+                 AND RL-UT-X(WS-V3) > WS-EX1 - 0.01 AND RL-UT-X(WS-V3) < WS-EX1 + 0.01
+                 AND RL-UT-Y(WS-V3) > WS-EY1 - 0.01 AND RL-UT-Y(WS-V3) < WS-EY1 + 0.01
+                 AND RL-UT-U(WS-V1) > WS-EU0 - 0.00001 AND RL-UT-U(WS-V1) < WS-EU0 + 0.00001
+                 AND RL-UT-V(WS-V1) > WS-EV0 - 0.00001 AND RL-UT-V(WS-V1) < WS-EV0 + 0.00001
+                 AND RL-UT-U(WS-V3) > WS-EU1 - 0.00001 AND RL-UT-U(WS-V3) < WS-EU1 + 0.00001
+                 AND RL-UT-V(WS-V3) > WS-EV1 - 0.00001 AND RL-UT-V(WS-V3) < WS-EV1 + 0.00001
+             ADD 1 TO WS-FOUND
+         END-IF
+     END-PERFORM
+     .
+
+*> EXPECT-WHOLE over the layer over the icons.
+ EXPECT-WHOLE-TOP.
+     MOVE GS-W(WS-SPRITE) TO WS-DW WS-SW
+     MOVE GS-H(WS-SPRITE) TO WS-DH WS-SH
+     MOVE 0 TO WS-SX WS-SY
+     PERFORM FIND-TOP-SPRITE
+     MOVE WS-FOUND TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     .
+
 *> A whole sprite (not clipped) of its own size at (WS-DX, WS-DY), the case text TL-CASE, expected WS-FOUND = L (1 drawn, 0 absent) in TL-EXPECTED-N.
  EXPECT-WHOLE.
      MOVE GS-W(WS-SPRITE) TO WS-DW WS-SW
@@ -678,6 +708,21 @@
      MOVE "merchant the pointer over row 2: its button is the highlighted sprite" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      PERFORM EXPECT-PART
+*>   A discount on row 0 (special price -2: the first cost 5 becomes 3, 40-5 2.10): the sprite discount_strikethrough 9 x 2 crosses it out at (x + 7, y + 12) of
+*>   the cost item (10 + 7, 19 + 12) = (17, 31), not the red swatch; the unchanged row 1 has none.
+     MOVE -1000 TO IN-CURSOR-X IN-CURSOR-Y
+     MOVE -2 TO MO-SPECIAL(1)
+     PERFORM BUILD-SCREEN
+     MOVE GSP-VIL-STRIKE TO WS-SPRITE
+     MOVE 17 TO WS-DX
+     MOVE 31 TO WS-DY
+     MOVE "merchant a discounted first cost: the strike-through sprite at (17, 31)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM EXPECT-WHOLE-TOP
+     MOVE 51 TO WS-DY
+     MOVE "merchant the unchanged row 1 has no strike-through at (17, 51)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM EXPECT-WHOLE-TOP
      .
 
 *> Stonecutter (40-4 4.9): 14 recipes from index 4, the recipe 5 selected, the pointer over the cell k = 2: visible cells k 0 to 9 are 16 x 18 sprites at (52 + 16 (k mod 4), 15 + 18 (k div 4)),

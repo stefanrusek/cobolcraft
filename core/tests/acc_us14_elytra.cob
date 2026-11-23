@@ -12,6 +12,7 @@
  COPY CTOOLS.
  COPY CMENU.
  COPY PROJSTATE.
+ COPY GAMEEVENT.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-CONN                BINARY-LONG.
  01 WS-FLOOR               BINARY-LONG.
@@ -58,6 +59,8 @@
  01 WS-AIR                 BINARY-LONG VALUE 0.
  01 WS-Y                   BINARY-LONG.
  01 WS-IDS                 PIC X(1024).
+ 01 WS-GI                  BINARY-LONG.
+ 01 WS-GLIDES              BINARY-LONG.
  01 WS-CASE                PIC X(240).
  01 WS-EXPECT              BINARY-DOUBLE.
  01 WS-OBSERVE             BINARY-DOUBLE.
@@ -97,6 +100,11 @@
      MOVE 0 TO WS-EXPECT
      MOVE WS-DAMAGE TO WS-OBSERVE
      PERFORM CHECK-N
+     PERFORM COUNT-GLIDES
+     MOVE "acceptance 30-8 14.1.9 after 19 ticks of flight elytra_glide was posted once (the 10th gliding tick)" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-GLIDES TO WS-OBSERVE
+     PERFORM CHECK-N
      MOVE 1 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "RT-EQUIP-DAMAGE" USING WS-PLAYER WS-DAMAGE
@@ -104,12 +112,33 @@
      MOVE 1 TO WS-EXPECT
      MOVE WS-DAMAGE TO WS-OBSERVE
      PERFORM CHECK-N
+     PERFORM COUNT-GLIDES
+     MOVE "acceptance 30-8 14.1.9 the 20th gliding tick posts elytra_glide again (2 so far)" TO WS-CASE
+     MOVE 2 TO WS-EXPECT
+     MOVE WS-GLIDES TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance 30-8 14.1.9 elytra_glide has the glider as its source" TO WS-CASE
+     MOVE PL-ENTITY-ROW(WS-PLAYER) TO WS-EXPECT
+     MOVE GE-SOURCE TO WS-OBSERVE
+     IF GE-NAME NOT = "elytra_glide"
+         MOVE -1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE "acceptance 30-8 14.1.9 elytra_glide is posted at the glider's position (y in millis)" TO WS-CASE
+     COMPUTE WS-EXPECT ROUNDED = PL-Y(WS-PLAYER) * 1000
+     COMPUTE WS-OBSERVE ROUNDED = GE-Y * 1000
+     PERFORM CHECK-N
      MOVE 20 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "RT-EQUIP-DAMAGE" USING WS-PLAYER WS-DAMAGE
      MOVE "acceptance US14 17 3.13 at the 40th tick it has lost 2" TO WS-CASE
      MOVE 2 TO WS-EXPECT
      MOVE WS-DAMAGE TO WS-OBSERVE
+     PERFORM CHECK-N
+     PERFORM COUNT-GLIDES
+     MOVE "acceptance 30-8 14.1.9 40 gliding ticks post elytra_glide 4 times (n = 10, 20, 30, 40)" TO WS-CASE
+     MOVE 4 TO WS-EXPECT
+     MOVE WS-GLIDES TO WS-OBSERVE
      PERFORM CHECK-N
 
 *>   Landing ends the flight and the pose.
@@ -337,6 +366,15 @@
      MOVE 0 TO TS-GLIDE-TICKS(WS-PLAYER)
      MOVE 0 TO PL-HELD(WS-PLAYER)
      CALL "RT-CLEAR-TYPE" USING WS-ROCKET-TYPE.
+
+*> COUNT-GLIDES: the elytra_glide entries among the 128 newest game events (GE-LOG) into WS-GLIDES.
+ COUNT-GLIDES.
+     MOVE 0 TO WS-GLIDES
+     PERFORM VARYING WS-GI FROM 1 BY 1 UNTIL WS-GI > 128
+         IF GE-L-NAME(WS-GI) = "elytra_glide"
+             ADD 1 TO WS-GLIDES
+         END-IF
+     END-PERFORM.
 
  CHECK-N.
      MOVE "N" TO TL-MODE

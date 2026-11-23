@@ -50,6 +50,9 @@
  01 WS-NEEDED              BINARY-LONG.
  01 WS-BRUSH               BINARY-LONG.
  01 WS-BRUSH-ROW           PIC X(270).
+ 01 WS-SNHX               FLOAT-LONG.
+ 01 WS-SNHZ               FLOAT-LONG.
+ 01 WS-SNWALK             BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
@@ -98,14 +101,43 @@
      CALL "SNIFFER-SET-STATE" USING WS-A WS-STATE
      MOVE 1 TO EN-SNIF-T(WS-A)
      MOVE 1000 TO CW-TIME
-     CALL "M44-SNIF-BRAIN" USING WS-A
+     CALL "M44-SNIF-BRAIN" USING WS-A WS-SNHX WS-SNHZ WS-SNWALK
      CALL "SNIFFER-TICK" USING WS-A
      MOVE "acceptance US15 44-4§13 Sniffer: a sniffing sniffer that can dig goes to searching (4)" TO TL-CASE
      MOVE 4 TO TL-EXPECTED-N
      MOVE EN-SNIF(WS-A) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The sniffing target is a block within 18 of the sniffer; the walk target to it is set at the same time.
+     MOVE "acceptance US15 44-4§13 Sniffer: the dig position is within 18 blocks and the sniffing target is set" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     COMPUTE WS-SX = EN-SNIF-TX(WS-A) - FUNCTION INTEGER(EN-X(WS-A))
+     COMPUTE WS-SZ = EN-SNIF-TZ(WS-A) - FUNCTION INTEGER(EN-Z(WS-A))
+     IF EN-SNIF-TON(WS-A) = 1 AND FUNCTION ABS(WS-SX) <= 18 AND FUNCTION ABS(WS-SZ) <= 18
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Searching walks (walk 1) toward the target unless the sniffer already stands in its cell; a sniffer that stands in the target cell, facing away from the stone, has arrived and digs.
      ADD 1 TO CW-TIME
-     CALL "M44-SNIF-BRAIN" USING WS-A
+     MOVE 0 TO WS-SNWALK
+     IF FUNCTION INTEGER(EN-X(WS-A)) = EN-SNIF-TX(WS-A) AND FUNCTION INTEGER(EN-Z(WS-A)) = EN-SNIF-TZ(WS-A)
+         MOVE 1 TO WS-SNWALK
+     ELSE
+         CALL "M44-SNIF-BRAIN" USING WS-A WS-SNHX WS-SNHZ WS-SNWALK
+     END-IF
+     MOVE "acceptance US15 44-4§13 Sniffer: searching walks toward the target (walk 1)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-SNWALK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 44-4§13 Sniffer: still searching while it walks" TO TL-CASE
+     MOVE 4 TO TL-EXPECTED-N
+     MOVE EN-SNIF(WS-A) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     COMPUTE EN-X(WS-A) = EN-SNIF-TX(WS-A) + 0.5
+     COMPUTE EN-Z(WS-A) = EN-SNIF-TZ(WS-A) + 0.5
+     MOVE 180 TO EN-YAW(WS-A)
+     ADD 1 TO CW-TIME
+     CALL "M44-SNIF-BRAIN" USING WS-A WS-SNHX WS-SNHZ WS-SNWALK
      CALL "SNIFFER-TICK" USING WS-A
      MOVE "acceptance US15 44-4§13 Sniffer: searching arrives and digs (5)" TO TL-CASE
      MOVE 5 TO TL-EXPECTED-N
@@ -122,7 +154,7 @@
      PERFORM UNTIL EN-SNIF(WS-A) NOT = 5 OR WS-N > 400
          ADD 1 TO CW-TIME
          ADD 1 TO WS-N
-         CALL "M44-SNIF-BRAIN" USING WS-A
+         CALL "M44-SNIF-BRAIN" USING WS-A WS-SNHX WS-SNHZ WS-SNWALK
          CALL "SNIFFER-TICK" USING WS-A
      END-PERFORM
      MOVE "acceptance US15 44-4§13 Sniffer: the dig ends in rising (6) after 160 to 180 ticks" TO TL-CASE
@@ -144,7 +176,7 @@
      PERFORM UNTIL EN-SNIF(WS-A) NOT = 6 OR WS-N > 100
          ADD 1 TO CW-TIME
          ADD 1 TO WS-N
-         CALL "M44-SNIF-BRAIN" USING WS-A
+         CALL "M44-SNIF-BRAIN" USING WS-A WS-SNHX WS-SNHZ WS-SNWALK
          CALL "SNIFFER-TICK" USING WS-A
      END-PERFORM
      MOVE "acceptance US15 44-4§13 Sniffer: rising lasts 40 ticks, then feeling happy (1)" TO TL-CASE
@@ -161,7 +193,7 @@
      MOVE 0 TO WS-BAD
      PERFORM 300 TIMES
          ADD 1 TO CW-TIME
-         CALL "M44-SNIF-BRAIN" USING WS-A
+         CALL "M44-SNIF-BRAIN" USING WS-A WS-SNHX WS-SNHZ WS-SNWALK
          CALL "SNIFFER-TICK" USING WS-A
          IF EN-SNIF(WS-A) = 3 OR EN-SNIF(WS-A) = 4 OR EN-SNIF(WS-A) = 5
              ADD 1 TO WS-BAD
@@ -178,7 +210,7 @@
      MOVE 0 TO WS-BAD
      PERFORM 600 TIMES
          ADD 1 TO CW-TIME
-         CALL "M44-SNIF-BRAIN" USING WS-A
+         CALL "M44-SNIF-BRAIN" USING WS-A WS-SNHX WS-SNHZ WS-SNWALK
          CALL "SNIFFER-TICK" USING WS-A
          IF EN-SNIF(WS-A) = 3
              MOVE 1 TO WS-BAD
@@ -189,15 +221,16 @@
      MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "ENTITY-REMOVE" USING WS-A
-*>   On stone it cannot dig: sniffing ends in idling.
-     COMPUTE WS-X = WS-SX + 3
-     COMPUTE WS-PZ = WS-SZ + 3
+*>   On stone it cannot dig (no candidate within 18 blocks has a diggable block below it): sniffing ends in idling.
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-X0 WS-Z0 WS-SIZE WS-FLOOR WS-STONE
+     COMPUTE WS-X = WS-X0 + 24.5
+     COMPUTE WS-PZ = WS-Z0 + 24.5
      CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-PZ WS-YAW WS-A
      MOVE 1 TO EN-ON-GROUND(WS-A)
      MOVE 3 TO WS-STATE
      CALL "SNIFFER-SET-STATE" USING WS-A WS-STATE
      MOVE 1 TO EN-SNIF-T(WS-A)
-     CALL "M44-SNIF-BRAIN" USING WS-A
+     CALL "M44-SNIF-BRAIN" USING WS-A WS-SNHX WS-SNHZ WS-SNWALK
      CALL "SNIFFER-TICK" USING WS-A
      MOVE "acceptance US15 44-4§13 Sniffer: on stone it cannot dig, sniffing ends idle (0)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N

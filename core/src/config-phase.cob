@@ -103,6 +103,12 @@
          WHEN L-PACKET-ID = 0
              IF CN-PLAYER(L-ID) > 0
                  MOVE CSB-VIEW-DISTANCE TO PL-VIEW-DISTANCE(CN-PLAYER(L-ID))
+                 MOVE CSB-MODEL-PARTS TO PL-MODEL-PARTS(CN-PLAYER(L-ID))
+*>               The main hand (0 left, 1 right on the wire) is entry 15 of the player's entity data (47 section 5.3).
+                 MOVE 0 TO PL-LEFT-HAND(CN-PLAYER(L-ID))
+                 IF CSB-MAIN-HAND = 0
+                     MOVE 1 TO PL-LEFT-HAND(CN-PLAYER(L-ID))
+                 END-IF
              END-IF
          WHEN L-PACKET-ID = 4
              CALL "CORE-KEEPALIVE-ANSWER" USING L-ID CSB-KEEPALIVE

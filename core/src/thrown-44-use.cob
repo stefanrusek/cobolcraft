@@ -1,5 +1,5 @@
 *> The throwing of items by players and the tick of the thrown entities of lane 002-lane-mobsb6 (17 section 3.15, 44 part 8 sections 6.1 and 6.5).
-*> THROWN-ITEM-USE handles Use Item (0x43) for a held throwable (main hand only): splash_potion and lingering_potion (speed 0.5, pitch offset -20 degrees), ender_pearl, egg and snowball (speed 1.5) and fishing_rod (BOBBER-USE, thrown-44c.cob) and ender_eye (EYE-ITEM-USE, thrown-44g.cob) and experience_bottle (speed 0.7, offset -20, mob-21-8-13.cob). The projectile
+*> THROWN-ITEM-USE handles Use Item (0x43) for a held throwable (main hand only): wind_charge (speed 1.5, WIND-SPAWN, wrap lane C), splash_potion and lingering_potion (speed 0.5, pitch offset -20 degrees), ender_pearl, egg and snowball (speed 1.5) and fishing_rod (BOBBER-USE, thrown-44c.cob) and ender_eye (EYE-ITEM-USE, thrown-44g.cob) and experience_bottle (speed 0.7, offset -20, mob-21-8-13.cob). The projectile
 *> starts at (x, eye y - 0.1, z) of the player, moves along (-sin(yaw) cos(pitch), -sin(pitch + offset), cos(yaw) cos(pitch)) normalised and scaled by the speed; a survival
 *> player's stack loses one. Gaps: the inaccuracy of all but the experience bottle (triangle noise), the thrower's own motion, the sound, the statistic and the item cooldown are not modelled;
 *> a thrown potion has the contents of the thrown stack's potion_contents (POTION-LOAD, potion-load.cob; a stack without it is a water bottle).
@@ -150,6 +150,9 @@
              MOVE 7 TO WS-KIND
              MOVE -20 TO WS-OFFSET
              MOVE 0.7 TO WS-SPEED
+         WHEN "wind_charge"
+             MOVE 8 TO WS-KIND
+             MOVE 1.5 TO WS-SPEED
      END-EVALUATE
      IF WS-KIND = 0
          GOBACK
@@ -195,6 +198,11 @@
              MOVE 40 TO WS-PJ
              MOVE "minecraft:experience_bottle" TO WS-EKEY
              CALL "THROWN-SPAWN" USING WS-PJ WS-EKEY WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ PL-ENTITY-ID(WS-ROW) WS-NEW
+         WHEN 8
+*>           The player's wind charge (44-8 section 8, 17 section 3.15): speed 1.5, inaccuracy 1.0, no gravity and no drag (WIND-SPAWN; the 10-tick use cooldown is not kept: the core has
+*>           no item cooldowns).
+             CALL "THROWN-JITTER" USING WS-VX WS-VY WS-VZ WS-SPEED WS-INACCURACY
+             CALL "WIND-SPAWN" USING WS-NONE WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ PL-ENTITY-ID(WS-ROW) WS-NEW
          WHEN OTHER
 *>           The snowball is the projectile of mob-21-proj.cob (PROJ-SPAWN starts it at 1.6; the thrown speed is 1.5).
              MOVE 3 TO WS-PJ

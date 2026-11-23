@@ -170,6 +170,8 @@
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-WORN                BINARY-LONG.
+ 01 WS-HAT-OLD             BINARY-LONG.
+ 01 WS-HAT-NEW             BINARY-LONG.
 *> Serverbound play ids 0 to 68 (05c): "1" where the packet is in the 09 §3 inventory and is
 *> discarded unread in play (0x32 Resource Pack Response).
  01 WS-LATER               PIC X(69) VALUE
@@ -210,6 +212,19 @@
              END-IF
          WHEN L-PACKET-ID = 14
              MOVE PSB-VIEW-DISTANCE TO PL-VIEW-DISTANCE(WS-ROW)
+*>           The displayed skin parts (47 section 5.3): a changed byte goes to the viewers as entry 16 of Set Entity Data (POSE-UPDATE), the main hand as entry 15, and
+*>           a changed hat bit to every player as Player Info Update UPDATE_HAT (PLAYER-HAT-SEND).
+             CALL "PARTS-HAT" USING PL-MODEL-PARTS(WS-ROW) WS-HAT-OLD
+             CALL "PARTS-HAT" USING PSB-MODEL-PARTS WS-HAT-NEW
+             MOVE PSB-MODEL-PARTS TO PL-MODEL-PARTS(WS-ROW)
+             MOVE 0 TO PL-LEFT-HAND(WS-ROW)
+             IF PSB-MAIN-HAND = 0
+                 MOVE 1 TO PL-LEFT-HAND(WS-ROW)
+             END-IF
+             CALL "POSE-UPDATE" USING WS-ROW
+             IF WS-HAT-OLD NOT = WS-HAT-NEW
+                 CALL "PLAYER-HAT-SEND" USING WS-ROW
+             END-IF
          WHEN L-PACKET-ID = 28
              CALL "CORE-KEEPALIVE-ANSWER" USING L-ID PSB-KEEPALIVE
          WHEN L-PACKET-ID = 44
@@ -373,6 +388,8 @@
              CALL "CONFIG-DECODE" USING WS-CONFIG-ID PB-BUFFER CONFIG-SERVERBOUND
                  WS-CONFIG-OUTCOME
              MOVE CSB-VIEW-DISTANCE TO PSB-VIEW-DISTANCE
+             MOVE CSB-MODEL-PARTS TO PSB-MODEL-PARTS
+             MOVE CSB-MAIN-HAND TO PSB-MAIN-HAND
          WHEN 28
              CALL "PB-GET-LONG" USING PB-BUFFER PSB-KEEPALIVE
          WHEN 44
@@ -1064,6 +1081,54 @@
      CALL "PB-PUT-UUID" USING PB-BUFFER L-UUID
      GOBACK.
  END PROGRAM PLAYER-INFO-REMOVE-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PARTS-HAT.
+*> USING the displayed skin parts byte (47 section 5.1), hat out: 1 when the hat bit (mask 0x40) is set, else 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SHIFTED             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PARTS                BINARY-LONG.
+ 01 L-HAT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-PARTS L-HAT.
+     COMPUTE WS-SHIFTED = L-PARTS / 64
+     COMPUTE L-HAT = FUNCTION MOD(WS-SHIFTED, 2)
+     GOBACK.
+ END PROGRAM PARTS-HAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAYER-HAT-SEND.
+*> USING player row: Player Info Update 0x47 with the single action UPDATE_HAT (bit 7 of the action set, 05a ordinal 7; 47 section 5.3): one entry, the player's UUID and its
+*> hat bit, to every player in play (the face in the tab list).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 71.
+ 01 WS-ACTION              BINARY-LONG VALUE 128.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-HAT                 BINARY-LONG.
+ 01 WS-OTHER               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "PARTS-HAT" USING PL-MODEL-PARTS(L-ROW) WS-HAT
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-ACTION
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-UUID" USING PB-BUFFER PL-UUID(L-ROW)
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-HAT
+     PERFORM VARYING WS-OTHER FROM 1 BY 1 UNTIL WS-OTHER > CORE-MAX-PLAYERS
+         IF PL-USED(WS-OTHER) = 1 AND PL-ENTITY-ROW(WS-OTHER) > 0
+             CALL "CORE-SEND" USING PL-CONN(WS-OTHER) PB-BUFFER
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM PLAYER-HAT-SEND.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. OTHERS-JOIN.

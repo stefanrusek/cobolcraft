@@ -111,6 +111,21 @@
  01 WS-K                   BINARY-LONG.
  01 WS-CMD                 PIC X(1024).
  01 WS-CMD-LENGTH          BINARY-LONG.
+*> The seven skin part options (47 section 5.2): the Client Information fixture holds model customisation 0, the packet of a client with every part off.
+ 01 WS-PART-NAMES-DATA.
+    05 FILLER PIC X(40) VALUE "modelPart_cape".
+    05 FILLER PIC X(40) VALUE "modelPart_jacket".
+    05 FILLER PIC X(40) VALUE "modelPart_left_sleeve".
+    05 FILLER PIC X(40) VALUE "modelPart_right_sleeve".
+    05 FILLER PIC X(40) VALUE "modelPart_left_pants_leg".
+    05 FILLER PIC X(40) VALUE "modelPart_right_pants_leg".
+    05 FILLER PIC X(40) VALUE "modelPart_hat".
+ 01 WS-PART-NAMES REDEFINES WS-PART-NAMES-DATA.
+    05 WS-PART-NAME        PIC X(40) OCCURS 7 TIMES.
+ 01 WS-PART-VALUE          PIC X(4096) VALUE "false".
+ 01 WS-PART-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-PART-OK             BINARY-LONG.
+ 01 WS-PART                BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "CL-INIT" USING CLIENT-STATE
@@ -118,6 +133,9 @@
      CALL "LANG-LOAD" USING CLIENT-STATE
      MOVE "Alice" TO CL-NAME
      MOVE 5 TO CL-NAME-LENGTH
+     PERFORM VARYING WS-PART FROM 1 BY 1 UNTIL WS-PART > 7
+         CALL "OPTIONS-SET" USING CLIENT-STATE WS-PART-NAME(WS-PART) WS-PART-VALUE WS-PART-LENGTH WS-PART-OK
+     END-PERFORM
 
 *>   ---- status and login: builders ----
      MOVE 1 TO WS-INTENT
