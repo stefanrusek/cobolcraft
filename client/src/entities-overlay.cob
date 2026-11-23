@@ -8,11 +8,13 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-OVERLAY.
-*> USING CLIENT-STATE, replica row, layer number 1 to 12, code out (BINARY-LONG, 0 when the row has no such layer), red, green, blue out (FLOAT-LONG: the tint of the layer),
+*> USING CLIENT-STATE, replica row, layer number 1 to 20, code out (BINARY-LONG, 0 when the row has no such layer), red, green, blue out (FLOAT-LONG: the tint of the layer),
 *> model row out (0: the row's own model; the armor pieces of layers 5 to 8 have their own).
 *> Villager and zombie villager: 1 type (known data only), 2 profession (not for a baby, id 1 to 14), 3 level (not for a baby, a nitwit or no profession; clamped to 1 to 5).
 *> Zombie, husk, drowned, skeletons, piglins, zombie villager: 5 chest, 6 legs, 7 feet, 8 head armor piece (code 6000 + asset of ENTITY-ARMOR-ASSET) with the model row armor_<slot>
 *> (the zombie villager's, the piglin family's own); a baby wears them on the baby armor rows (34-2 section 1.4, CL-MD-BABY of the row) with the layer type humanoid_baby, and no trim.
+*> Layers 9 to 12 are the trims and 13 to 16 the glints of those pieces; 17 to 20 are the second (overlay) pass of a leather piece (57-1 section 4.3: code 6101, always white,
+*> the model row of the piece, never glinted), numbered after the glints so that the pieces keep their numbers: 17 chest, 18 legs, 19 feet, 20 head.
 *> Horse: 1 markings (entry 19 value / 256 of 1 to 4). Wolf and cat: 1 collar when tame (flags bit 4).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -47,7 +49,7 @@
  PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-N L-CODE L-RED L-GREEN L-BLUE L-MODEL.
      MOVE 0 TO L-CODE L-MODEL
 *>   The zombie villager wears armor like a zombie, on its own armor rows (34-3 section 2.4).
-     IF EN-KEY(L-ROW) = "zombie_villager" AND L-N >= 5 AND L-N <= 16
+     IF EN-KEY(L-ROW) = "zombie_villager" AND L-N >= 5 AND L-N <= 20
          PERFORM ARMOR-LAYER
      END-IF
      EVALUATE EN-KEY(L-ROW)
@@ -153,16 +155,15 @@
 
  ARMOR-LAYER.
 *>           The armor pieces of an adult (34-2 1.5), in the order chest, legs, feet, head: layers 5 to 8, each with the model row of its slot.
-     IF L-N >= 5 AND L-N <= 16
-*>               Layers 9 to 12 are the trims of the pieces of layers 5 to 8 (54 section 18), layers 13 to 16 their glints (54 section 19.3).
+     IF L-N >= 5 AND L-N <= 20
+*>               Layers 9 to 12 are the trims of the pieces of layers 5 to 8 (54 section 18), layers 13 to 16 their glints (54 section 19.3), layers 17 to 20 the overlay
+*>               pass of a leather piece (57-1 section 4.3).
          COMPUTE WS-LAYER = L-N
-         IF L-N > 12
-             SUBTRACT 8 FROM WS-LAYER
-         ELSE
-             IF L-N > 8
-                 SUBTRACT 4 FROM WS-LAYER
-             END-IF
-         END-IF
+         EVALUATE TRUE
+             WHEN L-N > 16 SUBTRACT 12 FROM WS-LAYER
+             WHEN L-N > 12 SUBTRACT 8 FROM WS-LAYER
+             WHEN L-N > 8 SUBTRACT 4 FROM WS-LAYER
+         END-EVALUATE
          EVALUATE WS-LAYER
              WHEN 5 MOVE 2 TO WS-WANT
              WHEN 6 MOVE 3 TO WS-WANT
@@ -182,7 +183,12 @@
                      PERFORM ARMOR-MODEL-ROW
                  END-IF
              END-IF
-             IF WS-SLOT = WS-WANT AND (L-N <= 8 OR (L-N > 12 AND EN-EQ-FOIL(L-ROW, 7 - WS-WANT) = 1))
+             IF WS-SLOT = WS-WANT AND L-N > 16 AND WS-ASSET = 1
+*>                       The overlay pass of a leather piece: the second layer of leather.json, texture leather_overlay.png of the piece's layer type, white (57-1 section 4.3).
+                 MOVE 6101 TO L-CODE
+                 PERFORM ARMOR-MODEL-ROW
+             END-IF
+             IF WS-SLOT = WS-WANT AND (L-N <= 8 OR (L-N > 12 AND L-N <= 16 AND EN-EQ-FOIL(L-ROW, 7 - WS-WANT) = 1))
 *>                       The piece itself, or (layers 13 to 16, the foil) its glint: the same model and texture, drawn into the glint mesh by ENTITIES-MESH.
                  COMPUTE L-CODE = 6000 + WS-ASSET
                  PERFORM ARMOR-MODEL-ROW
