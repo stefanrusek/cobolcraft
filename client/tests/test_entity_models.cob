@@ -289,6 +289,10 @@
          IF CL-MD-ANIM(WS-I) = "F" AND RL-EN-COUNT = 0
              ADD 1 TO WS-OK
          END-IF
+*>       A painting (code L) holds no variant here (no painting_variant registry): it draws nothing (test_entity_painting).
+         IF CL-MD-ANIM(WS-I) = "L" AND RL-EN-COUNT = 0
+             ADD 1 TO WS-OK
+         END-IF
 *>       A row that is the extra layer of another (the sheep's wool) is no entity type: it is drawn with its base row (below).
          IF WS-STATUS NOT = CT-OK AND RL-EN-COUNT = 0
              ADD 1 TO WS-OK

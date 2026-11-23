@@ -232,6 +232,33 @@
      MOVE "acceptance wrapb dispense 30-4 4.1 the experience bottle entity exists" TO WS-CASE
      PERFORM ASSERT-N
      PERFORM CHECK-FLIGHT-1-375
+*>   F2. arrows (4.1): an arrow, a spectral arrow and a tipped arrow leave as arrow entities at power 1.1 with the noise of 6 and are spent with the launch sound
+     MOVE "arrow" TO WS-K PERFORM FIND-ITEM
+     MOVE "arrow" TO WS-ENT-KEY PERFORM CLEAR-ENTITIES
+     CALL "RL-DISP-BEHAVE" USING WS-DIM WS-FX WS-FY WS-FZ WS-FACING WS-ITEM WS-VAR WS-HANDLED WS-CONSUMED WS-REMAINDER
+     MOVE WS-CONSUMED TO WS-OBS-N MOVE 3 TO WS-EXP-N
+     MOVE "acceptance wrapb dispense 30-4 4.1 an arrow is spent with the launch sound" TO WS-CASE
+     PERFORM ASSERT-N
+     PERFORM FIND-ENTITY
+     MOVE WS-ECOUNT TO WS-OBS-N MOVE 1 TO WS-EXP-N
+     MOVE "acceptance wrapb dispense 30-4 4.1 the arrow entity exists" TO WS-CASE
+     PERFORM ASSERT-N
+     PERFORM CHECK-FLIGHT-1-1
+     MOVE "tipped_arrow" TO WS-K PERFORM FIND-ITEM
+     MOVE "arrow" TO WS-ENT-KEY PERFORM CLEAR-ENTITIES
+     CALL "RL-DISP-BEHAVE" USING WS-DIM WS-FX WS-FY WS-FZ WS-FACING WS-ITEM WS-VAR WS-HANDLED WS-CONSUMED WS-REMAINDER
+     PERFORM FIND-ENTITY
+     MOVE WS-ECOUNT TO WS-OBS-N MOVE 1 TO WS-EXP-N
+     MOVE "acceptance wrapb dispense 30-4 4.1 a tipped arrow is shot as an arrow entity" TO WS-CASE
+     PERFORM ASSERT-N
+     MOVE "spectral_arrow" TO WS-K PERFORM FIND-ITEM
+     MOVE "spectral_arrow" TO WS-ENT-KEY PERFORM CLEAR-ENTITIES
+     CALL "RL-DISP-BEHAVE" USING WS-DIM WS-FX WS-FY WS-FZ WS-FACING WS-ITEM WS-VAR WS-HANDLED WS-CONSUMED WS-REMAINDER
+     PERFORM FIND-ENTITY
+     MOVE WS-ECOUNT TO WS-OBS-N MOVE 1 TO WS-EXP-N
+     MOVE "acceptance wrapb dispense 30-4 4.1 a spectral arrow is shot as a spectral arrow entity" TO WS-CASE
+     PERFORM ASSERT-N
+     PERFORM CHECK-FLIGHT-1-1
 *>   G. the boat of 4.4 by RL-DISP-BEHAVE at once (no tick lets it float): water in the front cell (4, 101, 25): y 101.5 + 1.0 = 102.5, x 4.75
      MOVE 25 TO WS-Z
      MOVE 4 TO WS-X MOVE 101 TO WS-Y MOVE "water" TO WS-K PERFORM PUT-DEF

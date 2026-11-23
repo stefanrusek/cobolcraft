@@ -631,6 +631,13 @@
        10 RG-REGISTRIES      BINARY-LONG.    *> Registry Data packets received
        10 RG-BIOMES          BINARY-LONG.    *> worldgen/biome registry entries
        10 RG-BIOME-PRECIP    PIC 9 OCCURS 255 TIMES.   *> biome id + 1: has_precipitation
+*>        The painting_variant registry (T51207, 34-9 section 11): the entry's index + 1 is the row (the registry index is the variant id of Set Entity Data entry 9);
+*>        width and height in blocks and the asset id (namespace:name) of its sprite textures/painting/<name>.png.
+       10 RG-PAINT-COUNT      BINARY-LONG.
+       10 RG-PAINT OCCURS 64 TIMES.
+          15 RG-PAINT-W      BINARY-LONG.
+          15 RG-PAINT-H      BINARY-LONG.
+          15 RG-PAINT-ASSET  PIC X(48).
 *>  ---- status effects and the heart-row state (client/src/effects.cob, hearts.cob; docs/protocol/49) ----
     05 EF-STATE.
        10 EF-COUNT           BINARY-LONG.    *> active effects of the local player

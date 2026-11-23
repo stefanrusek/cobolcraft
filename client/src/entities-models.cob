@@ -152,6 +152,7 @@
  01 WS-OVB                 FLOAT-LONG.
  01 WS-OVM                 BINARY-LONG.
  01 WS-PLAYER-KEY          PIC X(24).
+ 01 WS-DRAWN               BINARY-LONG.
  01 WS-ARM                 BINARY-LONG.
  01 WS-PREVIEW             BINARY-LONG.
  COPY CLCONST.
@@ -162,11 +163,23 @@
      MOVE 0 TO WS-NEW
      ADD 1 TO EA-MT-STAMP
      PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > EN-COUNT
-         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND CL-MD-ANIM(EN-MODEL(WS-R)) NOT = "F"
+*>       A painting whose variant the registry does not hold draws nothing and takes no slot (PAINTING-DRAWN).
+         MOVE 1 TO WS-DRAWN
+         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0
+             IF CL-MD-ANIM(EN-MODEL(WS-R)) = "L"
+                 CALL "PAINTING-DRAWN" USING CLIENT-STATE WS-R WS-DRAWN
+             END-IF
+         END-IF
+         IF EN-USED(WS-R) = 1 AND EN-MODEL(WS-R) > 0 AND CL-MD-ANIM(EN-MODEL(WS-R)) NOT = "F" AND WS-DRAWN = 1
 *>           A baby of a type with a baby row is drawn from that row (CL-MD-BABY).
              CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-R WS-EM
              CALL "ENTITY-TEX-CODE" USING CLIENT-STATE WS-R WS-EM WS-TEX
              CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
+*>           A painting draws two images: the variant's sprite (the slot above) and the back sprite (code 0, the row's own image).
+             IF CL-MD-ANIM(WS-EM) = "L"
+                 MOVE 0 TO WS-TEX
+                 CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
+             END-IF
 *>           The extra layer of the row's model (the sheep's wool) has its own slot.
              MOVE CL-MD-EXTRA(WS-EM) TO WS-X
              IF WS-X > 0
@@ -386,7 +399,7 @@
  01 WS-BAKED.
     05 WS-BK OCCURS 768 TIMES.
        10 WS-BK-KEY.
-          15 WS-BK-KF          FLOAT-LONG OCCURS 37 TIMES VALUE 0.
+          15 WS-BK-KF          FLOAT-LONG OCCURS 38 TIMES VALUE 0.
        10 WS-BK-N             BINARY-LONG VALUE 0.
        10 WS-BK-NC            BINARY-LONG VALUE 0.
        10 WS-BK-HR            BINARY-LONG VALUE 0.
@@ -439,7 +452,7 @@
  01 WS-LC                  BINARY-LONG.
  01 WS-REUSE               BINARY-LONG.
  01 WS-KEY-NOW.
-    05 WS-KN                  FLOAT-LONG OCCURS 37 TIMES.
+    05 WS-KN                  FLOAT-LONG OCCURS 38 TIMES.
  01 WS-HIT                 BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-E2                  BINARY-LONG.
@@ -678,6 +691,10 @@
      IF EN-KEY(WS-ROW) = "armadillo" AND EN-ARMA(WS-ROW) > 0
          MOVE EN-AGE(WS-ROW) TO WS-AGE
      END-IF
+*>   A copper golem at work (state 1 to 4) animates with its age (34-3 9.2 step 3: the state's animation counts from its start tick).
+     IF EN-KEY(WS-ROW) = "copper_golem" AND EN-X1(WS-ROW) > 0
+         MOVE EN-AGE(WS-ROW) TO WS-AGE
+     END-IF
 *>   A boat (code B): the rowing time of each paddle (7.3 getRowingTime at partial 1): the paddle position while the paddle is held, else 0 (the replica keeps the
 *>   left position in EN-WALK-POS, the right in EN-WALK-SPEED, the held flags in EN-X1 and EN-X2).
      IF WS-ANIM = "B"
@@ -701,6 +718,11 @@
      COMPUTE WS-KN(20) = WS-SWT * 10 + WS-SWARM
      COMPUTE WS-KN(21) = WS-AGG * 10 + WS-MAINARM
 *>   What the hands hold decides the arm poses of a player and whether the arm frames are kept for the held items (a shield blocking is another pose): empty or not per hand, blocking per hand.
+*>   A copper golem's state and the tick it started at (EN-X1, EN-X3): the animation of the state is in the mesh.
+     MOVE 0 TO WS-KN(38)
+     IF EN-KEY(WS-ROW) = "copper_golem"
+         COMPUTE WS-KN(38) = EN-X1(WS-ROW) + EN-X3(WS-ROW) * 8
+     END-IF
      MOVE 0 TO WS-KN(37)
      PERFORM VARYING WS-HSL FROM 1 BY 1 UNTIL WS-HSL > 2
          IF EN-EQ(WS-ROW, WS-HSL) > 0
@@ -835,6 +857,20 @@
          MOVE EN-ARMA-OUT(WS-ROW) TO WS-I(13)
          MOVE EN-ARMA-UP(WS-ROW) TO WS-I(14)
          MOVE EN-ARMA-PEEK(WS-ROW) TO WS-I(15)
+     END-IF
+*>   A copper golem's inputs of ENTITY-POSE-MORE: 5 its state, 6 the tick the state started at, 7 and 8 whether the right and the left hand hold an item (the main hand is the
+*>   main arm's: a left-handed golem holds it in the left).
+     IF EN-KEY(WS-ROW) = "copper_golem"
+         MOVE EN-X1(WS-ROW) TO WS-I(5)
+         MOVE EN-X3(WS-ROW) TO WS-I(6)
+         MOVE 0 TO WS-I(7) WS-I(8)
+         IF EN-EQ(WS-ROW, WS-MAINARM) > 0
+             MOVE 1 TO WS-I(7)
+         END-IF
+         COMPUTE WS-HSL = 3 - WS-MAINARM
+         IF EN-EQ(WS-ROW, WS-HSL) > 0
+             MOVE 1 TO WS-I(8)
+         END-IF
      END-IF
 *>   An axolotl's animator factors at the partial tick 1 (34-8 4.5): 8 playing dead, 9 in water, 10 on the ground, 11 moving.
      IF EN-KEY(WS-ROW) = "axolotl"
