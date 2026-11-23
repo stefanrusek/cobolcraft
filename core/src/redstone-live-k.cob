@@ -728,7 +728,7 @@
                      WHEN WS-LEFT < WS-BEFORE
                          MOVE WS-LEFT TO EN-ITEM-COUNT(WS-ROW)
                          CALL "PB-RESET" USING PB-BUFFER
-                         CALL "SET-ENTITY-DATA-ITEM-BUILD" USING EN-ID(WS-ROW) EN-ITEM(WS-ROW) EN-ITEM-COUNT(WS-ROW) PB-BUFFER
+                         CALL "GI-DATA-BUILD" USING WS-ROW PB-BUFFER
                          CALL "GI-VIEWERS-SEND" USING WS-ROW PB-BUFFER
                  END-EVALUATE
              END-IF
