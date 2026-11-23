@@ -31,8 +31,13 @@
     05 FILLER              FLOAT-LONG VALUE 1.31875.
     05 FILLER              PIC X(24) VALUE "skeleton_horse".
     05 FILLER              FLOAT-LONG VALUE 1.31875.
+*>  The nautilus and the zombie nautilus: the passenger attachment y 1.1375 of 18 section 1.1.1 (44-7 section 10.4).
+    05 FILLER              PIC X(24) VALUE "nautilus".
+    05 FILLER              FLOAT-LONG VALUE 1.1375.
+    05 FILLER              PIC X(24) VALUE "zombie_nautilus".
+    05 FILLER              FLOAT-LONG VALUE 1.1375.
  01 WS-TABLE REDEFINES WS-SEATS.
-    05 WS-SEAT OCCURS 9 TIMES.
+    05 WS-SEAT OCCURS 11 TIMES.
        10 WS-SEAT-KEY      PIC X(24).
        10 WS-SEAT-Y        FLOAT-LONG.
  01 WS-I                   BINARY-LONG.
@@ -41,7 +46,7 @@
  01 L-SEAT                 FLOAT-LONG.
  PROCEDURE DIVISION USING L-KEY L-SEAT.
      MOVE 0 TO L-SEAT
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 11
          IF WS-SEAT-KEY(WS-I) = L-KEY
              COMPUTE L-SEAT = WS-SEAT-Y(WS-I) - 0.6
          END-IF
@@ -195,6 +200,7 @@
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
      IF PL-SNEAKING(L-PLAYER) = 0 AND EN-VEHICLE(PL-ENTITY-ROW(L-PLAYER)) = 0 AND EN-MOBAGE(L-ROW) >= 0
              AND (WS-KEY NOT = "skeleton_horse" OR EN-TAMED(L-ROW) = 1)
+             AND ((WS-KEY NOT = "nautilus" AND WS-KEY NOT = "zombie_nautilus") OR EN-TAMED(L-ROW) = 1)
          EVALUATE TRUE
              WHEN EN-RIDER(L-ROW) = 0 AND (EN-SADDLE(L-ROW) = 1 OR (WS-KEY NOT = "pig" AND WS-KEY NOT = "strider"))
                  MOVE L-PLAYER TO EN-RIDER(L-ROW)

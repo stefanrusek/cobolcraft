@@ -700,27 +700,39 @@
  01 WS-R                   BINARY-DOUBLE.
  01 WS-A                   BINARY-LONG.
  01 WS-B                   BINARY-LONG.
+ 01 WS-HAS                 BINARY-LONG.
+ 01 WS-D1                  FLOAT-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-FD                  FLOAT-LONG.
+ 01 WS-BONUS               FLOAT-LONG.
+ 01 WS-LEFT                BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      MOVE EN-ID(L-ROW) TO WS-ARG(1)
      MOVE CW-TIME TO WS-ARG(2)
+*>   The rule is X1-FINALIZE-DEFAULTS (44-x1 section 3); its three uniform draws are the hashes 31, 32 and 33 (44-1 section 1.4: any uniform generator), as millionths and thousandths.
+     MOVE 1 TO WS-HAS
+     MOVE 0 TO WS-D1 WS-D2
      IF EN-FOLLOW-BONUS(L-ROW) = 0
+         MOVE 0 TO WS-HAS
          MOVE 31 TO WS-ARG(3)
          CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
          COMPUTE WS-A = FUNCTION MOD(WS-R, 1000000)
          MOVE 32 TO WS-ARG(3)
          CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
          COMPUTE WS-B = FUNCTION MOD(WS-R, 1000000)
-         COMPUTE EN-FOLLOW-BONUS(L-ROW) = (WS-A - WS-B) * 0.11485
+         COMPUTE WS-D1 = WS-A / 1000000
+         COMPUTE WS-D2 = WS-B / 1000000
      END-IF
      MOVE 33 TO WS-ARG(3)
      CALL "RNG-HASH" USING WS-COUNT WS-ARGS WS-R
-     IF FUNCTION MOD(WS-R, 1000) < 50
-         MOVE 1 TO EN-LEFTY(L-ROW)
-     ELSE
-         MOVE 0 TO EN-LEFTY(L-ROW)
+     COMPUTE WS-FD = FUNCTION MOD(WS-R, 1000) / 1000
+     CALL "X1-FINALIZE-DEFAULTS" USING WS-HAS WS-D1 WS-D2 WS-FD WS-BONUS WS-LEFT
+     IF WS-HAS = 0
+         COMPUTE EN-FOLLOW-BONUS(L-ROW) = WS-BONUS * 1000000
      END-IF
+     MOVE WS-LEFT TO EN-LEFTY(L-ROW)
      CALL "STDMOB-MOBFLAGS-SEND" USING L-ROW
      GOBACK.
  END PROGRAM STDMOB-FINALIZE-BASE.

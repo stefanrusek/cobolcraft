@@ -607,7 +607,12 @@
      MOVE 0 TO L-HANDLED
      CALL "MNT-KIND" USING L-ENTITY WS-KIND
      MOVE PL-SLOT-ITEM(L-PLAYER, PL-HELD(L-PLAYER) + 1) TO WS-ITEM
-     IF WS-KIND = 0 OR WS-KIND > 7 OR EN-MOBAGE(L-ENTITY) < 0 OR PL-SLOT-COUNT(L-PLAYER, PL-HELD(L-PLAYER) + 1) = 0
+     IF WS-KIND = 0 OR EN-MOBAGE(L-ENTITY) < 0 OR PL-SLOT-COUNT(L-PLAYER, PL-HELD(L-PLAYER) + 1) = 0
+         GOBACK
+     END-IF
+*>   The nautilus and the zombie nautilus (mounts 8 and 9) equip armor and ride by their own rules (44-7 sections 10.2 step 3 and 10.3.1).
+     IF WS-KIND > 7
+         CALL "NAUTILUS-HELD" USING L-PLAYER L-ENTITY L-HANDLED
          GOBACK
      END-IF
      MOVE 0 TO WS-FOOD-KIND

@@ -1663,6 +1663,10 @@
              GOBACK
          END-IF
      END-IF
+*>   A camel husk's interact first calls setPersistenceRequired, then runs the camel interaction (19 section 3.8).
+     IF WS-KEY = "camel_husk" OR "nautilus" OR "zombie_nautilus"
+         MOVE 1 TO EN-PERSISTENT(WS-ENTITY)
+     END-IF
 *>   Mob.interact posts entity_interact (the mob's position, the player as the source) after the common interactions (the leash) or mobInteract consumed the action (30-8 14.3.7)
      CALL "MOB-LEASH-USE" USING WS-ROW WS-ENTITY WS-HELD WS-USED
      IF WS-USED = 1
@@ -1674,6 +1678,14 @@
      IF WS-USED = 1
          CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
          GOBACK
+     END-IF
+*>   The camel husk's food is the rabbit foot (camel_husk_food): a hurt husk heals 2 and one item is used (19 section 3.8, Camel.handleEating; no love, no baby).
+     IF WS-KEY = "camel_husk" AND WS-HELD = "rabbit_foot"
+         CALL "CAMEL-HUSK-FEED" USING WS-ROW WS-ENTITY WS-USED
+         IF WS-USED = 1
+             CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
+             GOBACK
+         END-IF
      END-IF
      IF WS-HELD = "golden_dandelion"
          CALL "M19-AGE-LOCK-USE" USING WS-ROW WS-ENTITY WS-USED
