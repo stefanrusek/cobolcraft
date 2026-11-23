@@ -1510,6 +1510,22 @@
           15 RL-GL-R         FLOAT-SHORT.
           15 RL-GL-G         FLOAT-SHORT.
           15 RL-GL-BLUE      FLOAT-SHORT.
+*>     The glint of the items that mobs hold (eye-relative, texture 5, pipeline CC-PIPE-GLINT; item-held.cob, HAND-QUAD mode 6; 54 section 19.3): the item's quads over its opaque
+*>     texels again, vertices as RL-GL-VERTEX with the glint coordinates of the item scale 8.
+       10 RL-WG-COUNT        BINARY-LONG.
+       10 RL-WG-UPLOADED     BINARY-LONG.
+       10 RL-WG-VERTEX OCCURS 8192 TIMES.
+          15 RL-WG-X         FLOAT-SHORT.
+          15 RL-WG-Y         FLOAT-SHORT.
+          15 RL-WG-Z         FLOAT-SHORT.
+          15 RL-WG-U         FLOAT-SHORT.
+          15 RL-WG-V         FLOAT-SHORT.
+          15 RL-WG-B         FLOAT-SHORT.
+          15 RL-WG-A         FLOAT-SHORT.
+          15 RL-WG-SKY       FLOAT-SHORT.
+          15 RL-WG-R         FLOAT-SHORT.
+          15 RL-WG-G         FLOAT-SHORT.
+          15 RL-WG-BLUE      FLOAT-SHORT.
 *>     The glint of the item in the hand (hand.cob; 54 section 19.3, texture 5, glint pipeline, the hand's projection): the quads of the hand mesh over the opaque
 *>     texels (a flat item: one quad per opaque texel on each face and the edge quads; a block: its faces) with the glint coordinates of the item scale 8.
        10 RL-HG-COUNT        BINARY-LONG.
@@ -1697,6 +1713,21 @@
           15 RL-HA-R         FLOAT-SHORT.
           15 RL-HA-G         FLOAT-SHORT.
           15 RL-HA-BLUE      FLOAT-SHORT.
+*>     The first-person fire overlay (view space, the block atlas texture 0, the hand's projection, translucent; fire-overlay.cob; 57-1 section 1): two quads of fire_1.
+       10 RL-HF-COUNT        BINARY-LONG.
+       10 RL-HF-UPLOADED     BINARY-LONG.
+       10 RL-HF-VERTEX OCCURS 12 TIMES.
+          15 RL-HF-X         FLOAT-SHORT.
+          15 RL-HF-Y         FLOAT-SHORT.
+          15 RL-HF-Z         FLOAT-SHORT.
+          15 RL-HF-U         FLOAT-SHORT.
+          15 RL-HF-V         FLOAT-SHORT.
+          15 RL-HF-B         FLOAT-SHORT.
+          15 RL-HF-A         FLOAT-SHORT.
+          15 RL-HF-SKY       FLOAT-SHORT.
+          15 RL-HF-R         FLOAT-SHORT.
+          15 RL-HF-G         FLOAT-SHORT.
+          15 RL-HF-BLUE      FLOAT-SHORT.
 *>     The weather quads (eye-relative, texture 3; weather-render.cob).
        10 RL-WX-COUNT        BINARY-LONG.
        10 RL-WX-UPLOADED     BINARY-LONG.

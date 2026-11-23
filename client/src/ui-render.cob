@@ -419,12 +419,18 @@
          END-IF
      END-IF
 *>   State 4 is a bare slot whose count is crossed out (a merchant row's first cost at a discount, 40-5 section 2.10): the strike-through 9 x 2 at (7, 12) of
-*>   the item, opaque red, on the layer over the icons and the count.
+*>   the item, the sprite container/villager/discount_strikethrough (GSP-VIL-STRIKE) on the layer over the icons and the count; an opaque red
+*>   swatch when the pack has no such sprite.
      IF SM-W-STATE(L-W) = 4 AND WS-COUNT > 0
          COMPUTE WS-X = SM-W-X(L-W) + 7
          COMPUTE WS-Y = SM-W-Y(L-W) + 12
          MOVE 1 TO RL-UI-LAYER
-         CALL "UI-SWATCH-QUAD" USING CLIENT-STATE WS-X WS-Y WS-NINE WS-TWO SW-BAR-0
+         IF GS-W(GSP-VIL-STRIKE) > 0
+             MOVE GSP-VIL-STRIKE TO WS-SPRITE-ROW
+             CALL "UI-SPRITE-QUAD" USING CLIENT-STATE WS-SPRITE-ROW WS-X WS-Y WS-NINE WS-TWO
+         ELSE
+             CALL "UI-SWATCH-QUAD" USING CLIENT-STATE WS-X WS-Y WS-NINE WS-TWO SW-BAR-0
+         END-IF
          MOVE 0 TO RL-UI-LAYER
      END-IF
      GOBACK.

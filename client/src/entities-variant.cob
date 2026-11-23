@@ -261,6 +261,7 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-TRIM                PIC X(10).
+ 01 WS-FILE                PIC X(18).
  LINKAGE SECTION.
  01 L-KEY                  PIC X(20).
  01 L-CODE                 BINARY-LONG.
@@ -334,7 +335,7 @@
                  COMPUTE WS-I = 26 + WS-CD
                  STRING "textures/entity/horse/horse_markings_" FUNCTION TRIM(WS-OV(WS-I)) FUNCTION TRIM(WS-BABY) ".png"
                      DELIMITED BY SIZE INTO L-PATH
-             WHEN WS-KIND = 6 AND WS-CD >= 1 AND WS-CD <= 8 AND (WS-BASE = "armor_head" OR "armor_chest" OR "armor_legs" OR "armor_feet")
+             WHEN WS-KIND = 6 AND ((WS-CD >= 1 AND WS-CD <= 8) OR WS-CD = 101) AND (WS-BASE = "armor_head" OR "armor_chest" OR "armor_legs" OR "armor_feet")
                  MOVE "humanoid" TO WS-NAME
                  IF WS-BASE = "armor_legs"
                      MOVE "humanoid_leggings" TO WS-NAME
@@ -343,8 +344,14 @@
                  IF WS-BABY NOT = SPACES
                      MOVE "humanoid_baby" TO WS-NAME
                  END-IF
-                 COMPUTE WS-I = 30 + WS-CD
-                 STRING "textures/entity/equipment/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-OV(WS-I)) ".png"
+*>               The second layer of leather (57-1 section 4.2): code 6101, the file leather_overlay.png of the same layer type.
+                 IF WS-CD = 101
+                     MOVE "leather_overlay" TO WS-FILE
+                 ELSE
+                     COMPUTE WS-I = 30 + WS-CD
+                     MOVE WS-OV(WS-I) TO WS-FILE
+                 END-IF
+                 STRING "textures/entity/equipment/" FUNCTION TRIM(WS-NAME) "/" FUNCTION TRIM(WS-FILE) ".png"
                      DELIMITED BY SIZE INTO L-PATH
              WHEN WS-KIND = 7 AND WS-CD >= 1 AND WS-CD <= 27
                  AND (WS-BASE = "horse_armor" OR "undead_horse_armor" OR "wolf_armor" OR "llama_decor" OR "nautilus_armor")

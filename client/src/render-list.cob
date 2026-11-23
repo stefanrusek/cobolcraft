@@ -530,7 +530,7 @@
      END-IF
 *>   The ground items (item-icon billboards, eye-relative, texture 0), after the translucent
 *>   sections.
-     MOVE 0 TO RL-GI-COUNT
+     MOVE 0 TO RL-GI-COUNT RL-WG-COUNT
      IF WS-WORLD = 1
          CALL "GROUND-ITEMS-MESH" USING CLIENT-STATE WS-EYE-TABLE
      END-IF
@@ -540,6 +540,15 @@
      MOVE CC-PIPE-TRANSLUCENT TO WS-PIPE
      MOVE CC-TEX-BLOCKS TO WS-TEX
      CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-GI-VERTEX(1) RL-GI-COUNT RL-GI-UPLOADED
+         WS-PIPE WS-TEX WS-PV-TABLE
+*>   The glint of the items that mobs hold (54 section 19.3): additive over the ground item mesh with the item glint texture; with no item glint texture nothing is drawn.
+     IF GT-ITEM-W = 0
+         MOVE 0 TO RL-WG-COUNT
+     END-IF
+     MOVE MESH-SLOT-GLINT-HELD TO WS-SLOT
+     MOVE CC-PIPE-GLINT TO WS-PIPE
+     MOVE CC-TEX-GLINT TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-WG-VERTEX(1) RL-WG-COUNT RL-WG-UPLOADED
          WS-PIPE WS-TEX WS-PV-TABLE
 *>   The weather quads (eye-relative, texture 3), alpha-blended after the opaque geometry.
      MOVE 0 TO RL-WX-COUNT
@@ -596,7 +605,9 @@
 *>   The UI: uploaded every frame, drawn last with x' = 2x / w - 1, y' = 2y / h - 1.
 *>   The hand (first person, world screen): a depth clear, then the held item in view space with the projection alone.
      CALL "HAND-MESH" USING CLIENT-STATE
-     IF RL-HAND-COUNT > 0 OR RL-HA-COUNT > 0
+*>   The first-person fire overlay of a burning local player (57-1 section 1): in the same pass, after the hand and the arm.
+     CALL "FIRE-OVERLAY-MESH" USING CLIENT-STATE
+     IF RL-HAND-COUNT > 0 OR RL-HA-COUNT > 0 OR RL-HF-COUNT > 0
          ADD 1 TO RL-DRAW-COUNT
          MOVE -1 TO RL-D-SLOT(RL-DRAW-COUNT)
          MOVE CC-PIPE-OPAQUE TO RL-D-PIPELINE(RL-DRAW-COUNT)
@@ -627,6 +638,12 @@
      MOVE CC-PIPE-OPAQUE TO WS-PIPE
      MOVE CC-TEX-ENTITIES TO WS-TEX
      CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-HA-VERTEX(1) RL-HA-COUNT RL-HA-UPLOADED
+         WS-PIPE WS-TEX WS-HAND-PROJ-TABLE
+*>   The flames of a burning local player (57-1 section 1.3): two translucent quads of fire_1 of the block atlas, over the hand and the arm, the same projection.
+     MOVE MESH-SLOT-HAND-FIRE TO WS-SLOT
+     MOVE CC-PIPE-TRANSLUCENT TO WS-PIPE
+     MOVE CC-TEX-BLOCKS TO WS-TEX
+     CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-HF-VERTEX(1) RL-HF-COUNT RL-HF-UPLOADED
          WS-PIPE WS-TEX WS-HAND-PROJ-TABLE
      ADD 1 TO RL-UPLOAD-COUNT
      MOVE MESH-SLOT-UI TO RL-U-SLOT(RL-UPLOAD-COUNT)

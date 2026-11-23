@@ -16,8 +16,9 @@
     05 PSB-DATA               BINARY-LONG.
 *>  0x0B Chunk Batch Received
     05 PSB-CHUNK-RATE         FLOAT-SHORT.
-*>  0x0E Client Information (03 layout; only the view distance is kept)
+*>  0x0E Client Information (03 layout; only the view distance and the model customisation byte are kept)
     05 PSB-VIEW-DISTANCE      BINARY-LONG.
+    05 PSB-MODEL-PARTS        BINARY-LONG.
 *>  0x1C Keep Alive
     05 PSB-KEEPALIVE          BINARY-DOUBLE.
 *>  0x1E to 0x21 Move Player: MoveFlags (UByte: 0x01 on ground, 0x02 horizontal collision);

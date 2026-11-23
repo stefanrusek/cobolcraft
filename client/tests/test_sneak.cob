@@ -71,10 +71,10 @@
      MOVE 5 TO TL-EXPECTED-N
      MOVE PL-POSE TO TL-OBSERVED-N
      PERFORM ASSERT-N
-     MOVE "sneak the camera eye is within 0.01 of 1.25 after ten ticks" TO TL-CASE
+     MOVE "sneak the camera eye is within 0.01 of 1.27 (53 section 2.1, a standard content set) after ten ticks" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF PL-EYE > 1.24 AND PL-EYE < 1.26
+     IF PL-EYE > 1.26 AND PL-EYE < 1.28
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      PERFORM ASSERT-N
