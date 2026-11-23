@@ -517,7 +517,8 @@
 *> USING structure row, chunk x, chunk z, start row out: stores the start whose pieces are in the builder (STRUCTPIECE.cpy, after STRUCT-FIND-POINT and the placement) as the start of that structure
 *> held by the chunk, once: a start already in the store is left as it is (its row is returned). A piece of the jigsaw assembler (builder type 60) is stored with the registry id of the jigsaw piece,
 *> its projection (SP-T-AUX: 0 rigid, 1 terrain_matching), ground level delta (SP-F2) and the junctions of STRUCTJIG.cpy that it owns; the scattered pieces (101 to 104) and the template pieces of the igloo, the
-*> ruined portal and the nether fossil get their registry ids (tedp, tejp, tesh, btp, iglu, rupo, nefos) and their type-specific keys (STRUCT-PIECE-KEYS-CAPTURE, struct-piece-keys.cob); any other builder type keeps its own number.
+*> shipwreck, the ocean ruin, the ruined portal, the woodland mansion, the end city and the nether fossil get their registry ids (tedp, tejp, tesh, btp, iglu, shipwreck, orp, rupo, wmp, ecp, nefos) and
+*> their type-specific keys (STRUCT-PIECE-KEYS-CAPTURE, struct-piece-keys.cob); any other builder type keeps its own number (the mineshaft, fortress, stronghold and monument types already are registry ids).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTSTART.
@@ -559,7 +560,8 @@
          MOVE SP-TYPE(WS-I) TO WS-TYPE
          MOVE 0 TO WS-JIG WS-GROUND
          MOVE SPACES TO WS-PNAME
-*>       the builder types that have a registry name (36-1 2.4): the scattered pieces 101 to 103 and the buried treasure 104, a template piece of the igloo (kind 1), the ruined portal (4) and the nether fossil (0)
+*>       the builder types that have a registry name (36-1 2.4): the scattered pieces 101 to 103 and the buried treasure 104, a template piece of the nether fossil (kind 0), the igloo (1), the shipwreck (2),
+*>       the ocean ruin (3), the ruined portal (4), the woodland mansion (5) and the end city (16); the other builder types (mineshaft 0 to 3, fortress 4 to 18, stronghold 19 to 31, monument 38) are the registry ids
          EVALUATE TRUE
              WHEN WS-TYPE = 60
                  MOVE WS-JIGSAW TO WS-TYPE
@@ -577,8 +579,16 @@
                  MOVE "nefos" TO WS-PNAME
              WHEN WS-TYPE = 100 AND SP-T-KIND(WS-I) = 1
                  MOVE "iglu" TO WS-PNAME
+             WHEN WS-TYPE = 100 AND SP-T-KIND(WS-I) = 2
+                 MOVE "shipwreck" TO WS-PNAME
+             WHEN WS-TYPE = 100 AND SP-T-KIND(WS-I) = 3
+                 MOVE "orp" TO WS-PNAME
              WHEN WS-TYPE = 100 AND SP-T-KIND(WS-I) = 4
                  MOVE "rupo" TO WS-PNAME
+             WHEN WS-TYPE = 100 AND SP-T-KIND(WS-I) = 5
+                 MOVE "wmp" TO WS-PNAME
+             WHEN WS-TYPE = 100 AND SP-T-KIND(WS-I) = 16
+                 MOVE "ecp" TO WS-PNAME
          END-EVALUATE
          IF WS-PNAME NOT = SPACES
              CALL "STRUCT-ENUM-ID" USING WS-KIND WS-PNAME WS-TYPE
