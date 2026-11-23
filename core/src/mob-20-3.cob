@@ -836,6 +836,10 @@
                  COMPUTE EN-EQUIP(L-ROW) = 10 * (WS-TIER + 1) + WS-SLOTS
              END-IF
              MOVE 4 TO EN-HAND(L-ROW)
+         WHEN "drowned"
+*>           A drowned's default equipment replaces the zombie's (20 section 4.5): a trident or a fishing rod with probability 0.1 (DROWNED-EQUIP-ROLL). Not modelled: the baby, reinforcement and leader draws
+*>           of Zombie.finalizeSpawn, the off-hand nautilus shell (no off-hand field) and the zombie_nautilus jockey.
+             CALL "DROWNED-EQUIP-ROLL" USING L-STATE EN-HAND(L-ROW)
          WHEN "wither_skeleton"
 *>           Default equipment: a stone sword (44-6 section 9.4; no random enchantments). EN-HAND 12: 10 and 11 are the vindicator's axe and the pillager's crossbow.
              MOVE 12 TO EN-HAND(L-ROW)
