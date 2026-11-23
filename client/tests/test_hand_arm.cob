@@ -2,7 +2,8 @@
 *> in a first-person view of a standard world; HAND-MESH then builds the main arm and its sleeve (2 cuboids, 72 vertices) into RL-HA-VERTEX, RENDER-LIST-BUILD draws it after the depth
 *> clear. Expected vertices from an independent script written from the formulas of 12 section 6.5 (the pose chain, the arm's pivot (-5, 2, 0) and cuboid (-3, -2, -2, 4 x 12 x 4) of the wide arm
 *> at texture (40, 16), the sleeve at grow 0.25, the left arm's pivot (5, 2, 0) and cuboid (-1, -2, -2) at (32, 48)): the first three vertices and the sixth of the top face (the corners 6, 5, 1, 2 of
-*> EF7-FACE-VERTS) at rest, 150 ms into a swing (p 0.5), with the equip offset 0.5, the sleeve's first vertex and the left arm's.
+*> EF7-FACE-VERTS) at rest, 150 ms into a swing (p 0.5), with the equip offset 0.5, the sleeve's first vertex and the left arm's. The arm wears the skin of the player's own UUID (Alice: default skin index 5,
+*> slim: the model row player_slim, 3 pixel arms, cuboid origin x -2 right and -1 left, texture code 6; Carol: index 9, wide, row player): the same chain with the slim cuboids (arm_expect.py of T51007).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-HAND-ARM.
  DATA DIVISION.
@@ -33,6 +34,9 @@
  01 WS-VO                  FLOAT-LONG.
  01 WS-CLEAR-AT            BINARY-LONG.
  01 WS-ARM-AT              BINARY-LONG.
+ 01 WS-TEX                 BINARY-LONG.
+ 01 WS-UB                  BINARY-LONG.
+ 01 WS-UBL                 BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
      CALL "TEST-STEP" USING CLIENT-STATE
@@ -58,19 +62,18 @@
      MOVE 1 TO CT-OPEN
      MOVE 0 TO EA-MT-COUNT
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
-     MOVE "player" TO WS-KEY
-     CALL "ENTITY-MODEL-FIND" USING WS-KEY WS-ROW
+     CALL "LOCAL-FIGURE-KEY" USING CLIENT-STATE WS-ROW WS-TEX
      MOVE 0 TO WS-SLOT
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EA-MT-COUNT
-         IF EA-MT-MODEL(WS-I) = WS-ROW AND EA-MT-TEX(WS-I) = 0
+         IF EA-MT-MODEL(WS-I) = WS-ROW AND EA-MT-TEX(WS-I) = WS-TEX
              MOVE WS-I TO WS-SLOT
          END-IF
      END-PERFORM
-     MOVE "T28300 a first-person standard world gives the player model a slot of the entity atlas" TO TL-CASE
-     MOVE 1 TO TL-EXPECTED-N
+     MOVE "T28300 a first-person standard world gives the local figure a slot of the entity atlas: the slim model with the skin code of Alice (index 5 plus 1)" TO TL-CASE
+     MOVE 6 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF WS-SLOT > 0
-         MOVE 1 TO TL-OBSERVED-N
+     IF WS-SLOT > 0 AND CL-MD-KEY(WS-ROW) = "player_slim"
+         MOVE EA-MT-TEX(WS-SLOT) TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO CL-CAMERA
@@ -84,6 +87,9 @@
      MOVE 0 TO EA-MT-COUNT
      CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
      MOVE 1 TO WS-SLOT
+*>   The top faces of the slim arm's boxes end at texel 47 (3 wide), the left one's at 39.
+     MOVE 47 TO WS-UB
+     MOVE 39 TO WS-UBL
 *>   The arm: an empty main hand and off hand build 72 vertices of the arm and sleeve and none of an item.
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE "T28300 an empty hand builds the arm and the sleeve: 72 vertices" TO TL-CASE
@@ -102,15 +108,15 @@
      MOVE "T28300 rest: the first vertex of the right arm" TO WS-NAME
      PERFORM CHECK-VERTEX
      MOVE 2 TO WS-INDEX
-     MOVE 0.63974 TO WS-EX
-     MOVE -0.80123 TO WS-EY
-     MOVE -0.44496 TO WS-EZ
-     MOVE "T28300 rest: the second vertex of the right arm" TO WS-NAME
+     MOVE 0.61674 TO WS-EX
+     MOVE -0.84707 TO WS-EY
+     MOVE -0.48070 TO WS-EZ
+     MOVE "T28300 rest: the second vertex of the right arm (the slim arm's outer edge 1 pixel in)" TO WS-NAME
      PERFORM CHECK-VERTEX
      MOVE 3 TO WS-INDEX
-     MOVE 0.42275 TO WS-EX
-     MOVE -0.67837 TO WS-EY
-     MOVE -0.46290 TO WS-EZ
+     MOVE 0.39976 TO WS-EX
+     MOVE -0.72420 TO WS-EY
+     MOVE -0.49863 TO WS-EZ
      MOVE "T28300 rest: the third vertex of the right arm" TO WS-NAME
      PERFORM CHECK-VERTEX
      MOVE 6 TO WS-INDEX
@@ -167,9 +173,9 @@
      CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
      CALL "HAND-MESH" USING CLIENT-STATE
      MOVE 1 TO WS-INDEX
-     MOVE -0.63974 TO WS-EX
-     MOVE -0.80123 TO WS-EY
-     MOVE -0.44496 TO WS-EZ
+     MOVE -0.61674 TO WS-EX
+     MOVE -0.84707 TO WS-EY
+     MOVE -0.48070 TO WS-EZ
      MOVE "T28300 mainHand left: the first vertex of the left arm" TO WS-NAME
      PERFORM CHECK-VERTEX
      MOVE 48 TO WS-VO
@@ -244,6 +250,25 @@
      MOVE RL-HA-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO CL-CAMERA
+*>   A player of a wide default skin (Carol, index 9: texture code 10): the model row player, the arm 4 wide (the first vertex of the wide arm).
+     MOVE "Carol" TO CL-NAME
+     MOVE 5 TO CL-NAME-LENGTH
+     MOVE 0 TO EA-MT-COUNT
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE 1 TO WS-SLOT
+     MOVE 48 TO WS-UB
+     CALL "HAND-MESH" USING CLIENT-STATE
+     MOVE 2 TO WS-INDEX
+     MOVE 0.63974 TO WS-EX
+     MOVE -0.80123 TO WS-EY
+     MOVE -0.44496 TO WS-EZ
+     MOVE "T51007 a wide skin draws the wide arm: the second vertex is 4 pixels from the inner edge" TO WS-NAME
+     PERFORM CHECK-VERTEX
+     MOVE 1 TO WS-INDEX
+     MOVE 16 TO WS-VO
+     MOVE "T51007 the wide arm's top face is texels 44 to 48 of the skin region (40, 16)" TO WS-NAME
+     PERFORM CHECK-UV
+     MOVE "Alice" TO CL-NAME
 *>   The render list: a depth clear (draw slot -1), then the arm mesh on the entity atlas.
      CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
      MOVE 0 TO WS-CLEAR-AT WS-ARM-AT
@@ -292,7 +317,7 @@
      MOVE WS-NAME TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF (FUNCTION ABS(WS-UO - 44) < 0.01 OR FUNCTION ABS(WS-UO - 48) < 0.01)
+     IF (FUNCTION ABS(WS-UO - 44) < 0.01 OR FUNCTION ABS(WS-UO - WS-UB) < 0.01)
              AND (FUNCTION ABS(WS-EX - WS-VO) < 0.01 OR FUNCTION ABS(WS-EX - WS-VO - 4) < 0.01)
          MOVE 1 TO TL-OBSERVED-N
      END-IF
@@ -305,7 +330,7 @@
      MOVE WS-NAME TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF (FUNCTION ABS(WS-UO - 36) < 0.01 OR FUNCTION ABS(WS-UO - 40) < 0.01)
+     IF (FUNCTION ABS(WS-UO - 36) < 0.01 OR FUNCTION ABS(WS-UO - WS-UBL) < 0.01)
              AND (FUNCTION ABS(WS-EX - WS-VO) < 0.01 OR FUNCTION ABS(WS-EX - WS-VO - 4) < 0.01)
          MOVE 1 TO TL-OBSERVED-N
      END-IF

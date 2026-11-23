@@ -1732,6 +1732,25 @@
           15 RL-HA-R         FLOAT-SHORT.
           15 RL-HA-G         FLOAT-SHORT.
           15 RL-HA-BLUE      FLOAT-SHORT.
+*>     The player-model preview of the inventory screens (screen space in window pixels like the UI layer, entity atlas texture 1, pipeline CC-PIPE-UI, drawn between the UI
+*>     and the icons; preview.cob; 49 section 4): the visible faces of the local figure far to near, the brightness of the ENTITY_IN_UI lights in the tint. RL-PV-MOUSE-X and -Y are
+*>     the pointer of the frame before in GUI pixels (the preview follows the pointer one frame late), 0 while no preview is on the screen.
+       10 RL-PV-COUNT        BINARY-LONG.
+       10 RL-PV-UPLOADED     BINARY-LONG.
+       10 RL-PV-MOUSE-X      BINARY-LONG.
+       10 RL-PV-MOUSE-Y      BINARY-LONG.
+       10 RL-PV-VERTEX OCCURS 288 TIMES.
+          15 RL-PV-X         FLOAT-SHORT.
+          15 RL-PV-Y         FLOAT-SHORT.
+          15 RL-PV-Z         FLOAT-SHORT.
+          15 RL-PV-U         FLOAT-SHORT.
+          15 RL-PV-V         FLOAT-SHORT.
+          15 RL-PV-B         FLOAT-SHORT.
+          15 RL-PV-A         FLOAT-SHORT.
+          15 RL-PV-SKY       FLOAT-SHORT.
+          15 RL-PV-R         FLOAT-SHORT.
+          15 RL-PV-G         FLOAT-SHORT.
+          15 RL-PV-BLUE      FLOAT-SHORT.
 *>     The first-person fire overlay (view space, the block atlas texture 0, the hand's projection, translucent; fire-overlay.cob; 57-1 section 1): two quads of fire_1.
        10 RL-HF-COUNT        BINARY-LONG.
        10 RL-HF-UPLOADED     BINARY-LONG.

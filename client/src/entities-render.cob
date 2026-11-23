@@ -389,29 +389,10 @@
          MOVE EN-ENTITY(WS-R) TO WS-SAVED
          CALL "SMOOTH-PLAYER" USING CLIENT-STATE EN-X(WS-R) EN-Y(WS-R) EN-Z(WS-R) WS-FEET-EYE
          MOVE PL-YAW TO EN-YAW(WS-R)
-*>       A world of the standard set: the row is a "player" of the model table (the humanoid with the default skin), emitted like any
+*>       A world of the standard set: the row is the local figure (LOCAL-FIGURE-SET: a "player" of the model table, the humanoid with the default skin of the player's UUID), emitted like any
 *>       other replica row; only the cobolcraft stand-in world keeps the operator's box.
          IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
-             MOVE 1 TO EN-USED(WS-R) EN-VANILLA(WS-R)
-             MOVE PL-YAW TO EN-HEAD-YAW(WS-R)
-             MOVE PL-PITCH TO EN-PITCH(WS-R)
-             MOVE 1 TO EN-ON-GROUND(WS-R)
-             MOVE PL-POSE TO EN-POSE(WS-R)
-             MOVE PL-SWIM-AMOUNT TO EN-SWIM(WS-R)
-             COMPUTE EN-FLAGS(WS-R) = PL-SWIMMING * 16
-             MOVE PL-ANIM-SPEED TO EN-WALK-SPEED(WS-R)
-             MOVE PL-ANIM-POS TO EN-WALK-POS(WS-R)
-             MOVE 1 TO EN-WALK-SCALE(WS-R)
-             MOVE 1 TO EN-ATTR-SCALE(WS-R)
-             MOVE PL-ANIM-AGE TO EN-AGE(WS-R)
-             MOVE 0 TO EN-MOB-FLAGS(WS-R) EN-SW-ACTIVE(WS-R)
-             MOVE SPACES TO EN-KEY(WS-R)
-             MOVE "player" TO EN-KEY(WS-R)
-*>           The local player wears the default skin of its own offline UUID and shows the parts of its options (47 sections 2.2 and 5.2).
-             CALL "CLP-OFFLINE-UUID" USING CL-NAME CL-NAME-LENGTH EN-UUID(WS-R)
-             CALL "PLAYER-PARTS-OPTIONS" USING CLIENT-STATE EN-PARTS(WS-R)
-             CALL "ENTITY-MODEL-FIND" USING EN-KEY(WS-R) EN-MODEL(WS-R)
-             CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-R EN-MODEL(WS-R)
+             CALL "LOCAL-FIGURE-SET" USING CLIENT-STATE WS-R
              ADD 1 TO EN-COUNT
              CALL "ENTITY-MODEL-SLOTS" USING CLIENT-STATE
              CALL "ENTITY-MODEL-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
