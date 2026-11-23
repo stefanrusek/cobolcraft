@@ -3,7 +3,7 @@
 *> PJ-R3 the damage. A tick (MINECART-STEP): hurt time and damage fall, gravity 0.04, then moveAlongTrack on a rail (the 14 steps of 4.4.1) or comeOffTrack, the yaw, the kind's tick (furnace
 *> fuel, TNT fuse) and the activator rail (4.6).
 *> Gaps: boarding and the rider (interact, the player input start, dismount, 0.75 move factor is read from EN-RIDER but nothing sets it), pushing other entities and carts (pushOtherMinecart,
-*> pushAndPickupEntities), water (gravity 0.005, 0.2 speed, 0.95), the container (chest and hopper menus, contents, hopper suction, the comparator slowdown factor uses an empty container: 0.995),
+*> pushAndPickupEntities), water (gravity 0.005, 0.2 speed, 0.95), (the container carts' menus, contents, hopper suction and comparator slowdown are container-entity.cob),
 *> spawner and command block carts (no spawner or command run), the item (placing a cart on a rail: see DECOR-ITEM-USE) and hurt, break and drops, saving, the fall damage explosion, the flip of
 *> the yaw uses an arctangent of the step, the metadata (hurt, display block, fuel flag), a redstone conductor is read as a solid cell, TNT arrow ignition.
 *>
@@ -426,7 +426,7 @@
      END-IF
      EVALUATE TRUE
          WHEN PJ-I1(L-SLOT) = 2 OR PJ-I1(L-SLOT) = 3
-             MOVE 0.995 TO WS-F
+             CALL "ECV-FACTOR" USING L-ROW WS-F
          WHEN EN-RIDER(L-ROW) > 0
              MOVE 0.997 TO WS-F
          WHEN OTHER
@@ -895,6 +895,9 @@
                  GOBACK
              END-IF
      END-EVALUATE
+     IF PJ-I1(WS-SLOT) = 3
+         CALL "MC-HOPPER" USING L-ROW WS-SLOT
+     END-IF
      CALL "MINECART-ENTITIES" USING L-ROW
      CALL "MINECART-SYNC" USING L-ROW
      CALL "THROWN-SYNC" USING L-ROW

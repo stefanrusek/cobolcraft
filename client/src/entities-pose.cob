@@ -7,7 +7,9 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-POSE-MORE.
 *> USING model (EMM-MODEL), row key (X(20)), state (16 FLOAT-LONG: 1 pitch, 2 head yaw relative to the body, 3 walk position, 4 walk speed; 15 1 when an aquatic mob is out
-*> of water (a turtle: on land), 16 a squid's tentacle angle or a guardian's spikes animation, 14 a guardian's tail animation, 13 an iron golem's attack tick, 12 its offer-flower tick; the rest 0), age in ticks.
+*> of water (a turtle: on land), 16 a squid's tentacle angle or a guardian's spikes animation, 14 a guardian's tail animation, 13 an iron golem's attack tick, 12 its offer-flower tick; a copper
+*> golem: 5 its state (0 idle, 1 getting item, 2 getting no item, 3 dropping item, 4 dropping no item), 6 the tick that state started at (-2147483648 stopped), 7 and 8 1 when the right and
+*> the left hand hold an item; the rest 0), age in ticks.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-STOP                FLOAT-LONG VALUE -2147483648.
@@ -34,6 +36,8 @@
     05 WS-AXF              FLOAT-LONG OCCURS 4 TIMES.
  01 WS-AXS                 FLOAT-LONG.
  01 WS-AXT                 FLOAT-LONG.
+ 01 WS-ITR                 FLOAT-LONG.
+ 01 WS-ITL                 FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLEMM.
  01 L-KEY                  PIC X(20).
@@ -60,6 +64,8 @@
      COMPUTE WS-WET = 1 - WS-DRY
      MOVE L-I(5) TO WS-AXS
      MOVE L-I(6) TO WS-AXT
+     MOVE L-I(7) TO WS-ITR
+     MOVE L-I(8) TO WS-ITL
      PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 4
          COMPUTE WS-P = WS-J + 7
          MOVE L-I(WS-P) TO WS-AXF(WS-J)
@@ -307,13 +313,24 @@
                  MOVE WS-STOP TO L-I(WS-J)
              END-PERFORM
              CALL "EM3-CREAKING-ANIM" USING EMM-MODEL L-IN
-*>       The copper golem walks (34-3 9.2): the walk keyframes with the walk state; no item in the hands, the state animations stopped.
+*>       The copper golem walks (34-3 9.2): the walk keyframes with the walk state, the arms raised when a hand holds an item, and the animation of the golem's state (1 to 4: the
+*>       get-item, get-no-item, drop-item and drop-no-item animations at L-I(9) to L-I(12)) from the tick the state started at; the others, and the idle one (44-3 gives it no start), are stopped.
          WHEN "copper_golem"
              MOVE L-AGE TO L-I(5)
              MOVE 0 TO L-I(6) L-I(7)
+             IF WS-ITR = 1
+                 MOVE 1 TO L-I(6)
+             END-IF
+             IF WS-ITL = 1
+                 MOVE 1 TO L-I(7)
+             END-IF
              PERFORM VARYING WS-J FROM 8 BY 1 UNTIL WS-J > 12
                  MOVE WS-STOP TO L-I(WS-J)
              END-PERFORM
+             IF WS-AXS >= 1 AND WS-AXS <= 4
+                 COMPUTE WS-P = 8 + WS-AXS
+                 MOVE WS-AXT TO L-I(WS-P)
+             END-IF
              CALL "EM3-COPPER-ANIM" USING EMM-MODEL L-IN
          WHEN "zombie_villager"
              MOVE WS-BABY TO L-I(1)
