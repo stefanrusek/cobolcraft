@@ -3,8 +3,9 @@
 *> leaves the item to the default drop. Chest: a tamed donkey, mule, llama or trader llama in front (its box overlaps the front cell) with no chest takes the chest item (WC-CHEST of WCSTATE.cpy, saved as ChestedHorse; the
 *> viewers get Set Entity Data as for a player's chest, mob-19-3c.cob), the item is spent; with none, the default drop.
 *> Not done: the respawn anchor's charge sound (the document names `RespawnAnchorBlock.charge` and no sound), the llama's chest flag is not saved or sent (mob-19-3c.cob handles the donkey and the mule), the 27 slots of the new inventory.
+*> The wither skeleton skull and the carved pumpkin (4.7, 4.8) and every item that can be worn (4.9) go to redstone-live-o.cob.
 *> Entry points:
-*>   RL-DISP-MORE USING dim, front x, y, z, facing, item key (PIC X(48), bare), handled out, consumed out    handled 1 when a rule ran (consumed: 1 the item is spent, 0 the dry click 1001); 0 for the default
+*>   RL-DISP-MORE USING dim, front x, y, z, facing, item key (PIC X(48), bare), handled out, consumed out, item    handled 1 when a rule ran (consumed: 1 the item is spent, 0 the dry click 1001); 0 for the default
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RL-DISP-MORE RECURSIVE.
@@ -52,7 +53,8 @@
  01 L-BARE                 PIC X(48).
  01 L-HANDLED              BINARY-LONG.
  01 L-CONSUMED             BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-FACING L-BARE L-HANDLED L-CONSUMED.
+ 01 L-ITEM                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-FACING L-BARE L-HANDLED L-CONSUMED L-ITEM.
      MOVE 0 TO L-HANDLED L-CONSUMED
      EVALUATE TRUE
          WHEN L-BARE = "glowstone"
@@ -108,6 +110,13 @@
                      END-IF
                  END-IF
              END-PERFORM
+         WHEN L-BARE = "wither_skeleton_skull" OR L-BARE = "carved_pumpkin"
+*>           4.7 and 4.8: placed where a pattern is complete, else worn (redstone-live-o.cob)
+             CALL "RL-DISP-HEAD" USING L-DIM L-X L-Y L-Z L-FACING L-BARE L-ITEM L-HANDLED L-CONSUMED
+         WHEN OTHER
+*>           4.9, the default rule of an item with the equippable component: worn by an armor stand or a player in front, else the default drop
+             CALL "RL-DISP-EQUIP" USING L-DIM L-X L-Y L-Z L-ITEM L-CONSUMED
+             MOVE L-CONSUMED TO L-HANDLED
      END-EVALUATE
      GOBACK.
  END PROGRAM RL-DISP-MORE.
