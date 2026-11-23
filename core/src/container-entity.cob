@@ -399,7 +399,7 @@
                      MOVE 1 TO WS-DONE L-MOVED
                  ELSE
                      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-                     CALL "SET-ENTITY-DATA-ITEM-BUILD" USING EN-ID(WS-E) EN-ITEM(WS-E) EN-ITEM-COUNT(WS-E) PB-BUFFER
+                     CALL "GI-DATA-BUILD" USING WS-E PB-BUFFER
                      CALL "GI-VIEWERS-SEND" USING WS-E PB-BUFFER
                      CALL "PB-FREE" USING PB-BUFFER
                  END-IF
