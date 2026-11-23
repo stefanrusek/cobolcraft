@@ -150,6 +150,7 @@
  01 WS-SEED                BINARY-DOUBLE.
  01 WS-KIND                BINARY-LONG.
  01 WS-LOOT                PIC X(48).
+ 01 WS-FIT                 BINARY-LONG.
  01 WS-TEXT                PIC X(32).
  01 WS-NOTHING             PIC X(32) VALUE SPACES.
  LINKAGE SECTION.
@@ -167,10 +168,22 @@
      EVALUATE TN-KIND(L-TAG)
          WHEN 1
              CALL "MSP-RNG-LONG" USING WS-SEED
-*>           the request channel keeps loot keys of 48 bytes (GENBE.cpy): a longer key (trial_chambers/intersection_barrel, 51) cannot be asked for yet and its container is not requested
-             IF TN-LOOT(L-TAG) NOT = SPACES AND TN-LOOT(L-TAG)(49:32) = SPACES
+*>           the request channel keeps loot keys of 48 bytes (GENBE.cpy): a key of the minecraft namespace that is longer (trial_chambers/intersection_barrel, 51) is asked for without
+*>           its namespace (GBE-APPLY gives it back: a key without a colon is of the minecraft namespace); a longer key of another namespace cannot be asked for, and its container is not requested
+             MOVE 0 TO WS-FIT
+             IF TN-LOOT(L-TAG) NOT = SPACES
+                 IF TN-LOOT(L-TAG)(49:32) = SPACES
+                     MOVE TN-LOOT(L-TAG) TO WS-LOOT
+                     MOVE 1 TO WS-FIT
+                 ELSE
+                     IF TN-LOOT(L-TAG)(1:10) = "minecraft:" AND TN-LOOT(L-TAG)(59:22) = SPACES
+                         MOVE TN-LOOT(L-TAG)(11:48) TO WS-LOOT
+                         MOVE 1 TO WS-FIT
+                     END-IF
+                 END-IF
+             END-IF
+             IF WS-FIT = 1
                  MOVE 1 TO WS-KIND
-                 MOVE TN-LOOT(L-TAG) TO WS-LOOT
                  CALL "GBE-ADD" USING L-X L-Y L-Z WS-KIND WS-LOOT WS-SEED WS-NOTHING
              END-IF
          WHEN 2

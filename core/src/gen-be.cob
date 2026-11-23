@@ -104,6 +104,8 @@
  01 WS-ZERO3               BINARY-LONG VALUE 0.
  01 WS-ADDED               BINARY-LONG.
  01 WS-ADOPTED             BINARY-LONG.
+ 01 WS-COLONS              BINARY-LONG.
+ 01 WS-FULL                PIC X(64).
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
@@ -139,8 +141,17 @@
          END-EVALUATE
          IF WS-INDEX > 0
              IF GB-KIND(WS-I) = 1
-                 MOVE GB-LOOT(WS-I) TO BE-LOOT(WS-INDEX)
-                 MOVE FUNCTION LENGTH(FUNCTION TRIM(GB-LOOT(WS-I))) TO BE-LOOT-LENGTH(WS-INDEX)
+*>               a key without a colon is of the minecraft namespace (STRUCT-PLACE-BE sends a long minecraft key without it: the channel keeps 48 bytes)
+                 MOVE 0 TO WS-COLONS
+                 INSPECT GB-LOOT(WS-I) TALLYING WS-COLONS FOR ALL ":"
+                 IF WS-COLONS = 0 AND GB-LOOT(WS-I) NOT = SPACES
+                     MOVE SPACES TO WS-FULL
+                     STRING "minecraft:" FUNCTION TRIM(GB-LOOT(WS-I)) DELIMITED BY SIZE INTO WS-FULL
+                     MOVE WS-FULL TO BE-LOOT(WS-INDEX)
+                 ELSE
+                     MOVE GB-LOOT(WS-I) TO BE-LOOT(WS-INDEX)
+                 END-IF
+                 MOVE FUNCTION LENGTH(FUNCTION TRIM(BE-LOOT(WS-INDEX))) TO BE-LOOT-LENGTH(WS-INDEX)
                  MOVE GB-SEED(WS-I) TO BE-SEED(WS-INDEX)
              ELSE
              IF GB-KIND(WS-I) = 4
