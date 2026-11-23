@@ -3,8 +3,10 @@
 *> Kinds: I int, B boolean (a byte), T the Template string, R Rotation (the legacy constant name: NONE, CLOCKWISE_90, CLOCKWISE_180, COUNTERCLOCKWISE_90), M Mirror (NONE, LEFT_RIGHT, FRONT_BACK),
 *> V VerticalPlacement (the serialized name: on_land_surface, partly_buried, on_ocean_floor, in_mountain, underground, in_nether), D EntryDoor (OPENING, WOOD_DOOR, GRATES, IRON_DOOR), and the members of
 *> the ruined portal's `Properties` compound: p a boolean that is the bit of the mask in the slot (air_pocket 1, overgrown 2, vines 4, cold 8, replace_with_blackstone 16), f the mossiness, a float held in tenths.
+*> Q a direction as the legacy 2D data value (an int, read as abs(v mod 4): 0 south, 1 west, 2 north, 3 east), S the mineshaft type MST (an int, a value other than 0 and 1 reads as 0) and E the
+*> mineshaft room's `Entrances` list of boxes (six-int arrays held by SST-ENT of STRUCTSTART.cpy, slot 0).
 *> The rows of one type are written in this order, the Properties compound after the plain keys.
- 78 PKT-COUNT            VALUE 75.
+ 78 PKT-COUNT            VALUE 86.
  01 PKT-ROWS.
     05 FILLER PIC X(30) VALUE "371I00Width                   ".
     05 FILLER PIC X(30) VALUE "372I00Height                  ".
@@ -81,8 +83,19 @@
     05 FILLER PIC X(30) VALUE "111B00Chest                   ".
     05 FILLER PIC X(30) VALUE "131B00Chest                   ".
     05 FILLER PIC X(30) VALUE "151B00Mob                     ".
+    05 FILLER PIC X(30) VALUE "001B00hr                      ".
+    05 FILLER PIC X(30) VALUE "002B00sc                      ".
+    05 FILLER PIC X(30) VALUE "003B00hps                     ".
+    05 FILLER PIC X(30) VALUE "004I00Num                     ".
+    05 FILLER PIC X(30) VALUE "005S00MST                     ".
+    05 FILLER PIC X(30) VALUE "011B00tf                      ".
+    05 FILLER PIC X(30) VALUE "012Q00D                       ".
+    05 FILLER PIC X(30) VALUE "013S00MST                     ".
+    05 FILLER PIC X(30) VALUE "020E00Entrances               ".
+    05 FILLER PIC X(30) VALUE "021S00MST                     ".
+    05 FILLER PIC X(30) VALUE "031S00MST                     ".
  01 PKT-TABLE REDEFINES PKT-ROWS.
-    05 PKT-ROW OCCURS 75 TIMES.
+    05 PKT-ROW OCCURS 86 TIMES.
        10 PKT-TYPE         PIC 99.
        10 PKT-SLOT         PIC 9.
        10 PKT-KIND         PIC X.

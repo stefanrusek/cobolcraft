@@ -85,6 +85,14 @@
  01 WS-TPL-LEN             BINARY-LONG.
  01 WS-F                   FLOAT-SHORT.
  01 WS-PROPS               BINARY-LONG.
+ 01 WS-ELEM                BINARY-LONG.
+ 01 WS-ENN                 BINARY-LONG.
+ 01 WS-ELAST               BINARY-LONG.
+ 01 WS-EN                  BINARY-LONG.
+ 01 WS-NEG                 BINARY-LONG VALUE -1.
+ 01 WS-SIX                 BINARY-LONG VALUE 6.
+ 01 WS-EB.
+    05 WS-EB-N             BINARY-LONG OCCURS 6 TIMES.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ROW                  BINARY-LONG.
@@ -102,7 +110,7 @@
                  MOVE SPC-K(L-ROW, WS-SLOT) TO WS-V
              END-IF
              EVALUATE WS-KIND
-                 WHEN "I"
+                 WHEN "I" WHEN "S" WHEN "Q"
                      CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-V
                  WHEN "B"
                      CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-V
@@ -116,6 +124,24 @@
                      CALL "STRUCT-PIECE-ENUM" USING WS-KIND WS-MODE-NAME WS-V WS-ENUM
                      COMPUTE WS-ENUM-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-ENUM TRAILING))
                      CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-ENUM WS-ENUM-LEN
+                 WHEN "E"
+*>                   the room's entrance boxes: a list of int arrays (element type 11; 0 for an empty list, 07 section 1.1), each written as a list element
+                     MOVE SPC-ENT-N(L-ROW) TO WS-ENN
+                     MOVE 11 TO WS-ELEM
+                     IF WS-ENN = 0
+                         MOVE 0 TO WS-ELEM
+                     END-IF
+                     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-ELEM WS-ENN
+                     COMPUTE WS-ELAST = SPC-ENT-FIRST(L-ROW) + WS-ENN - 1
+                     PERFORM VARYING WS-EN FROM SPC-ENT-FIRST(L-ROW) BY 1 UNTIL WS-EN > WS-ELAST
+                         MOVE SSE-X0(WS-EN) TO WS-EB-N(1)
+                         MOVE SSE-Y0(WS-EN) TO WS-EB-N(2)
+                         MOVE SSE-Z0(WS-EN) TO WS-EB-N(3)
+                         MOVE SSE-X1(WS-EN) TO WS-EB-N(4)
+                         MOVE SSE-Y1(WS-EN) TO WS-EB-N(5)
+                         MOVE SSE-Z1(WS-EN) TO WS-EB-N(6)
+                         CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WS-NEG WS-SIX WS-EB
+                     END-PERFORM
                  WHEN OTHER
                      MOVE 1 TO WS-PROPS
              END-EVALUATE
@@ -161,6 +187,7 @@
  01 WS-ORD                 BINARY-LONG.
  01 WS-ENUM                PIC X(24).
  01 WS-NUMERIC             BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-TYPE                 BINARY-LONG.
  01 L-NAME                 PIC X(24).
@@ -183,13 +210,20 @@
              MOVE PKT-KIND(WS-R) TO WS-KIND
              MOVE PKT-SLOT(WS-R) TO WS-SLOT
              EVALUATE TRUE
-                 WHEN (WS-KIND = "I") AND WS-NUMERIC = 1
-*>                   a float tag (held in tenths by the reader) reads as its integer part
+                 WHEN (WS-KIND = "I" OR WS-KIND = "S" OR WS-KIND = "Q") AND WS-NUMERIC = 1
+*>                   a float tag (held in tenths by the reader) reads as its integer part; a direction is abs(v mod 4), a mineshaft type outside 0 and 1 is 0
                      IF L-VTYPE = 5
-                         DIVIDE L-INT BY 10 GIVING L-K(WS-SLOT)
+                         DIVIDE L-INT BY 10 GIVING WS-N
                      ELSE
-                         MOVE L-INT TO L-K(WS-SLOT)
+                         MOVE L-INT TO WS-N
                      END-IF
+                     IF WS-KIND = "Q"
+                         COMPUTE WS-N = FUNCTION ABS(FUNCTION REM(WS-N, 4))
+                     END-IF
+                     IF WS-KIND = "S" AND WS-N NOT = 0 AND WS-N NOT = 1
+                         MOVE 0 TO WS-N
+                     END-IF
+                     MOVE WS-N TO L-K(WS-SLOT)
                      MOVE 1 TO L-RESULT
                  WHEN (WS-KIND = "B") AND WS-NUMERIC = 1
                      MOVE 0 TO L-K(WS-SLOT)
@@ -244,6 +278,7 @@
  01 WS-PLACE               BINARY-LONG.
  01 WS-FLAGS               BINARY-LONG.
  01 WS-TROW                BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-B                    BINARY-LONG.
  01 L-P                    BINARY-LONG.
@@ -303,6 +338,26 @@
              MOVE SP-F3(L-B) TO SPC-K(L-P, 3)
              MOVE SP-F4(L-B) TO SPC-K(L-P, 4)
              MOVE SP-MST(L-B) TO SPC-K(L-P, 5)
+         WHEN SPC-TYPE(L-P) = 0
+*>           the mineshaft corridor: hasRails, spiderCorridor, hasPlacedSpider, numSections (F1 to F4) and the mineshaft type
+             MOVE SP-F1(L-B) TO SPC-K(L-P, 1)
+             MOVE SP-F2(L-B) TO SPC-K(L-P, 2)
+             MOVE SP-F3(L-B) TO SPC-K(L-P, 3)
+             MOVE SP-F4(L-B) TO SPC-K(L-P, 4)
+             MOVE SP-MST(L-B) TO SPC-K(L-P, 5)
+         WHEN SPC-TYPE(L-P) = 1
+*>           the crossing: isTwoFloored (F1), the direction (F2, the 2D data value) and the mineshaft type
+             MOVE SP-F1(L-B) TO SPC-K(L-P, 1)
+             MOVE SP-F2(L-B) TO SPC-K(L-P, 2)
+             MOVE SP-MST(L-B) TO SPC-K(L-P, 3)
+         WHEN SPC-TYPE(L-P) = 2
+*>           the room: its entrance boxes (the builder's run SP-ENT-FIRST, SP-ENT-N of SP-ENTRANCE) and the mineshaft type
+             MOVE SP-MST(L-B) TO SPC-K(L-P, 1)
+             PERFORM VARYING WS-E FROM SP-ENT-FIRST(L-B) BY 1 UNTIL WS-E >= SP-ENT-FIRST(L-B) + SP-ENT-N(L-B)
+                 CALL "STRUCT-START-ENTRANCE-ADD" USING L-P SE-X0(WS-E) SE-Y0(WS-E) SE-Z0(WS-E) SE-X1(WS-E) SE-Y1(WS-E) SE-Z1(WS-E)
+             END-PERFORM
+         WHEN SPC-TYPE(L-P) = 3
+             MOVE SP-MST(L-B) TO SPC-K(L-P, 1)
          WHEN SPC-TYPE(L-P) = 5 OR SPC-TYPE(L-P) = 15
 *>           the fortress's bridge end filler keeps its Seed and the monster throne its spawner flag in the builder's F1
              MOVE SP-F1(L-B) TO SPC-K(L-P, 1)
