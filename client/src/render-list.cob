@@ -550,7 +550,8 @@
      MOVE CC-TEX-GLINT TO WS-TEX
      CALL "RENDER-MESH-ADD" USING CLIENT-STATE WS-SLOT RL-WG-VERTEX(1) RL-WG-COUNT RL-WG-UPLOADED
          WS-PIPE WS-TEX WS-PV-TABLE
-*>   The weather quads (eye-relative, texture 3), alpha-blended after the opaque geometry.
+*>   The weather quads (eye-relative, texture 3), alpha-blended after the opaque geometry (the translucent pipeline again: the glint mesh above left WS-PIPE additive).
+     MOVE CC-PIPE-TRANSLUCENT TO WS-PIPE
      MOVE 0 TO RL-WX-COUNT
      IF WS-WORLD = 1
          CALL "WEATHER-MESH" USING CLIENT-STATE WS-EYE-TABLE

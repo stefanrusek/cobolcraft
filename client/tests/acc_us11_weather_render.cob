@@ -31,6 +31,7 @@
  01 WS-SPEC                PIC X(40).
  01 WS-EVENT               BINARY-LONG.
  01 WS-LEVEL               FLOAT-SHORT.
+ 01 WS-EYE                 FLOAT-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-Z                   BINARY-LONG.
@@ -67,7 +68,10 @@
      MOVE "contract/fixtures/wire/play-s2c-2e-level-chunk-with-light-spawn.hex" TO WS-PATH
      CALL "TEST-FEED" USING CLIENT-STATE WS-CONN WS-PATH
      MOVE 8.5 TO PL-X PL-Z
-     MOVE 55 TO PL-Y
+*>   The eye is 56.6 above the ground whatever the content set: PHYS-EYE gives 1.62 with a standard
+*>   set (the real content of CC_GENERATED_DIR) and 1.6 with the stand-in set or none (docs/53 2.1).
+     CALL "PHYS-EYE" USING PL-POSE WS-EYE
+     COMPUTE PL-Y = 56.6 - WS-EYE
      MOVE 0 TO PL-YAW PL-PITCH
      MOVE 6001 TO PL-TIME
 

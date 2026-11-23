@@ -5,7 +5,7 @@
 *> 34 moving_piston); RL-ANALOG is the analog output kind of each block, indexed by block id + 1 (30-2 section 5.3: 0 none, 1 chest, 2 barrel, 3 shulker box, 4 furnace family, 5 brewing stand, 6 hopper, 7 dispenser or dropper,
 *> 8 decorated pot, 9 crafter, 10 chiseled bookshelf, 11 lectern, 12 composter, 13 layered cauldron, 14 lava cauldron, 15 empty cauldron, 16 cake, 17 candle cake, 18 beehive, 19 end portal
 *> frame, 20 respawn anchor, 21 copper bulb); RL-COND is 1 for a
-*> block that is a redstone conductor (30-1 section 2.4: the never and always lists, else the solid opaque block of this core). RL-S-* is the decoded state of every state of the
+*> block that is a redstone conductor (30-1 section 2.4: the never and always lists), 2 when the state's collision shape decides (RL-LOOK reads BSH-COLL-ID: the full cube conducts; the stand-in set, which has no shapes, takes the solid opaque block). RL-S-* is the decoded state of every state of the
 *> classes 3 to 8: RL-S-DIR the facing direction (2 north, 3 south, 4 west, 5 east) of a wall torch, repeater and comparator and the connected direction C of a lever and button (30-5
 *> section 1), RL-S-ON lit or powered, RL-S-DELAY the repeater delay, RL-S-LOCKED its lock, RL-S-MODE the comparator mode (1 subtract), RL-S-POWER the power property (weighted plates, daylight detector, target, sculk sensors; 0 when the state has none). RL-SILENT is 1 only while the wire evaluates
 *> getBlockSignal (30-1 section 5.5: the shouldSignal flag). The toggle list of the torches (30-1 section 8.3, one list for the process) and the stored comparator outputs (30-2 4.1) follow.

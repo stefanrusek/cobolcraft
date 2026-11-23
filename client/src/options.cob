@@ -605,6 +605,8 @@
      IF WS-OK = 0
          DISPLAY "ERROR options: cannot write options.txt"
      END-IF
+*>   Options.save() ends in broadcastOptions (47 section 5.2): a changed skin part goes to the server in play.
+     CALL "CLIENT-INFO-BROADCAST" USING CLIENT-STATE
      GOBACK.
  END PROGRAM OPTIONS-SAVE.
 

@@ -50,6 +50,7 @@
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
  COPY RSLIVE.
+ COPY CONTENT.
  01 WS-I                   BINARY-LONG.
  01 WS-S                   BINARY-LONG.
  01 WS-LAST                BINARY-LONG.
@@ -166,15 +167,25 @@
              WHEN 2
                  MOVE 1 TO RL-COND(WS-I)
              WHEN OTHER
+*>               the default rule: the collision shape of the state is the full cube (2 asks RL-LOOK to read it per state: a slab, stairs, fence or chest is not a conductor, a double slab is); the
+*>               stand-in set has no shapes, so there a solid opaque block conducts
                  MOVE 0 TO RL-COND(WS-I)
-                 IF CB-SOLID(WS-I) = 1 AND CB-OPAQUE(WS-I) = 1
-                     MOVE 1 TO RL-COND(WS-I)
+                 IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+                     IF CB-SOLID(WS-I) = 1
+                         MOVE 2 TO RL-COND(WS-I)
+                     END-IF
+                 ELSE
+                     IF CB-SOLID(WS-I) = 1 AND CB-OPAQUE(WS-I) = 1
+                         MOVE 1 TO RL-COND(WS-I)
+                     END-IF
                  END-IF
          END-EVALUATE
 *>       the analog output kind (30-2 section 5.3)
          MOVE 0 TO RL-ANALOG(WS-I)
          EVALUATE TRUE
              WHEN WS-BARE = "chest" OR "trapped_chest"
+                 MOVE 1 TO RL-ANALOG(WS-I)
+             WHEN WS-LEN >= 12 AND WS-BARE(WS-LEN - 11:12) = "copper_chest"
                  MOVE 1 TO RL-ANALOG(WS-I)
              WHEN WS-BARE = "barrel"
                  MOVE 2 TO RL-ANALOG(WS-I)
@@ -304,6 +315,7 @@
  COPY CBLOCKS.
  COPY RSLIVE.
  01 WS-BLOCK               BINARY-LONG.
+ 01 WS-SHAPE               BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -318,6 +330,14 @@
      MOVE CB-S-BLOCK(L-STATE + 1) TO WS-BLOCK
      MOVE RL-CLASS(WS-BLOCK + 1) TO L-CLASS
      MOVE RL-COND(WS-BLOCK + 1) TO L-COND
+     IF L-COND = 2
+*>       30-1 2.4: a conductor when the collision shape of this state is the full cube
+         MOVE 0 TO L-COND
+         CALL "BSH-COLL-ID" USING L-STATE WS-SHAPE
+         IF WS-SHAPE = 1
+             MOVE 1 TO L-COND
+         END-IF
+     END-IF
      GOBACK.
  END PROGRAM RL-LOOK.
 

@@ -201,10 +201,46 @@
  END PROGRAM BLOCK-ACK.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BLOCK-ENTITY-KIND.
+*> USING entity type (BINARY-LONG), kind out: the UI-BLOCKS-BUILDING kind (29 section 9.6) of an entity type that is not a mob: 2 a boat or raft (every wood, with or without a chest), 3 a minecart of any
+*> kind, 4 an end crystal, 5 a primed TNT (the entity type tnt), 6 a falling block, 7 an armor stand (a marker is not told from an armor stand: the flag is not modelled), 0 any other.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CITEMS.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-BARE                PIC X(48).
+ 01 WS-LEN                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-KIND.
+     MOVE 0 TO L-KIND
+     MOVE ET-KEY(L-TYPE + 1) TO WS-KEY
+     CALL "KEY-BARE" USING WS-KEY WS-BARE
+     COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-BARE))
+     EVALUATE TRUE
+         WHEN WS-LEN >= 5 AND (WS-BARE(WS-LEN - 4:5) = "_boat" OR WS-BARE(WS-LEN - 4:5) = "_raft")
+             MOVE 2 TO L-KIND
+         WHEN WS-LEN >= 8 AND WS-BARE(WS-LEN - 7:8) = "minecart"
+             MOVE 3 TO L-KIND
+         WHEN WS-BARE = "end_crystal"
+             MOVE 4 TO L-KIND
+         WHEN WS-BARE = "tnt"
+             MOVE 5 TO L-KIND
+         WHEN WS-BARE = "falling_block"
+             MOVE 6 TO L-KIND
+         WHEN WS-BARE = "armor_stand"
+             MOVE 7 TO L-KIND
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BLOCK-ENTITY-KIND.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCK-OVERLAPS-BODY.
 *> USING dimension row, x, y, z (BINARY-LONG block position), state (BINARY-LONG, the block state that would be placed there), hit out (BINARY-LONG 1 or 0): 1 when the
 *> collision shape of the state, moved to the cell, overlaps with positive volume the box of a blocking entity in that dimension (29 section 9.6, Level.isUnobstructed:
-*> the shape is empty = nothing obstructs; the entities are the players that are not spectators, and the mobs, stand-in and standard, all living entities; item entities
+*> the shape is empty = nothing obstructs; the entities are the players that are not spectators, the mobs, stand-in and standard, all living entities, and the other classes that set
+*> blocksBuilding (UI-BLOCKS-BUILDING through BLOCK-ENTITY-KIND: boats, minecarts, end crystals, primed TNT, falling blocks, armor stands); item entities
 *> and the like never block; standin §3 sizes; faces within 1e-7 of each other only touch). The shape is the state's collision shape (BSH-COLL, 51-block-shapes; a full cube
 *> or the void in the cobolcraft stand-in set, as MOVE-COLLIDES-BOX reads it), so a torch, sign, ladder, button, lever, flower or rail never obstructs and a full block, slab,
 *> stair, fence or carpet obstructs when its boxes meet the entity's.
@@ -218,6 +254,9 @@
  01 WS-E                   BINARY-LONG.
  01 WS-M                   BINARY-LONG.
  01 WS-STD                 BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-MARKER              BINARY-LONG VALUE 0.
+ 01 WS-BUILDS              BINARY-LONG.
  01 WS-BLK                 BINARY-LONG.
  01 WS-SHAPE               BINARY-LONG.
  01 WS-ONE                 BINARY-LONG.
@@ -266,11 +305,18 @@
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
          MOVE 0 TO WS-M
          MOVE 0 TO WS-STD
-         IF EN-USED(WS-E) = 1
+         MOVE 0 TO WS-BUILDS
+         IF EN-USED(WS-E) = 1 AND EN-DIM(WS-E) = L-DIM AND EN-TYPE(WS-E) NOT = CR-LOOSE-ITEM
              CALL "MOB-INDEX" USING EN-TYPE(WS-E) WS-M
              CALL "STDMOB-INDEX" USING EN-TYPE(WS-E) WS-STD
+             IF WS-M > 0 OR WS-STD > 0
+                 MOVE 1 TO WS-BUILDS
+             ELSE
+                 CALL "BLOCK-ENTITY-KIND" USING EN-TYPE(WS-E) WS-KIND
+                 CALL "UI-BLOCKS-BUILDING" USING WS-KIND WS-MARKER WS-BUILDS
+             END-IF
          END-IF
-         IF (WS-M > 0 OR WS-STD > 0) AND EN-DIM(WS-E) = L-DIM
+         IF WS-BUILDS = 1
              COMPUTE WS-HALF = ET-WIDTH-MILLI(EN-TYPE(WS-E) + 1) / 2000
              COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(EN-TYPE(WS-E) + 1) / 1000
              COMPUTE WS-B(1) = EN-X(WS-E) - WS-HALF
@@ -453,6 +499,9 @@
  01 WS-CONT                BINARY-LONG.
  01 WS-SHELF               BINARY-LONG.
  01 WS-OPENED              BINARY-LONG.
+ 01 WS-SPENT-KEY           PIC X(48).
+ 01 WS-SPENT-BARE          PIC X(48).
+ 01 WS-SPENT-ID            BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-TOOL                BINARY-LONG.
  01 WS-SWITCH              BINARY-LONG.
@@ -567,7 +616,17 @@
          CALL "MENU-CONT-OPEN" USING L-ID PSB-BX PSB-BY PSB-BZ WS-OPENED
      END-IF
      IF WS-PLACED = 1 AND PL-MODE(WS-ROW) = 0
+         MOVE IT-KEY(PL-SLOT-ITEM(WS-ROW, WS-HELD + 1) + 1) TO WS-SPENT-KEY
+         CALL "KEY-BARE" USING WS-SPENT-KEY WS-SPENT-BARE
          CALL "INV-REMOVE" USING WS-ROW WS-HELD WS-ONE
+*>       a SolidBucketItem (25-5 5.3): the held stack is replaced by an empty bucket
+         IF WS-SPENT-BARE = "powder_snow_bucket"
+             MOVE "bucket" TO WS-SPENT-BARE
+             CALL "RL-ITEM-ID-OF" USING WS-SPENT-BARE WS-SPENT-ID
+             MOVE WS-SPENT-ID TO PL-SLOT-ITEM(WS-ROW, WS-HELD + 1)
+             MOVE 1 TO PL-SLOT-COUNT(WS-ROW, WS-HELD + 1)
+             MOVE 0 TO PL-SLOT-VAR(WS-ROW, WS-HELD + 1)
+         END-IF
          COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
          CALL "INV-SLOT-SEND" USING L-ID WS-HELD
      END-IF

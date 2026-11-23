@@ -125,7 +125,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PST-MBE-TICK RECURSIVE.
 *> USING block entity index: PistonMovingBlockEntity.tick (7.2): lastTicked and progressO are set; at progressO 1 the entity ends and the moved state is placed (waterlogged cleared, flags 67, or, when the
-*> neighbours' shapes turn it into air, written with flags 340 and then destroyed with its drops); else the progress rises by 0.5 (capped at 1).
+*> neighbours' shapes turn it into air, written with flags 340 and then destroyed with its drops); else the entities in the way are pushed (piston-push.cob, 8.1) and the progress rises by 0.5 (capped at 1).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
@@ -179,6 +179,7 @@
              END-IF
          END-IF
      ELSE
+         CALL "PST-PUSH-ENTITIES" USING L-INDEX
          COMPUTE BE-PROGRESS(L-INDEX) = BE-PROGRESS(L-INDEX) + 0.5
          IF BE-PROGRESS(L-INDEX) >= 1
              MOVE 1 TO BE-PROGRESS(L-INDEX)

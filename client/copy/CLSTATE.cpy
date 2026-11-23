@@ -272,6 +272,8 @@
        10 PL-STACK-POTION    BINARY-LONG.
        10 PL-OFFHAND-POTION  BINARY-LONG.
        10 PL-SLOT-POTION     BINARY-LONG OCCURS 36 TIMES.
+*>     The skin parts byte of the Client Information last sent (CLP-CONFIG-START in configuration, CLIENT-INFO-BROADCAST in play; 47 section 5.2): the packet goes again only when the options give another.
+       10 PL-INFO-PARTS      BINARY-LONG.
 *>     banner_patterns 74 of the last item stack decoded (STACK-BANNER) and of each slot (1 to 36 the slots, 37 the off hand), taken over like the foil: the number of layers kept
 *>     (at most 16), each layer's pattern holder (the registry position + 1, 0 an inline pattern) and dye id (hand-banner.cob; 54 section 22).
        10 PL-STACK-BN.
@@ -756,6 +758,8 @@
           15 EN-VZ           FLOAT-LONG.
           15 EN-STACK-COUNT  BINARY-LONG.
           15 EN-STACK-ITEM   BINARY-LONG.
+*>        1 when the stack has the enchantment glint (PB-MX-IS-FOIL of the entry: the dropped item and the item frame draw the glint layer).
+          15 EN-STACK-FOIL   BINARY-LONG.
 *>        The registry key of EN-TYPE in a world of the standard set (EN-VANILLA 1; spaces when the id is outside the
 *>        registry) and the row of CL-MODELS (CLMODELS.cpy) that draws it (0 = no model). In a cobolcraft world EN-TYPE is the
 *>        stand-in type of standin-content §3 and EN-VANILLA is 0.

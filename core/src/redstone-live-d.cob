@@ -103,6 +103,7 @@
  01 WS-DX                  BINARY-LONG.
  01 WS-DY                  BINARY-LONG.
  01 WS-DZ                  BINARY-LONG.
+ 01 WS-BLOCKED             BINARY-LONG.
  01 WS-PX                  BINARY-LONG.
  01 WS-PZ                  BINARY-LONG.
  01 WS-TEXT                PIC X(160).
@@ -151,7 +152,12 @@
                      MOVE 1 TO WS-N
              END-EVALUATE
              CALL "BE-FIND" USING L-DIM L-X L-Y L-Z WS-INDEX
-             IF WS-INDEX > 0
+             MOVE 0 TO WS-BLOCKED
+             IF WS-INDEX > 0 AND WS-KIND = 1
+*>               a chest with a conductor or a sitting cat above has no container for the comparator (31-1 section 10.2: getContainer with ignoreBlocked false), a double chest when either half is so
+                 CALL "BE-CHEST-COVERED" USING L-DIM L-X L-Y L-Z WS-BLOCKED
+             END-IF
+             IF WS-INDEX > 0 AND WS-BLOCKED = 0
                  CALL "RL-SLOTS-ADD" USING WS-INDEX 1 WS-N WS-COUNTS WS-LIMITS
                  IF WS-KIND = 1
 *>                   a half of a double chest reads its partner's slots too (31-1 section 10.2)
@@ -162,12 +168,15 @@
                          COMPUTE WS-PZ = L-Z + WS-DZ
                          CALL "BE-FIND" USING L-DIM WS-PX L-Y WS-PZ WS-INDEX2
                          IF WS-INDEX2 > 0
+                             CALL "BE-CHEST-COVERED" USING L-DIM WS-PX L-Y WS-PZ WS-BLOCKED
                              CALL "RL-SLOTS-ADD" USING WS-INDEX2 28 WS-N WS-COUNTS WS-LIMITS
                              COMPUTE WS-N = WS-N * 2
                          END-IF
                      END-IF
                  END-IF
-                 CALL "RS1-CONTAINER-SIGNAL" USING WS-N WS-COUNTS WS-LIMITS L-VALUE
+                 IF WS-BLOCKED = 0
+                     CALL "RS1-CONTAINER-SIGNAL" USING WS-N WS-COUNTS WS-LIMITS L-VALUE
+                 END-IF
              END-IF
          WHEN 9
              CALL "BE-FIND" USING L-DIM L-X L-Y L-Z WS-INDEX
