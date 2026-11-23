@@ -298,8 +298,8 @@
     05 WS-PK-K             BINARY-LONG OCCURS 8 TIMES.
  01 WS-PK-TPL              PIC X(64).
  01 WS-HIT                 BINARY-LONG.
- 01 WS-DOOR-OK             BINARY-LONG.
- 01 WS-STRONG              BINARY-LONG.
+ 01 WS-REQ-HIT             BINARY-LONG.
+ 01 WS-REQ-N               BINARY-LONG.
  01 WS-J                   BINARY-LONG.
  01 WS-MEM-TYPE            BINARY-LONG.
  01 WS-MEM-NAME            PIC X(80).
@@ -471,22 +471,20 @@
                                                          CALL "NBT-READ-SKIP" USING PB-BUFFER WS-CH-TYPE
                                                  END-EVALUATE
                                              END-PERFORM
-*>                                           the type-specific keys (36-4 10, 36-5 3.9); a stronghold piece without a valid EntryDoor does not load (36-5 3.9)
+*>                                           the type-specific keys (36-4 10, 36-5 3.9, 36-6 2.4 and 4.3); a piece without a valid value of a key it requires (the stronghold's EntryDoor, the ocean ruin's Rot and BiomeType,
+*>                                           the shipwreck's Rot) does not load
                                              MOVE 0 TO WS-PK-K(1) WS-PK-K(2) WS-PK-K(3) WS-PK-K(4) WS-PK-K(5) WS-PK-K(6) WS-PK-K(7) WS-PK-K(8)
                                              MOVE SPACES TO WS-PK-TPL
-                                             MOVE 0 TO WS-DOOR-OK
+                                             MOVE 0 TO WS-REQ-HIT
                                              PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-PAIR-N
                                                  CALL "STRUCT-PIECE-KEY-SET" USING WS-PTYPE PR-NAME(WS-J) PR-VTYPE(WS-J) PR-INT(WS-J) PR-STR(WS-J)
                                                      WS-PK-KS WS-PK-TPL WS-HIT
-                                                 IF PR-NAME(WS-J) = "EntryDoor" AND WS-HIT = 1
-                                                     MOVE 1 TO WS-DOOR-OK
+                                                 IF WS-HIT = 3
+                                                     ADD 1 TO WS-REQ-HIT
                                                  END-IF
                                              END-PERFORM
-                                             MOVE 0 TO WS-STRONG
-                                             IF WS-PTYPE >= 19 AND WS-PTYPE <= 31 AND WS-DOOR-OK = 0
-                                                 MOVE 1 TO WS-STRONG
-                                             END-IF
-                                             IF WS-PTYPE >= 0 AND WS-HAS-BB = 1 AND WS-NP < 1024 AND WS-STRONG = 0
+                                             CALL "STRUCT-PIECE-REQUIRED" USING WS-PTYPE WS-REQ-N
+                                             IF WS-PTYPE >= 0 AND WS-HAS-BB = 1 AND WS-NP < 1024 AND WS-REQ-HIT >= WS-REQ-N
                                                  ADD 1 TO WS-NP
                                                  MOVE WS-PTYPE TO PC-TYPE(WS-NP)
                                                  MOVE WS-PO TO PC-ORIENT(WS-NP)

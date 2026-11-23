@@ -3,10 +3,12 @@
 *> Saved flags (a chest, a spawner, the witch and the cat) are the builder's placed flags when the start is captured, that is after the first chunk's placement of the start.
 *>
 *> Entry points:
-*>   STRUCT-PIECE-ENUM USING kind (R, M, V or D), mode (0 name out from the ordinal, 1 ordinal out from the name, -1 when the name is not one), ordinal, name (PIC X(24)): the enum spellings of the table
+*>   STRUCT-PIECE-ENUM USING kind (R, M, V, D or W), mode (0 name out from the ordinal, 1 ordinal out from the name, -1 when the name is not one), ordinal, name (PIC X(24)): the enum spellings of the table
 *>   STRUCT-PIECE-KEYS-WRITE USING PB-BUFFER, piece row of the store: appends the keys the table lists for the piece's type to the open piece compound, then the `Properties` compound when the type has one
 *>   STRUCT-PIECE-KEY-SET USING piece type, key name (PIC X(24)), NBT type of the value, integer value (a float as tenths), string value (PIC X(64)), values (8 BINARY-LONG), template (PIC X(64)), result out:
-*>     stores one key read from a piece compound (0 the type has no such key or the tag has the wrong type, 1 stored, 2 an enum key with a string that is not a constant)
+*>     stores one key read from a piece compound (0 the type has no such key or the tag has the wrong type, 1 stored, 2 an enum key with a string that is not a constant, 3 stored and the key is required
+*>     by the piece, mask 01 of its row)
+*>   STRUCT-PIECE-REQUIRED USING piece type, count out: the number of keys the piece cannot load without (the rows of the type with mask 01 that are not a p row)
 *>   STRUCT-PIECE-KEYS-CAPTURE USING builder row, store piece row: the values of the keys from the builder's piece (scattered: size from the box and the orientation, HPos SP-T-AUX, the placed flags SP-F1 to SP-F4;
 *>     template: the template key, SP-T-X..Z, rotation, mirror and the ruined portal's packed properties; stronghold: SP-F1 the entry door and SP-F2 to SP-F4 and SP-MST the type fields)
 
@@ -32,8 +34,10 @@
     05 FILLER              PIC X(21) VALUE "D1WOOD_DOOR".
     05 FILLER              PIC X(21) VALUE "D2GRATES".
     05 FILLER              PIC X(21) VALUE "D3IRON_DOOR".
+    05 FILLER              PIC X(21) VALUE "W0WARM".
+    05 FILLER              PIC X(21) VALUE "W1COLD".
  01 WS-TAB REDEFINES WS-ROWS.
-    05 WS-E OCCURS 17 TIMES.
+    05 WS-E OCCURS 19 TIMES.
        10 WS-E-KIND        PIC X.
        10 WS-E-ORD         PIC 9.
        10 WS-E-NAME        PIC X(19).
@@ -49,7 +53,7 @@
      ELSE
          MOVE -1 TO L-ORD
      END-IF
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 17
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 19
          IF WS-E-KIND(WS-I) = L-KIND
              IF L-MODE = 0 AND WS-E-ORD(WS-I) = L-ORD
                  MOVE WS-E-NAME(WS-I) TO L-NAME
@@ -120,7 +124,10 @@
                          COMPUTE WS-TPL-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-TPL TRAILING))
                          CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-TPL WS-TPL-LEN
                      END-IF
-                 WHEN "R" WHEN "M" WHEN "V" WHEN "D"
+                 WHEN "F"
+                     COMPUTE WS-F = WS-V / 10
+                     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-F
+                 WHEN "R" WHEN "M" WHEN "V" WHEN "D" WHEN "W"
                      CALL "STRUCT-PIECE-ENUM" USING WS-KIND WS-MODE-NAME WS-V WS-ENUM
                      COMPUTE WS-ENUM-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-ENUM TRAILING))
                      CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-ENUM WS-ENUM-LEN
@@ -234,7 +241,7 @@
                  WHEN (WS-KIND = "T") AND L-VTYPE = 8
                      MOVE L-STR TO L-TPL
                      MOVE 1 TO L-RESULT
-                 WHEN (WS-KIND = "R" OR WS-KIND = "M" OR WS-KIND = "V" OR WS-KIND = "D") AND L-VTYPE = 8
+                 WHEN (WS-KIND = "R" OR WS-KIND = "M" OR WS-KIND = "V" OR WS-KIND = "D" OR WS-KIND = "W") AND L-VTYPE = 8
                      MOVE L-STR TO WS-ENUM
                      CALL "STRUCT-PIECE-ENUM" USING WS-KIND WS-MODE-ORD WS-ORD WS-ENUM
                      IF WS-ORD >= 0
@@ -248,7 +255,7 @@
                          ADD PKT-MASK(WS-R) TO L-K(WS-SLOT)
                      END-IF
                      MOVE 1 TO L-RESULT
-                 WHEN (WS-KIND = "f") AND WS-NUMERIC = 1
+                 WHEN (WS-KIND = "f" OR WS-KIND = "F") AND WS-NUMERIC = 1
                      IF L-VTYPE = 5
                          MOVE L-INT TO L-K(WS-SLOT)
                      ELSE
@@ -258,10 +265,32 @@
                  WHEN OTHER
                      CONTINUE
              END-EVALUATE
+             IF L-RESULT = 1 AND PKT-MASK(WS-R) = 1 AND WS-KIND NOT = "p"
+                 MOVE 3 TO L-RESULT
+             END-IF
          END-IF
      END-PERFORM
      GOBACK.
  END PROGRAM STRUCT-PIECE-KEY-SET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-PIECE-REQUIRED.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTPKEYS.
+ 01 WS-R                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-COUNT.
+     MOVE 0 TO L-COUNT
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > PKT-COUNT
+         IF PKT-TYPE(WS-R) = L-TYPE AND PKT-MASK(WS-R) = 1 AND PKT-KIND(WS-R) NOT = "p"
+             ADD 1 TO L-COUNT
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM STRUCT-PIECE-REQUIRED.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-PIECE-KEYS-CAPTURE.
@@ -270,6 +299,7 @@
  COPY STRUCTSTART.
  COPY STRUCTPIECE.
  COPY STRUCTTPL.
+ COPY STRUCTPROC.
  01 WS-DX                  BINARY-LONG.
  01 WS-DY                  BINARY-LONG.
  01 WS-DZ                  BINARY-LONG.
@@ -279,6 +309,14 @@
  01 WS-FLAGS               BINARY-LONG.
  01 WS-TROW                BINARY-LONG.
  01 WS-E                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(96).
+ 01 WS-SLASH               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-PROC                BINARY-LONG.
+ 01 WS-LISTKEY             PIC X(80).
+ 01 WS-DIGIT               PIC 9.
  LINKAGE SECTION.
  01 L-B                    BINARY-LONG.
  01 L-P                    BINARY-LONG.
@@ -314,24 +352,66 @@
                      MOVE SP-F1(L-B) TO SPC-K(L-P, 5)
                      MOVE SP-F2(L-B) TO SPC-K(L-P, 6)
              END-EVALUATE
-         WHEN SPC-TYPE(L-P) = 34 OR SPC-TYPE(L-P) = 35 OR SPC-TYPE(L-P) = 54
+         WHEN SPC-TYPE(L-P) = 34 OR SPC-TYPE(L-P) = 35 OR SPC-TYPE(L-P) = 54 OR SPC-TYPE(L-P) = 53 OR SPC-TYPE(L-P) = 33 OR SPC-TYPE(L-P) = 51 OR SPC-TYPE(L-P) = 50
+*>           the template pieces: Template (the whole key; the short name, after the last slash, for the woodland mansion and the end city), TPX, TPY, TPZ and Rot
              MOVE SP-T-ROW(L-B) TO WS-TROW
              IF WS-TROW >= 1 AND WS-TROW <= TP-COUNT
                  MOVE TP-KEY(WS-TROW) TO SPC-TPL(L-P)
+                 IF SPC-TYPE(L-P) = 51 OR SPC-TYPE(L-P) = 50
+                     MOVE TP-KEY(WS-TROW) TO WS-KEY
+                     MOVE 0 TO WS-SLASH
+                     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 96
+                         IF WS-KEY(WS-I:1) = "/"
+                             MOVE WS-I TO WS-SLASH
+                         END-IF
+                     END-PERFORM
+                     COMPUTE WS-START = WS-SLASH + 1
+                     COMPUTE WS-LEN = 96 - WS-SLASH
+                     MOVE SPACES TO SPC-TPL(L-P)
+                     MOVE WS-KEY(WS-START:WS-LEN) TO SPC-TPL(L-P)
+                 END-IF
              END-IF
              MOVE SP-T-X(L-B) TO SPC-K(L-P, 1)
              MOVE SP-T-Y(L-B) TO SPC-K(L-P, 2)
              MOVE SP-T-Z(L-B) TO SPC-K(L-P, 3)
              MOVE SP-T-ROT(L-B) TO SPC-K(L-P, 4)
-             IF SPC-TYPE(L-P) = 35
-*>               the ruined portal's AUX: the properties in the low five bits, 32 times the placement, 256 times the mossiness in tenths
-                 MOVE SP-T-MIR(L-B) TO SPC-K(L-P, 5)
-                 DIVIDE SP-T-AUX(L-B) BY 256 GIVING WS-MOSS REMAINDER WS-LOW
-                 DIVIDE WS-LOW BY 32 GIVING WS-PLACE REMAINDER WS-FLAGS
-                 MOVE WS-PLACE TO SPC-K(L-P, 6)
-                 MOVE WS-FLAGS TO SPC-K(L-P, 7)
-                 MOVE WS-MOSS TO SPC-K(L-P, 8)
+*>           the processor list of the piece: its key tells the ocean ruin's biome type and integrity and whether the end city piece overwrites
+             MOVE SP-T-PROC(L-B) TO WS-PROC
+             MOVE SPACES TO WS-LISTKEY
+             IF WS-PROC >= 1 AND WS-PROC <= SP-LIST-COUNT
+                 MOVE SPL-KEY(WS-PROC) TO WS-LISTKEY
              END-IF
+             EVALUATE SPC-TYPE(L-P)
+                 WHEN 35
+*>                   the ruined portal's AUX: the properties in the low five bits, 32 times the placement, 256 times the mossiness in tenths
+                     MOVE SP-T-MIR(L-B) TO SPC-K(L-P, 5)
+                     DIVIDE SP-T-AUX(L-B) BY 256 GIVING WS-MOSS REMAINDER WS-LOW
+                     DIVIDE WS-LOW BY 32 GIVING WS-PLACE REMAINDER WS-FLAGS
+                     MOVE WS-PLACE TO SPC-K(L-P, 6)
+                     MOVE WS-FLAGS TO SPC-K(L-P, 7)
+                     MOVE WS-MOSS TO SPC-K(L-P, 8)
+                 WHEN 33
+*>                   the ocean ruin (36-6 2.4): the key of its list is cobolcraft:inline/ruin/<w or c>/<tenths of the integrity> (struct-ruin.cob); IsLarge is the builder's AUX
+                     IF WS-LISTKEY(1:23) = "cobolcraft:inline/ruin/" AND WS-LISTKEY(26:1) IS NUMERIC
+                         MOVE WS-LISTKEY(26:1) TO WS-DIGIT
+                         MOVE WS-DIGIT TO SPC-K(L-P, 5)
+                         IF WS-LISTKEY(24:1) = "c"
+                             MOVE 1 TO SPC-K(L-P, 6)
+                         END-IF
+                     END-IF
+                     MOVE SP-T-AUX(L-B) TO SPC-K(L-P, 7)
+                 WHEN 53
+*>                   the shipwreck (36-6 4.3): isBeached is the builder's AUX, height_adjusted is true (the builder has made the height final when the start exists)
+                     MOVE SP-T-AUX(L-B) TO SPC-K(L-P, 5)
+                     MOVE 1 TO SPC-K(L-P, 6)
+                 WHEN 51
+                     MOVE SP-T-MIR(L-B) TO SPC-K(L-P, 5)
+                 WHEN 50
+*>                   the end city (36-8 9): OW is true when the first processor is STRUCTURE_BLOCK, the list that ignores the structure block only
+                     IF WS-LISTKEY = "cobolcraft:inline/ignore_structure_block"
+                         MOVE 1 TO SPC-K(L-P, 5)
+                     END-IF
+             END-EVALUATE
          WHEN SPC-TYPE(L-P) >= 19 AND SPC-TYPE(L-P) <= 31
              MOVE SP-F1(L-B) TO SPC-K(L-P, 1)
              MOVE SP-F2(L-B) TO SPC-K(L-P, 2)

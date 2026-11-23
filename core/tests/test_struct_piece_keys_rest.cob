@@ -63,6 +63,7 @@
  01 WS-GROUND              BINARY-LONG VALUE 0.
  01 WS-JIG                 BINARY-LONG VALUE 0.
  01 WS-PROW                BINARY-LONG.
+ 01 WS-FLOAT               FLOAT-SHORT.
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      MOVE 8 TO SD-ST-COUNT
@@ -109,59 +110,128 @@
          DELIMITED BY SIZE INTO TL-EXPECTED
      PERFORM CHECK-TEXT
 
-*>   the template pieces of the shipwreck (kind 2), the ocean ruin (3), the woodland mansion (5) and the end city (16) have registry names, so a start made of one of them is not INVALID
+*>   the template pieces of the shipwreck (kind 2), the ocean ruin (3), the woodland mansion (5) and the end city (16) have registry names (so a start made of them is not INVALID) and their keys
+     MOVE 7 TO TP-COUNT
      MOVE "minecraft:shipwreck/with_mast" TO TP-KEY(1)
+     MOVE "minecraft:underwater_ruin/big_mossy_2" TO TP-KEY(2)
+     MOVE "minecraft:underwater_ruin/warm_5" TO TP-KEY(3)
+     MOVE "minecraft:woodland_mansion/entrance" TO TP-KEY(4)
+     MOVE "minecraft:woodland_mansion/1x2_c1" TO TP-KEY(5)
+     MOVE "minecraft:end_city/base_floor" TO TP-KEY(6)
+     MOVE "minecraft:end_city/tower_piece" TO TP-KEY(7)
+     MOVE 4 TO SP-LIST-COUNT
+     MOVE "cobolcraft:inline/ruin/c/5" TO SPL-KEY(1)
+     MOVE "cobolcraft:inline/ruin/w/8" TO SPL-KEY(2)
+     MOVE "cobolcraft:inline/ignore_structure_block" TO SPL-KEY(3)
+     MOVE "cobolcraft:inline/ignore_structure_and_air" TO SPL-KEY(4)
+*>   a beached shipwreck rotated by 90 degrees (36-6 4.3): Template, TPX, TPY, TPZ, isBeached (the builder's SP-T-AUX), Rot and height_adjusted (true: the height is final when the start exists)
      CALL "SPB-RESET"
      MOVE 100 TO WS-BT MOVE 2 TO WS-BO MOVE 0 TO WS-BD
      MOVE 8 TO WS-X0 MOVE 60 TO WS-Y0 MOVE 8 TO WS-Z0 MOVE 16 TO WS-X1 MOVE 80 TO WS-Y1 MOVE 24 TO WS-Z1
      PERFORM BUILDER-PIECE
      MOVE 2 TO SP-T-KIND(WS-BR)
      MOVE 1 TO SP-T-ROW(WS-BR)
+     MOVE 10 TO SP-T-X(WS-BR) MOVE 62 TO SP-T-Y(WS-BR) MOVE 12 TO SP-T-Z(WS-BR)
+     MOVE 1 TO SP-T-ROT(WS-BR)
+     MOVE 1 TO SP-T-AUX(WS-BR)
      MOVE 2 TO WS-S
      PERFORM CAPTURE
      MOVE "structures.starts.minecraft:s02" TO WS-PATH
      PERFORM WRITE-AND-GET
-     MOVE "acceptance US12 36-6§4.3 saved keys: a start with a shipwreck template piece is not INVALID (the piece id is shipwreck)" TO TL-CASE
-     PERFORM CHECK-ID-START
-     MOVE "minecraft:underwater_ruin/warm_1" TO TP-KEY(1)
+     MOVE "acceptance US12 36-6§4.3 saved keys: the beached shipwreck is shipwreck with Template, TPX, TPY, TPZ, isBeached 1, Rot CLOCKWISE_90 and height_adjusted 1" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "{id:minecraft:s02,ChunkX:0,ChunkZ:0,references:0,Children:["
+         "{id:minecraft:shipwreck,BB:I[8,60,8,16,80,24],O:2,GD:0,Template:minecraft:shipwreck/with_mast,TPX:10,TPY:62,TPZ:12,isBeached:1,Rot:CLOCKWISE_90,height_adjusted:1}]}"
+         DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK-TEXT
+*>   a cold large ruin of integrity 0.5 and a warm small one of 0.8 (36-6 2.4): the integrity and the biome type come from the piece's processor list, IsLarge from SP-T-AUX
      CALL "SPB-RESET"
      MOVE 100 TO WS-BT MOVE 2 TO WS-BO MOVE 0 TO WS-BD
      MOVE 8 TO WS-X0 MOVE 60 TO WS-Y0 MOVE 8 TO WS-Z0 MOVE 16 TO WS-X1 MOVE 80 TO WS-Y1 MOVE 24 TO WS-Z1
      PERFORM BUILDER-PIECE
      MOVE 3 TO SP-T-KIND(WS-BR)
-     MOVE 1 TO SP-T-ROW(WS-BR)
+     MOVE 2 TO SP-T-ROW(WS-BR)
+     MOVE 12 TO SP-T-X(WS-BR) MOVE 90 TO SP-T-Y(WS-BR) MOVE 14 TO SP-T-Z(WS-BR)
+     MOVE 3 TO SP-T-ROT(WS-BR)
+     MOVE 1 TO SP-T-PROC(WS-BR)
+     MOVE 1 TO SP-T-AUX(WS-BR)
+     MOVE 40 TO WS-X0 MOVE 60 TO WS-Y0 MOVE 8 TO WS-Z0 MOVE 48 TO WS-X1 MOVE 70 TO WS-Y1 MOVE 16 TO WS-Z1
+     PERFORM BUILDER-PIECE
+     MOVE 3 TO SP-T-KIND(WS-BR)
+     MOVE 3 TO SP-T-ROW(WS-BR)
+     MOVE 44 TO SP-T-X(WS-BR) MOVE 91 TO SP-T-Y(WS-BR) MOVE 10 TO SP-T-Z(WS-BR)
+     MOVE 0 TO SP-T-ROT(WS-BR)
+     MOVE 2 TO SP-T-PROC(WS-BR)
+     MOVE 0 TO SP-T-AUX(WS-BR)
      MOVE 3 TO WS-S
      PERFORM CAPTURE
      MOVE "structures.starts.minecraft:s03" TO WS-PATH
      PERFORM WRITE-AND-GET
-     MOVE "acceptance US12 36-6§2.4 saved keys: a start with an ocean ruin template piece is not INVALID (the piece id is orp)" TO TL-CASE
-     PERFORM CHECK-ID-START
-     MOVE "minecraft:woodland_mansion/entrance" TO TP-KEY(1)
+     MOVE "acceptance US12 36-6§2.4 saved keys: the ocean ruins are orp with Rot, Integrity 0.5 or 0.8, BiomeType COLD or WARM and IsLarge" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "{id:minecraft:s03,ChunkX:0,ChunkZ:0,references:0,Children:["
+         "{id:minecraft:orp,BB:I[8,60,8,16,80,24],O:2,GD:0,Template:minecraft:underwater_ruin/big_mossy_2,TPX:12,TPY:90,TPZ:14,Rot:COUNTERCLOCKWISE_90,"
+         "Integrity:0.500,BiomeType:COLD,IsLarge:1},"
+         "{id:minecraft:orp,BB:I[40,60,8,48,70,16],O:2,GD:0,Template:minecraft:underwater_ruin/warm_5,TPX:44,TPY:91,TPZ:10,Rot:NONE,"
+         "Integrity:0.800,BiomeType:WARM,IsLarge:0}]}"
+         DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK-TEXT
+*>   the woodland mansion: the SHORT template name (after minecraft:woodland_mansion/), Rot and Mi
      CALL "SPB-RESET"
      MOVE 100 TO WS-BT MOVE 2 TO WS-BO MOVE 0 TO WS-BD
      MOVE 8 TO WS-X0 MOVE 60 TO WS-Y0 MOVE 8 TO WS-Z0 MOVE 16 TO WS-X1 MOVE 80 TO WS-Y1 MOVE 24 TO WS-Z1
      PERFORM BUILDER-PIECE
      MOVE 5 TO SP-T-KIND(WS-BR)
-     MOVE 1 TO SP-T-ROW(WS-BR)
+     MOVE 4 TO SP-T-ROW(WS-BR)
+     MOVE 10 TO SP-T-X(WS-BR) MOVE 64 TO SP-T-Y(WS-BR) MOVE 12 TO SP-T-Z(WS-BR)
+     MOVE 2 TO SP-T-ROT(WS-BR)
+     MOVE 0 TO SP-T-MIR(WS-BR)
+     MOVE 40 TO WS-X0 MOVE 60 TO WS-Y0 MOVE 8 TO WS-Z0 MOVE 48 TO WS-X1 MOVE 70 TO WS-Y1 MOVE 16 TO WS-Z1
+     PERFORM BUILDER-PIECE
+     MOVE 5 TO SP-T-KIND(WS-BR)
+     MOVE 5 TO SP-T-ROW(WS-BR)
+     MOVE 44 TO SP-T-X(WS-BR) MOVE 65 TO SP-T-Y(WS-BR) MOVE 10 TO SP-T-Z(WS-BR)
+     MOVE 3 TO SP-T-ROT(WS-BR)
+     MOVE 1 TO SP-T-MIR(WS-BR)
      MOVE 4 TO WS-S
      PERFORM CAPTURE
      MOVE "structures.starts.minecraft:s04" TO WS-PATH
      PERFORM WRITE-AND-GET
-     MOVE "acceptance US12 36-7§3 saved keys: a start with a woodland mansion template piece is not INVALID (the piece id is wmp)" TO TL-CASE
-     PERFORM CHECK-ID-START
-     MOVE "minecraft:end_city/base_floor" TO TP-KEY(1)
+     MOVE "acceptance US12 36-7§3 saved keys: the mansion pieces are wmp with the short Template name, TPX, TPY, TPZ, Rot and Mi" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "{id:minecraft:s04,ChunkX:0,ChunkZ:0,references:0,Children:["
+         "{id:minecraft:wmp,BB:I[8,60,8,16,80,24],O:2,GD:0,Template:entrance,TPX:10,TPY:64,TPZ:12,Rot:CLOCKWISE_180,Mi:NONE},"
+         "{id:minecraft:wmp,BB:I[40,60,8,48,70,16],O:2,GD:0,Template:1x2_c1,TPX:44,TPY:65,TPZ:10,Rot:COUNTERCLOCKWISE_90,Mi:LEFT_RIGHT}]}"
+         DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK-TEXT
+*>   the end city: the short template name, Rot and OW (true when the first processor is STRUCTURE_BLOCK: the list that ignores the structure block only)
      CALL "SPB-RESET"
      MOVE 100 TO WS-BT MOVE 2 TO WS-BO MOVE 0 TO WS-BD
      MOVE 8 TO WS-X0 MOVE 60 TO WS-Y0 MOVE 8 TO WS-Z0 MOVE 16 TO WS-X1 MOVE 80 TO WS-Y1 MOVE 24 TO WS-Z1
      PERFORM BUILDER-PIECE
      MOVE 16 TO SP-T-KIND(WS-BR)
-     MOVE 1 TO SP-T-ROW(WS-BR)
+     MOVE 6 TO SP-T-ROW(WS-BR)
+     MOVE 10 TO SP-T-X(WS-BR) MOVE 70 TO SP-T-Y(WS-BR) MOVE 12 TO SP-T-Z(WS-BR)
+     MOVE 1 TO SP-T-ROT(WS-BR)
+     MOVE 3 TO SP-T-PROC(WS-BR)
+     MOVE 40 TO WS-X0 MOVE 60 TO WS-Y0 MOVE 8 TO WS-Z0 MOVE 48 TO WS-X1 MOVE 70 TO WS-Y1 MOVE 16 TO WS-Z1
+     PERFORM BUILDER-PIECE
+     MOVE 16 TO SP-T-KIND(WS-BR)
+     MOVE 7 TO SP-T-ROW(WS-BR)
+     MOVE 44 TO SP-T-X(WS-BR) MOVE 75 TO SP-T-Y(WS-BR) MOVE 10 TO SP-T-Z(WS-BR)
+     MOVE 0 TO SP-T-ROT(WS-BR)
+     MOVE 4 TO SP-T-PROC(WS-BR)
      MOVE 5 TO WS-S
      PERFORM CAPTURE
      MOVE "structures.starts.minecraft:s05" TO WS-PATH
      PERFORM WRITE-AND-GET
-     MOVE "acceptance US12 36-8§9 saved keys: a start with an end city template piece is not INVALID (the piece id is ecp)" TO TL-CASE
-     PERFORM CHECK-ID-START
+     MOVE "acceptance US12 36-8§9 saved keys: the end city pieces are ecp with the short Template name, TPX, TPY, TPZ, Rot and OW (1 for the structure-block list, 0 for the other)" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "{id:minecraft:s05,ChunkX:0,ChunkZ:0,references:0,Children:["
+         "{id:minecraft:ecp,BB:I[8,60,8,16,80,24],O:2,GD:0,Template:base_floor,TPX:10,TPY:70,TPZ:12,Rot:CLOCKWISE_90,OW:1},"
+         "{id:minecraft:ecp,BB:I[40,60,8,48,70,16],O:2,GD:0,Template:tower_piece,TPX:44,TPY:75,TPZ:10,Rot:NONE,OW:0}]}"
+         DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK-TEXT
 
 *>   the mineshaft (36-5 2.5, 2.6, 2.11, 2.12): the corridor keeps hr, sc, hps (F1 to F3), Num (F4) and MST; the crossing tf (F1), D (the direction F2, the legacy 2D data value) and MST; a room its Entrances
 *>   (the builder's SP-ENTRANCE boxes of the piece's run, a list of int arrays) and MST; the stairs MST only. The two rooms have runs of 2 and 1 boxes of the builder's table
@@ -361,6 +431,81 @@
      MOVE 3331 TO TL-EXPECTED-N
      PERFORM CHECK-NUM
 
+*>   reading the template families: Rot and BiomeType are required for an ocean ruin and Rot for a shipwreck (a missing or non-constant value does not load the piece), Integrity is a float held in tenths,
+*>   the mansion's Template stays the short name; the loaded values are those of the keys
+     CALL "STRUCT-STORE-RESET"
+     MOVE 7 TO WS-N
+     PERFORM BEGIN-START
+     MOVE "minecraft:orp" TO WS-PID MOVE 13 TO WS-PIDLEN
+     PERFORM PIECE-BEGIN
+     PERFORM PUT-ROT-1
+     PERFORM PUT-BIOME-COLD
+     MOVE "Integrity" TO WN MOVE 9 TO WL
+     MOVE 0.3 TO WS-FLOAT
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-FLOAT
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     PERFORM PIECE-BEGIN
+     PERFORM PUT-ROT-1
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     PERFORM PIECE-BEGIN
+     PERFORM PUT-BIOME-COLD
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     PERFORM PIECE-BEGIN
+     PERFORM PUT-ROT-1
+     MOVE "BiomeType" TO WN MOVE 9 TO WL
+     MOVE "cold" TO WS-STR MOVE 4 TO WS-STRLEN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-STR WS-STRLEN
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE "minecraft:shipwreck" TO WS-PID MOVE 19 TO WS-PIDLEN
+     PERFORM PIECE-BEGIN
+     MOVE "Rot" TO WN MOVE 3 TO WL
+     MOVE "CLOCKWISE_180" TO WS-STR MOVE 13 TO WS-STRLEN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-STR WS-STRLEN
+     MOVE "isBeached" TO WN MOVE 9 TO WL MOVE 1 TO WS-VALUE
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-VALUE
+     MOVE "height_adjusted" TO WN MOVE 15 TO WL
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-VALUE
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     PERFORM PIECE-BEGIN
+     MOVE "isBeached" TO WN MOVE 9 TO WL MOVE 1 TO WS-VALUE
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-VALUE
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE "minecraft:wmp" TO WS-PID MOVE 13 TO WS-PIDLEN
+     PERFORM PIECE-BEGIN
+     MOVE "Template" TO WN MOVE 8 TO WL
+     MOVE "entrance" TO WS-STR MOVE 8 TO WS-STRLEN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-STR WS-STRLEN
+     MOVE "Mi" TO WN MOVE 2 TO WL
+     MOVE "FRONT_BACK" TO WS-STR MOVE 10 TO WS-STRLEN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-STR WS-STRLEN
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     PERFORM CLOSE-START
+     PERFORM READ-STRUCTURES
+     MOVE 6 TO WS-S
+     CALL "STRUCT-START-FIND" USING WS-S WS-CX WS-CZ WS-ROW
+     MOVE SST-FIRST(WS-ROW) TO WS-P
+     MOVE "acceptance US12 36-6§2.4 saved keys: of four ocean ruins, two shipwrecks and a mansion piece, the ones without Rot or BiomeType, with a lower-case biome and without Rot load not (three left)" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE SST-N(WS-ROW) TO TL-OBSERVED-N
+     PERFORM CHECK-NUM
+     MOVE "acceptance US12 36-6§2.4 saved keys: the loaded ruin holds Rot 1, Integrity 3 (tenths) and BiomeType 1 (COLD)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = SPC-K(WS-P, 4) * 100 + SPC-K(WS-P, 5) * 10 + SPC-K(WS-P, 6)
+     MOVE 131 TO TL-EXPECTED-N
+     PERFORM CHECK-NUM
+     COMPUTE WS-I = WS-P + 1
+     MOVE "acceptance US12 36-6§4.3 saved keys: the loaded shipwreck holds Rot 2, isBeached 1 and height_adjusted 1" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = SPC-K(WS-I, 4) * 100 + SPC-K(WS-I, 5) * 10 + SPC-K(WS-I, 6)
+     MOVE 211 TO TL-EXPECTED-N
+     PERFORM CHECK-NUM
+     COMPUTE WS-I = WS-P + 2
+     MOVE "acceptance US12 36-7§3 saved keys: the loaded mansion piece holds the Template name entrance and Mi 2 (FRONT_BACK)" TO TL-CASE
+     MOVE SPC-K(WS-I, 5) TO WS-DIGIT
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(SPC-TPL(WS-I)) WS-DIGIT DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE SPACES TO TL-EXPECTED
+     MOVE "entrance02" TO TL-EXPECTED
+     PERFORM CHECK-TEXT
+
 *>   the store: a box added to a piece that is not the last one is lost, a full box table loses the next box, and a start put when the box table is within 256 of its end empties the store first
      CALL "STRUCT-STORE-RESET"
      MOVE 6 TO WS-S
@@ -430,6 +575,16 @@
      MOVE 1 TO WS-BB-N(4) MOVE 1 TO WS-BB-N(5) MOVE 1 TO WS-BB-N(6)
      CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-SIX WS-BB.
 
+ PUT-ROT-1.
+     MOVE "Rot" TO WN MOVE 3 TO WL
+     MOVE "CLOCKWISE_90" TO WS-STR MOVE 12 TO WS-STRLEN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-STR WS-STRLEN.
+
+ PUT-BIOME-COLD.
+     MOVE "BiomeType" TO WN MOVE 9 TO WL
+     MOVE "COLD" TO WS-STR MOVE 4 TO WS-STRLEN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-STR WS-STRLEN.
+
  READ-STRUCTURES.
      MOVE 0 TO PB-POS
      CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
@@ -442,14 +597,6 @@
      MOVE WS-S TO WS-DIGIT
      MOVE SPACES TO WS-PATH
      STRING "structures.starts.minecraft:s" WS-DIGIT DELIMITED BY SIZE INTO WS-PATH.
-
- CHECK-ID-START.
-     MOVE 0 TO TL-EXPECTED-N
-     MOVE 0 TO TL-OBSERVED-N
-     IF WS-TEXT = "{id:INVALID}"
-         MOVE 1 TO TL-OBSERVED-N
-     END-IF
-     PERFORM CHECK-NUM.
 
 *> write the chunk's structures compound and read the tag at WS-PATH into TL-OBSERVED (and WS-TEXT)
  WRITE-AND-GET.
