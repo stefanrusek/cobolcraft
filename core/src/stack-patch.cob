@@ -18,7 +18,7 @@
 *>   SP-GET-MAX-DAMAGE USING item, handle, max damage out (patch, else the content's, else 0)
 *>   SP-SET-NAME USING handle in and out, name (X(64)), length; SP-GET-NAME USING handle, name out, length out (0: none)
 *>   SP-ADD-ENCHANT USING handle in and out, enchantment id, level; SP-ENCHANT-LEVEL USING handle, id, level out (0: none)
-*>   SP-SWEEP                                          frees the entries no player slot refers to
+*>   SP-SWEEP                                          frees the entries no player slot, ground stack or mount chest refers to
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SP-SWEEP.
@@ -29,6 +29,7 @@
  COPY CMENU.
  COPY CSTACK.
  COPY VILSTATE.
+ COPY WCSTATE.
  COPY CITEMS.
  COPY CITEMPHYS.
  01 WS-MARKS.
@@ -84,6 +85,15 @@
          IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = CR-LOOSE-ITEM
              MOVE IP-I-VAR(WS-I) TO WS-V
              CALL "SP-MARK" USING WS-MARKS WS-V
+         END-IF
+     END-PERFORM
+*>   The chest stacks of the mounts (WC-INV-VAR of WCSTATE.cpy, mob-mount-screen.cob).
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WC-MAX
+         IF WC-ID(WS-I) > 0
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 15
+                 MOVE WC-INV-VAR(WS-I, WS-J) TO WS-V
+                 CALL "SP-MARK" USING WS-MARKS WS-V
+             END-PERFORM
          END-IF
      END-PERFORM
 *>   The stack of a thrown trident (ranged-trident.cob).

@@ -730,6 +730,8 @@
              MOVE WS-VY TO EN-VY(WS-ROW)
              MOVE WS-VZ TO EN-VZ(WS-ROW)
              CALL "MOB-NBT-APPLY" USING WS-ROW MQ-DATA
+*>           The chest of a donkey, mule or llama (45-4 section 6.5): the Items list, now that the chest flag and the strength are known.
+             CALL "MNT-INV-READ" USING PB-BUFFER WS-START WS-ROW
              CALL "LIVING-NBT-APPLY" USING WS-ROW LV-DATA
              CALL "MOB-SPECIES-KEY" USING WS-ROW WS-SPECIES
              CALL "ENTITY-SPECIES-KEY" USING WS-ROW WS-SPECIES-KEY

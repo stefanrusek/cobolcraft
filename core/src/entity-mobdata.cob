@@ -91,11 +91,14 @@
          MOVE "Temper" TO WN MOVE 6 TO WL
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-TEMPER(L-ROW)
      END-IF
-*>   AbstractChestedHorse (45-4 section 6.5): the chest flag of a donkey or mule.
-     IF WS-KEY = "donkey" OR "mule"
+*>   AbstractChestedHorse (45-4 section 6.5): the chest flag of a donkey, mule or llama, and with a chest the Items list (MNT-INV-WRITE).
+     IF WS-KEY = "donkey" OR "mule" OR "llama" OR "trader_llama"
          CALL "WC-ROW-OPEN" USING L-ROW
          MOVE "ChestedHorse" TO WN MOVE 12 TO WL
          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WC-CHEST(L-ROW)
+         IF WC-CHEST(L-ROW) = 1
+             CALL "MNT-INV-WRITE" USING L-ROW PB-BUFFER
+         END-IF
      END-IF
      IF WS-KEY = "ocelot"
          MOVE "Trusting" TO WN MOVE 8 TO WL
@@ -417,7 +420,7 @@
      IF WS-KEY = "horse" OR "donkey" OR "mule" OR "llama" OR "trader_llama" OR "camel"
          MOVE MQ-TAME TO EN-TAMED(L-ROW)
          MOVE MQ-TEMPER TO EN-TEMPER(L-ROW)
-         IF WS-KEY = "donkey" OR "mule"
+         IF WS-KEY = "donkey" OR "mule" OR "llama" OR "trader_llama"
              CALL "WC-ROW-OPEN" USING L-ROW
              MOVE MQ-CHEST TO WC-CHEST(L-ROW)
          END-IF
@@ -497,8 +500,13 @@
      IF (WS-KEY = "slime" OR "magma_cube" OR "sulfur_cube") AND MQ-SIZE >= 0
          COMPUTE EN-VARIANT(L-ROW) = MQ-SIZE + 1
      END-IF
-     IF WS-KEY = "pig" OR "horse" OR "donkey" OR "mule" OR "camel"
+     IF WS-KEY = "pig" OR "horse" OR "donkey" OR "mule" OR "camel" OR "camel_husk" OR "skeleton_horse" OR "zombie_horse" OR "nautilus" OR "zombie_nautilus"
          MOVE MQ-SADDLE TO EN-SADDLE(L-ROW)
+     END-IF
+*>   The body slot of a mount (45-4 section 6.1: equipment.body): horse armor, a llama carpet, nautilus armor (MOB-EQUIP-READ gave the item id).
+     IF (WS-KEY = "horse" OR "llama" OR "trader_llama" OR "zombie_horse" OR "nautilus" OR "zombie_nautilus") AND MQ-BODY > 0
+         CALL "WC-ROW-OPEN" USING L-ROW
+         MOVE MQ-BODY TO WC-BODY(L-ROW)
      END-IF
      IF WS-KEY = "wolf"
          MOVE MQ-BODY TO EN-WOLF-ARM(L-ROW)
