@@ -26,7 +26,9 @@
  01 WS-DIR                 PIC X(1100).
  01 WS-TYPE                BINARY-LONG.
  01 WS-STATUS              BINARY-LONG.
- 01 WS-VANILLA             BINARY-LONG VALUE 1.   *> the area effect cloud: no standard-mob row (type 100, the phantom, has one since row 36)
+ 01 WS-VANILLA             BINARY-LONG.   *> the area effect cloud (looked up by key: the registry ids move between versions; a boat sits at id 1 now): no standard-mob row
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
@@ -66,6 +68,8 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   A row of a vanilla type id (as a saved standard world holds) is inert: it stays where it is.
+     MOVE "minecraft:area_effect_cloud" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-VANILLA WS-ENTITY-ROW WS-STATUS
      MOVE PL-X(CN-PLAYER(WS-CONN)) TO WS-X
      MOVE PL-Y(CN-PLAYER(WS-CONN)) TO WS-Y
      MOVE PL-Z(CN-PLAYER(WS-CONN)) TO WS-Z

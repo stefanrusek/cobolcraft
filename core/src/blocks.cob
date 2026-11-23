@@ -611,7 +611,8 @@
              CALL "RANGED-ROCKET-ON" USING L-ID PLAY-SERVERBOUND WS-ROCKET
          WHEN WS-BONE = 1
              CALL "GB-BONEMEAL-USE" USING L-ID PSB-BX PSB-BY PSB-BZ WS-BONE-USED
-         WHEN WS-PLACES >= 0
+*>       A hand with nothing in it holds no block item: the air item's row names the air block (IT-PLACES-STATE 0), which must never be placed (it would clear a replaceable cell and post block_place).
+         WHEN WS-ITEM > 0 AND WS-PLACES >= 0
              CALL "BLOCK-PLACE" USING L-ID PLAY-SERVERBOUND WS-PLACES WS-PLACED
          WHEN CB-S-BLOCK(WS-STATE + 1) = CR-GLOWTUBE
              COMPUTE WS-STATE = CR-GLOWTUBE-LIT + CR-GLOWTUBE-UNLIT - WS-STATE
