@@ -1607,8 +1607,47 @@
     05 FILLER PIC X(100) VALUE "vine[south=true]                                                                                    ".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a crafter faces the player when the player looks level (north_up)                               ".
+    05 FILLER PIC X(32) VALUE "crafter                         ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "crafter[orientation=north_up]                                                                       ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a crafter faces up with its top toward the player's direction when the player looks down        ".
+    05 FILLER PIC X(32) VALUE "crafter                         ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+080".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "crafter[orientation=up_south]                                                                       ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a crafter faces down with its top away from the player when the player looks up                 ".
+    05 FILLER PIC X(32) VALUE "crafter                         ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "-080".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "crafter[orientation=down_north]                                                                     ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
  01 WS-CASE-TABLE REDEFINES WS-CASES.
-    05 WS-ROW OCCURS 118 TIMES.
+    05 WS-ROW OCCURS 121 TIMES.
        10 WS-C-LABEL        PIC X(96).
        10 WS-C-ITEM         PIC X(32).
        10 WS-C-FACE         PIC 9.
@@ -1676,7 +1715,7 @@
      COMPUTE WS-PX = WS-BX + 6
      COMPUTE WS-PY = WS-FLOOR + 4
      COMPUTE WS-PZ = WS-BZ + 6
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 118
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 121
          PERFORM RUN-CASE
      END-PERFORM
      STOP RUN.
