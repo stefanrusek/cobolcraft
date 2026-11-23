@@ -71,6 +71,8 @@
  01 WS-N-LOCKED            PIC X(16) VALUE "locked".
  01 WS-N-MODE              PIC X(16) VALUE "mode".
  01 WS-N-POWER             PIC X(16) VALUE "power".
+ 01 WS-N-ORIENT            PIC X(16) VALUE "orientation".
+ 01 WS-FRONT               PIC X(16).
  01 WS-DIR                 BINARY-LONG.
  PROCEDURE DIVISION.
      IF RL-EPOCH = CB-EPOCH
@@ -142,6 +144,8 @@
                  MOVE 33 TO WS-CLASS
              WHEN WS-BARE = "moving_piston"
                  MOVE 34 TO WS-CLASS
+             WHEN WS-BARE = "crafter"
+                 MOVE 35 TO WS-CLASS
              WHEN WS-LEN >= 10 AND WS-BARE(WS-LEN - 6:7) = "_button"
                  MOVE 6 TO WS-CLASS
              WHEN WS-LEN >= 15 AND WS-BARE(WS-LEN - 14:15) = "_pressure_plate"
@@ -243,7 +247,7 @@
                  MOVE 28 TO RL-ANALOG(WS-I)
          END-EVALUATE
 *>       the decoded states of the signal blocks
-         IF (WS-CLASS >= 3 AND WS-CLASS <= 8) OR (WS-CLASS >= 17 AND WS-CLASS <= 30)
+         IF (WS-CLASS >= 3 AND WS-CLASS <= 8) OR (WS-CLASS >= 17 AND WS-CLASS <= 30) OR WS-CLASS = 35
              COMPUTE WS-LAST = CB-FIRST-STATE(WS-I) + CB-STATES(WS-I) - 1
              PERFORM VARYING WS-S FROM CB-FIRST-STATE(WS-I) BY 1 UNTIL WS-S > WS-LAST
                  CALL "BLOCKS-STATE-PROPS" USING WS-S WS-TEXT
@@ -251,6 +255,12 @@
                  MOVE 0 TO RL-S-DIR(WS-START) RL-S-ON(WS-START) RL-S-DELAY(WS-START) RL-S-LOCKED(WS-START) RL-S-MODE(WS-START)
                      RL-S-POWER(WS-START)
                  CALL "RL-PROP" USING WS-TEXT WS-N-FACING WS-VALUE
+                 IF WS-CLASS = 35
+*>                   the front of the crafter's orientation (the FrontAndTop "north_up" starts with its front)
+                     CALL "RL-PROP" USING WS-TEXT WS-N-ORIENT WS-VALUE
+                     UNSTRING WS-VALUE DELIMITED BY "_" INTO WS-FRONT
+                     MOVE WS-FRONT TO WS-VALUE
+                 END-IF
                  EVALUATE WS-VALUE
                      WHEN "north"
                          MOVE 2 TO WS-DIR
@@ -1940,6 +1950,10 @@
          WHEN 32
          WHEN 33
              CALL "PST-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
+         WHEN 35
+             IF L-KIND = 1 OR L-KIND = 3 OR L-KIND = 7
+                 CALL "RL-CRAFTER-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A
+             END-IF
      END-EVALUATE
      GOBACK.
  END PROGRAM REDSTONE-HOOK.

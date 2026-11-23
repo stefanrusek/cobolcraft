@@ -2,7 +2,7 @@
 *> (0 none, 1 redstone_wire, 2 redstone_block, 3 redstone_torch, 4 redstone_wall_torch, 5 lever, 6 a button, 7 repeater, 8 comparator, 9 a trapdoor, 10 hopper, 11 redstone_lamp, 12 a door,
 *> 13 a fence gate, 14 tnt, 15 a copper bulb, 16 note_block, 17 observer, 18 an on-off pressure plate, 19 a weighted pressure plate, 20 daylight_detector, 21 target, 22 a lightning rod,
 *> 23 detector_rail, 24 tripwire_hook, 25 tripwire, 26 sculk_sensor, 27 calibrated_sculk_sensor, 28 lectern, 29 dispenser, 30 dropper, 31 piston, 32 sticky_piston, 33 piston_head,
-*> 34 moving_piston); RL-ANALOG is the analog output kind of each block, indexed by block id + 1 (30-2 section 5.3: 0 none, 1 chest, 2 barrel, 3 shulker box, 4 furnace family, 5 brewing stand, 6 hopper, 7 dispenser or dropper,
+*> 34 moving_piston, 35 crafter); RL-ANALOG is the analog output kind of each block, indexed by block id + 1 (30-2 section 5.3: 0 none, 1 chest, 2 barrel, 3 shulker box, 4 furnace family, 5 brewing stand, 6 hopper, 7 dispenser or dropper,
 *> 8 decorated pot, 9 crafter, 10 chiseled bookshelf, 11 lectern, 12 composter, 13 layered cauldron, 14 lava cauldron, 15 empty cauldron, 16 cake, 17 candle cake, 18 beehive, 19 end portal
 *> frame, 20 respawn anchor, 21 copper bulb); RL-COND is 1 for a
 *> block that is a redstone conductor (30-1 section 2.4: the never and always lists), 2 when the state's collision shape decides (RL-LOOK reads BSH-COLL-ID: the full cube conducts; the stand-in set, which has no shapes, takes the solid opaque block). RL-S-* is the decoded state of every state of the

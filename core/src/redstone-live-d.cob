@@ -443,6 +443,9 @@
              CALL "WORLD-GET-BLOCK" USING BE-DIM(WS-I) BE-X(WS-I) BE-Y(WS-I) BE-Z(WS-I) WS-STATE
              MOVE CB-S-BLOCK(WS-STATE + 1) TO WS-BLOCK
              MOVE RL-ANALOG(WS-BLOCK + 1) TO WS-KIND
+             IF WS-KIND = 9
+                 CALL "RL-CRAFTER-TICK" USING WS-I
+             END-IF
              IF WS-KIND >= 1 AND WS-KIND <= 11
                  CALL "RL-ANALOG-AT" USING BE-DIM(WS-I) BE-X(WS-I) BE-Y(WS-I) BE-Z(WS-I) WS-DIR WS-HAS WS-VALUE
                  IF WS-VALUE NOT = RL-LAST(WS-I)

@@ -377,6 +377,7 @@
 *>   GI-DEATH-DROP USING player row, item, count, patch handle   one stack of the inventory death drop
 *>   GI-CREATIVE-DROP USING player row, item, count, patch handle   a creative inventory drop through the throttle
 *>   GI-DISPENSE USING dim, x, y, z (dispenser block), facing, item, row out   DefaultDispenseItemBehavior, one item
+*>   GI-DISPENSE-STACK USING dim, x, y, z (block), facing, item, count, patch handle, row out   the same for one stack (the crafter's drop)
 *>   IP-STAT-ADD USING player row, kind (IP-STAT-*), item, amount; IP-STAT-GET USING player row, kind, item, value out
 
  IDENTIFICATION DIVISION.
@@ -854,19 +855,36 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GI-DISPENSE.
 *> USING dimension row, block x, y, z, facing (0 to 5 as GI-POP-FACE), item, row out: DefaultDispenseItemBehavior.spawnItem with
-*> one item: position = block centre + step * 0.7, y lowered by 0.125 (vertical facing) or 0.15625; no pickup delay; speed =
-*> nextDouble * 0.1 + 0.2, spread 0.0172275 * 6; motion x = triangle(stepX * speed), y = triangle(0.2), z = triangle(stepZ * speed)
-*> with triangle(c, d) = c + d * (nextDouble - nextDouble), all from the level source.
+*> one item (GI-DISPENSE-STACK of a count of 1 and no patch).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-BX                   BINARY-LONG.
+ 01 L-BY                   BINARY-LONG.
+ 01 L-BZ                   BINARY-LONG.
+ 01 L-FACING               BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-BX L-BY L-BZ L-FACING L-ITEM L-ROW.
+     CALL "GI-DISPENSE-STACK" USING L-DIM L-BX L-BY L-BZ L-FACING L-ITEM WS-ONE WS-NONE L-ROW
+     GOBACK.
+ END PROGRAM GI-DISPENSE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GI-DISPENSE-STACK.
+*> USING dimension row, block x, y, z, facing (0 to 5 as GI-POP-FACE), item, count, patch handle, row out: DefaultDispenseItemBehavior.spawnItem (30-4 section 2) of one stack with accuracy 6:
+*> position = block centre + step * 0.7, y lowered by 0.125 (vertical facing) or 0.15625; no pickup delay; speed = nextDouble * 0.1 + 0.2, spread 0.0172275 * 6; motion x = triangle(stepX * speed),
+*> y = triangle(0.2), z = triangle(stepZ * speed) with triangle(c, d) = c + d * (nextDouble - nextDouble), all from the level source. The crafter drops its result this way (a stack of several).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CFACE.
  01 WS-ZERO-DELAY          BINARY-LONG VALUE 0.
- 01 WS-ONE                 BINARY-LONG VALUE 1.
- 01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-SPEED               FLOAT-LONG.
  01 WS-D1                  FLOAT-LONG.
- 01 WS-D2                  FLOAT-LONG.
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
@@ -881,8 +899,10 @@
  01 L-BZ                   BINARY-LONG.
  01 L-FACING               BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-VAR                  BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-BX L-BY L-BZ L-FACING L-ITEM L-ROW.
+ PROCEDURE DIVISION USING L-DIM L-BX L-BY L-BZ L-FACING L-ITEM L-COUNT L-VAR L-ROW.
      COMPUTE WS-X = L-BX + 0.5 + FC-SX(L-FACING + 1) * 0.7
      COMPUTE WS-Y = L-BY + 0.5 + FC-SY(L-FACING + 1) * 0.7
      COMPUTE WS-Z = L-BZ + 0.5 + FC-SZ(L-FACING + 1) * 0.7
@@ -899,13 +919,13 @@
      CALL "IP-TRIANGLE" USING WS-LIFT WS-VY
      COMPUTE WS-LIFT = FC-SZ(L-FACING + 1) * WS-SPEED
      CALL "IP-TRIANGLE" USING WS-LIFT WS-VZ
-     CALL "GI-SPAWN-RANDOM-HELD" USING L-DIM WS-X WS-Y WS-Z L-ITEM WS-ONE WS-NONE WS-ZERO-DELAY L-ROW
+     CALL "GI-SPAWN-RANDOM-HELD" USING L-DIM WS-X WS-Y WS-Z L-ITEM L-COUNT L-VAR WS-ZERO-DELAY L-ROW
      MOVE WS-VX TO EN-VX(L-ROW)
      MOVE WS-VY TO EN-VY(L-ROW)
      MOVE WS-VZ TO EN-VZ(L-ROW)
      CALL "IP-ANNOUNCE" USING L-ROW
      GOBACK.
- END PROGRAM GI-DISPENSE.
+ END PROGRAM GI-DISPENSE-STACK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. IP-TRIANGLE.

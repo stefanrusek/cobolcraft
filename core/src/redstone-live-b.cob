@@ -9,7 +9,7 @@
 *>   RL-OPEN-HOOK USING kind, dimension row, x, y, z, state, source block    kind 3 (neighborChanged, the only kind it is called with) of a door, a trapdoor and a fence gate
 *>   RL-BULB-HOOK USING kind, dimension row, x, y, z, state, old state    kind 1 and 3 of a copper bulb (checkAndFlip)
 *>   RL-TNT-HOOK USING kind, dimension row, x, y, z, state, old state    kind 1 and 3 of a TNT block
-*>   REDSTONE-PLACE-STATE USING dimension row, x, y, z, state (in and out)    the placed state of a lamp, a trapdoor, a fence gate and the lower half of a door
+*>   REDSTONE-PLACE-STATE USING dimension row, x, y, z, state (in and out)    the placed state of a lamp, a trapdoor, a fence gate, the lower half of a door and a crafter (triggered)
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RL-SET-BOOL.
@@ -399,6 +399,7 @@
  01 WS-POWERED             PIC X(16) VALUE "powered".
  01 WS-OPEN                PIC X(16) VALUE "open".
  01 WS-HALF                PIC X(16) VALUE "half".
+ 01 WS-TRIGGERED           PIC X(16) VALUE "triggered".
  01 WS-KEEP                PIC X(16) VALUE "keep".
  01 WS-CLASS               BINARY-LONG.
  01 WS-SIGNAL              BINARY-LONG.
@@ -417,6 +418,7 @@
      CALL "REDSTONE-IDS-ENSURE"
      MOVE RL-CLASS(CB-S-BLOCK(L-STATE + 1) + 1) TO WS-CLASS
      IF WS-CLASS NOT = 11 AND WS-CLASS NOT = 9 AND WS-CLASS NOT = 12 AND WS-CLASS NOT = 13 AND WS-CLASS NOT = 16 AND WS-CLASS NOT = 25
+             AND WS-CLASS NOT = 35
          GOBACK
      END-IF
      IF WS-CLASS = 25
@@ -435,6 +437,10 @@
          WHEN 11
 *>           the lamp (30-7 6 step 1): lit with the signal
              CALL "RL-SET-BOOL" USING L-STATE WS-LIT WS-SIGNAL WS-NEW
+             MOVE WS-NEW TO L-STATE
+         WHEN 35
+*>           the crafter (30-4 6.1): triggered with the signal at the placed position
+             CALL "RL-SET-BOOL" USING L-STATE WS-TRIGGERED WS-SIGNAL WS-NEW
              MOVE WS-NEW TO L-STATE
          WHEN 9
          WHEN 13
