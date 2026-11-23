@@ -860,6 +860,12 @@
           15 EN-CREEPY       PIC 9.
           15 EN-ATK          BINARY-LONG.
           15 EN-FLW          BINARY-LONG.
+*>        The anchor frame of a block a mob carries (T9905; ENTITY-MODEL-EMIT, ENTITY-CARRY-EMIT): EN-ANC-OK 1 when the model drawn this frame gave it, then 12 values as
+*>        EN-HAND-F (the origin and the three axes, a block long, entity-relative): the frame of the head part of a snow golem (34-3 8) and a copper golem (9.3, the antenna
+*>        block), of the model root of an enderman that carries a block (34-6 3.3). A snow golem's EN-X1 is 1 once its pumpkin is shorn (Set Entity Data entry 16, bit 16 clear).
+          15 EN-ANC-OK        BINARY-LONG.
+          15 EN-ANC-FG.
+             20 EN-ANC-F     FLOAT-LONG OCCURS 12 TIMES.
 *>        The armadillo (34-5 10.3, ENTITY-ARMADILLO-SET and ENTITIES-ANIM-TICK): ARMADILLO_STATE (Set Entity Data entry 18, serializer 36: 0 idle, 1 rolling, 2 scared,
 *>        3 unrolling), inStateTicks (client ticks since the state changed), the start ticks of the roll-out, roll-up and peek animation states (-2147483648 is stopped)
 *>        and the "peek received" flag of Entity Event 64.

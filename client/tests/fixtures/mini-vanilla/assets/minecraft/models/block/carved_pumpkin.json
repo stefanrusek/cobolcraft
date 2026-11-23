@@ -1,0 +1,1 @@
+{"parent":"minecraft:block/cube","textures":{"particle":"#side","down":"#top","up":"#top","north":"#front","east":"#side","south":"#side","west":"#side","side":"minecraft:block/dirt","top":"minecraft:block/stone","front":"minecraft:block/grass_top"}}

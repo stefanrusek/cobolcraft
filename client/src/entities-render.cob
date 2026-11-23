@@ -769,6 +769,9 @@
                      CALL "ENTITY-TNT-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  WHEN "falling_block"
                      CALL "ENTITY-FALLING-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
+*>               The blocks mobs carry (T9905: snow golem pumpkin, iron golem poppy, enderman block, copper golem antenna block).
+                 WHEN "snow_golem" WHEN "iron_golem" WHEN "enderman" WHEN "copper_golem"
+                     CALL "ENTITY-CARRY-EMIT" USING CLIENT-STATE WS-R L-EYE-TABLE
                  WHEN OTHER
                      CONTINUE
              END-EVALUATE
