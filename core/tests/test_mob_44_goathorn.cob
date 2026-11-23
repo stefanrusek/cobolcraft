@@ -21,6 +21,9 @@
  01 WS-GOAT                BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-RIGHT               BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-X0                  BINARY-LONG.
@@ -98,17 +101,17 @@
      MOVE 1 TO TL-EXPECTED-N
      MOVE WS-N TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US15 54§7.2 Goat horn: the left horn is gone (bit 2) and the ram has ended with a cooldown of 600 or more" TO TL-CASE
+     MOVE "acceptance US15 54§7.2 Goat horn: one horn is gone (bit 2 or 4, nextBoolean picks it) and the ram has ended with a cooldown of 600 or more" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N
-     IF EN-WOOL(WS-GOAT) = 2 AND EN-RAM-STATE(WS-GOAT) = 0 AND EN-RAM-CD(WS-GOAT) >= 600
+     IF (EN-WOOL(WS-GOAT) = 2 OR EN-WOOL(WS-GOAT) = 4) AND EN-RAM-STATE(WS-GOAT) = 0 AND EN-RAM-CD(WS-GOAT) >= 600
          MOVE 1 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   The second break takes the right horn; a third has none to give.
      MOVE 2 TO EN-RAM-STATE(WS-GOAT)
      CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK
-     MOVE "acceptance US15 54§7.2 Goat horn: the second break takes the right horn (EN-WOOL 6)" TO TL-CASE
+     MOVE "acceptance US15 54§7.2 Goat horn: the second break takes the horn that is left (EN-WOOL 6)" TO TL-CASE
      MOVE 6 TO TL-EXPECTED-N
      MOVE EN-WOOL(WS-GOAT) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -136,6 +139,30 @@
      MOVE "acceptance US15 54§7.2 Goat horn: a baby keeps its horns, the ram ends" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = EN-WOOL(WS-GOAT) + EN-RAM-STATE(WS-GOAT)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   With both horns the pick is nextBoolean (44-x1 section 8.10): over 16 fresh goats the left and the right horn both go first at least once, and always exactly one.
+     MOVE 0 TO EN-VARIANT(WS-GOAT)
+     MOVE 0 TO WS-LEFT WS-RIGHT WS-BAD
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         MOVE 0 TO EN-WOOL(WS-GOAT)
+         MOVE 2 TO EN-RAM-STATE(WS-GOAT)
+         MOVE 1 TO EN-RAM-DX(WS-GOAT)
+         MOVE 0 TO EN-RAM-DZ(WS-GOAT)
+         COMPUTE EN-RAM-PX(WS-GOAT) = WS-X0 + 40
+         MOVE EN-Z(WS-GOAT) TO EN-RAM-PZ(WS-GOAT)
+         CALL "M44-GOAT-TICK" USING WS-GOAT WS-HX WS-HZ WS-WALK
+         EVALUATE EN-WOOL(WS-GOAT)
+             WHEN 2 ADD 1 TO WS-LEFT
+             WHEN 4 ADD 1 TO WS-RIGHT
+             WHEN OTHER ADD 1 TO WS-BAD
+         END-EVALUATE
+     END-PERFORM
+     MOVE "acceptance US15 54§7.2 Goat horn: the first horn to go is the left one in some goats and the right in others, never both" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-LEFT > 0 AND WS-RIGHT > 0 AND WS-BAD = 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   A hit on a player: the charge ends and the player gets Set Entity Motion.
      MOVE 0 TO EN-VARIANT(WS-GOAT)

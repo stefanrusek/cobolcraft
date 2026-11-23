@@ -160,6 +160,22 @@
      MOVE 0 TO TL-EXPECTED-N
      MOVE PG-PACIFIED(WS-SLOT) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   BecomePassiveIfMemoryPresent needs PACIFIED absent (44-x1 section 8.4): at the next sensor tick with the fungus still there a pacified hoglin is not pacified again (the timer keeps
+*>   counting), and one whose PACIFIED has just run out is pacified at once.
+     MOVE 50 TO PG-PACIFIED(WS-SLOT)
+     ADD 19 TO CW-TIME
+     CALL "PGB-STEP" USING WS-A WS-HX WS-HZ WS-WALK
+     MOVE "acceptance US15 44-x1§8.4 a pacified hoglin is not pacified again at a sensor tick (PACIFIED must be absent)" TO TL-CASE
+     MOVE 49 TO TL-EXPECTED-N
+     MOVE PG-PACIFIED(WS-SLOT) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO PG-PACIFIED(WS-SLOT)
+     ADD 20 TO CW-TIME
+     CALL "PGB-STEP" USING WS-A WS-HX WS-HZ WS-WALK
+     MOVE "acceptance US15 44-x1§8.4 once PACIFIED has run out the fungus pacifies the hoglin again for 200 ticks" TO TL-CASE
+     MOVE 200 TO TL-EXPECTED-N
+     MOVE PG-PACIFIED(WS-SLOT) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO WS-STATE
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
 *>   Section 6.2 IDLE: an adult hoglin walks away from a visible adult piglin within 8 blocks at speed 0.4, a baby does not.
