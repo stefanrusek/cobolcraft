@@ -111,9 +111,9 @@
      MOVE 2 TO WS-KIND
      CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-CART
      CALL "MINECART-USE" USING WS-PLAYER WS-CART WS-USED
-     MOVE "acceptance US16 44-8 4.6 a chest minecart is not rideable" TO TL-CASE
-     MOVE 0 TO TL-EXPECTED-N
-     MOVE WS-USED TO TL-OBSERVED-N
+     MOVE "acceptance US16 44-8 4.6 a chest minecart is not rideable: interact opens its menu (T24208) and seats nobody" TO TL-CASE
+     MOVE 10 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-USED * 10 + FUNCTION MIN(1, EN-RIDER(WS-CART))
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Push of a non-cart entity (the player's tracker row): the cart gets -0.05 and the entity +0.0125 along x.
      MOVE 1 TO WS-KIND

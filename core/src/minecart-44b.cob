@@ -1,6 +1,6 @@
 *> Minecart riding, hurting and pushing (docs/protocol/44 part 8 sections 4.4.3, 4.6, 2, 5; lane 002-lane-mobsb8, T9720), PJ-KIND 10 (minecart-44.cob): PJ-I1 the kind, PJ-I4 hurt time, PJ-I5 hurt direction,
 *> PJ-R3 the damage. The rider is a player row (EN-RIDER of the cart, EN-VEHICLE of the player's entity), taken to the seat by MINECART-SYNC.
-*> Gaps: chest and hopper carts have no contents or menu (no entity container menu exists), spawner and command block carts run nothing, a mob does not board a fast cart (EN-RIDER is a player row)
+*> Container carts: ECV-OPEN (container-entity.cob) opens the chest and hopper menus, the contents scatter on destroy. Gaps: spawner and command block carts run nothing, a mob does not board a fast cart (EN-RIDER is a player row)
 *> and a plain entity is not pushed by the moving cart (only carts are), a player is not pushed, the item stack's components and a loot table, the hurt metadata.
 *>
 *>   MINECART-USE USING player row, cart row, used out: a standing player boards a plain minecart without a passenger
@@ -45,7 +45,15 @@
  PROCEDURE DIVISION USING L-PLAYER L-ROW L-USED.
      MOVE 0 TO L-USED
      CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
-     IF WS-SLOT = 0 OR PJ-KIND(WS-SLOT) NOT = 10 OR PJ-I1(WS-SLOT) NOT = 1
+     IF WS-SLOT = 0 OR PJ-KIND(WS-SLOT) NOT = 10
+         GOBACK
+     END-IF
+*>   A chest or hopper cart opens its menu (AbstractMinecartContainer.interact: interactWithContainerVehicle, 44 part x2 section 5), whether the player sneaks or not.
+     IF PJ-I1(WS-SLOT) = 2 OR PJ-I1(WS-SLOT) = 3
+         CALL "ECV-OPEN" USING PL-CONN(L-PLAYER) L-ROW L-USED
+         GOBACK
+     END-IF
+     IF PJ-I1(WS-SLOT) NOT = 1
          GOBACK
      END-IF
      IF PL-SNEAKING(L-PLAYER) = 0 AND EN-VEHICLE(PL-ENTITY-ROW(L-PLAYER)) = 0 AND EN-RIDER(L-ROW) = 0
@@ -132,6 +140,10 @@
      MOVE EN-Y(L-ROW) TO WS-Y
      MOVE EN-Z(L-ROW) TO WS-Z
      MOVE PJ-I1(WS-SLOT) TO WS-KIND
+*>   chestVehicleDestroyed (44 part x2 section 5): the contents of a container cart scatter, and the piglins that see the attacking player are angered when entity_drops is on.
+     IF WS-KIND = 2 OR WS-KIND = 3
+         CALL "ECV-DESTROYED" USING L-ROW L-ATTACKER
+     END-IF
      CALL "PJ-DROP" USING L-ROW
      IF WS-CREATIVE = 0
          CALL "BR-RULE-GET" USING WS-RULE-NAME WS-RULE
