@@ -1128,6 +1128,8 @@
  01 WS-SPAN                BINARY-LONG.
  01 WS-REACH-CELLS         BINARY-LONG.
  01 WS-DEST-OK             BINARY-LONG.
+ 01 WS-HOP-MOD             BINARY-LONG.
+ 01 WS-RB-MOD              BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  01 L-ROW                  BINARY-LONG.
@@ -1305,6 +1307,12 @@
      END-IF
      MOVE EN-YAW(WS-ROW) TO WS-YAW
      MOVE 0 TO WS-HX WS-HZ WS-CHASE
+     MOVE 600 TO WS-HOP-MOD
+     MOVE 0 TO WS-RB-MOD
+*>   The killer bunny (19 section 4, variant 99) takes the nearest survival player as its target.
+     IF SM-KEY(WS-M) = "rabbit" AND EN-WOOL(WS-ROW) = 99
+         CALL "RABBIT-EVIL-TICK" USING WS-ROW WS-CHASE
+     END-IF
      IF SM-KIND(WS-M) = 1
          IF SM-BURNS(WS-M) = 1
              CALL "STDMOB-BURN" USING WS-ROW WS-M
@@ -1408,6 +1416,10 @@
      IF SM-KEY(WS-M) = "sniffer"
          CALL "M44-SNIF-BRAIN" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
          CALL "SNIFFER-TICK" USING WS-ROW
+     END-IF
+*>   RabbitAvoidEntity and RaidGarden (19 section 4) rank below Breed and Tempt.
+     IF SM-KEY(WS-M) = "rabbit" AND WS-LIFE-WALK = 0 AND WS-TEMPT-WALK = 0 AND WS-CHASE = 0
+         CALL "RABBIT-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK WS-RB-MOD
      END-IF
      IF SM-KEY(WS-M) = "fox"
          CALL "FOX-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
@@ -1579,6 +1591,7 @@
              END-IF
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN WS-CHASE = 1
+             MOVE 1400 TO WS-HOP-MOD
              MOVE EN-TARGET(WS-ROW) TO WS-P
              COMPUTE WS-DX = PL-X(WS-P) - EN-X(WS-ROW)
              COMPUTE WS-DY = PL-Y(WS-P) - EN-Y(WS-ROW)
@@ -1599,6 +1612,9 @@
                  COMPUTE WS-GY = FUNCTION INTEGER(PL-Y(WS-P))
                  COMPUTE WS-GZ = FUNCTION INTEGER(PL-Z(WS-P))
                  CALL "STDMOB-HEAD" USING WS-ROW WS-M WS-GX WS-GY WS-GZ WS-HX WS-HZ WS-ARRIVED
+                 IF SM-KEY(WS-M) = "rabbit"
+                     CALL "RABBIT-EVIL-SCALE" USING WS-HX WS-HZ
+                 END-IF
              END-IF
              IF SM-FUSE(WS-M) = 0 AND SM-RANGED(WS-M) = 0 AND SM-KEY(WS-M) NOT = "vex" AND EN-COOLDOWN(WS-ROW) = 0 AND FUNCTION ABS(WS-DX) <= WS-REACH
                      AND FUNCTION ABS(WS-DZ) <= WS-REACH
@@ -1625,6 +1641,7 @@
 *>           A tame wolf ordered to sit stays where it is (SitWhenOrderedToGoal, 18 section 8.2).
              MOVE 0 TO EN-COOLDOWN(WS-ROW) EN-FLEE(WS-ROW)
          WHEN EN-FLEE(WS-ROW) > 0
+             MOVE 2200 TO WS-HOP-MOD
              SUBTRACT 1 FROM EN-FLEE(WS-ROW)
              MOVE EN-FLEE-PLAYER(WS-ROW) TO WS-P
              IF PL-USED(WS-P) = 1 AND PL-ENTITY-ID(WS-P) = EN-FLEE-ID(WS-ROW)
@@ -1642,6 +1659,7 @@
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN WS-PET-WALK = 1
 *>           A tame wolf walks to its foe or its owner (PET-TICK).
+             MOVE WS-RB-MOD TO WS-HOP-MOD
              MOVE WS-PET-HX TO WS-HX
              MOVE WS-PET-HZ TO WS-HZ
              IF WS-HX NOT = 0 OR WS-HZ NOT = 0
@@ -1650,12 +1668,14 @@
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN WS-LIFE-WALK = 1
 *>           An animal in love walks to its partner (MOB-LIFE-TICK, 18 section 8.1 BreedGoal).
+             MOVE 800 TO WS-HOP-MOD
              MOVE WS-LIFE-HX TO WS-HX
              MOVE WS-LIFE-HZ TO WS-HZ
              CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
              MOVE 0 TO EN-COOLDOWN(WS-ROW)
          WHEN WS-TEMPT-WALK > 0
 *>           An animal follows the player who holds its food (MOB-TEMPT-TICK), or stands facing them within 2.5 blocks.
+             MOVE 1000 TO WS-HOP-MOD
              MOVE WS-TEMPT-HX TO WS-HX
              MOVE WS-TEMPT-HZ TO WS-HZ
              MOVE WS-TEMPT-YAW TO WS-YAW
@@ -1731,6 +1751,10 @@
                  CALL "MOB-YAW-TOWARD" USING WS-HX WS-HZ WS-YAW
              END-IF
      END-EVALUATE
+*>   A rabbit moves in hops (the jump control and move control, 44 part 4 section 3).
+     IF SM-KEY(WS-M) = "rabbit"
+         CALL "RABBIT-HOP" USING WS-ROW WS-HX WS-HZ WS-HOP-MOD
+     END-IF
 *>   A settled sleeper stands where it is: the physics step, friction, the fall and the egg checks would set the numbers they already have.
      IF WS-SETTLED = 1 AND WS-V-ASLEEP = 1
          GOBACK
