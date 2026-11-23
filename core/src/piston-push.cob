@@ -60,6 +60,9 @@
  01 LS-ALLOWED             FLOAT-LONG.
  01 LS-POS                 FLOAT-LONG OCCURS 3 TIMES.
  01 LS-TRY                 FLOAT-LONG OCCURS 3 TIMES.
+ 01 LS-QX                  FLOAT-LONG.
+ 01 LS-QY                  FLOAT-LONG.
+ 01 LS-QZ                  FLOAT-LONG.
  01 LS-LO                  FLOAT-LONG.
  01 LS-HI                  FLOAT-LONG.
  01 LS-MID                 FLOAT-LONG.
@@ -94,14 +97,20 @@
          MOVE EN-Y(L-ROW) TO LS-POS(2) LS-TRY(2)
          MOVE EN-Z(L-ROW) TO LS-POS(3) LS-TRY(3)
          COMPUTE LS-TRY(LS-AXIS) = LS-POS(LS-AXIS) + LS-ALLOWED
-         CALL "ENTITY-BOX-HITS" USING LS-DIM LS-TYPE LS-TRY(1) LS-TRY(2) LS-TRY(3) LS-HIT LS-TOP
+         MOVE LS-TRY(1) TO LS-QX
+         MOVE LS-TRY(2) TO LS-QY
+         MOVE LS-TRY(3) TO LS-QZ
+         CALL "ENTITY-BOX-HITS" USING LS-DIM LS-TYPE LS-QX LS-QY LS-QZ LS-HIT LS-TOP
          IF LS-HIT = 1
              MOVE 0 TO LS-LO
              MOVE LS-ALLOWED TO LS-HI
              PERFORM VARYING LS-I FROM 1 BY 1 UNTIL LS-I > 24
                  COMPUTE LS-MID = (LS-LO + LS-HI) / 2
                  COMPUTE LS-TRY(LS-AXIS) = LS-POS(LS-AXIS) + LS-MID
-                 CALL "ENTITY-BOX-HITS" USING LS-DIM LS-TYPE LS-TRY(1) LS-TRY(2) LS-TRY(3) LS-HIT LS-TOP
+                 MOVE LS-TRY(1) TO LS-QX
+                 MOVE LS-TRY(2) TO LS-QY
+                 MOVE LS-TRY(3) TO LS-QZ
+                 CALL "ENTITY-BOX-HITS" USING LS-DIM LS-TYPE LS-QX LS-QY LS-QZ LS-HIT LS-TOP
                  IF LS-HIT = 1
                      MOVE LS-MID TO LS-HI
                  ELSE
@@ -113,7 +122,10 @@
          MOVE EN-YAW(L-ROW) TO LS-YAW
          MOVE EN-PITCH(L-ROW) TO LS-PITCH
          MOVE EN-ON-GROUND(L-ROW) TO LS-GROUND
-         CALL "ENTITY-MOVE" USING L-ROW LS-TRY(1) LS-TRY(2) LS-TRY(3) LS-YAW LS-PITCH LS-GROUND
+         MOVE LS-TRY(1) TO LS-QX
+         MOVE LS-TRY(2) TO LS-QY
+         MOVE LS-TRY(3) TO LS-QZ
+         CALL "ENTITY-MOVE" USING L-ROW LS-QX LS-QY LS-QZ LS-YAW LS-PITCH LS-GROUND
      END-IF
      GOBACK.
  END PROGRAM PST-PUSH-MOVE.
@@ -328,7 +340,8 @@
          CALL "PST-STATE-OF" USING LS-HEAD LS-FACE LS-SHORT LS-TYPE LS-CSTATE
      END-IF
      CALL "BSH-COLL-ID" USING LS-CSTATE PP-SHAPE
-     IF PP-SHAPE = 0
+*>   an empty collision shape is the interned shape with no boxes (an id of its own, not 0): there is nothing to push with
+     IF PP-SHAPE = 0 OR BSH-N(PP-SHAPE + 1) = 0
          GOBACK
      END-IF
      IF PP-EXT = 1

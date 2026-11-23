@@ -156,6 +156,41 @@
      MOVE "acceptance wrapb pistons 30-3 8.4 a retracting sticky piston pushes an item out of its cell" TO WS-CASE
      PERFORM ASSERT-N
 
+*>   C2. the same retraction with an item at x 2.7 (box 2.575 to 2.825): tick 1 the platform's west area 2.25 to 2.75 overlaps by 0.575, so the push is 0.5 + 0.01 = 0.51 to x 2.19, whose box (2.065 to
+*>   2.315) is outside the piston cell (no fix); tick 2 pushes 0.51 into the cell (x 1.68) and the base fix 0.455 + 0.01 back out: x 2.145 as in case C
+     MOVE 12 TO WS-Z
+     MOVE 1 TO WS-CODE MOVE 5 TO WS-FACE-N MOVE 1 TO WS-FLAG-N MOVE 1 TO WS-TYPE-N
+     MOVE 1 TO WS-X MOVE 101 TO WS-Y
+     PERFORM PUT-PISTON
+     MOVE 3 TO WS-CODE MOVE 5 TO WS-FACE-N MOVE 0 TO WS-FLAG-N MOVE 1 TO WS-TYPE-N
+     MOVE 2 TO WS-X
+     PERFORM PUT-PISTON
+     MOVE 2.7 TO WS-IX MOVE 101.0 TO WS-IY MOVE 12.5 TO WS-IZ
+     PERFORM SPAWN-ITEM
+     PERFORM RUN-12
+     COMPUTE WS-OBS-N = FUNCTION INTEGER(EN-X(WS-IROW) * 1000 + 0.5)
+     MOVE 2145 TO WS-EXP-N
+     MOVE "acceptance wrapb pistons 30-3 8.4 an item well inside the head cell is pushed out of the base cell as well" TO WS-CASE
+     PERFORM ASSERT-N
+
+*>   H. a piston pushing a rail (a block with no collision shape: nothing to push entities with) still moves it: the rail ends at x 3
+     MOVE 14 TO WS-Z
+     MOVE 2 TO WS-CODE MOVE 5 TO WS-FACE-N MOVE 0 TO WS-FLAG-N MOVE 0 TO WS-TYPE-N
+     MOVE 1 TO WS-X MOVE 101 TO WS-Y
+     PERFORM PUT-PISTON
+     MOVE 2 TO WS-X MOVE "rail" TO WS-K PERFORM PUT-DEF
+     MOVE 0 TO WS-X MOVE "redstone_block" TO WS-K PERFORM PUT-DEF
+     PERFORM RUN-12
+     MOVE 3 TO WS-X
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-ST
+     MOVE 0 TO WS-OBS-N
+     IF CB-KEY(CB-S-BLOCK(WS-ST + 1) + 1) = "minecraft:rail" OR CB-KEY(CB-S-BLOCK(WS-ST + 1) + 1) = "rail"
+         MOVE 1 TO WS-OBS-N
+     END-IF
+     MOVE 1 TO WS-EXP-N
+     MOVE "acceptance wrapb pistons 30-3 8.1 a rail without a collision shape is pushed and no entity is looked for" TO WS-CASE
+     PERFORM ASSERT-N
+
 *>   D. a slime block pushed east (x 2 to x 3) with an item at x 3.3: the push (0.335 then 0.5, to x 4.135) and a motion of +1 along x, so the item goes on past 4.5
      MOVE 10 TO WS-Z
      MOVE 2 TO WS-CODE MOVE 5 TO WS-FACE-N MOVE 0 TO WS-FLAG-N MOVE 0 TO WS-TYPE-N

@@ -5,7 +5,7 @@
 *> gives one and the filled bucket goes into the inventory). A filled bucket places a source (water or lava) in the cell before the hit (the ray passed it: air or a
 *> liquid, replaceable both) and becomes an empty bucket; a water bucket aimed at a dry block with the waterlogged property waterlogs it instead (29a section 5, the
 *> block is the container), and an empty bucket aimed at a waterlogged block takes the water and leaves the block dry (kelp and seagrass hold water but give none to a bucket;
-*> the bubble column is taken). A creative player keeps the stack. Not done: evaporation in the Nether of a waterlogged block, powder snow, the sounds and game events,
+*> the bubble column is taken). A creative player keeps the stack. An empty bucket also takes powder snow (25-5 5.7: air, level event 2001, the powder snow bucket). Not done: evaporation in the Nether of a waterlogged block, the sounds and game events,
 *> spawn protection (mob buckets: lane p46e, RANGED-BUCKET).
 
  IDENTIFICATION DIVISION.
@@ -67,6 +67,10 @@
  01 WS-CLASS               BINARY-LONG.
  01 WS-FULL                BINARY-LONG.
  01 WS-BUBBLE-KEY          PIC X(48) VALUE "minecraft:bubble_column".
+ 01 WS-POWDER-KEY          PIC X(48) VALUE "minecraft:powder_snow".
+ 01 WS-IS-POWDER           BINARY-LONG.
+ 01 WS-BREAK-EVENT         BINARY-LONG VALUE 2001.
+ 01 WS-NO-EXCLUDE          BINARY-LONG VALUE 0.
  01 WS-IS-BUBBLE           BINARY-LONG.
  01 WS-WL-NAME             PIC X(24) VALUE "waterlogged".
  01 WS-WL-TEXT             PIC X(32).
@@ -149,26 +153,40 @@
      END-IF
      IF WS-MODE = 0
 *>       An empty bucket takes a source: the cell becomes air and the bucket the filled one.
+         MOVE 0 TO WS-IS-POWDER
          IF WS-FLUID = 0
-             GOBACK
+             CALL "FLUID-KEY-IS" USING WS-STATE WS-POWDER-KEY WS-IS-POWDER
+             IF WS-IS-POWDER = 0
+                 GOBACK
+             END-IF
          END-IF
          MOVE SPACES TO WS-FILLED-KEY
-         IF WS-FLUID = 1
-             MOVE "water_bucket" TO WS-FILLED-KEY
-         ELSE
-             MOVE "lava_bucket" TO WS-FILLED-KEY
-         END-IF
+         EVALUATE TRUE
+             WHEN WS-IS-POWDER = 1
+                 MOVE "powder_snow_bucket" TO WS-FILLED-KEY
+             WHEN WS-FLUID = 1
+                 MOVE "water_bucket" TO WS-FILLED-KEY
+             WHEN OTHER
+                 MOVE "lava_bucket" TO WS-FILLED-KEY
+         END-EVALUATE
          CALL "CONTENT-ITEM-BY-KEY" USING WS-FILLED-KEY WS-FILLED-ID WS-ITEM-ROW WS-STATUS
 *>       The source is held by the block: a waterlogged block stays and dries (BucketPickup of SimpleWaterloggedBlock), a bubble column goes, kelp and seagrass keep their water.
-         CALL "FLUID-CONTAINER" USING WS-STATE WS-CLASS WS-FULL
-         CALL "FLUID-KEY-IS" USING WS-STATE WS-BUBBLE-KEY WS-IS-BUBBLE
          MOVE WS-AIR TO WS-NEW-STATE
+         MOVE 0 TO WS-CLASS
+         IF WS-IS-POWDER = 0
+             CALL "FLUID-CONTAINER" USING WS-STATE WS-CLASS WS-FULL
+             CALL "FLUID-KEY-IS" USING WS-STATE WS-BUBBLE-KEY WS-IS-BUBBLE
+         END-IF
          IF WS-CLASS = 2
              MOVE "false" TO WS-WL-TEXT
              CALL "BLOCK-STATE-PROP" USING WS-WL-MODE WS-STATE WS-WL-NAME WS-WL-TEXT WS-NEW-STATE
          END-IF
          IF WS-CLASS = 1 AND WS-IS-BUBBLE = 0
              GOBACK
+         END-IF
+*>       PowderSnowBlock.pickupBlock (25-5 5.7): the block goes (air) with the block break effect, level event 2001 with the state id
+         IF WS-IS-POWDER = 1
+             CALL "LEVEL-EVENT" USING WS-DIM WS-BREAK-EVENT WS-CX WS-CY WS-CZ WS-STATE WS-NO-EXCLUDE
          END-IF
          CALL "BLOCK-CHANGE" USING WS-DIM WS-CX WS-CY WS-CZ WS-NEW-STATE
 *>       BucketItem.use: fluid_pickup at the centre of the cell, the player as the source (30-8 14.3.9)
