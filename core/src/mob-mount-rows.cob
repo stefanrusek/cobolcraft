@@ -195,3 +195,27 @@
      CALL "M44-HORSE-BORN" USING L-ROW
      GOBACK.
  END PROGRAM SKELETON-HORSE-BORN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CAMEL-HUSK-FEED.
+*> USING player row, camel husk row, used out: Camel.handleEating for a rabbit foot (19 section 3.8): a husk below its maximum health (SM-HEALTH) heals 2 (not above the maximum), one item is used
+*> (MOB-TAKE keeps it in creative mode) and the action is consumed; an unhurt husk takes nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ 01 WS-M                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-HUSK                 BINARY-LONG.
+ 01 L-USED                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-HUSK L-USED.
+     MOVE 0 TO L-USED
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-HUSK) WS-M
+     IF EN-HEALTH(L-HUSK) < SM-HEALTH(WS-M)
+         COMPUTE EN-HEALTH(L-HUSK) = FUNCTION MIN(SM-HEALTH(WS-M), EN-HEALTH(L-HUSK) + 2)
+         CALL "MOB-TAKE" USING L-PLAYER
+         MOVE 1 TO L-USED
+     END-IF
+     GOBACK.
+ END PROGRAM CAMEL-HUSK-FEED.
