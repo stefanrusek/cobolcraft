@@ -58,7 +58,7 @@
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
      IF WS-KEY = "nautilus" OR "zombie_nautilus"
          CALL "WC-ROW-OPEN" USING L-ROW
-         IF EN-TAMED(L-ROW) = 1 OR WC-NAU-DASH(L-ROW) = 1 OR (WS-KEY = "zombie_nautilus" AND EN-VARIANT(L-ROW) > 0)
+         IF EN-TAMED(L-ROW) = 1 OR WC-NAU-DASH(L-ROW) = 1 OR WC-NAU-DASH-CD(L-ROW) > 0 OR (WS-KEY = "zombie_nautilus" AND EN-VARIANT(L-ROW) > 0)
              MOVE 1 TO L-NEEDED
          END-IF
      END-IF
@@ -99,11 +99,11 @@
          END-IF
      END-IF
 *>   Index 20, the dash flag (10.4).
-     IF WC-NAU-DASH(L-ROW) = 1
+     IF WC-NAU-DASH(L-ROW) = 1 OR WC-NAU-DASH-CD(L-ROW) > 0
          INITIALIZE ND-METADATA-ENTRY
          MOVE 20 TO ND-MD-INDEX
          MOVE ND-MDS-BOOLEAN TO ND-MD-SERIALIZER
-         MOVE 1 TO ND-MD-INT
+         MOVE WC-NAU-DASH(L-ROW) TO ND-MD-INT
          CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER ND-METADATA-ENTRY
      END-IF
 *>   Index 21, the variant of a zombie nautilus: a registry id (serializer 32 ZOMBIE_NAUTILUS_VARIANT), sent when it is not the default 0. The two variant files, temperate and warm, are the ids 0 and 1
@@ -670,6 +670,7 @@
      IF WC-NAU-CHARGE-CD(L-ROW) > 0
          SUBTRACT 1 FROM WC-NAU-CHARGE-CD(L-ROW)
      END-IF
+     CALL "NAUTILUS-DASH-TICK" USING L-ROW
      IF EN-ANGER(L-ROW) > 0
          SUBTRACT 1 FROM EN-ANGER(L-ROW)
          IF EN-ANGER(L-ROW) = 0

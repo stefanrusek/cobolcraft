@@ -603,6 +603,8 @@
  01 WS-DARK-OLD            BINARY-LONG.
  01 WS-DARK-INDEX          BINARY-LONG VALUE 18.
  01 WS-VARINT              BINARY-LONG VALUE 1.
+ 01 WS-RIDE-DONE           BINARY-LONG.
+ 01 WS-ALIVE               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
@@ -683,6 +685,20 @@
              COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) + (WS-R * 2 - 1) * 0.05
              COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) + 0.4
              MOVE 0 TO EN-ON-GROUND(L-ROW)
+         END-IF
+     END-IF
+*>   The zombie nautilus burns in daylight unless its BODY slot is filled (20 section 3.5, 44-7 section 10.1); a nautilus with a player on it is put under the rider and, saddled, is
+*>   left to the rider's client (44-7 section 10.4: the server does not simulate it).
+     IF SM-KIND(L-M) = 8
+         CALL "NAUTILUS-SUN" USING L-ROW L-M WS-ALIVE
+         IF WS-ALIVE = 0
+             GOBACK
+         END-IF
+     END-IF
+     IF (SM-KIND(L-M) = 7 OR SM-KIND(L-M) = 8) AND EN-RIDER(L-ROW) > 0
+         CALL "NAUTILUS-RIDE-TICK" USING L-ROW WS-RIDE-DONE
+         IF WS-RIDE-DONE = 1
+             GOBACK
          END-IF
      END-IF
      IF SM-KEY(L-M) = "squid" OR "glow_squid"

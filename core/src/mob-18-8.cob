@@ -1664,7 +1664,7 @@
          END-IF
      END-IF
 *>   A camel husk's interact first calls setPersistenceRequired, then runs the camel interaction (19 section 3.8).
-     IF WS-KEY = "camel_husk"
+     IF WS-KEY = "camel_husk" OR "nautilus" OR "zombie_nautilus"
          MOVE 1 TO EN-PERSISTENT(WS-ENTITY)
      END-IF
 *>   Mob.interact posts entity_interact (the mob's position, the player as the source) after the common interactions (the leash) or mobInteract consumed the action (30-8 14.3.7)

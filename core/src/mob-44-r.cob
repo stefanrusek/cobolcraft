@@ -57,6 +57,8 @@
          EVALUATE WS-KEY
              WHEN "camel"
                  CALL "M44-CAMEL-RIDER-JUMP" USING WS-MOB L-STRENGTH L-JUMPED
+             WHEN "nautilus" WHEN "zombie_nautilus"
+                 CALL "NAUTILUS-RIDER-JUMP" USING WS-MOB L-JUMPED
              WHEN "horse" WHEN "donkey" WHEN "mule" WHEN "skeleton_horse" WHEN "zombie_horse"
                  IF EN-SADDLE(WS-MOB) = 1 AND EN-ON-GROUND(WS-MOB) = 1
                      CALL "M19-HORSE-JUMP-SCALE" USING L-STRENGTH WS-SCALE
