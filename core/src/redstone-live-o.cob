@@ -8,13 +8,14 @@
 *> Wither skeleton skull (4.7) and carved pumpkin (4.8): an air cell in front where the wither pattern (WITHER-CAN-SPAWN) or a golem pattern (GOLEM-CAN-BUILD) is complete takes the block (the skull with the
 *> rotation segment of the facing: south 0, west 4, north 8, east 12, 0 up or down) and the build runs (WITHER-BUILD, GOLEM-BUILD); otherwise the item is worn as equipment and, when nobody can wear it, it stays
 *> in the dispenser with the failure click, never dropped.
-*> Not done: mobs (they take dispenser equipment only when they can pick up loot, and the core does not model that), saddles, horse armor, wolf armor, carpets, harnesses and the mob heads other than the wither
+*> Not done: mobs other than the nautilus family (RL-DISP-MOB at the end of this file takes the saddle and nautilus armor), horse armor, wolf armor, carpets, harnesses and the mob heads other than the wither
 *> skeleton skull (their equippable data is not in the item table), the shield, the entity order of the level (an armor stand beats a player here), the swimming box of a player, the equipment packet to the
 *> other viewers (an armor stand's equipment is not shown to anyone yet), the game event block_place.
 *> Entry points:
 *>   RL-EQUIP-SLOT USING item, slot out                                       1 boots, 2 leggings, 3 chestplate (and elytra), 4 head, 0 not worn
 *>   RL-BOX-IN-CELL USING feet x, y, z, half width, height (FLOAT-LONG), cell x, y, z, hit out    1 when the box has a volume in common with the cell (a point inside counts)
 *>   RL-DISP-EQUIP USING dim, front x, y, z, item, ok out                     1 when one entity took one item
+*>   RL-DISP-MOB USING dim, front x, y, z, item, slot variant, consumed out     1 when a tame adult nautilus or zombie nautilus took the saddle or nautilus armor (44-7 section 10.3.1)
 *>   RL-DISP-HEAD USING dim, front x, y, z, facing, item bare key (PIC X(48)), item, handled out, consumed out
 *>   RL-DISP-SHULKER USING dim, front x, y, z, facing, item bare key (PIC X(48)), handled out, consumed out
 
@@ -319,3 +320,79 @@
      END-IF
      GOBACK.
  END PROGRAM RL-DISP-SHULKER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RL-DISP-MOB.
+*> USING dim, front x, y, z, item, slot variant, consumed out: EquipmentDispenseItemBehavior for the mobs that take equipment (44-7 sections 10.3 and 10.3.1; wrap I2 round 5): the first living nautilus or
+*> zombie nautilus whose box meets the front cell and that is tame and an adult (canUseSlot of BODY and SADDLE) with the slot of the item empty takes one item: a saddle into SADDLE, nautilus armor (any
+*> *_nautilus_armor) into BODY with the stack's components (the slot variant). The mob becomes persistent; the viewers get Set Equipment. consumed 1 when one took it, else the item is left to the rule that
+*> follows (the armor stands and players of RL-DISP-EQUIP, then the default drop). Not done: the other mobs (horses, wolves, pigs and the like; the document gives only the nautilus family's
+*> canDispenserEquipIntoSlot), the entity order of the level (the table order is used).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY WCSTATE.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-BARE                PIC X(48).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SP                  PIC X(24).
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ 01 WS-HIT                 BINARY-LONG.
+ 01 WS-EMPTY               BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-VAR                  BINARY-LONG.
+ 01 L-CONSUMED             BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-ITEM L-VAR L-CONSUMED.
+     MOVE 0 TO L-CONSUMED WS-SLOT
+     IF L-ITEM > 0 AND L-ITEM < IT-COUNT
+         MOVE IT-KEY(L-ITEM + 1) TO WS-KEY
+         CALL "KEY-BARE" USING WS-KEY WS-BARE
+         COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-BARE))
+         IF WS-BARE = "saddle"
+             MOVE 7 TO WS-SLOT
+         END-IF
+         IF WS-LEN >= 15 AND WS-BARE(WS-LEN - 14:15) = "_nautilus_armor"
+             MOVE 6 TO WS-SLOT
+         END-IF
+     END-IF
+     IF WS-SLOT = 0
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT OR L-CONSUMED = 1
+         IF EN-USED(WS-I) = 1 AND EN-DIM(WS-I) = L-DIM AND EN-HEALTH(WS-I) > 0 AND EN-TAMED(WS-I) = 1 AND EN-MOBAGE(WS-I) >= 0
+             CALL "MOB-SPECIES-KEY" USING WS-I WS-SP
+             IF WS-SP = "nautilus" OR "zombie_nautilus"
+                 CALL "WC-ROW-OPEN" USING WS-I
+                 MOVE 0 TO WS-EMPTY
+                 IF (WS-SLOT = 7 AND EN-SADDLE(WS-I) = 0) OR (WS-SLOT = 6 AND WC-BODY(WS-I) = 0)
+                     MOVE 1 TO WS-EMPTY
+                 END-IF
+                 COMPUTE WS-HALF = ET-WIDTH-MILLI(EN-TYPE(WS-I) + 1) / 2000
+                 COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(EN-TYPE(WS-I) + 1) / 1000
+                 CALL "RL-BOX-IN-CELL" USING EN-X(WS-I) EN-Y(WS-I) EN-Z(WS-I) WS-HALF WS-HEIGHT L-X L-Y L-Z WS-HIT
+                 IF WS-EMPTY = 1 AND WS-HIT = 1
+                     IF WS-SLOT = 7
+                         MOVE 1 TO EN-SADDLE(WS-I)
+                     ELSE
+                         MOVE L-ITEM TO WC-BODY(WS-I)
+                         MOVE L-VAR TO WC-BODY-VAR(WS-I)
+                     END-IF
+                     MOVE 1 TO EN-PERSISTENT(WS-I)
+                     CALL "MNT-EQUIP-SEND" USING WS-I WS-SLOT L-ITEM WS-ONE
+                     MOVE 1 TO L-CONSUMED
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RL-DISP-MOB.

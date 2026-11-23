@@ -1435,7 +1435,7 @@
      IF SM-KEY(WS-M) = "llama" OR "trader_llama"
          CALL "M44-LLAMA-TICK" USING WS-ROW WS-PET-HX WS-PET-HZ WS-PET-WALK
      END-IF
-     IF SM-KEY(WS-M) = "camel"
+     IF SM-KEY(WS-M) = "camel" OR "camel_husk"
          CALL "M44-CAMEL-TICK" USING WS-ROW
          CALL "M44-CAMEL-BRAIN" USING WS-ROW
      END-IF

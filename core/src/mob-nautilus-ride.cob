@@ -6,7 +6,7 @@
 *>   NAUTILUS-DASH-TICK USING row                               10.4 tick: DASH is cleared once the cooldown is below 35, the cooldown counts down
 *>   NAUTILUS-RIDE-TICK USING row, done out                     10.4 server tick of a ridden one: the rider sits on the seat and gets BREATH_OF_THE_NAUTILUS (60 ticks, every 40 ticks or when absent); done 1 when saddled (the client steers)
 *>   NAUTILUS-SUN USING row, table row, alive out               20 section 3.5: the burn routine and the fire tick of a zombie nautilus; a filled BODY slot (sunProtectionSlot) protects it
-*> Not built: the equip sound and the restriction radius of a tame one (checkRestriction: home within 32 or 16 blocks), the dash impulse (the controlling client applies it).
+*> Not built: the equip sound, the dash impulse (the controlling client applies it). The restriction radius of a tame one is in mob-nautilus-home.cob.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. NAUTILUS-HELD.
@@ -46,6 +46,7 @@
      CALL "WC-ROW-OPEN" USING L-ENTITY
      IF WS-IKIND = 4 AND WS-ISLOT = 1 AND WS-CONTAINS = 1 AND WC-BODY(L-ENTITY) = 0
          MOVE WS-ITEM TO WC-BODY(L-ENTITY)
+         MOVE PL-SLOT-VAR(L-PLAYER, PL-HELD(L-PLAYER) + 1) TO WC-BODY-VAR(L-ENTITY)
          CALL "MNT-EQUIP-SEND" USING L-ENTITY WS-SLOT-BODY WS-ITEM WS-ONE
          CALL "MOB-TAKE" USING L-PLAYER
          MOVE 1 TO L-HANDLED
@@ -57,6 +58,8 @@
      CALL "Q7-NAU-FOOD" USING WS-HELD WS-FOOD WS-TAMING
      IF WS-FOOD = 0
          CALL "MOB-RIDE-START" USING L-PLAYER L-ENTITY WS-STARTED
+*>       doPlayerRide: a nautilus that ends with no passenger clears its home.
+         CALL "NAUTILUS-RIDE-END" USING L-PLAYER L-ENTITY
          MOVE WS-STARTED TO L-HANDLED
      END-IF
      GOBACK.

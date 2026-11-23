@@ -107,6 +107,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY WCSTATE.
  COPY PROTO.
  01 WS-PACKET-ID           BINARY-LONG VALUE 109.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
@@ -123,6 +124,10 @@
      END-IF
      IF EN-PASS(L-ROW) > 0
          ADD 1 TO WS-COUNT
+         CALL "WC-ROW-OPEN" USING L-ROW
+         IF WC-PASS2(L-ROW) > 0
+             ADD 1 TO WS-COUNT
+         END-IF
      END-IF
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
@@ -136,6 +141,9 @@
      END-IF
      IF EN-PASS(L-ROW) > 0
          CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(EN-PASS(L-ROW))
+         IF WC-PASS2(L-ROW) > 0
+             CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(WC-PASS2(L-ROW))
+         END-IF
      END-IF
      CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
@@ -286,6 +294,9 @@
                  CALL "MOB-SADDLE-USE" USING L-PLAYER L-ROW L-HANDLED
              WHEN L-HELD = SPACES
                  CALL "MOB-RIDE-START" USING L-PLAYER L-ROW L-HANDLED
+                 IF WS-KEY = "nautilus" OR "zombie_nautilus"
+                     CALL "NAUTILUS-RIDE-END" USING L-PLAYER L-ROW
+                 END-IF
          END-EVALUATE
      END-IF
      GOBACK.
@@ -383,26 +394,106 @@
  END PROGRAM MOB-RIDE-INPUT.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. MOB-RIDE-MOVE.
-*> USING connection id, PLAY-SERVERBOUND (a decoded Move Vehicle 0x22: PSB-X to PSB-PITCH, PSB-FLAGS): the position report of the rider's client (44-7 section 10.4.1). Nothing for a
-*> player who rides nothing. A mob that the player does not control (no saddle) or a report with moved2 - v2 > 100 (squared distance from the mob's position less its squared velocity)
-*> is not applied and the player gets a Move Vehicle with the mob's own position. Otherwise the mob is moved to the report and the rider follows.
+ PROGRAM-ID. MOB-RIDE-CLAMP.
+*> USING x, y, z (FLOAT-LONG), yaw, pitch (FLOAT-SHORT), all in and out: step 3 of 44-7 section 10.4.1: x and z are held to plus or minus 3.0E7 and y to plus or minus 2.0E7, the rotations are wrapped
+*> to degrees (Mth.wrapDegrees: the value less 360 times its floor quotient, 180 and above less 360, so 180 is -180).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-LIMIT-XZ            FLOAT-LONG VALUE 30000000.
+ 01 WS-LIMIT-Y             FLOAT-LONG VALUE 20000000.
+ 01 WS-F                   FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ 01 L-PITCH                FLOAT-SHORT.
+ PROCEDURE DIVISION USING L-X L-Y L-Z L-YAW L-PITCH.
+     CALL "ENTITY-CLAMP" USING L-X WS-LIMIT-XZ
+     CALL "ENTITY-CLAMP" USING L-Y WS-LIMIT-Y
+     CALL "ENTITY-CLAMP" USING L-Z WS-LIMIT-XZ
+     COMPUTE WS-F = L-YAW - 360 * FUNCTION INTEGER(L-YAW / 360)
+     IF WS-F >= 180
+         COMPUTE WS-F = WS-F - 360
+     END-IF
+     MOVE WS-F TO L-YAW
+     COMPUTE WS-F = L-PITCH - 360 * FUNCTION INTEGER(L-PITCH / 360)
+     IF WS-F >= 180
+         COMPUTE WS-F = WS-F - 360
+     END-IF
+     MOVE WS-F TO L-PITCH
+     GOBACK.
+ END PROGRAM MOB-RIDE-CLAMP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-RIDE-CORRECT.
+*> USING connection id, vehicle row: the corrective Move Vehicle (clientbound 0x3A) with the vehicle's own position and rotation.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY PROTO.
  01 WS-PACKET-ID           BINARY-LONG VALUE 58.
  01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-VEHICLE              BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-VEHICLE.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER EN-X(L-VEHICLE)
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER EN-Y(L-VEHICLE)
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER EN-Z(L-VEHICLE)
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER EN-YAW(L-VEHICLE)
+     CALL "PB-PUT-FLOAT" USING PB-BUFFER EN-PITCH(L-VEHICLE)
+     CALL "CORE-SEND" USING L-ID PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM MOB-RIDE-CORRECT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-RIDE-MOVE.
+*> USING connection id, PLAY-SERVERBOUND (a decoded Move Vehicle 0x22: PSB-X to PSB-PITCH, PSB-FLAGS): the position report of the rider's client (44-7 section 10.4.1). NaN or infinite values disconnect
+*> the player with multiplayer.disconnect.invalid_vehicle_movement (step 1, before anything else); nothing for a player who rides nothing, for the second rider and while the player's teleport is
+*> awaited (step 2). The values are clamped and wrapped (MOB-RIDE-CLAMP). A mob that the player does not control (no saddle), a report with moved2 - v2 > 100 (squared distance from the mob's position
+*> less its squared velocity; step 4) or one whose box meets a solid block that the box at the mob's own position does not (step 6, the snap back) is not applied and the player gets a Move Vehicle
+*> with the mob's own position. Otherwise the mob is moved to the report and the rider follows. The 0.0625 error log is not built (no message text in the document, no resulting position to compare).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
  01 WS-ROW                 BINARY-LONG.
  01 WS-VEHICLE             BINARY-LONG.
  01 WS-MOVED2              FLOAT-LONG.
  01 WS-V2                  FLOAT-LONG.
  01 WS-GROUND              BINARY-LONG.
+ 01 WS-CLASS-X             BINARY-LONG.
+ 01 WS-CLASS-Y             BINARY-LONG.
+ 01 WS-CLASS-Z             BINARY-LONG.
+ 01 WS-FINITE-YAW          BINARY-LONG.
+ 01 WS-FINITE-PITCH        BINARY-LONG.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ 01 WS-WAS-HIT             BINARY-LONG.
+ 01 WS-NOW-HIT             BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND.
      MOVE CN-PLAYER(L-ID) TO WS-ROW
+     CALL "ENTITY-DOUBLE-CLASS" USING PSB-X WS-CLASS-X
+     CALL "ENTITY-DOUBLE-CLASS" USING PSB-Y WS-CLASS-Y
+     CALL "ENTITY-DOUBLE-CLASS" USING PSB-Z WS-CLASS-Z
+     CALL "ENTITY-FLOAT-FINITE" USING PSB-YAW WS-FINITE-YAW
+     CALL "ENTITY-FLOAT-FINITE" USING PSB-PITCH WS-FINITE-PITCH
+     IF WS-CLASS-X > 0 OR WS-CLASS-Y > 0 OR WS-CLASS-Z > 0 OR WS-FINITE-YAW = 0 OR WS-FINITE-PITCH = 0
+         INITIALIZE PK-TEXT
+         MOVE PK-TEXT-TRANSLATE TO PK-TX-KIND
+         MOVE "multiplayer.disconnect.invalid_vehicle_movement" TO PK-TX-VALUE
+         MOVE 47 TO PK-TX-LENGTH
+         CALL "CORE-SEND-DISCONNECT" USING L-ID PK-TEXT
+         GOBACK
+     END-IF
      MOVE EN-VEHICLE(PL-ENTITY-ROW(WS-ROW)) TO WS-VEHICLE
      IF WS-VEHICLE = 0
          GOBACK
@@ -411,18 +502,24 @@
      IF EN-RIDER2(WS-VEHICLE) = WS-ROW
          GOBACK
      END-IF
+*>   Not while the player's teleport is awaited (the client has not accepted its position yet).
+     IF CN-TELEPORT-ACKED(L-ID) = 0
+         GOBACK
+     END-IF
+     CALL "MOB-RIDE-CLAMP" USING PSB-X PSB-Y PSB-Z PSB-YAW PSB-PITCH
      COMPUTE WS-MOVED2 = (PSB-X - EN-X(WS-VEHICLE)) ** 2 + (PSB-Y - EN-Y(WS-VEHICLE)) ** 2 + (PSB-Z - EN-Z(WS-VEHICLE)) ** 2
      COMPUTE WS-V2 = EN-VX(WS-VEHICLE) ** 2 + EN-VY(WS-VEHICLE) ** 2 + EN-VZ(WS-VEHICLE) ** 2
      IF EN-SADDLE(WS-VEHICLE) = 0 OR WS-MOVED2 - WS-V2 > 100
-         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
-         CALL "PB-PUT-DOUBLE" USING PB-BUFFER EN-X(WS-VEHICLE)
-         CALL "PB-PUT-DOUBLE" USING PB-BUFFER EN-Y(WS-VEHICLE)
-         CALL "PB-PUT-DOUBLE" USING PB-BUFFER EN-Z(WS-VEHICLE)
-         CALL "PB-PUT-FLOAT" USING PB-BUFFER EN-YAW(WS-VEHICLE)
-         CALL "PB-PUT-FLOAT" USING PB-BUFFER EN-PITCH(WS-VEHICLE)
-         CALL "CORE-SEND" USING L-ID PB-BUFFER
-         CALL "PB-FREE" USING PB-BUFFER
+         CALL "MOB-RIDE-CORRECT" USING L-ID WS-VEHICLE
+         GOBACK
+     END-IF
+*>   Step 6: a new collision (the box at the report meets a solid block, the box at the vehicle's own place does not) snaps the vehicle back.
+     COMPUTE WS-HALF = ET-WIDTH-MILLI(EN-TYPE(WS-VEHICLE) + 1) / 2000
+     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(EN-TYPE(WS-VEHICLE) + 1) / 1000
+     CALL "MOVE-COLLIDES-BOX" USING EN-DIM(WS-VEHICLE) EN-X(WS-VEHICLE) EN-Y(WS-VEHICLE) EN-Z(WS-VEHICLE) WS-HALF WS-HEIGHT WS-WAS-HIT
+     CALL "MOVE-COLLIDES-BOX" USING EN-DIM(WS-VEHICLE) PSB-X PSB-Y PSB-Z WS-HALF WS-HEIGHT WS-NOW-HIT
+     IF WS-WAS-HIT = 0 AND WS-NOW-HIT = 1
+         CALL "MOB-RIDE-CORRECT" USING L-ID WS-VEHICLE
          GOBACK
      END-IF
      MOVE FUNCTION MOD(PSB-FLAGS, 2) TO WS-GROUND

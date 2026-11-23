@@ -906,10 +906,45 @@
  END PROGRAM POTION-SPLASH.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. POTION-REHYDRATE.
+*> USING tracker row (a burst thrown potion whose contents are in the potion tag rehydrates_axolotls: PJ-I1 1, set by POTION-LOAD for a potion of water; 44-7 section 8.4): every axolotl whose
+*> box meets the potion's box (0.25 wide and tall, bottom centre at the row) inflated by 4.0 horizontally and 2.0 vertically gets air + 1800 (at most 6000). EN-DRY counts the ticks without air
+*> (STDMOB-AQUATIC-STEP: the air is 6000 - EN-DRY), so it falls by 1800, not below 0. There is no distance test.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CITEMS.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-REACH               FLOAT-LONG.
+ 01 WS-H                   FLOAT-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+         IF EN-USED(WS-E) = 1 AND WS-E NOT = L-ROW AND EN-DIM(WS-E) = EN-DIM(L-ROW)
+             CALL "MOB-SPECIES-KEY" USING WS-E WS-KEY
+             IF WS-KEY = "axolotl"
+                 COMPUTE WS-REACH = ET-WIDTH-MILLI(EN-TYPE(WS-E) + 1) / 2000 + 4.125
+                 COMPUTE WS-H = ET-HEIGHT-MILLI(EN-TYPE(WS-E) + 1) / 1000
+                 COMPUTE WS-DX = FUNCTION ABS(EN-X(WS-E) - EN-X(L-ROW))
+                 COMPUTE WS-DZ = FUNCTION ABS(EN-Z(WS-E) - EN-Z(L-ROW))
+                 IF WS-DX < WS-REACH AND WS-DZ < WS-REACH AND EN-Y(WS-E) < EN-Y(L-ROW) + 2.25 AND EN-Y(WS-E) + WS-H > EN-Y(L-ROW) - 2
+                     COMPUTE EN-DRY(WS-E) = FUNCTION MAX(EN-DRY(WS-E) - 1800, 0)
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM POTION-REHYDRATE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. POTION-BURST.
 *> USING tracker row, hit entity row (0 none): the hit of a potion (10.2). A splash potion applies its effects around the hit point; a lingering one makes a cloud (radius 3.0, radius on
 *> use -0.5, duration 600, wait 10, reapplication 20, radius per tick -0.005) at the hit entity or at the potion. The level event 2007 (instant effects) or 2002 with the sound event, the
-*> potion discarded. Douse fire, water-sensitive mobs and axolotls (tags of the potion) are open: item entities carry no components.
+*> potion discarded. A potion of water rehydrates the axolotls around (POTION-REHYDRATE). Douse fire and water-sensitive mobs (tags of the potion) are open: item entities carry no components.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -946,6 +981,9 @@
      MOVE EN-X(L-ROW) TO WS-X
      MOVE EN-Y(L-ROW) TO WS-Y
      MOVE EN-Z(L-ROW) TO WS-Z
+     IF PJ-I1(WS-SLOT) = 1
+         CALL "POTION-REHYDRATE" USING L-ROW
+     END-IF
      IF PJ-KIND(WS-SLOT) = 1 AND PJ-FXN(WS-SLOT) > 0
          CALL "POTION-SPLASH" USING L-ROW WS-SLOT
      END-IF

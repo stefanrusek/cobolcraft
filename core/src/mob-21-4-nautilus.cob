@@ -13,7 +13,7 @@
 *>   NAUTILUS-USE USING player row, entity row, held key, handled out   taming with pufferfish (1 in 3), feeding a tame one (10.2)
 *>   NAUTILUS-TICK USING row, table row, in water  the brain of both kinds: countdowns, the target, the charge, temptation, the stroll (AQUA-SWIM, RandomStroll.swim(1.0))
 *> Gaps (recorded on T24090): line of sight of the charge and the target sensor, the hit test uses axis-aligned boxes of the entity types, no knockback resistance of mob targets, the angry attacker must
-*> be a player (mob attackers do not reach NAUTILUS-HURT), love mode (AnimalMakeLove), the home restriction of a tame one, the swim controls' turn rates.
+*> be a player (mob attackers do not reach NAUTILUS-HURT), love mode (AnimalMakeLove), the swim controls' turn rates. The home restriction of a tame one is in mob-nautilus-home.cob.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. NAUTILUS-FINALIZE.
@@ -663,6 +663,8 @@
          CALL "AQUA-RAND" USING L-ROW WS-SALT WS-R
          COMPUTE WC-NAU-ATTACK-CD(L-ROW) = 2400 + WS-R * 1201
      END-IF
+*>   checkRestriction before the brain (44-7 section 10.4): the home of a tame one.
+     CALL "NAUTILUS-RESTRICT" USING L-ROW
 *>   CORE: the three cooldown countdowns and the expiry of ANGRY_AT.
      IF WC-NAU-ATTACK-CD(L-ROW) > 0
          SUBTRACT 1 FROM WC-NAU-ATTACK-CD(L-ROW)

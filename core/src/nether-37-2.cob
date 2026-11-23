@@ -14,7 +14,13 @@
 *>   NETHER-RAND-DOUBLE USING generator, value out (FLOAT-LONG): nextDouble() of the legacy source.
 *>   NETHER-BLENDED USING x, y, z (BINARY-LONG), value out: the old_blended_noise of nether/base_3d_noise.
 *>   NETHER-CORNERS USING chunk x, chunk z: fills NH-CORNER.     NETHER-COLUMN USING local x, local z: fills NH-COL (the squeezed densities).
-*>   NETHER-FILL USING chunk memory: netherrack where the density is above 0, else lava below y 32.
+*>   NETHER-FILL USING chunk memory: netherrack where the density is above 0, else lava below y 32. The density of a block is the squeezed density plus the beardifier (37-2 section 10) while
+*>     SBD-ACTIVE is 1 (STRUCTBEARD.cpy, the records of SBD-CX, SBD-CZ: NETHER-BEARD-COLLECT makes them, NETHER-BEARD-CLEAR empties them); without a record the fill is that of the squeezed density alone.
+*>   NETHER-SOLID USING squeezed density (FLOAT-LONG), x, y, z, flag out: 1 when the squeezed density plus STRUCT-BEARD-SAMPLE (single precision sum) is above 0 (10: not interpolated, a block is solid iff the sum > 0).
+*>   NETHER-FOSSIL-START USING world seed, chunk x, chunk z, valid out: 1 when the chunk holds a nether_fossil start (the set nether_fossils' candidate, the biome of the chunk's first quart, NFOS-FIND-POINT);
+*>     the piece is in the builder. NETHER-BEARD-COLLECT USING world seed, chunk x, chunk z: 10.1 and 10.2 for the Nether: the one rigid record (beard_thin, ground level delta 0, the piece box) of every fossil start
+*>     within 2 chunks whose box widened by 12 reaches the chunk; the junction term never occurs here (10.4). Run it before NETHER-CORNERS of the chunk (the start's base column fills NH-CORNER).
+*>     NETHER-BEARD-CLEAR: empties the records again (the overworld's STRUCT-BEARD-PREPARE shares them).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. NETHER-JHASH.
@@ -867,13 +873,36 @@
  END PROGRAM NETHER-COLUMN.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. NETHER-SOLID.
+*> USING squeezed density (FLOAT-LONG), x, y, z (BINARY-LONG), flag out (BINARY-LONG): the final density of 37-2 section 10 is add(squeeze(...), beardifier), summed in single precision, and a block is solid iff it is above 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-OP-ADD              BINARY-LONG VALUE 1.
+ 01 WS-ZERO                FLOAT-LONG VALUE 0.
+ 01 WS-B                   FLOAT-LONG.
+ 01 WS-SUM                 FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-V                    FLOAT-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-FLAG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-V L-X L-Y L-Z L-FLAG.
+     CALL "STRUCT-BEARD-SAMPLE" USING L-X L-Y L-Z WS-B
+     CALL "FX-OP" USING WS-OP-ADD L-V WS-B WS-SUM
+     CALL "FCMP-GT" USING WS-SUM WS-ZERO L-FLAG
+     GOBACK.
+ END PROGRAM NETHER-SOLID.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. NETHER-FILL.
-*> USING chunk memory (CELLS.cpy): netherrack where the squeezed density is above 0 (no beardifier: 37-2 section 10), else lava below
-*> y 32 (the disabled aquifer's sea status, section 7) and nothing above; y 0 to 127 only. Needs NETHER-CORNERS and NETHER-STATES.
+*> USING chunk memory (CELLS.cpy): netherrack where the density is above 0 (the squeezed density plus the beardifier of 37-2 section 10 while SBD-ACTIVE is 1: NETHER-SOLID at the block of chunk SBD-CX, SBD-CZ),
+*> else lava below y 32 (the disabled aquifer's sea status, section 7) and nothing above; y 0 to 127 only. Needs NETHER-CORNERS and NETHER-STATES.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CELLS.
  COPY NETHER.
+ COPY STRUCTBEARD.
  01 WS-ZERO                FLOAT-LONG VALUE 0.
  01 WS-LX                  BINARY-LONG.
  01 WS-LZ                  BINARY-LONG.
@@ -881,6 +910,8 @@
  01 WS-GT                  BINARY-LONG.
  01 WS-CELL                BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-CHUNK                PIC X.
  PROCEDURE DIVISION USING L-CHUNK.
@@ -888,9 +919,15 @@
      PERFORM VARYING WS-LX FROM 0 BY 1 UNTIL WS-LX > 15
          PERFORM VARYING WS-LZ FROM 0 BY 1 UNTIL WS-LZ > 15
              CALL "NETHER-COLUMN" USING WS-LX WS-LZ
+             COMPUTE WS-BX = SBD-CX * 16 + WS-LX
+             COMPUTE WS-BZ = SBD-CZ * 16 + WS-LZ
              PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y > 127
                  COMPUTE WS-I = WS-Y + 1
-                 CALL "FCMP-GT" USING NH-COL(WS-I) WS-ZERO WS-GT
+                 IF SBD-ACTIVE = 1
+                     CALL "NETHER-SOLID" USING NH-COL(WS-I) WS-BX WS-Y WS-BZ WS-GT
+                 ELSE
+                     CALL "FCMP-GT" USING NH-COL(WS-I) WS-ZERO WS-GT
+                 END-IF
                  COMPUTE WS-CELL = WS-Y * 256 + WS-LZ * 16 + WS-LX + 1
                  EVALUATE TRUE
                      WHEN WS-GT = 1
@@ -903,3 +940,129 @@
      END-PERFORM
      GOBACK.
  END PROGRAM NETHER-FILL.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NETHER-FOSSIL-START.
+*> USING world seed (BINARY-DOUBLE), chunk x, chunk z, valid out (BINARY-LONG): the nether_fossil start of a chunk as the Nether's structure stage reads a start (nether-struct.cob): the chunk is the candidate of the set
+*> nether_fossils (set 2 of NETHER-STRUCTURE-CANDIDATE), the biome of the chunk's first quart (standing for the stub's, as there) allows the structure (4: soul_sand_valley), and NFOS-FIND-POINT (struct-fossil.cob)
+*> finds a generation point. The piece is left in the builder.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SET                 BINARY-LONG VALUE 2.
+ 01 WS-STRUCT              BINARY-LONG VALUE 4.
+ 01 WS-CAND-X              BINARY-LONG.
+ 01 WS-CAND-Z              BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-BIOMES.
+    05 WS-BIOME            BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-BIOME-NAMES.
+    05 FILLER              PIC X(40) VALUE "minecraft:nether_wastes".
+    05 FILLER              PIC X(40) VALUE "minecraft:soul_sand_valley".
+    05 FILLER              PIC X(40) VALUE "minecraft:crimson_forest".
+    05 FILLER              PIC X(40) VALUE "minecraft:warped_forest".
+    05 FILLER              PIC X(40) VALUE "minecraft:basalt_deltas".
+ 01 WS-BIOME-TAB REDEFINES WS-BIOME-NAMES.
+    05 WS-BIOME-NAME       PIC X(40) OCCURS 5 TIMES.
+ 01 WS-NUM                 BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-ALLOWED             BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-ROT                 BINARY-LONG.
+ 01 WS-TPL                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SEED                 BINARY-DOUBLE.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-VALID                BINARY-LONG.
+ PROCEDURE DIVISION USING L-SEED L-CX L-CZ L-VALID.
+     MOVE 0 TO L-VALID
+     CALL "NETHER-STRUCTURE-CANDIDATE" USING L-SEED WS-SET L-CX L-CZ WS-CAND-X WS-CAND-Z WS-FLAG
+     IF WS-FLAG = 1
+         CALL "NETHER-DIM-BIOMES" USING L-CX L-CZ WS-BIOMES
+         MOVE 0 TO WS-NUM
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 5
+             CALL "SURFACE-BIOME-ID" USING WS-BIOME-NAME(WS-J) WS-ID
+             IF WS-ID = WS-BIOME(1)
+                 MOVE WS-J TO WS-NUM
+             END-IF
+         END-PERFORM
+         CALL "NETHER-STRUCTURE-BIOME" USING WS-STRUCT WS-NUM WS-ALLOWED
+         IF WS-ALLOWED = 1
+             CALL "NFOS-FIND-POINT" USING L-SEED L-CX L-CZ WS-X WS-Y WS-Z L-VALID WS-ROT WS-TPL
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM NETHER-FOSSIL-START.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NETHER-BEARD-COLLECT.
+*> USING world seed (BINARY-DOUBLE), chunk x, chunk z: the records of the beardifier of the Nether chunk (37-2 10.1 and 10.2): of the nether_fossil starts of the 5 x 5 chunks around it (a start box is at most a template
+*> long, so its box widened by 12 reaches no chunk farther than 2 away), each whose piece box widened by 12 reaches the chunk's columns adds one rigid record {beard_thin (mode 2), the piece box, ground level delta 0} (at most 25, the table holds 1024); the
+*> affected box is extended by it. No other Nether structure adapts the terrain (10.1: fortress, bastion remnant and ruined portal have none) and a fossil is no jigsaw piece, so there is no junction record (10.4).
+*> SBD-READY stays 0: the stamps of STRUCT-BEARD-PREPARE (the overworld's chunk) never take these records for its own. Needs NETHER-STATES and the nether tables; leaves NH-CORNER of another chunk (NETHER-CORNERS after it).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTBEARD.
+ 01 WS-MARGIN              BINARY-LONG VALUE 12.
+ 01 WS-MODE                BINARY-LONG VALUE 2.
+ 01 WS-GROUND              BINARY-LONG VALUE 0.
+ 01 WS-IX                  BINARY-LONG.
+ 01 WS-IZ                  BINARY-LONG.
+ 01 WS-SX                  BINARY-LONG.
+ 01 WS-SZ                  BINARY-LONG.
+ 01 WS-VALID               BINARY-LONG.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-HAVE                BINARY-LONG.
+ 01 WS-BOX.
+    COPY STRUCTBOX REPLACING LEADING ==BX-== BY ==B-==.
+ LINKAGE SECTION.
+ 01 L-SEED                 BINARY-DOUBLE.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-SEED L-CX L-CZ.
+     MOVE 0 TO SBD-READY SBD-ACTIVE SBD-RIGID-COUNT SBD-JUNC-COUNT SBD-LOST WS-HAVE
+     MOVE L-CX TO SBD-CX
+     MOVE L-CZ TO SBD-CZ
+     PERFORM VARYING WS-IX FROM 0 BY 1 UNTIL WS-IX > 4
+         COMPUTE WS-SX = L-CX - 2 + WS-IX
+         PERFORM VARYING WS-IZ FROM 0 BY 1 UNTIL WS-IZ > 4
+             COMPUTE WS-SZ = L-CZ - 2 + WS-IZ
+             CALL "NETHER-FOSSIL-START" USING L-SEED WS-SX WS-SZ WS-VALID
+             IF WS-VALID = 1
+                 CALL "SPB-UNION-ALL" USING WS-BOX
+                 CALL "STRUCT-BEARD-CLOSE" USING B-X0 B-Z0 B-X1 B-Z1 L-CX L-CZ WS-MARGIN WS-CLOSE
+                 IF WS-CLOSE = 1
+                     ADD 1 TO SBD-RIGID-COUNT
+                     MOVE WS-MODE TO SBR-MODE(SBD-RIGID-COUNT)
+                     MOVE B-X0 TO SBR-X0(SBD-RIGID-COUNT)
+                     MOVE B-Y0 TO SBR-Y0(SBD-RIGID-COUNT)
+                     MOVE B-Z0 TO SBR-Z0(SBD-RIGID-COUNT)
+                     MOVE B-X1 TO SBR-X1(SBD-RIGID-COUNT)
+                     MOVE B-Y1 TO SBR-Y1(SBD-RIGID-COUNT)
+                     MOVE B-Z1 TO SBR-Z1(SBD-RIGID-COUNT)
+                     MOVE WS-GROUND TO SBR-GROUND(SBD-RIGID-COUNT)
+                     CALL "STRUCT-BEARD-EXTEND" USING WS-HAVE B-X0 B-Y0 B-Z0 B-X1 B-Y1 B-Z1
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     IF SBD-RIGID-COUNT > 0
+         MOVE 1 TO SBD-ACTIVE
+     END-IF
+     GOBACK.
+ END PROGRAM NETHER-BEARD-COLLECT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NETHER-BEARD-CLEAR.
+*> empties the records of the beardifier after a Nether chunk (SBD-GEN changes: the density memo of the overworld stamps it)
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTBEARD.
+ PROCEDURE DIVISION.
+     MOVE 0 TO SBD-READY SBD-ACTIVE SBD-RIGID-COUNT SBD-JUNC-COUNT SBD-LOST
+     ADD 1 TO SBD-GEN
+     GOBACK.
+ END PROGRAM NETHER-BEARD-CLEAR.
