@@ -175,7 +175,11 @@
              CALL "ENTITY-BANNER-SLOTS" USING CLIENT-STATE WS-R WS-NEW
              CALL "ENTITY-SHIELD-SLOTS" USING CLIENT-STATE WS-R WS-NEW
 *>           The overlay layers (ENTITY-OVERLAY) draw the model again with a texture of their own.
-             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 12
+             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 20
+*>               Layers 13 to 16 (the glints) use the pieces' own textures, which layers 5 to 8 have ensured: go on with the leather overlay passes, 17 to 20.
+                 IF WS-OV = 13
+                     MOVE 17 TO WS-OV
+                 END-IF
                  CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-TEX WS-OVR WS-OVG WS-OVB WS-OVM
                  IF WS-TEX > 0 AND WS-OVM = 0
                      CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
@@ -413,7 +417,7 @@
     05 WS-POOL-LAYER       BINARY-LONG OCCURS 768 TIMES VALUE 0.
  01 WS-INDEX-TABLE.
     05 WS-IX-ROW OCCURS 256 TIMES.
-       10 WS-IX            BINARY-LONG OCCURS 10 TIMES VALUE 0.
+       10 WS-IX            BINARY-LONG OCCURS 14 TIMES VALUE 0.
  01 WS-NEXT                BINARY-LONG VALUE 0.
  01 WS-LA                  BINARY-LONG.
  01 WS-LB                  BINARY-LONG.
@@ -558,9 +562,14 @@
          COMPUTE WS-HOOK-Y = WS-HOOK-Y * (1 + 0.003 * EN-OVN(WS-ROW))
      END-IF
 *>   The trim layers (9 to 12) lie over the armor piece (layers 5 to 8): the same enlargement by the layer's distance from the piece's own.
-     IF EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 9
+     IF EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 9 AND EN-OVN(WS-ROW) <= 16
          COMPUTE WS-HOOK-X = WS-HOOK-X * (1 + 0.003 * (EN-OVN(WS-ROW) - 8))
          COMPUTE WS-HOOK-Y = WS-HOOK-Y * (1 + 0.003 * (EN-OVN(WS-ROW) - 8))
+     END-IF
+*>   The overlay pass of a leather piece (layers 17 to 20, 57-1 section 4.3) lies over the piece itself and under its trim (1.003 to 1.012): 0.1 percent per layer number.
+     IF EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 17
+         COMPUTE WS-HOOK-X = WS-HOOK-X * (1 + 0.001 * (EN-OVN(WS-ROW) - 16))
+         COMPUTE WS-HOOK-Y = WS-HOOK-Y * (1 + 0.001 * (EN-OVN(WS-ROW) - 16))
      END-IF
 *>   The scale attribute (34-1 6.3 state.scale, Update Attributes): the whole model about the entity origin (a row nobody set has 0: no scale). A slime or magma cube takes its size from entry 18 instead.
      IF EN-ATTR-SCALE(WS-ROW) > 0 AND EN-ATTR-SCALE(WS-ROW) NOT = 1 AND NOT (EN-KEY(WS-ROW) = "slime" OR "magma_cube")
@@ -684,14 +693,19 @@
 *>   Every layer of a row keeps its own baked mesh in a pool (768 entries, recycled in turn when it is full): layer 1 the model, 2 the extra layer (the second
 *>   model of the same entity), 2 + n the overlay layer n. The entry whose key is the key is used; else the layer's own entry is baked again.
      MOVE 0 TO WS-HIT WS-E
-     IF EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 1 AND EN-OVN(WS-ROW) <= 8
-         COMPUTE WS-LA = EN-OVN(WS-ROW) + 2
-         MOVE WS-LA TO WS-LB WS-LC
-     ELSE
-         MOVE 1 TO WS-LA
-         MOVE 2 TO WS-LB
-         MOVE 1 TO WS-LC
-     END-IF
+     EVALUATE TRUE
+         WHEN EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 1 AND EN-OVN(WS-ROW) <= 8
+             COMPUTE WS-LA = EN-OVN(WS-ROW) + 2
+             MOVE WS-LA TO WS-LB WS-LC
+*>           The overlay passes of leather pieces (layers 17 to 20) keep entries 11 to 14.
+         WHEN EN-OVL(WS-ROW) > 0 AND EN-OVN(WS-ROW) >= 17 AND EN-OVN(WS-ROW) <= 20
+             COMPUTE WS-LA = EN-OVN(WS-ROW) - 6
+             MOVE WS-LA TO WS-LB WS-LC
+         WHEN OTHER
+             MOVE 1 TO WS-LA
+             MOVE 2 TO WS-LB
+             MOVE 1 TO WS-LC
+     END-EVALUATE
      IF WS-IX(WS-ROW, WS-LA) > 0
          IF WS-BK-KEY(WS-IX(WS-ROW, WS-LA)) = WS-KEY-NOW AND WS-BK-N(WS-IX(WS-ROW, WS-LA)) > 0
              MOVE 1 TO WS-HIT

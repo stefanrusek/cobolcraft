@@ -311,7 +311,11 @@
                  MOVE WS-SAVED-MODEL TO EN-MODEL(WS-R)
              END-IF
 *>           The overlay layers (ENTITY-OVERLAY: villager type, profession and level, horse markings, collars): the model again with the layer's texture.
-             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 12
+             PERFORM VARYING WS-OV FROM 1 BY 1 UNTIL WS-OV > 20
+*>               Layers 13 to 16 are the glints, drawn below: go on with the leather overlay passes, 17 to 20 (57-1 section 4.3).
+                 IF WS-OV = 13
+                     MOVE 17 TO WS-OV
+                 END-IF
                  CALL "ENTITY-OVERLAY" USING CLIENT-STATE WS-R WS-OV WS-OV-CODE WS-OV-R WS-OV-G WS-OV-B WS-OV-M
                  IF WS-OV-CODE > 0 AND CL-MD-FAMILY(EN-MODEL(WS-R)) > 0
                      MOVE WS-OV-CODE TO EN-OVL(WS-R)
