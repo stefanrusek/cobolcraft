@@ -12,7 +12,7 @@
 *> biomes; no light arrays, so no isLightOn either: light is recomputed on load); empty
 *> block_entities, block_ticks and fluid_ticks; PostProcessing with one empty list per section;
 *> Heightmaps WORLD_SURFACE, MOTION_BLOCKING and MOTION_BLOCKING_NO_LEAVES (CHUNK-HEIGHTMAP); and
-*> structures {starts: {}, References: {}} (07 Open question 9).
+*> structures {starts, References} of the chunk (STRUCT-STARTS-WRITE: empty compounds when the store of starts holds nothing for it; 07 Open question 9).
 *> Block-state palettes (07 §7.2, §7.3) list the distinct states in first-occurrence order: a
 *> block's default state as its key (a String), any other state as {id, properties}; a palette that
 *> has both is a list of compounds in which each key is wrapped as {"": key} (07 §1.1). The packed
@@ -292,15 +292,8 @@
      CALL "NBT-WRITE-LONG-ARRAY" USING PB-BUFFER WN WL WS-HM-LONGS WS-HEIGHTMAP-S
      CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
      IF L-FOUND = 0
-         MOVE "structures" TO WN MOVE 10 TO WL
-         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-         MOVE "starts" TO WN MOVE 6 TO WL
-         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
-         MOVE "References" TO WN MOVE 10 TO WL
-         CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
-         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
-         CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+*>       the starts and references the store holds for this chunk (36-1 7.3), empty compounds when it holds none
+         CALL "STRUCT-STARTS-WRITE" USING PB-BUFFER CK-X(L-ROW) CK-Z(L-ROW)
      END-IF
      CALL "VFMT-COPY-OTHERS" USING WK-BUFFER PB-BUFFER WS-CHUNK-OWNED WS-MODE-LIST L-FOUND
      CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
@@ -346,6 +339,7 @@
  01 WS-BE-POS              BINARY-LONG.
  01 WS-BE-COUNT            BINARY-LONG VALUE 0.
  01 WS-END                 BINARY-LONG.
+ 01 WS-STRUCT-OUTCOME      BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ROW                  BINARY-LONG.
@@ -375,6 +369,8 @@
                  PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-BE-COUNT OR PB-ERROR = 1
                      CALL "NBT-READ-SKIP" USING PB-BUFFER WS-ELEMENT-TYPE
                  END-PERFORM
+             WHEN WN = "structures" AND WS-TYPE = 10
+                 CALL "STRUCT-STARTS-READ" USING PB-BUFFER CK-X(L-ROW) CK-Z(L-ROW) WS-STRUCT-OUTCOME
              WHEN OTHER
                  CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
          END-EVALUATE

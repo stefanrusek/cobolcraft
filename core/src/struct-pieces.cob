@@ -440,6 +440,37 @@
  END PROGRAM SPB-MOVE-BELOW-SEA.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. SPB-MOVE-INSIDE.
+*> moveInsideHeights (6.6): room = maxY - minY + 1 - ySpan; newMin = minY + nextInt(room) when room > 1, else minY; every piece by newMin - box.minY (ySpan is the height of the union box).
+*> USING min y, max y, dy out.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTPIECE.
+ 01 WS-BOX.
+    COPY STRUCTBOX REPLACING LEADING ==BX-== BY ==W-==.
+ 01 WS-SPAN                BINARY-LONG.
+ 01 WS-ROOM                BINARY-LONG.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-NEW-MIN             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-MIN-Y                BINARY-LONG.
+ 01 L-MAX-Y                BINARY-LONG.
+ 01 L-DY                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-MIN-Y L-MAX-Y L-DY.
+     CALL "SPB-UNION-ALL" USING WS-BOX
+     COMPUTE WS-SPAN = W-Y1 - W-Y0 + 1
+     COMPUTE WS-ROOM = L-MAX-Y - L-MIN-Y + 1 - WS-SPAN
+     MOVE L-MIN-Y TO WS-NEW-MIN
+     IF WS-ROOM > 1
+         CALL "JRAND-NEXT-INT-BOUND" USING SP-RNG WS-ROOM WS-DRAW
+         ADD WS-DRAW TO WS-NEW-MIN
+     END-IF
+     COMPUTE L-DY = WS-NEW-MIN - W-Y0
+     CALL "SPB-OFFSET" USING L-DY
+     GOBACK.
+ END PROGRAM SPB-MOVE-INSIDE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. SPB-IS-CLOSE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.

@@ -673,6 +673,7 @@
  01 WS-IZ                  BINARY-LONG.
  01 WS-W                   BINARY-LONG.
  01 WS-WIN-N               BINARY-LONG.
+ 01 WS-STORED              BINARY-LONG.
  01 WS-WIN.
     05 WS-WIN-REC OCCURS 18496 TIMES.
        10 WW-X             BINARY-LONG.
@@ -750,6 +751,8 @@
                          CALL "SPB-BOX-INTERSECTS-XZ" USING WS-BOX SP-WBOX WS-CHUNK
                          IF WS-CHUNK = 1
                              CALL "STRUCT-PLACE-START"
+*>                           the start with its final pieces goes to the store of starts (36-1 7.1, once), the references of this chunk are made below
+                             CALL "STRUCT-START-CAPTURE" USING WS-R WS-SX WS-SZ WS-STORED
 *>                           the boxes of a structure that overrides the spawn lists, once the pieces have their final heights (struct-override.cob)
                              CALL "STRUCT-OVR-NOTE-ADAPT" USING SDT-KEY(WS-R) J-CX J-CZ WS-OBOX SDT-ADAPT(WS-R)
                          END-IF
@@ -758,6 +761,7 @@
              END-PERFORM
          END-IF
      END-PERFORM
+     CALL "STRUCT-REFS-CREATE" USING J-CX J-CZ
      MOVE 0 TO FL-OV-COUNT FL-OV-LOST
      CALL "FL-CLOSE"
      CALL "GBE-KEEP" USING L-JOB

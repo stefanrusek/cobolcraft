@@ -66,6 +66,7 @@
  WORKING-STORAGE SECTION.
  COPY STRUCTOVR.
  COPY CBLOCKS.
+ COPY DIMENSIONS.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-I                   BINARY-LONG.
@@ -103,6 +104,10 @@
              END-PERFORM
          END-IF
      END-PERFORM
+*>   no registered box holds the position: the stored starts of the overworld answer the same question (36-1 section 10: the structures that reference the chunk, struct-start-spawn.cob)
+     IF L-LIST = 0 AND L-DIM = DIM-MAIN
+         CALL "STRUCT-SPAWN-QUERY" USING L-X L-Y L-Z L-CAT L-LIST
+     END-IF
      GOBACK.
  END PROGRAM SO-LOOKUP.
 
