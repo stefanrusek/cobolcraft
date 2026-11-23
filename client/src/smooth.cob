@@ -79,7 +79,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SMOOTH-PLAYER.
 *> USING CLIENT-STATE, x y z (FLOAT-LONG out: the feet at the partial tick), eye height (FLOAT-LONG out: the camera's height above the feet at the partial tick:
-*> the smoothed PL-EYE of 53 section 7, 1.6 while it is not set). With no state one tick ago (PL-OSET 0) these are the current ones.
+*> the smoothed PL-EYE of 53 section 7, the pose's PHYS-EYE while it is not set). With no state one tick ago (PL-OSET 0) these are the current ones.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-EYE                 FLOAT-LONG.
@@ -94,7 +94,7 @@
      MOVE PL-X TO L-X
      MOVE PL-Y TO L-Y
      MOVE PL-Z TO L-Z
-     MOVE 1.6 TO WS-EYE
+     CALL "PHYS-EYE" USING PL-POSE WS-EYE
      IF PL-EYE > 0
          MOVE PL-EYE TO WS-EYE
      END-IF

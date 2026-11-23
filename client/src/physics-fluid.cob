@@ -34,6 +34,9 @@
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-E                   FLOAT-LONG VALUE 0.001.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-BOX-HEIGHT          FLOAT-LONG.
+ 01 WS-EYE-HEIGHT          FLOAT-LONG.
  01 WS-FALLING             BINARY-LONG.
  01 WS-ACC                 FLOAT-LONG.
  01 WS-FX                  FLOAT-LONG.
@@ -52,13 +55,17 @@
      MOVE 0 TO PL-IN-WATER PL-IN-LAVA PL-EYE-WATER PL-EYE-LAVA PL-WATER-H PL-LAVA-H PL-PUSH-X PL-PUSH-Z
      INITIALIZE WS-SUMS
      CALL "STATE-TABLES-ENSURE" USING CLIENT-STATE
-     COMPUTE WS-X0 = FUNCTION INTEGER(PL-X - 0.35 + WS-E)
-     COMPUTE WS-X1 = FUNCTION INTEGER(PL-X + 0.35 - WS-E)
+*>   The standing box and the eye of the Player's pose (PHYS-STAND-BOX, PHYS-EYE: 0.6 x 1.8 and 1.62 with a standard content set, 53 section 2.1). The cells scanned are those of
+*>   the standing box in every pose: the depth PL-WATER-H that the swimming steering reads (physics.cob, 53 section 9.1) must not be cut to the 0.6 of the swimming box.
+     CALL "PHYS-STAND-BOX" USING WS-HALF WS-BOX-HEIGHT
+     CALL "PHYS-EYE" USING PL-POSE WS-EYE-HEIGHT
+     COMPUTE WS-X0 = FUNCTION INTEGER(PL-X - WS-HALF + WS-E)
+     COMPUTE WS-X1 = FUNCTION INTEGER(PL-X + WS-HALF - WS-E)
      COMPUTE WS-Y0 = FUNCTION INTEGER(PL-Y + WS-E)
-     COMPUTE WS-Y1 = FUNCTION INTEGER(PL-Y + 1.75 - WS-E)
-     COMPUTE WS-Z0 = FUNCTION INTEGER(PL-Z - 0.35 + WS-E)
-     COMPUTE WS-Z1 = FUNCTION INTEGER(PL-Z + 0.35 - WS-E)
-     COMPUTE WS-EYE = PL-Y + 1.6
+     COMPUTE WS-Y1 = FUNCTION INTEGER(PL-Y + WS-BOX-HEIGHT - WS-E)
+     COMPUTE WS-Z0 = FUNCTION INTEGER(PL-Z - WS-HALF + WS-E)
+     COMPUTE WS-Z1 = FUNCTION INTEGER(PL-Z + WS-HALF - WS-E)
+     COMPUTE WS-EYE = PL-Y + WS-EYE-HEIGHT
      COMPUTE WS-CX = FUNCTION INTEGER(PL-X)
      COMPUTE WS-CZ = FUNCTION INTEGER(PL-Z)
      PERFORM VARYING WS-Y FROM WS-Y0 BY 1 UNTIL WS-Y > WS-Y1
