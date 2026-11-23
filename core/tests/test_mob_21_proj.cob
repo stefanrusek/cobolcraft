@@ -11,6 +11,7 @@
  COPY CONTENT.
  COPY BRWORLD.
  COPY PROTO.
+ COPY CBLOCKS.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-KEY                 PIC X(112).
@@ -59,6 +60,8 @@
  01 WS-AIR                 BINARY-LONG VALUE 0.
  01 WS-BASE-Y              BINARY-LONG.
  01 WS-OWNER-ROW           BINARY-LONG.
+ 01 WS-FIRE-BLOCK          BINARY-LONG.
+ 01 WS-FIRES               BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "MS-TEST-OPEN" USING WS-PLAYER
      MOVE PL-DIM(WS-PLAYER) TO WS-DIM
@@ -78,6 +81,7 @@
      MOVE "minecraft:cow" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-COW-TYPE WS-ENTITY-ROW WS-STATUS
      MOVE 2 TO BW-DIFFICULTY
+     MOVE CB-S-BLOCK(WS-FIRE + 1) TO WS-FIRE-BLOCK
 *>   The kinds have their own entity types.
      MOVE 1 TO WS-KIND
      CALL "PROJ-TYPE" USING WS-KIND WS-T1
@@ -205,14 +209,16 @@
      END-IF
      CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
 
-*>   A fireball into a dirt wall: the explosion destroys dirt; with mob_griefing false the wall stays.
+*>   A fireball into a dirt wall (4 thick): the explosion destroys dirt; with mob_griefing false the wall stays. Power 4, so that enough cells are blown for the one in three of them
+*>   that light a fire to leave some.
+     MOVE 4 TO WS-POWER
      MOVE PL-X(WS-PLAYER) TO WS-X
      MOVE PL-Y(WS-PLAYER) TO WS-Y
      PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 1
          MOVE 0 TO WS-DESTROYED
-         PERFORM VARYING WS-BX FROM 6 BY 1 UNTIL WS-BX > 6
-             PERFORM VARYING WS-BY FROM 0 BY 1 UNTIL WS-BY > 2
-                 PERFORM VARYING WS-BZ FROM -1 BY 1 UNTIL WS-BZ > 1
+         PERFORM VARYING WS-BX FROM 6 BY 1 UNTIL WS-BX > 9
+             PERFORM VARYING WS-BY FROM 0 BY 1 UNTIL WS-BY > 3
+                 PERFORM VARYING WS-BZ FROM -2 BY 1 UNTIL WS-BZ > 2
                      COMPUTE WS-FX = FUNCTION INTEGER(WS-X) + WS-BX
                      COMPUTE WS-FY = FUNCTION INTEGER(WS-Y) + WS-BY
                      COMPUTE WS-FZ = FUNCTION INTEGER(WS-Z) + WS-BZ
@@ -256,8 +262,36 @@
              MOVE WS-DESTROYED TO WS-OBS
          END-IF
          CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+*>       The fire flag of the explosion is the griefing value: with mob_griefing true the air cells the blast left above solid blocks take fire (20 section 6.2), with false there is none.
+         MOVE 0 TO WS-FIRES
+         PERFORM VARYING WS-BX FROM 0 BY 1 UNTIL WS-BX > 12
+             PERFORM VARYING WS-BY FROM -2 BY 1 UNTIL WS-BY > 8
+                 PERFORM VARYING WS-BZ FROM -6 BY 1 UNTIL WS-BZ > 6
+                     COMPUTE WS-FX = FUNCTION INTEGER(WS-X) + WS-BX
+                     COMPUTE WS-FY = WS-BASE-Y + WS-BY
+                     COMPUTE WS-FZ = FUNCTION INTEGER(WS-Z) + WS-BZ
+                     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-FX WS-FY WS-FZ WS-STATE
+                     IF CB-S-BLOCK(WS-STATE + 1) = WS-FIRE-BLOCK
+                         ADD 1 TO WS-FIRES
+                     END-IF
+                 END-PERFORM
+             END-PERFORM
+         END-PERFORM
+         MOVE 0 TO WS-EXP WS-OBS
+         IF WS-J = 1
+             MOVE "acceptance US15 20§6.2 large fireball: with mob_griefing true the blast lights fires" TO WS-CASE
+             MOVE 1 TO WS-EXP
+             IF WS-FIRES > 0
+                 MOVE 1 TO WS-OBS
+             END-IF
+         ELSE
+             MOVE "acceptance US15 20§6.2 large fireball: with mob_griefing false no fire is lit" TO WS-CASE
+             MOVE WS-FIRES TO WS-OBS
+         END-IF
+         CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
          COMPUTE WS-Y = WS-Y - 1.5
      END-PERFORM
+     MOVE 1 TO WS-POWER
      MOVE 1 TO WS-RULE-VALUE
      CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
 

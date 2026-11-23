@@ -103,6 +103,9 @@
  01 WS-RANGE               FLOAT-LONG.
  01 WS-RANGE2              FLOAT-LONG.
  01 WS-ONE-V               FLOAT-LONG.
+ 01 WS-TAGGED              BINARY-LONG.
+ 01 WS-BABY-E              BINARY-LONG.
+ 01 WS-ADULT-E             BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-KIND                 BINARY-LONG.
@@ -124,15 +127,24 @@
      CALL "MOB-SEE-RANGE2" USING WS-RANGE WS-ONE-V WS-RANGE2
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
          IF WS-E NOT = L-ROW AND EN-USED(WS-E) = 1 AND EN-PLAYER(WS-E) = 0 AND EN-HEALTH(WS-E) > 0
-                 AND EN-DIM(WS-E) = EN-DIM(L-ROW) AND EN-MOBAGE(WS-E) >= 0
+                 AND EN-DIM(WS-E) = EN-DIM(L-ROW)
              COMPUTE WS-DX = FUNCTION ABS(EN-X(WS-E) - EN-X(L-ROW))
              COMPUTE WS-DY = FUNCTION ABS(EN-Y(WS-E) - EN-Y(L-ROW))
              COMPUTE WS-DZ = FUNCTION ABS(EN-Z(WS-E) - EN-Z(L-ROW))
              CALL "PGAI-KIND" USING WS-E WS-K
              COMPUTE WS-D2 = WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ
+*>           The adult sensor (AdultSensorAnyType, X1-ADULT-MATCH 44-x1 section 5.1): a piglin or hoglin kind that is not a baby (a negative age).
+             MOVE 0 TO WS-TAGGED WS-BABY-E
+             IF WS-K = 1 OR WS-K = 2 OR WS-K = 3
+                 MOVE 1 TO WS-TAGGED
+             END-IF
+             IF EN-MOBAGE(WS-E) < 0
+                 MOVE 1 TO WS-BABY-E
+             END-IF
+             CALL "X1-ADULT-MATCH" USING WS-TAGGED WS-BABY-E WS-ADULT-E
 *>           The visibility predicate (44-3 section 4.7): the candidates are the cube of the scanning mob's follow range, the test is the sphere of max(R x 1, 2) (the other is no player: v = 1)
 *>           and the ray between the eyes (the line of sight).
-             IF WS-DX <= WS-RANGE AND WS-DY <= WS-RANGE AND WS-DZ <= WS-RANGE AND WS-D2 <= WS-RANGE2 AND (WS-K = 1 OR WS-K = 2 OR WS-K = 3)
+             IF WS-DX <= WS-RANGE AND WS-DY <= WS-RANGE AND WS-DZ <= WS-RANGE AND WS-D2 <= WS-RANGE2 AND WS-ADULT-E = 1
                  COMPUTE WS-BY = EN-Y(WS-E) + 1
                  CALL "MOB-SEES" USING EN-DIM(L-ROW) WS-AX WS-AY WS-AZ EN-X(WS-E) WS-BY EN-Z(WS-E) WS-SEES
                  IF WS-SEES = 1 AND WS-K = 3
@@ -784,6 +796,12 @@
  01 WS-ADULT               BINARY-LONG.
  01 WS-NEAR                BINARY-LONG.
  01 WS-KIND                BINARY-LONG VALUE 2.
+ 01 WS-IS-BABY             BINARY-LONG VALUE 1.
+ 01 WS-MIN                 BINARY-LONG VALUE 5.
+ 01 WS-MAX                 BINARY-LONG VALUE 16.
+ 01 WS-ACT                 BINARY-LONG.
+ 01 WS-RADIUS              BINARY-LONG.
+ 01 WS-DIST                FLOAT-LONG.
  01 WS-DX                  FLOAT-LONG.
  01 WS-DZ                  FLOAT-LONG.
  01 WS-D2                  FLOAT-LONG.
@@ -800,7 +818,9 @@
          COMPUTE WS-DX = EN-X(WS-ADULT) - EN-X(L-ROW)
          COMPUTE WS-DZ = EN-Z(WS-ADULT) - EN-Z(L-ROW)
          COMPUTE WS-D2 = WS-DX * WS-DX + (EN-Y(WS-ADULT) - EN-Y(L-ROW)) ** 2 + WS-DZ * WS-DZ
-         IF WS-D2 >= 25 AND WS-D2 < 289
+         COMPUTE WS-DIST = FUNCTION SQRT(WS-D2)
+         CALL "X1-BABY-FOLLOW" USING WS-IS-BABY WS-DIST WS-MIN WS-MAX WS-ACT WS-RADIUS
+         IF WS-ACT = 1
              COMPUTE WS-H = FUNCTION SQRT(WS-DX * WS-DX + WS-DZ * WS-DZ)
              IF WS-H > 0.01
                  COMPUTE L-HX = WS-DX / WS-H * SM-WALK-MILLI(WS-M) / 1000 * 0.6

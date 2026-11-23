@@ -330,6 +330,10 @@
  01 WS-AY                  FLOAT-LONG.
  01 WS-AZ                  FLOAT-LONG.
  01 WS-SEES                BINARY-LONG.
+ 01 WS-BACKUP              BINARY-LONG.
+ 01 WS-BK-ATTACK           BINARY-LONG VALUE 1.
+ 01 WS-BK-WALK             BINARY-LONG VALUE 0.
+ 01 WS-BK-LIMIT            FLOAT-LONG VALUE 5.
  01 WS-DONE                BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-FX                  FLOAT-LONG.
@@ -421,7 +425,11 @@
      CALL "MOB-SEES" USING EN-DIM(L-ROW) WS-AX WS-AY WS-AZ WS-TX WS-DY WS-TZ WS-SEES
 
 *>   BackUpIfTooClose(5, 0.75): a crossbow in either hand, the target seen and closer than 5: strafe back at 0.75.
-     IF WS-CROSSBOW = 1 AND WS-SEES = 1 AND WS-D2 < 25 AND WS-H > 0.0001
+     MOVE 0 TO WS-BACKUP
+     IF WS-CROSSBOW = 1
+         CALL "X1-BACKUP-TEST" USING WS-BK-ATTACK WS-BK-WALK WS-SEES WS-D WS-BK-LIMIT WS-BACKUP
+     END-IF
+     IF WS-BACKUP = 1 AND WS-H > 0.0001
          COMPUTE L-HX = 0 - WS-DX / WS-H * WS-SPEED * 0.75
          COMPUTE L-HZ = 0 - WS-DZ / WS-H * WS-SPEED * 0.75
          MOVE 1 TO L-ACTS
