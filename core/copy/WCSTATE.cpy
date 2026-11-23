@@ -8,6 +8,7 @@
 *>   nautilus and zombie nautilus (core/src/mob-21-4-nautilus.cob, 44-7 sections 10.5 and 10.6): WC-NAU-INIT 1 once the spawn memories were set, WC-NAU-ATTACK-CD ATTACK_TARGET_COOLDOWN,
 *>   WC-NAU-CHARGE-CD CHARGE_COOLDOWN_TICKS, WC-NAU-CHARGING the ticks the charge has run (0 not charging), WC-NAU-VX/-VY/-VZ the chargeVelocity and WC-NAU-SX/-SY/-SZ the start position
 *>   (thousandths), WC-NAU-ANGRY the entity id of the ANGRY_AT memory (EN-ANGER holds its ticks), WC-NAU-DASH 1 while the dash flag (metadata 20) is set.
+*>   zombie horse (core/src/mob-mount-rows.cob, 19 section 3.6): WC-ZH-SPEED the speed gene (9 + r1 + r2 + r3) / 42.16 in millionths (0: none drawn), read by STDMOB-SPEED.
  78 WC-MAX                VALUE 1024.
  01 WC-STATE EXTERNAL.
     05 WC-ROW                OCCURS 1024 TIMES.
@@ -36,3 +37,4 @@
        10 WC-NAU-SZ          BINARY-LONG.
        10 WC-NAU-ANGRY       BINARY-LONG.
        10 WC-NAU-DASH        BINARY-LONG.
+       10 WC-ZH-SPEED        BINARY-LONG.

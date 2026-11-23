@@ -3,9 +3,10 @@
 *> leaves the item to the default drop. Chest: a tamed donkey, mule, llama or trader llama in front (its box overlaps the front cell) with no chest takes the chest item (WC-CHEST of WCSTATE.cpy, saved as ChestedHorse; the
 *> viewers get Set Entity Data as for a player's chest, mob-19-3c.cob), the item is spent; with none, the default drop.
 *> Not done: the respawn anchor's charge sound (the document names `RespawnAnchorBlock.charge` and no sound), the llama's chest flag is not saved or sent (mob-19-3c.cob handles the donkey and the mule), the 27 slots of the new inventory.
-*> The wither skeleton skull and the carved pumpkin (4.7, 4.8) and every item that can be worn (4.9) go to redstone-live-o.cob.
+*> The shulker boxes (4.15), the wither skeleton skull and the carved pumpkin (4.7, 4.8) and every item that can be worn (4.9) go to redstone-live-o.cob; the fire charge, the wind charge, the firework rocket and
+*> the splash and lingering potions (4.1) to redstone-live-p.cob.
 *> Entry points:
-*>   RL-DISP-MORE USING dim, front x, y, z, facing, item key (PIC X(48), bare), handled out, consumed out, item    handled 1 when a rule ran (consumed: 1 the item is spent, 0 the dry click 1001); 0 for the default
+*>   RL-DISP-MORE USING dim, front x, y, z, facing, item key (PIC X(48), bare), handled out, consumed out, item, slot variant    handled 1 when a rule ran (consumed: 1 the item is spent, 0 the dry click 1001); 0 for the default
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RL-DISP-MORE RECURSIVE.
@@ -44,6 +45,7 @@
  01 LS-CY1                 FLOAT-LONG.
  01 LS-CZ1                 FLOAT-LONG.
  01 LS-OVERLAP             BINARY-LONG.
+ 01 LS-LEN                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -54,8 +56,10 @@
  01 L-HANDLED              BINARY-LONG.
  01 L-CONSUMED             BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-FACING L-BARE L-HANDLED L-CONSUMED L-ITEM.
+ 01 L-VAR                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-FACING L-BARE L-HANDLED L-CONSUMED L-ITEM L-VAR.
      MOVE 0 TO L-HANDLED L-CONSUMED
+     COMPUTE LS-LEN = FUNCTION LENGTH(FUNCTION TRIM(L-BARE))
      EVALUATE TRUE
          WHEN L-BARE = "glowstone"
 *>           4.17: a respawn anchor takes one charge unless it has 4 (the property `charges` is the only one of the block that is a number 0 to 4)
@@ -110,6 +114,12 @@
                      END-IF
                  END-IF
              END-PERFORM
+         WHEN LS-LEN >= 11 AND L-BARE(LS-LEN - 10:11) = "shulker_box"
+*>           4.15: placed in the front cell when it can be replaced and holds no entity (redstone-live-o.cob)
+             CALL "RL-DISP-SHULKER" USING L-DIM L-X L-Y L-Z L-FACING L-BARE L-HANDLED L-CONSUMED
+         WHEN L-BARE = "fire_charge" OR L-BARE = "wind_charge" OR L-BARE = "firework_rocket" OR L-BARE = "splash_potion" OR L-BARE = "lingering_potion"
+*>           4.1: shot with the item's position, power and uncertainty (redstone-live-p.cob)
+             CALL "RL-DISP-SHOT" USING L-DIM L-X L-Y L-Z L-FACING L-BARE L-VAR L-HANDLED L-CONSUMED
          WHEN L-BARE = "wither_skeleton_skull" OR L-BARE = "carved_pumpkin"
 *>           4.7 and 4.8: placed where a pattern is complete, else worn (redstone-live-o.cob)
              CALL "RL-DISP-HEAD" USING L-DIM L-X L-Y L-Z L-FACING L-BARE L-ITEM L-HANDLED L-CONSUMED

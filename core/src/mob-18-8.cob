@@ -77,6 +77,9 @@
          WHEN L-SPECIES = "camel"
              MOVE 1 TO WS-HORSE
              MOVE 2 TO WS-KIND
+         WHEN L-SPECIES = "zombie_horse"
+             MOVE 1 TO WS-HORSE
+             MOVE 3 TO WS-KIND
      END-EVALUATE
      IF WS-HORSE = 1
          CALL "M19-HORSE-FOOD" USING WS-KIND L-ITEM L-FOUND WS-HEAL L-SECONDS WS-TEMPER L-LOVE
@@ -697,6 +700,10 @@
          WHEN "donkey"
          WHEN "mule"
              CALL "M19-EQUINE-BORN" USING L-ROW
+         WHEN "zombie_horse"
+             CALL "ZOMBIE-HORSE-BORN" USING L-ROW
+         WHEN "skeleton_horse"
+             CALL "SKELETON-HORSE-BORN" USING L-ROW
          WHEN "panda"
              CALL "PANDA-BORN" USING L-ROW
          WHEN "wandering_trader"
@@ -1615,6 +1622,7 @@
      END-IF
 *>   A hostile mob handles no interaction except the name tag (17 section 3.7), which every living entity takes.
      IF SM-KIND(WS-M) = 1 AND SM-FUSE(WS-M) = 0 AND SM-KEY(WS-M) NOT = "zombie_villager" AND SM-KEY(WS-M) NOT = "piglin"
+             AND SM-KEY(WS-M) NOT = "zombie_horse" AND SM-KEY(WS-M) NOT = "camel_husk"
              AND WS-KEY48 NOT = "name_tag"
              AND SM-KEY(WS-M) NOT = "sulfur_cube"
          GOBACK
