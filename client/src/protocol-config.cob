@@ -229,6 +229,7 @@
 *> none) and its colour data for the tint sources (temperature, downfall and the effects' water, grass,
 *> foliage and dry foliage colours and grass colour modifier, 43 section 5: TINT-BIOME-SET under the
 *> biome's id, its index in the registry; minecraft:plains is the biome of an unloaded cell, TT-PLAINS);
+*> minecraft:painting_variant entries (width, height, asset_id: RG-PAINT, the variant id is the registry index, 34-9 section 11);
 *> every other entry's data is skipped.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -245,6 +246,7 @@
  01 WS-FRAMING             BINARY-LONG VALUE 0.
  01 WS-D                   BINARY-LONG.
  01 WS-B                   BINARY-LONG.
+ 01 WS-PV                  BINARY-LONG.
  01 WN                     PIC X(64).
  01 WL                     BINARY-LONG.
  01 WS-VALUE               BINARY-LONG.
@@ -288,6 +290,9 @@
      IF WS-REGISTRY = "minecraft:dimension_type"
          MOVE 0 TO RG-DIM-COUNT
      END-IF
+     IF WS-REGISTRY = "minecraft:painting_variant"
+         MOVE 0 TO RG-PAINT-COUNT
+     END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
          MOVE SPACES TO WS-NAME
          CALL "PB-GET-IDENTIFIER" USING PB-BUFFER WS-NAME WS-CAP WS-NAME-LENGTH
@@ -318,6 +323,12 @@
          IF WS-REGISTRY = "minecraft:worldgen/biome" AND WS-I <= CL-MAX-BIOMES
              MOVE WS-I TO WS-B
              MOVE 0 TO RG-BIOME-PRECIP(WS-B)
+         END-IF
+         MOVE 0 TO WS-PV
+         IF WS-REGISTRY = "minecraft:painting_variant" AND WS-I <= CL-MAX-PAINTINGS
+             MOVE WS-I TO WS-PV RG-PAINT-COUNT
+             MOVE 0 TO RG-PAINT-W(WS-PV) RG-PAINT-H(WS-PV)
+             MOVE SPACES TO RG-PAINT-ASSET(WS-PV)
          END-IF
          IF WS-PRESENT = 1
              CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
@@ -453,6 +464,30 @@
                      IF WS-NAME = "minecraft:plains"
                          MOVE WS-BIOME-ID TO TT-PLAINS
                      END-IF
+                 WHEN WS-PV > 0
+*>                   A painting variant: width and height (Int, blocks), asset_id (String); title and author are skipped.
+                     MOVE 1 TO WS-TYPE
+                     PERFORM UNTIL WS-TYPE = 0
+                         MOVE SPACES TO WN
+                         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-CAP WL
+                         EVALUATE TRUE
+                             WHEN WS-TYPE = 0
+                                 CONTINUE
+                             WHEN (WN = "width" OR WN = "height") AND WS-TYPE = 3
+                                 CALL "PB-GET-INT" USING PB-BUFFER WS-VALUE
+                                 IF WN = "width"
+                                     MOVE WS-VALUE TO RG-PAINT-W(WS-PV)
+                                 ELSE
+                                     MOVE WS-VALUE TO RG-PAINT-H(WS-PV)
+                                 END-IF
+                             WHEN WN = "asset_id" AND WS-TYPE = 8
+                                 MOVE SPACES TO WS-TEXT
+                                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-TEXT WS-CAP WS-TEXT-LENGTH
+                                 MOVE WS-TEXT TO RG-PAINT-ASSET(WS-PV)
+                             WHEN OTHER
+                                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+                         END-EVALUATE
+                     END-PERFORM
                  WHEN WS-D = 0
                      CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
                  WHEN OTHER
