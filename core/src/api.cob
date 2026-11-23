@@ -603,14 +603,14 @@
 *>       the ocean ruins (struct-ruin.cob): warm and cold, tested on the real data with the worker equal to the atomic path
          CALL "STRUCT-GATE-ON" USING WS-RUIN-WARM
          CALL "STRUCT-GATE-ON" USING WS-RUIN-COLD
-*>       the jigsaw structures (struct-jig.cob): the pillager outpost and the five villages (no beardifier; the feature elements run their placed feature, JIG-FEATURE)
+*>       the jigsaw structures (struct-jig.cob): the pillager outpost and the five villages (their terrain adaptation is the beardifier of struct-beard.cob; the feature elements run their placed feature, JIG-FEATURE)
          CALL "STRUCT-GATE-ON" USING WS-OUTPOST
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-PLAINS
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-DESERT
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-SAVANNA
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-SNOWY
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-TAIGA
-*>       the stronghold (struct-stronghold.cob, struct-sh-place.cob; the terrain adaptation is not done)
+*>       the stronghold (struct-stronghold.cob, struct-sh-place.cob; the terrain adaptation is the beardifier of struct-beard.cob)
          CALL "STRUCT-GATE-ON" USING WS-STRONGHOLD
 *>       the woodland mansion (struct-mansion.cob, struct-man-place.cob, struct-man-start.cob; no mob markers)
          CALL "STRUCT-GATE-ON" USING WS-MANSION
