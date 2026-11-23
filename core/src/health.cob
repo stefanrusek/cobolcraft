@@ -823,6 +823,11 @@
      IF WS-WITHER = 1
          GOBACK
      END-IF
+*>   A trap horse is invulnerable for the 60 ticks after the skeleton trap sprang (19 section 3.6).
+     CALL "SKELETON-IMMUNE" USING WS-ROW L-CAUSE WS-WITHER
+     IF WS-WITHER = 1
+         GOBACK
+     END-IF
 *>   A creaking bound to a heart takes no damage itself: the hit is the heart's creakingHurt (20 section 17, 31 section 6.6).
      CALL "CREAKING-REDIRECT" USING WS-ROW L-CAUSE WS-WITHER
      IF WS-WITHER = 1

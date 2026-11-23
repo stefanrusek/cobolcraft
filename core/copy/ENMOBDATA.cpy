@@ -44,3 +44,5 @@
     05 MQ-HAND             BINARY-LONG.
     05 MQ-EQUIP            BINARY-LONG.
     05 MQ-HEAD-WEAR        BINARY-LONG.
+    05 MQ-TRAP             BINARY-LONG.
+    05 MQ-TRAP-TIME        BINARY-LONG.

@@ -100,6 +100,14 @@
              CALL "MNT-INV-WRITE" USING L-ROW PB-BUFFER
          END-IF
      END-IF
+*>   SkeletonTrapGoal state (45-4 section 6.4; 19 section 3.6): the trap flag (Byte) and the ticks it has stood (Int).
+     IF WS-KEY = "skeleton_horse"
+         CALL "WC-ROW-OPEN" USING L-ROW
+         MOVE "SkeletonTrap" TO WN MOVE 12 TO WL
+         CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WC-TRAP(L-ROW)
+         MOVE "SkeletonTrapTime" TO WN MOVE 16 TO WL
+         CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WC-TRAP-TICKS(L-ROW)
+     END-IF
      IF WS-KEY = "ocelot"
          MOVE "Trusting" TO WN MOVE 8 TO WL
          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-TAMED(L-ROW)
@@ -305,6 +313,10 @@
              CALL "PB-GET-INT" USING PB-BUFFER MQ-TEMPER
          WHEN L-NAME = "ChestedHorse" AND L-TYPE = 1
              CALL "PB-GET-BYTE" USING PB-BUFFER MQ-CHEST
+         WHEN L-NAME = "SkeletonTrap" AND L-TYPE = 1
+             CALL "PB-GET-BYTE" USING PB-BUFFER MQ-TRAP
+         WHEN L-NAME = "SkeletonTrapTime" AND L-TYPE = 3
+             CALL "PB-GET-INT" USING PB-BUFFER MQ-TRAP-TIME
          WHEN L-NAME = "EggLayTime" AND L-TYPE = 3
              CALL "PB-GET-INT" USING PB-BUFFER MQ-EGG
          WHEN L-NAME = "MainGene" AND L-TYPE = 8
@@ -427,6 +439,11 @@
          IF MQ-OWNER NOT = SPACES
              MOVE MQ-OWNER TO EN-OWNER-UUID(L-ROW)
          END-IF
+     END-IF
+     IF WS-KEY = "skeleton_horse"
+         CALL "WC-ROW-OPEN" USING L-ROW
+         MOVE MQ-TRAP TO WC-TRAP(L-ROW)
+         MOVE MQ-TRAP-TIME TO WC-TRAP-TICKS(L-ROW)
      END-IF
      IF WS-KEY = "ocelot"
          MOVE MQ-TRUST TO EN-TAMED(L-ROW)
