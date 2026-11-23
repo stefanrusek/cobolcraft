@@ -1180,6 +1180,12 @@
              GOBACK
          END-IF
      END-IF
+     IF SM-KEY(WS-M) = "skeleton_horse"
+         CALL "SKELETON-HORSE-TICK" USING WS-ROW
+         IF EN-USED(WS-ROW) = 0
+             GOBACK
+         END-IF
+     END-IF
      CALL "STDMOB-FX-TICK" USING WS-ROW WS-M
      IF SM-KEY(WS-M) = "silverfish"
          CALL "STDMOB-SILVERFISH-WAKE" USING WS-ROW

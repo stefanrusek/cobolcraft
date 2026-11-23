@@ -660,3 +660,169 @@
      END-IF
      GOBACK.
  END PROGRAM MNT-RIDER-OPEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MNT-INV-WRITE.
+*> USING row, PB-BUFFER (a mob compound being written): the Items list of a chested mount (45-4 section 6.5): one {Slot, id, count[, components]} per non-empty slot of WC-INV, an empty list
+*> when the chest holds nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY WCSTATE.
+ 01 WN                     PIC X(16).
+ 01 WL                     BINARY-LONG.
+ 01 WS-ELEMENT             BINARY-LONG VALUE -1.
+ 01 WS-T-COMPOUND          BINARY-LONG VALUE 10.
+ 01 WS-T-NONE              BINARY-LONG VALUE 0.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ COPY PROTO.
+ PROCEDURE DIVISION USING L-ROW PB-BUFFER.
+     CALL "WC-ROW-OPEN" USING L-ROW
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 15
+         IF WC-INV-COUNT(L-ROW, WS-S) > 0
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     MOVE "Items" TO WN MOVE 5 TO WL
+     IF WS-N = 0
+         CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-NONE WS-N
+     ELSE
+         CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-COMPOUND WS-N
+     END-IF
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 15
+         IF WC-INV-COUNT(L-ROW, WS-S) > 0
+             CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WS-ELEMENT
+             MOVE "Slot" TO WN MOVE 4 TO WL
+             COMPUTE WS-SLOT = WS-S - 1
+             CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-SLOT
+             CALL "KX-PATCH-KEEP" USING WC-INV-VAR(L-ROW, WS-S) WS-KP
+             CALL "PNBT-STACK-WRITE" USING PB-BUFFER WC-INV-ITEM(L-ROW, WS-S) WC-INV-COUNT(L-ROW, WS-S) WS-KP
+             CALL "KX-PATCH-FREE" USING WS-KP
+             CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+         END-IF
+     END-PERFORM
+     CALL "NBT-WRITE-LIST-END" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM MNT-INV-WRITE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MNT-INV-READ.
+*> USING PB-BUFFER, start (the offset of the mob compound's first tag), row: the Items list of the compound into WC-INV of the row. Read after MOB-NBT-APPLY, so the chest flag and the llama's strength are
+*> set: the inventory has 3 x columns slots (MNT-COLUMNS: none without a chest), an element whose Slot is outside 0 to size - 1, or that holds no item, is dropped (45-4 section 6.5).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY WCSTATE.
+ 01 WS-HOME                BINARY-LONG.
+ 01 WS-CONTAINER           BINARY-LONG VALUE 10.
+ 01 WS-PATH                PIC X(8).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-ET                  BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-COLUMNS             BINARY-LONG.
+ 01 WS-SIZE                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-ICOUNT              BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-START                BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING PB-BUFFER L-START L-ROW.
+     MOVE PB-POS TO WS-HOME
+     MOVE L-START TO PB-POS
+     MOVE "Items" TO WS-PATH
+     MOVE 5 TO WS-PATH-LENGTH
+     CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-PATH WS-PATH-LENGTH WS-FOUND
+     IF WS-FOUND = 9
+         CALL "MNT-COLUMNS" USING L-ROW WS-COLUMNS
+         COMPUTE WS-SIZE = 3 * WS-COLUMNS
+         CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ET WS-COUNT
+         PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > WS-COUNT OR PB-ERROR = 1
+             CALL "PNBT-STACK-READ" USING PB-BUFFER WS-SLOT WS-ITEM WS-ICOUNT WS-KP
+             IF WS-SLOT >= 0 AND WS-SLOT < WS-SIZE AND WS-ITEM > 0 AND WS-ICOUNT > 0
+                 COMPUTE WS-S = WS-SLOT + 1
+                 MOVE WS-ITEM TO WC-INV-ITEM(L-ROW, WS-S)
+                 MOVE WS-ICOUNT TO WC-INV-COUNT(L-ROW, WS-S)
+                 CALL "KX-PATCH-TAKE" USING WS-KP WC-INV-VAR(L-ROW, WS-S)
+             END-IF
+             CALL "KX-PATCH-FREE" USING WS-KP
+         END-PERFORM
+     END-IF
+     MOVE WS-HOME TO PB-POS
+     GOBACK.
+ END PROGRAM MNT-INV-READ.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MNT-EQUIP-VIEW.
+*> USING player row, mount row: a viewer who comes into view of a mount gets Set Equipment (0x68) with the body pair (ordinal 6, WC-BODY) and the saddle pair (ordinal 7, EN-SADDLE; the item is
+*> minecraft:saddle), 0x80 on the first when two follow (40-6 section 2.2; 45-2 section 2.4). Nothing for a row that is no mount or wears neither.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY WCSTATE.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==EQ-==.
+ COPY PROTO.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 104.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-SADDLE              BINARY-LONG.
+ 01 WS-BODY                BINARY-LONG.
+ 01 WS-ORDINAL             BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-KEY                 PIC X(24).
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-ROW.
+     CALL "MNT-KIND" USING L-ROW WS-KIND
+     IF WS-KIND = 0
+         GOBACK
+     END-IF
+     CALL "WC-ROW-OPEN" USING L-ROW
+     MOVE 0 TO WS-BODY WS-SADDLE
+     IF WC-BODY(L-ROW) > 0
+         MOVE 1 TO WS-BODY
+     END-IF
+     IF EN-SADDLE(L-ROW) = 1
+         MOVE 1 TO WS-SADDLE
+     END-IF
+     IF WS-BODY + WS-SADDLE = 0
+         GOBACK
+     END-IF
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
+     IF WS-BODY = 1
+         MOVE 6 TO WS-ORDINAL
+         IF WS-SADDLE = 1
+             ADD 128 TO WS-ORDINAL
+         END-IF
+         CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-ORDINAL
+         INITIALIZE EQ-ITEMSTACK-X
+         MOVE 1 TO EQ-ISX-COUNT
+         MOVE WC-BODY(L-ROW) TO EQ-ISX-ITEM
+         CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER EQ-ITEMSTACK-X
+     END-IF
+     IF WS-SADDLE = 1
+         MOVE 7 TO WS-ORDINAL
+         MOVE "saddle" TO WS-KEY
+         CALL "MOB-ITEM-ID" USING WS-KEY WS-ITEM
+         CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-ORDINAL
+         INITIALIZE EQ-ITEMSTACK-X
+         MOVE 1 TO EQ-ISX-COUNT
+         MOVE WS-ITEM TO EQ-ISX-ITEM
+         CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER EQ-ITEMSTACK-X
+     END-IF
+     CALL "CORE-SEND" USING PL-CONN(L-PLAYER) PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM MNT-EQUIP-VIEW.

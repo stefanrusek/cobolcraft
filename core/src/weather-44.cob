@@ -2,7 +2,7 @@
 *> of a dimension in rain and thunder, the one in 100000 strike (XP-RANDOM); LIGHTNING-CHUNK-TICK takes that draw as a parameter (0 strikes) and picks the column; LIGHTNING-STRIKE-AT makes the bolt at the
 *> bottom centre of the column's surface and, with the roll below the effective difficulty (thousandths over 100000: nextDouble < e x 0.01) and spawn_mobs on, a skeleton horse beside a visual-only bolt.
 *> Gaps: the lightning rod search (POI), the living-entity retargeting, the sky light and biome precipitation test (the column's surface counts as open sky and rain), the inhabited time and moon in the
-*> local difficulty (0 are used), the horse's trap flag and behaviour (skeletons on approach, 19), spawnFire.
+*> local difficulty (0 are used), the horse's trap behaviour is core/src/mob-skeleton-trap.cob, spawnFire.
 *>
 *>   LIGHTNING-CHUNK-TICK USING dim, chunk x, chunk z, draw (0 strikes)
 *>   LIGHTNING-STRIKE-AT USING dim, block x, block z, trap roll (0 to 99999), bolt row out
@@ -13,6 +13,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY WCSTATE.
  COPY BRWORLD.
  01 WS-SURFACE             BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
@@ -63,6 +64,10 @@
          END-IF
          IF WS-HROW > 0
              MOVE 1 TO WS-VISUAL
+*>           The trap horse (19 section 3.6): the trap flag set, age 0 (SKELETON-HORSE-TICK springs it when a living player is within 10 blocks).
+             CALL "WC-ROW-OPEN" USING WS-HROW
+             MOVE 1 TO WC-TRAP(WS-HROW)
+             MOVE 0 TO WC-TRAP-TICKS(WS-HROW) EN-MOBAGE(WS-HROW)
          END-IF
      END-IF
      COMPUTE WS-BX = L-X + 0.5

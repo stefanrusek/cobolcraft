@@ -36,8 +36,12 @@
     05 FILLER              PIC X(24) VALUE "zombie_horse".
     05 FILLER              FLOAT-LONG VALUE 1.31875.
     05 FILLER              FLOAT-LONG VALUE 0.
+*>  The skeleton horse's seat, the same horse-family attachment (18 section 1.1.1), for the skeleton trap's riders (19 section 3.6).
+    05 FILLER              PIC X(24) VALUE "skeleton_horse".
+    05 FILLER              FLOAT-LONG VALUE 1.31875.
+    05 FILLER              FLOAT-LONG VALUE 0.
  01 WS-TABLE REDEFINES WS-ATTACH.
-    05 WS-A OCCURS 6 TIMES.
+    05 WS-A OCCURS 7 TIMES.
        10 WS-A-KEY         PIC X(24).
        10 WS-A-Y           FLOAT-LONG.
        10 WS-A-Z           FLOAT-LONG.
@@ -50,7 +54,7 @@
  01 L-SEAT                 BINARY-LONG.
  PROCEDURE DIVISION USING L-VEHICLE L-RIDER L-Y L-Z L-SEAT.
      MOVE 0 TO L-Y L-Z L-SEAT
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 7
          IF WS-A-KEY(WS-I) = L-VEHICLE
              MOVE 1 TO L-SEAT
              MOVE WS-A-Y(WS-I) TO L-Y
