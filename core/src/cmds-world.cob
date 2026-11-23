@@ -2639,20 +2639,47 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CX-PLACE.
 *> place feature <feature> [<pos>] | jigsaw <pool> <target> <max_depth> [<position>] | structure <structure> [<pos>] | template <template> [<pos> [<rotation> [<mirror>
-*> [<integrity> [<seed> [strict]]]]]] (16 §7.5, level 2). The world has no template, structure, jigsaw pool or configured feature to place (generation runs its features
-*> only inside the generation stage), so feature, jigsaw and structure are commands.place.<kind>.failed, and a template is commands.place.template.invalid [template id]
-*> (no template exists). The success keys of the catalog are not used.
+*> [<integrity> [<seed> [strict]]]]]] (16 §7.5, level 2). The world has no template, structure or configured feature to place (generation runs its features only inside the
+*> generation stage), so feature and structure are commands.place.<kind>.failed, and a template is commands.place.template.invalid [template id] (no template exists). The success
+*> keys of those catalog entries are not used.
+*> jigsaw (36-3 15, JIG-GENERATE): a pool that is no template pool is commands.place.jigsaw.invalid [pool key]; the position (omitted: the block holding the source's position)
+*> must be in a loaded chunk (argument.pos.unloaded); the assembly then runs from there (keepJigsaws false) and its false result is commands.place.jigsaw.failed, a true one
+*> commands.place.jigsaw.success [x, y, z] (broadcast).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BRRUN.
+ COPY PROTO.
  01 WS-NAME-FEATURE        PIC X(32) VALUE "feature".
  01 WS-NAME-JIGSAW         PIC X(32) VALUE "jigsaw".
  01 WS-NAME-STRUCTURE      PIC X(32) VALUE "structure".
  01 WS-NAME-TEMPLATE       PIC X(32) VALUE "template".
+ 01 WS-NAME-POOL           PIC X(32) VALUE "pool".
+ 01 WS-NAME-TARGET         PIC X(32) VALUE "target".
+ 01 WS-NAME-DEPTH          PIC X(32) VALUE "max_depth".
+ 01 WS-NAME-POSITION       PIC X(32) VALUE "position".
  01 WS-FEATURE             BINARY-LONG.
  01 WS-JIGSAW              BINARY-LONG.
  01 WS-STRUCTURE           BINARY-LONG.
  01 WS-ARG                 BINARY-LONG.
+ 01 WS-POOL-ARG            BINARY-LONG.
+ 01 WS-TARGET-ARG          BINARY-LONG.
+ 01 WS-DEPTH-ARG           BINARY-LONG.
+ 01 WS-POS-ARG             BINARY-LONG.
+ 01 WS-POOL-KEY            PIC X(80).
+ 01 WS-TARGET-KEY          PIC X(80).
+ 01 WS-POOL-ROW            BINARY-LONG.
+ 01 WS-DEPTH               BINARY-LONG.
+ 01 WS-PX                  BINARY-LONG.
+ 01 WS-PY                  BINARY-LONG.
+ 01 WS-PZ                  BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-KEEP                BINARY-LONG VALUE 0.
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-BROADCAST           BINARY-LONG VALUE 1.
  01 WS-TEXT                PIC X(112).
  01 WS-TEXT-LENGTH         BINARY-LONG.
  01 WS-KEY                 PIC X(72).
@@ -2662,16 +2689,67 @@
  01 WS-L1                  BINARY-LONG VALUE 0.
  01 WS-L2                  BINARY-LONG VALUE 0.
  PROCEDURE DIVISION.
+     GO TO MAIN-LINE.
+
+*> 36-3 15: the pool, the position and the generation; WS-DONE 1 once the success was told, else WS-KEY and its argument are the failure
+ PLACE-JIGSAW.
+     MOVE 0 TO WS-DONE
+     MOVE "commands.place.jigsaw.failed" TO WS-KEY
+     CALL "BX-FIND" USING WS-NAME-POOL WS-POOL-ARG
+     CALL "BX-FIND" USING WS-NAME-TARGET WS-TARGET-ARG
+     CALL "BX-FIND" USING WS-NAME-DEPTH WS-DEPTH-ARG
+     CALL "BX-FIND" USING WS-NAME-POSITION WS-POS-ARG
+     CALL "CXC-ID-TEXT" USING WS-POOL-ARG WS-TEXT WS-TEXT-LENGTH
+     MOVE WS-TEXT TO WS-POOL-KEY
+     CALL "JIG-POOL-FIND" USING WS-POOL-KEY WS-POOL-ROW
+     IF WS-POOL-ROW = 0
+         MOVE "commands.place.jigsaw.invalid" TO WS-KEY
+         MOVE 1 TO WS-N-ARGS
+         MOVE FUNCTION MIN(WS-TEXT-LENGTH, 64) TO WS-L1
+         MOVE WS-TEXT(1:WS-L1) TO WS-A1
+     ELSE
+         IF WS-POS-ARG > 0
+             CALL "CXC-POS-INT" USING WS-POS-ARG WS-PX WS-PY WS-PZ WS-OK
+         ELSE
+             MOVE 1 TO WS-OK
+             COMPUTE WS-PX = FUNCTION INTEGER(BS-X)
+             COMPUTE WS-PY = FUNCTION INTEGER(BS-Y)
+             COMPUTE WS-PZ = FUNCTION INTEGER(BS-Z)
+         END-IF
+         COMPUTE WS-CX = FUNCTION INTEGER(WS-PX / 16)
+         COMPUTE WS-CZ = FUNCTION INTEGER(WS-PZ / 16)
+         CALL "WORLD-FIND" USING BS-DIM WS-CX WS-CZ WS-ROW
+         IF WS-OK = 0 OR WS-ROW = 0
+             MOVE "argument.pos.unloaded" TO WS-KEY
+         ELSE
+             CALL "CXC-ID-TEXT" USING WS-TARGET-ARG WS-TEXT WS-TEXT-LENGTH
+             MOVE WS-TEXT TO WS-TARGET-KEY
+             MOVE BA-IVAL(WS-DEPTH-ARG) TO WS-DEPTH
+             CALL "JIG-GENERATE" USING BS-DIM WS-POOL-KEY WS-TARGET-KEY WS-DEPTH WS-PX WS-PY WS-PZ WS-KEEP WS-RESULT
+             IF WS-RESULT = 1
+                 MOVE 1 TO WS-DONE
+                 MOVE "commands.place.jigsaw.success" TO WS-KEY
+                 CALL "BX-KEY" USING PB-TEXT WS-KEY
+                 CALL "CMD-TEXT-INT" USING PB-TEXT WS-PX
+                 CALL "CMD-TEXT-INT" USING PB-TEXT WS-PY
+                 CALL "CMD-TEXT-INT" USING PB-TEXT WS-PZ
+                 CALL "BR-FEEDBACK" USING PB-TEXT WS-BROADCAST
+                 MOVE 1 TO BR-R-RESULT
+             END-IF
+         END-IF
+     END-IF.
+
+ MAIN-LINE.
      CALL "BX-LIT" USING WS-NAME-FEATURE WS-FEATURE
      CALL "BX-LIT" USING WS-NAME-JIGSAW WS-JIGSAW
      CALL "BX-LIT" USING WS-NAME-STRUCTURE WS-STRUCTURE
      MOVE SPACES TO WS-A1 WS-A2
-     MOVE 0 TO WS-N-ARGS WS-L1
+     MOVE 0 TO WS-N-ARGS WS-L1 WS-DONE
      EVALUATE TRUE
          WHEN WS-FEATURE > 0
              MOVE "commands.place.feature.failed" TO WS-KEY
          WHEN WS-JIGSAW > 0
-             MOVE "commands.place.jigsaw.failed" TO WS-KEY
+             PERFORM PLACE-JIGSAW
          WHEN WS-STRUCTURE > 0
              MOVE "commands.place.structure.failed" TO WS-KEY
          WHEN OTHER
@@ -2682,7 +2760,9 @@
              MOVE FUNCTION MIN(WS-TEXT-LENGTH, 64) TO WS-L1
              MOVE WS-TEXT(1:WS-L1) TO WS-A1
      END-EVALUATE
-     CALL "CXC-FAIL" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2
+     IF WS-DONE = 0
+         CALL "CXC-FAIL" USING WS-KEY WS-N-ARGS WS-A1 WS-L1 WS-A2 WS-L2
+     END-IF
      GOBACK.
  END PROGRAM CX-PLACE.
 
