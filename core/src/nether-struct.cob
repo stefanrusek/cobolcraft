@@ -236,9 +236,80 @@
              CALL "FL-CLOSE"
          END-IF
      END-PERFORM
+*>   the nether fossils: the last structure of the underground_decoration step (index 2 after the ancient city and the fortress, 36-1 section 8)
+     CALL "NETHER-GEN-FOSSIL" USING L-CX L-CZ L-CHUNK
      MOVE 0 TO SDM-KIND
      GOBACK.
  END PROGRAM NETHER-GEN-STRUCTURES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. NETHER-GEN-FOSSIL.
+*> USING chunk x, chunk z, chunk memory: the nether fossil of a Nether chunk (37-nether-6 sections 3.4 and 7, 36-4 section 9). The start of the chunk's own 3 by 3 chunks (a fossil box reaches at most 6 blocks
+*> beyond its start's chunk, so no start farther away touches the chunk) is found as the structure stage finds one (NETHER-FOSSIL-START: the candidate of the set nether_fossils, the biome of the chunk's
+*> first quart, NFOS-FIND-POINT, which leaves the piece in the builder) and, when the piece's box reaches the chunk's columns, placed by STRUCT-PLACE-START (the piece's post-process is NFOS-POST: the whole
+*> template box is taken into the write box, the template written with the ignore processor, then the dried ghast). The structure is placed only while the gate of "minecraft:nether_fossil" is on.
+*> Deviation: as for the fortress, the biome of the chunk's first quart stands for the stub's, and the structure is placed after all the placed features and the fortress and bastion of the chunk.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STRUCTPIECE.
+ 01 WS-KEY                 PIC X(80) VALUE "minecraft:nether_fossil".
+ 01 WS-MIN-Y               BINARY-LONG VALUE 0.
+ 01 WS-HEIGHT              BINARY-LONG VALUE 256.
+ 01 WS-SEA                 BINARY-LONG VALUE 32.
+ 01 WS-ON                  BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-IX                  BINARY-LONG.
+ 01 WS-IZ                  BINARY-LONG.
+ 01 WS-SX                  BINARY-LONG.
+ 01 WS-SZ                  BINARY-LONG.
+ 01 WS-VALID               BINARY-LONG.
+ 01 WS-REACH               BINARY-LONG.
+ 01 WS-BOX.
+    COPY STRUCTBOX REPLACING LEADING ==BX-== BY ==B-==.
+ 01 WS-COLUMNS.
+    COPY STRUCTBOX REPLACING LEADING ==BX-== BY ==C-==.
+ LINKAGE SECTION.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-CHUNK                PIC X.
+ PROCEDURE DIVISION USING L-CX L-CZ L-CHUNK.
+     CALL "STRUCT-GATE" USING WS-KEY WS-ON
+     IF WS-ON = 0
+         GOBACK
+     END-IF
+     COMPUTE C-X0 = L-CX * 16
+     COMPUTE C-X1 = C-X0 + 15
+     COMPUTE C-Z0 = L-CZ * 16
+     COMPUTE C-Z1 = C-Z0 + 15
+     MOVE WS-MIN-Y TO C-Y0
+     COMPUTE C-Y1 = WS-MIN-Y + WS-HEIGHT - 1
+     MOVE 0 TO WS-ROW
+     PERFORM VARYING WS-IX FROM 0 BY 1 UNTIL WS-IX > 2
+         COMPUTE WS-SX = L-CX - 1 + WS-IX
+         PERFORM VARYING WS-IZ FROM 0 BY 1 UNTIL WS-IZ > 2
+             COMPUTE WS-SZ = L-CZ - 1 + WS-IZ
+             CALL "NETHER-FOSSIL-START" USING CW-SEED WS-SX WS-SZ WS-VALID
+             IF WS-VALID = 1
+                 CALL "SPB-UNION-ALL" USING WS-BOX
+                 CALL "SPB-BOX-INTERSECTS-XZ" USING WS-BOX WS-COLUMNS WS-REACH
+                 IF WS-REACH = 1
+*>                   the level view of the chunk and the window are opened by the first start that reaches it (they leave the builder's piece alone)
+                     IF WS-ROW = 0
+                         CALL "STRUCT-DIM-OPEN" USING WS-KEY L-CX L-CZ L-CHUNK WS-MIN-Y WS-HEIGHT WS-SEA WS-ROW
+                     END-IF
+                     IF WS-ROW > 0
+                         CALL "STRUCT-PLACE-START"
+                     END-IF
+                 END-IF
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     IF WS-ROW > 0
+         CALL "FL-CLOSE"
+     END-IF
+     GOBACK.
+ END PROGRAM NETHER-GEN-FOSSIL.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. NETHER-BE-PUBLISH.
