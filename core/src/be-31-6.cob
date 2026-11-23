@@ -2427,6 +2427,82 @@
  END PROGRAM BE6-CAN-USE-GM.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE6-JIGSAW-GENERATE.
+*> USING dimension row, x, y, z (the jigsaw block), index (its entity), levels, keepJigsaws, can use game master blocks, result out: 8.2 JigsawBlockEntity.generate. Nothing is done
+*> unless the player may use game master blocks; the start is the block position plus the step of its front direction (the block state's orientation, STRUCT-JIG-DIRS), the pool and the target are the entity's, and
+*> JIG-GENERATE (struct-36-3.cob, 36-3 15) places the structure; its result is kept as it is (1 placed, 0 none, 2 a pool that does not exist, which the game throws: ignored here as there).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-FRONT               BINARY-LONG.
+ 01 WS-TOP                 BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DY                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-SX                  BINARY-LONG.
+ 01 WS-SY                  BINARY-LONG.
+ 01 WS-SZ                  BINARY-LONG.
+ 01 WS-POOL                PIC X(80).
+ 01 WS-TARGET              PIC X(80).
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-LEVELS               BINARY-LONG.
+ 01 L-KEEP                 BINARY-LONG.
+ 01 L-CAN                  BINARY-LONG.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-INDEX L-LEVELS L-KEEP L-CAN L-RESULT.
+     MOVE 0 TO L-RESULT
+     IF L-CAN = 1
+         CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-STATE
+         CALL "STRUCT-JIG-DIRS" USING WS-STATE WS-FRONT WS-TOP
+         CALL "BE6-DIR-STEP" USING WS-FRONT WS-DX WS-DY WS-DZ
+         COMPUTE WS-SX = L-X + WS-DX
+         COMPUTE WS-SY = L-Y + WS-DY
+         COMPUTE WS-SZ = L-Z + WS-DZ
+         MOVE BE-XT(L-INDEX, 3) TO WS-POOL
+         MOVE BE-XT(L-INDEX, 2) TO WS-TARGET
+         CALL "JIG-GENERATE" USING L-DIM WS-POOL WS-TARGET L-LEVELS WS-SX WS-SY WS-SZ L-KEEP L-RESULT
+     END-IF
+     GOBACK.
+ END PROGRAM BE6-JIGSAW-GENERATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BE6-JIGSAW-PACKET.
+*> USING connection id, PLAY-SERVERBOUND: Jigsaw Generate (05c id 27, 31-6 8.2): the block entity at the position must be a jigsaw block's (type 31), the player must be able to use game
+*> master blocks (creative and permission level 2: BE6-CAN-USE-GM), else the packet is ignored.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY BESTATE.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-BE                  BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-CREATIVE            BINARY-LONG.
+ 01 WS-CAN                 BINARY-LONG.
+ 01 WS-RESULT              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PLAYPKT.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND.
+     MOVE CN-PLAYER(L-ID) TO WS-ROW
+     CALL "BE-FIND" USING PL-DIM(WS-ROW) PSB-BX PSB-BY PSB-BZ WS-BE
+     IF WS-BE > 0
+         IF BE-TYPE(WS-BE) = 31
+             CALL "BR-SOURCE-LEVEL" USING WS-ROW WS-LEVEL
+             MOVE PL-MODE(WS-ROW) TO WS-CREATIVE
+             CALL "BE6-CAN-USE-GM" USING WS-CREATIVE WS-LEVEL WS-CAN
+             CALL "BE6-JIGSAW-GENERATE" USING PL-DIM(WS-ROW) PSB-BX PSB-BY PSB-BZ WS-BE PSB-DATA PSB-KEEP-JIGSAWS WS-CAN WS-RESULT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BE6-JIGSAW-PACKET.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BE6-ITEM-DATA.
 *> USING client level, stack has block_entity_data, entity at the position, same entity type, type is operator-only, player is null, player can use game master blocks, applied out: 11.2.
  DATA DIVISION.

@@ -7,6 +7,9 @@
 *>   M19-FLOOR-OK USING class, key (PIC X(48)), ok out                          1.4  the block below a spawn
 *>   M19-SPECIES-FLOOR USING key (PIC X(24)), class out                         1.4  the floor class of a species
 *>   M19-FLOOR-AT USING dim, x, y, z, class, ok out                             1.4  the same for the block at a position
+*>   M19-BABY-START-AGE USING key, age out                                      1.2  -24000, the sniffer -48000
+*>   M19-AGE-LOCK-USE USING player row, entity row, used out                    1.2  the golden dandelion on a baby: the age lock
+*>   M19-OCELOT-RULE USING state, dim, x, y, z, reason, ok out                  5.2  checkOcelotSpawnRules and the ocelot's ground rules (44 part 2 section 12)
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. M19-VARIANT-PICK.
@@ -93,7 +96,7 @@
 *> 1 animals_spawnable_on (grass_block); 2 rabbits (grass_block, snow, snow_block, sand); 3 foxes (grass_block, snow, snow_block, podzol,
 *> coarse_dirt); 4 goats (grass_block, stone, snow, snow_block, packed_ice, gravel); 5 camels (the tag sand); 6 armadillos (grass_block,
 *> the badlands terracotta, red_sand, coarse_dirt); 7 wolves (grass_block, snow, snow_block, coarse_dirt, podzol); 8 frogs (grass_block, mud, the mangrove roots);
-*> 9 parrots (grass_block, air, jungle and oak leaves and logs: the tags #leaves and #logs are an open item); 10 turtles (sand; the height rule is an open item).
+*> 9 parrots (grass_block, air, jungle and oak leaves and logs: the tags #leaves and #logs are an open item); 10 turtles (sand; the height rule is an open item); 11 ocelots (Ocelot.checkSpawnObstruction: grass_block or a leaves block; the tag #leaves is the same open item as for the parrots).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-FLOORS.
@@ -142,8 +145,11 @@
     05 FILLER PIC X(25) VALUE "9jungle_log".
     05 FILLER PIC X(25) VALUE "9oak_log".
     05 FILLER PIC X(25) VALUE ":sand".
+    05 FILLER PIC X(25) VALUE ";grass_block".
+    05 FILLER PIC X(25) VALUE ";jungle_leaves".
+    05 FILLER PIC X(25) VALUE ";oak_leaves".
  01 WS-FLOOR-TABLE REDEFINES WS-FLOORS.
-    05 WS-ROW                 OCCURS 45 TIMES.
+    05 WS-ROW                 OCCURS 48 TIMES.
        10 WS-ROW-CLASS        PIC X.
        10 WS-ROW-KEY          PIC X(24).
  01 WS-I                   BINARY-LONG.
@@ -162,7 +168,7 @@
          MOVE L-KEY(1:24) TO WS-NAME
      END-IF
      MOVE FUNCTION CHAR(L-CLASS + 49) TO WS-WANT
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 45
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 48
          IF WS-ROW-CLASS(WS-I) = WS-WANT AND WS-ROW-KEY(WS-I) = WS-NAME
              MOVE 1 TO L-OK
          END-IF
@@ -351,3 +357,100 @@
      END-IF
      GOBACK.
  END PROGRAM M19-PACK-SHARE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M19-BABY-START-AGE.
+*> USING key (PIC X(24)), age out: AgeableMob.getBabyStartAge (1.2): -24000 ticks, the sniffer -48000 (SNIFFER_BABY_START_AGE).
+ DATA DIVISION.
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(24).
+ 01 L-AGE                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-AGE.
+     MOVE -24000 TO L-AGE
+     IF L-KEY = "sniffer"
+         MOVE -48000 TO L-AGE
+     END-IF
+     GOBACK.
+ END PROGRAM M19-BABY-START-AGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M19-AGE-LOCK-USE.
+*> USING player row, entity row, used out: a golden dandelion in the main hand on a baby (1.2): the age locked flag (metadata 17) toggles. Locking sets the age to the baby start age, makes the mob persistent
+*> and consumes the item (not in creative); unlocking only clears the flag. The types of the tag cannot_be_age_locked (zombie_horse, skeleton_horse, villager) refuse it, as does a mob with no age (an adult, a
+*> monster). The tadpole has its own handler (MOB-TADPOLE-USE). 0 when the use does not apply. Not modelled: the cooldown of 40 ticks that doc 18 names for setAgeLocked (no use is stated for it).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY STDMOBS.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-LOCK-INDEX          BINARY-LONG VALUE 17.
+ 01 WS-BOOLEAN             BINARY-LONG VALUE 8.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-ENTITY               BINARY-LONG.
+ 01 L-USED                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-ENTITY L-USED.
+     MOVE 0 TO L-USED
+     CALL "MOB-SPECIES-KEY" USING L-ENTITY WS-KEY
+     CALL "STDMOB-INDEX" USING EN-TYPE(L-ENTITY) WS-M
+     IF WS-M = 0 OR EN-MOBAGE(L-ENTITY) >= 0 OR WS-KEY = "zombie_horse" OR "skeleton_horse" OR "villager" OR "tadpole"
+         GOBACK
+     END-IF
+     IF SM-KIND(WS-M) NOT = 0 AND SM-KIND(WS-M) NOT = 2 AND SM-KIND(WS-M) NOT = 5
+         GOBACK
+     END-IF
+     MOVE 1 TO L-USED
+     IF EN-LOCKED(L-ENTITY) = 1
+         MOVE 0 TO EN-LOCKED(L-ENTITY)
+     ELSE
+         MOVE 1 TO EN-LOCKED(L-ENTITY)
+         CALL "M19-BABY-START-AGE" USING WS-KEY EN-MOBAGE(L-ENTITY)
+         MOVE 1 TO EN-PERSISTENT(L-ENTITY)
+         CALL "MOB-TAKE" USING L-PLAYER
+     END-IF
+     IF SM-KIND(WS-M) = 0
+         CALL "MOB-DATA-SEND" USING L-ENTITY
+     ELSE
+         CALL "AQUA-META-SEND" USING L-ENTITY WS-LOCK-INDEX WS-BOOLEAN EN-LOCKED(L-ENTITY)
+     END-IF
+     GOBACK.
+ END PROGRAM M19-AGE-LOCK-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. M19-OCELOT-RULE.
+*> USING state, dim, x, y, z (the feet cell), reason, ok out: Ocelot.checkOcelotSpawnRules (19 section 5.2, 44 part 2 sections 9 and 12): the registered predicate is one draw, nextInt(3) != 0 (2/3 pass),
+*> for every reason and with no light test and no floor test; the ground rules of the ocelot follow (Ocelot.checkSpawnObstruction: the feet at or above the sea level and the block below grass_block or a
+*> leaves block, floor class 11). The draw is made first and always. Not modelled: the box and liquid tests of that method (the ON_GROUND placement of MS6-VALID-SPOT already tests the cell).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY DIMENSIONS.
+ 01 WS-3                   BINARY-LONG VALUE 3.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-BELOW               BINARY-LONG.
+ 01 WS-CLASS               BINARY-LONG VALUE 11.
+ 01 WS-FLOOR               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-REASON               BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-DIM L-X L-Y L-Z L-REASON L-OK.
+     MOVE 0 TO L-OK
+     CALL "XORO-NEXT-INT" USING L-STATE WS-3 WS-DRAW
+     IF WS-DRAW = 0
+         GOBACK
+     END-IF
+     IF L-Y < DM-SEA-LEVEL(L-DIM)
+         GOBACK
+     END-IF
+     COMPUTE WS-BELOW = L-Y - 1
+     CALL "M19-FLOOR-AT" USING L-DIM L-X WS-BELOW L-Z WS-CLASS WS-FLOOR
+     IF WS-FLOOR = 1
+         MOVE 1 TO L-OK
+     END-IF
+     GOBACK.
+ END PROGRAM M19-OCELOT-RULE.

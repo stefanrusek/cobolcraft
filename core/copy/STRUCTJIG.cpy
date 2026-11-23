@@ -100,3 +100,12 @@
     05 JM-REC OCCURS 32 TIMES.
        10 JM-ALIAS          PIC X(80).
        10 JM-TARGET         PIC X(80).
+*> STRUCT-JIG-OPTS: the entry point generateJigsaw of 36-3 section 15 (JIG-GENERATE, struct-36-3.cob). JO-AT 1 makes JIG-ASSEMBLE start at (JO-X, JO-Y, JO-Z) instead of at the minimum corner of the
+*> chunk (the structure row it is given is then a scratch row filled by JIG-GENERATE, and the biome test is left out: the predicate of that entry point is always true); JO-KEEP 1 is keepJigsaws:
+*> JIG-PROCS then leaves the jigsaw replacement processor out of the lists. Both are 0 outside that entry point.
+ 01 STRUCT-JIG-OPTS EXTERNAL.
+    05 JO-AT                BINARY-LONG.
+    05 JO-KEEP              BINARY-LONG.
+    05 JO-X                 BINARY-LONG.
+    05 JO-Y                 BINARY-LONG.
+    05 JO-Z                 BINARY-LONG.

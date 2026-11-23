@@ -2,7 +2,8 @@
 *> the empty bucket (4.5, 4.6), spawn eggs (4.11), minecarts (4.22), the armor stand (4.2), boats and rafts (4.4), honeycomb (4.20) and the projectiles egg, snowball and experience bottle (4.1; shoot noise of the
 *> thrown items' own source THROWN-JITTER, not the projectile's java.util.Random; the random yaw draw of 4.2 is not made; a boat or minecart that falls back to the default drop plays the click and the smoke once,
 *> not twice). An item without one of these behaviours is dropped (the default behaviour, 2).
-*> Not done: the other projectiles (potions, fire charge, wind charge, firework: 4.1), the sulfur cube swallowing (4.12), shulker boxes (4.15), glass bottle
+*> The fire charge, wind charge, firework rocket and splash and lingering potions (4.1) are in redstone-live-p.cob.
+*> Not done: the sulfur cube swallowing (4.12), glass bottle
 *> (4.16), shears (4.18), brush (4.19), the water potion (4.21) (the chest 4.3 and the glowstone 4.17 are in redstone-live-n.cob, the wither skull 4.7, the carved pumpkin 4.8 and the equipment 4.9 in redstone-live-o.cob); the fire placement of flint and steel uses "air above a block with a collision" for
 *> BaseFireBlock.canBePlacedAt, and the flint and steel is not damaged (hurtAndBreak needs a durability component write that dispenser slots do not carry); a bucket's fish and other contents are not placed;
 *> the game events (block_place, block_change, entity_place, fluid_pickup) have no listener in this core.
@@ -413,8 +414,8 @@
                  MOVE 3 TO L-CONSUMED
              END-IF
          WHEN OTHER
-*>           the glowstone (4.17) and the chest (4.3): redstone-live-n.cob
-             CALL "RL-DISP-MORE" USING L-DIM L-X L-Y L-Z L-FACING LS-BARE L-HANDLED L-CONSUMED L-ITEM
+*>           the glowstone (4.17) and the chest (4.3): redstone-live-n.cob; the fire charge, wind charge, firework rocket and potions (4.1): redstone-live-p.cob
+             CALL "RL-DISP-MORE" USING L-DIM L-X L-Y L-Z L-FACING LS-BARE L-HANDLED L-CONSUMED L-ITEM L-VAR
      END-EVALUATE
      GOBACK.
  END PROGRAM RL-DISP-BEHAVE.
