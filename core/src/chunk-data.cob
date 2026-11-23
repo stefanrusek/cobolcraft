@@ -317,6 +317,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CHUNK-NBT-READ.
+*> The `fluid_ticks` list becomes pending fluid ticks (CHUNK-TICKS-READ, chunk-ticks-read.cob); `block_ticks` are not read.
 *> USING cache row (BINARY-LONG; its memory allocated), PB-BUFFER (a named-root chunk compound at
 *> PB-POS), outcome out (BINARY-LONG: 0 read, 1 malformed). Every cell starts as void; each section
 *> inside the dimension's range is filled from its block-state palette and data (CHUNK-NBT-SECTION);
@@ -371,6 +372,10 @@
                  END-PERFORM
              WHEN WN = "structures" AND WS-TYPE = 10
                  CALL "STRUCT-STARTS-READ" USING PB-BUFFER CK-X(L-ROW) CK-Z(L-ROW) WS-STRUCT-OUTCOME
+*>           The saved fluid ticks become pending fluid ticks of the chunk (29 section 4.5; chunk-ticks-read.cob).
+             WHEN WN = "fluid_ticks" AND WS-TYPE = 9
+                 CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT
+                 CALL "CHUNK-TICKS-READ" USING PB-BUFFER WS-ELEMENT-TYPE WS-COUNT CK-DIM(L-ROW) CK-X(L-ROW) CK-Z(L-ROW)
              WHEN OTHER
                  CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
          END-EVALUATE

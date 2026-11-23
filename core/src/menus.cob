@@ -466,6 +466,11 @@
                  COMPUTE WS-START = WS-INDEX - 1
                  CALL "MENU-BREW-MAYPLACE" USING WS-START L-ITEM L-RESULT
              END-IF
+*>           The mount screen's saddle and body slots (40-6 section 2.3, core/src/mob-mount-screen.cob).
+             IF MN-CFAMILY(L-ROW) = 15
+                 COMPUTE WS-START = WS-INDEX - 1
+                 CALL "MNT-MAYPLACE" USING L-ROW WS-START L-ITEM L-RESULT
+             END-IF
              IF MN-CFAMILY(L-ROW) = 4 AND L-ITEM > 0 AND L-ITEM < IT-COUNT
                  MOVE IT-KEY-LENGTH(L-ITEM + 1) TO WS-KL
                  IF WS-KL >= 11

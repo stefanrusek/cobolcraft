@@ -351,6 +351,7 @@
              CALL "FOX-DROP-HELD" USING L-ROW
              CALL "PIGLIN-DROP-INVENTORY" USING L-ROW
              CALL "WOLF-ARMOR-DROP" USING L-ROW
+             CALL "MNT-DROP" USING L-ROW
              CALL "STDMOB-XP-GEAR" USING L-ROW WS-GEAR
              CALL "STDMOB-XP-VARIANT" USING WS-DIM WS-X WS-Y WS-Z WS-TYPE WS-KILLED EN-VARIANT(L-ROW) WS-GEAR
          END-IF
@@ -1536,6 +1537,10 @@
      END-IF
      IF SM-KEY(WS-M) = "pillager"
          CALL "PILLAGER-PICKUP-TICK" USING WS-ROW
+     END-IF
+*>   The drowned's trident throw (20 section 4.5, mob-20-4-5.cob).
+     IF SM-KEY(WS-M) = "drowned"
+         CALL "DROWNED-TRIDENT-TICK" USING WS-ROW
      END-IF
      IF SM-RANGED(WS-M) = 3
          CALL "STDMOB-WITCH-TICK" USING WS-ROW WS-M WS-STOP

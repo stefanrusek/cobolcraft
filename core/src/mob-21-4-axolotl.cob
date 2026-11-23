@@ -4,7 +4,7 @@
 *> variants of the spawn group data (first variant + 8 x second), EN-VARIANT = 1 + the variant id (0 lucy, 1 wild, 2 gold, 3 cyan, 4 blue).
 *> Entry points:
 *>   AXOLOTL-PLAYDEAD-TEST USING draw A, draw B, damage, health before, max health, in water, source has an entity, already playing dead, ok out: the test of 44-7 section 8.3, steps 2 to 7.
-*>   AXOLOTL-PLAY-DEAD USING row: PLAY_DEAD_TICKS = 200. AXOLOTL-PLAYING-DEAD USING row, flag out: 1 while the counter is above 0.
+*>   AXOLOTL-PLAY-DEAD USING row: PLAY_DEAD_TICKS = 200 (metadata 19 true to the viewers). AXOLOTL-DATA-BUILD USING row, PB-BUFFER: the entity data 18, 19, 20 (ENTITY-EXTRA-DATA); AXOLOTL-DATA-SEND USING row: it to the viewers. AXOLOTL-PLAYING-DEAD USING row, flag out: 1 while the counter is above 0.
 *>   AXOLOTL-HURT USING row, damage, cause: called by HEALTH-MOB-DAMAGE before the damage applies; draws A and B and starts play dead when the test passes.
 *>   AXOLOTL-FINALIZE USING xoro state, row: finalizeSpawn without group data (8.1): two common variants (nextInt(4) each), then nextInt(2) picks one.
 *>   AQUA-PACK USING xoro state, first member row, row, group size before this member, done out: the group data of a spawned pack (the axolotl: the first member's two variants, a baby from group size 2; squid, glow squid, dolphin babies; the tropical fish school variant; done 1 ends the pack after a lone tropical fish).
@@ -36,6 +36,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. AXOLOTL-PLAY-DEAD.
+*> USING row: PLAY_DEAD_TICKS = 200 and the playing dead flag (metadata 19 BOOLEAN true, 19 section 18) to the viewers.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -43,6 +44,7 @@
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      MOVE 200 TO EN-IDLE(L-ROW)
+     CALL "AXOLOTL-DATA-SEND" USING L-ROW
      GOBACK.
  END PROGRAM AXOLOTL-PLAY-DEAD.
 
@@ -129,8 +131,79 @@
      ELSE
          COMPUTE EN-VARIANT(L-ROW) = 1 + WS-B
      END-IF
+     CALL "AXOLOTL-DATA-SEND" USING L-ROW
      GOBACK.
  END PROGRAM AXOLOTL-FINALIZE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. AXOLOTL-DATA-BUILD.
+*> USING row, PB-BUFFER (empty): the Set Entity Data (0x65) an axolotl's viewers are sent after Add Entity (19 section 18): 18 variant INT (EN-VARIANT is 1 + the variant id: 0 lucy, 1 wild,
+*> 2 gold, 3 cyan, 4 blue), 19 playing dead BOOLEAN (the play dead counter runs), 20 from bucket BOOLEAN (EN-FROM-BUCKET). A baby adds index 16 BOOLEAN true, an age-locked one index 17 BOOLEAN true.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 101.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ COPY PROTO.
+ PROCEDURE DIVISION USING L-ROW PB-BUFFER.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(L-ROW)
+     IF EN-MOBAGE(L-ROW) < 0
+         INITIALIZE MD-METADATA-ENTRY
+         MOVE 16 TO MD-MD-INDEX
+         MOVE MD-MDS-BOOLEAN TO MD-MD-SERIALIZER
+         MOVE 1 TO MD-MD-INT
+         CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     END-IF
+     IF EN-LOCKED(L-ROW) = 1
+         INITIALIZE MD-METADATA-ENTRY
+         MOVE 17 TO MD-MD-INDEX
+         MOVE MD-MDS-BOOLEAN TO MD-MD-SERIALIZER
+         MOVE 1 TO MD-MD-INT
+         CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     END-IF
+     INITIALIZE MD-METADATA-ENTRY
+     MOVE 18 TO MD-MD-INDEX
+     MOVE MD-MDS-INT TO MD-MD-SERIALIZER
+     IF EN-VARIANT(L-ROW) > 0
+         COMPUTE MD-MD-INT = EN-VARIANT(L-ROW) - 1
+     END-IF
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     INITIALIZE MD-METADATA-ENTRY
+     MOVE 19 TO MD-MD-INDEX
+     MOVE MD-MDS-BOOLEAN TO MD-MD-SERIALIZER
+     IF EN-IDLE(L-ROW) > 0
+         MOVE 1 TO MD-MD-INT
+     END-IF
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     INITIALIZE MD-METADATA-ENTRY
+     MOVE 20 TO MD-MD-INDEX
+     MOVE MD-MDS-BOOLEAN TO MD-MD-SERIALIZER
+     MOVE EN-FROM-BUCKET(L-ROW) TO MD-MD-INT
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     MOVE MD-MD-END TO MD-MD-INDEX
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     GOBACK.
+ END PROGRAM AXOLOTL-DATA-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. AXOLOTL-DATA-SEND.
+*> USING row: AXOLOTL-DATA-BUILD to the viewers of the row (after the variant is picked, the pack baby flag, a bucket release or a change of the play dead flag).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "AXOLOTL-DATA-BUILD" USING L-ROW PB-BUFFER
+     CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM AXOLOTL-DATA-SEND.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. AQUA-META-SEND.
@@ -237,8 +310,8 @@
          MOVE EN-WOOL(L-FIRST) TO EN-WOOL(L-ROW)
          IF L-SIZE >= 2
              MOVE -24000 TO EN-MOBAGE(L-ROW)
-             CALL "AQUA-META-SEND" USING L-ROW WS-BABY WS-BOOLEAN WS-TRUE
          END-IF
+         CALL "AXOLOTL-DATA-SEND" USING L-ROW
      END-IF
      IF (SM-KEY(WS-M) = "squid" OR "glow_squid" OR "dolphin") AND L-SIZE > 0
          MOVE 0.05 TO WS-CHANCE
@@ -409,6 +482,7 @@
          IF EN-IDLE(L-ROW) > 0
              GOBACK
          END-IF
+         CALL "AXOLOTL-DATA-SEND" USING L-ROW
      END-IF
      MOVE EN-FOE(L-ROW) TO WS-T
      IF WS-T > 0

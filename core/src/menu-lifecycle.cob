@@ -39,7 +39,7 @@
          CALL "MENU-CONT-VALID" USING L-ROW WS-BENCH
 *>       A merchant window (family 29) and a container entity's window (family 14) are bound to an entity, not a block: MN-BENCH-X holds the entity (id or row), so the block reach
 *>       below does not apply; MERCHANT-VALID (via MENU-CONT-VALID) is the whole stillValid (40-5 section 2.9: alive, within 4.0).
-         IF MN-CFAMILY(L-ROW) = 29 OR MN-CFAMILY(L-ROW) = 14
+         IF MN-CFAMILY(L-ROW) = 29 OR MN-CFAMILY(L-ROW) = 14 OR MN-CFAMILY(L-ROW) = 15
              MOVE WS-BENCH TO L-VALID
              GOBACK
          END-IF

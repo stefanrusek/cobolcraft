@@ -17,7 +17,7 @@
  PROCEDURE DIVISION USING L-ROW L-NEEDED.
      MOVE 0 TO L-NEEDED
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-KEY
-     IF WS-KEY = "bat" OR "happy_ghast"
+     IF WS-KEY = "bat" OR "happy_ghast" OR "axolotl"
          MOVE 1 TO L-NEEDED
          GOBACK
      END-IF
@@ -54,6 +54,10 @@
      END-IF
      IF WS-KEY = "happy_ghast"
          CALL "HG-DATA-BUILD" USING L-ROW PB-BUFFER
+         GOBACK
+     END-IF
+     IF WS-KEY = "axolotl"
+         CALL "AXOLOTL-DATA-BUILD" USING L-ROW PB-BUFFER
          GOBACK
      END-IF
      CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT

@@ -979,6 +979,11 @@
          CALL "STDMOB-SLIME-RULE" USING L-STATE L-DIM L-X L-Y L-Z L-REASON L-OK
          GOBACK
      END-IF
+*>   Ocelot.checkOcelotSpawnRules (19 section 5.2): the draw nextInt(3) != 0, then the ground rules; no light test.
+     IF SM-KEY(L-ROW) = "ocelot"
+         CALL "M19-OCELOT-RULE" USING L-STATE L-DIM L-X L-Y L-Z L-REASON L-OK
+         GOBACK
+     END-IF
      IF SM-SPAWN(L-ROW) >= 12 AND SM-SPAWN(L-ROW) <= 14
          CALL "AQUA-SPAWN-RULE" USING L-STATE L-DIM L-ROW L-X L-Y L-Z L-REASON L-OK
          GOBACK

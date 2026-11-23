@@ -4,7 +4,7 @@
 *> does not flow). CHUNK-FLUID-POST is run by WORLD-CHUNK-LOAD on a chunk the generator made, after the overflow of the neighbours was written into it: every water or lava cell that can
 *> flow (the cell below, or a cell beside it, holds no fluid and has no collision) gets a scheduled fluid tick of delay 0, so the fluid tick of 29a section 3 runs on the next tick.
 *> Approximations: the cells of the chunk are read only (a cell beside it in a neighbouring chunk is taken not to take fluid: that chunk's own cells decide when it is made), at most
-*> FP-CAP cells per chunk are scheduled (BT-ADD is linear in the queue), and a chunk read from a region file keeps no tick (the saved ticks are not kept).
+*> FP-CAP cells per chunk are scheduled (BT-ADD is linear in the queue), and a chunk read from a region file gets the pending fluid ticks of its saved `fluid_ticks` list (CHUNK-TICKS-READ, chunk-ticks-read.cob), not these.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CHUNK-FLUID-POST.
