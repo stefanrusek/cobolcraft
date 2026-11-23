@@ -8,6 +8,9 @@
 *>   nautilus and zombie nautilus (core/src/mob-21-4-nautilus.cob, 44-7 sections 10.5 and 10.6): WC-NAU-INIT 1 once the spawn memories were set, WC-NAU-ATTACK-CD ATTACK_TARGET_COOLDOWN,
 *>   WC-NAU-CHARGE-CD CHARGE_COOLDOWN_TICKS, WC-NAU-CHARGING the ticks the charge has run (0 not charging), WC-NAU-VX/-VY/-VZ the chargeVelocity and WC-NAU-SX/-SY/-SZ the start position
 *>   (thousandths), WC-NAU-ANGRY the entity id of the ANGRY_AT memory (EN-ANGER holds its ticks), WC-NAU-DASH 1 while the dash flag (metadata 20) is set.
+*>   mount screen (core/src/mob-mount-screen.cob, 40 part 6, 19 section 3.5): WC-BODY the item id worn in the body slot (horse armor, llama carpet, nautilus armor; 0 none, one item), WC-INV the chest
+*>   inventory (3 x columns slots of a chested donkey, mule or llama; slot i is WC-INV(row, i + 1); the saddle slot is EN-SADDLE). Skeleton trap (core/src/mob-skeleton-trap.cob): WC-TRAP 1 while the
+*>   trap flag is set, WC-TRAP-TICKS the ticks it has stood, WC-INVUL-TICKS the ticks of the trap horse's invulnerability left (60 at the trap), WC-PASS2 the tracker row of a second mob rider.
 *>   zombie horse (core/src/mob-mount-rows.cob, 19 section 3.6): WC-ZH-SPEED the speed gene (9 + r1 + r2 + r3) / 42.16 in millionths (0: none drawn), read by STDMOB-SPEED.
  78 WC-MAX                VALUE 1024.
  01 WC-STATE EXTERNAL.
@@ -38,3 +41,12 @@
        10 WC-NAU-ANGRY       BINARY-LONG.
        10 WC-NAU-DASH        BINARY-LONG.
        10 WC-ZH-SPEED        BINARY-LONG.
+       10 WC-BODY            BINARY-LONG.
+       10 WC-TRAP            BINARY-LONG.
+       10 WC-TRAP-TICKS      BINARY-LONG.
+       10 WC-INVUL-TICKS     BINARY-LONG.
+       10 WC-PASS2           BINARY-LONG.
+       10 WC-INV             OCCURS 15 TIMES.
+          15 WC-INV-ITEM     BINARY-LONG.
+          15 WC-INV-COUNT    BINARY-LONG.
+          15 WC-INV-VAR      BINARY-LONG.

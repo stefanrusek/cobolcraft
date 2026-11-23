@@ -1669,6 +1669,12 @@
          CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
          GOBACK
      END-IF
+*>   A sneaking player on a tamed adult mount opens its mount screen before anything else (19 section 3.5 step 2; 40-6 section 3.1; core/src/mob-mount-screen.cob).
+     CALL "MNT-USE" USING WS-ROW WS-ENTITY WS-USED
+     IF WS-USED = 1
+         CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
+         GOBACK
+     END-IF
      IF WS-HELD = "golden_dandelion"
          CALL "M19-AGE-LOCK-USE" USING WS-ROW WS-ENTITY WS-USED
          IF WS-USED = 1
@@ -1687,6 +1693,12 @@
          GOBACK
      END-IF
      CALL "MOB-RIDE-USE" USING WS-ROW WS-ENTITY WS-HELD WS-USED
+     IF WS-USED = 1
+         CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
+         GOBACK
+     END-IF
+*>   19 section 3.5 step 3: an item that is no food on an untamed horse is makeMad (SUCCESS), else the body slot takes an equippable item (MNT-HELD).
+     CALL "MNT-HELD" USING WS-ROW WS-ENTITY WS-USED
      IF WS-USED = 1
          CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
          GOBACK

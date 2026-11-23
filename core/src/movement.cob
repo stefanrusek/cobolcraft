@@ -427,6 +427,10 @@
      IF PSB-ACTION = 3
          CALL "M44-RIDING-JUMP" USING CN-PLAYER(L-ID) PSB-DATA WS-JUMPED
      END-IF
+*>   OPEN_INVENTORY (action 5): the rider of a mount opens its mount screen (40-6 section 3.1, core/src/mob-mount-screen.cob).
+     IF PSB-ACTION = 5
+         CALL "MNT-RIDER-OPEN" USING CN-PLAYER(L-ID) WS-JUMPED
+     END-IF
 *>   START_FALL_FLYING (action 6): the glide of an elytra (ranged-glide.cob).
      IF PSB-ACTION = 6
          CALL "RANGED-GLIDE-START" USING CN-PLAYER(L-ID)

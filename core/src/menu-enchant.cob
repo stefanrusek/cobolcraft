@@ -315,6 +315,10 @@
      IF MN-WINDOW(L-ROW) > 0 AND MN-CFAMILY(L-ROW) = 27 AND L-SLOT = 0
          MOVE 1 TO L-MAX
      END-IF
+*>   The mount screen's saddle and body slots take one item (40-6 section 2.3: ArmorSlot, max stack 1).
+     IF MN-WINDOW(L-ROW) > 0 AND MN-CFAMILY(L-ROW) = 15 AND L-SLOT < 2
+         MOVE 1 TO L-MAX
+     END-IF
 *>   The brewing stand's bottle slots take one item each (40-2 section 4.3).
      IF MN-WINDOW(L-ROW) > 0 AND MN-CFAMILY(L-ROW) = 9 AND L-SLOT < 3
          MOVE 1 TO L-MAX
