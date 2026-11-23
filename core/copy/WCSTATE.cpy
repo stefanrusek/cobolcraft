@@ -12,7 +12,14 @@
 *>   inventory (3 x columns slots of a chested donkey, mule or llama; slot i is WC-INV(row, i + 1); the saddle slot is EN-SADDLE). Skeleton trap (core/src/mob-skeleton-trap.cob): WC-TRAP 1 while the
 *>   trap flag is set, WC-TRAP-TICKS the ticks it has stood, WC-INVUL-TICKS the ticks of the trap horse's invulnerability left (60 at the trap), WC-PASS2 the tracker row of a second mob rider.
 *>   WC-NAU-DASH-CD the dashCooldown of a nautilus (40 at a dash, counted down every tick; 44-7 section 10.4); WC-BODY-VAR the patch handle of the body item's components (0 none; 40-6 section 2.3).
+*>   WC-NAU-LOVE-LEAD 1 for the nautilus whose AnimalMakeLove runs (EN-LOVE-PARTNER the BREED_TARGET, EN-LOVE-TIME the ticks it has run of its 110), 0 for the partner that only walks to it;
+*>   WC-NAU-LOVE-DELAY the ticks left of the random delay 60 + nextInt(50) before spawnChildFromBreeding (44-7 section 10.5 with 18 section 4.6).
 *>   zombie horse (core/src/mob-mount-rows.cob, 19 section 3.6): WC-ZH-SPEED the speed gene (9 + r1 + r2 + r3) / 42.16 in millionths (0: none drawn), read by STDMOB-SPEED.
+*>   mob equipment (core/src/mob-18-7-equip.cob, 18 section 7.2): WC-LOOT canPickUpLoot (1 yes, rolled at spawn), WC-EQ the five slots head, chest, legs, feet, main hand (the order of EN-EQUIP):
+*>   WC-EQ-ITEM the item id of a piece the mob picked up (0 none: the slot then shows what EN-EQUIP gives; the main hand is EN-HAND = 1000 + id), WC-EQ-VAR the patch handle of its components
+*>   and WC-EQ-KEEP 1 when its drop chance is the preserve value 2 (guaranteed drop, 7.1.4; the default chance is 0.085).
+*>   fox faceplant (core/src/mob-44-fox.cob, 44-x1 section 8.7): WC-FOX-FACE the FaceplantGoal countdown (0 not started). Look target (44-x1 section 8.6): WC-LOOK-TICKS the Ticker
+*>   counter of SetEntityLookTargetSometimes, WC-LOOK-TARGET the entity id of the LOOK_TARGET memory (0 absent).
  78 WC-MAX                VALUE 1024.
  01 WC-STATE EXTERNAL.
     05 WC-ROW                OCCURS 1024 TIMES.
@@ -48,7 +55,17 @@
        10 WC-INVUL-TICKS     BINARY-LONG.
        10 WC-PASS2           BINARY-LONG.
        10 WC-NAU-DASH-CD     BINARY-LONG.
+       10 WC-NAU-LOVE-LEAD   BINARY-LONG.
+       10 WC-NAU-LOVE-DELAY  BINARY-LONG.
        10 WC-BODY-VAR        BINARY-LONG.
+       10 WC-LOOT            BINARY-LONG.
+       10 WC-EQ              OCCURS 5 TIMES.
+          15 WC-EQ-ITEM      BINARY-LONG.
+          15 WC-EQ-VAR       BINARY-LONG.
+          15 WC-EQ-KEEP      BINARY-LONG.
+       10 WC-FOX-FACE        BINARY-LONG.
+       10 WC-LOOK-TICKS      BINARY-LONG.
+       10 WC-LOOK-TARGET     BINARY-LONG.
        10 WC-INV             OCCURS 15 TIMES.
           15 WC-INV-ITEM     BINARY-LONG.
           15 WC-INV-COUNT    BINARY-LONG.

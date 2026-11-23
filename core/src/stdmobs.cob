@@ -1545,6 +1545,10 @@
      IF SM-KEY(WS-M) = "pillager"
          CALL "PILLAGER-PICKUP-TICK" USING WS-ROW
      END-IF
+*>   Loot pickup of a mob that canPickUpLoot (18 section 2.7 step 2, 7.2; mob-18-7-equip.cob): the row's own flag decides.
+     IF SM-KEY(WS-M) = "zombie" OR "zombie_villager" OR "husk" OR "drowned" OR "skeleton" OR "stray" OR "bogged" OR "parched"
+         CALL "MOB-LOOT-PICKUP-TICK" USING WS-ROW
+     END-IF
 *>   The drowned's trident throw (20 section 4.5, mob-20-4-5.cob).
      IF SM-KEY(WS-M) = "drowned"
          CALL "DROWNED-TRIDENT-STAND" USING WS-ROW WS-STOP

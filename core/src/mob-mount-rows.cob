@@ -3,7 +3,7 @@
 *>   HUSK-CAMEL-BOX USING dim, x, y, z (BINARY-LONG feet cell of the husk), free out    4.3 step 3: the camel husk's spawn box (1.7 x 2.375 at the cell's centre) holds no full block
 *>   HUSK-CAMEL USING xoro state, husk row                                              4.3 step 3: one attempt per natural group: nextFloat below 0.1 gives the husk an iron spear and a camel husk to ride
 *>                                                                                      (the parched jockey of the same step is created and finalized beside it: a mob carries one mob rider, EN-PASS)
-*>   MS6-PACK-EXTRA USING xoro state, new row, members already in the pack                the finalizeSpawn extras of a natural spawn: the first husk of a group tries a camel husk, a zombie horse takes its zombie
+*>   MS6-PACK-EXTRA USING xoro state, new row, members already in the pack                the finalizeSpawn extras of a natural spawn: the first husk of a group tries a camel husk, a drowned its equipment and zombie nautilus (mob-drowned-spawn.cob), a zombie horse takes its zombie
 *>   ZOMBIE-HORSE-BORN USING row                                                        19 3.6: jump strength 0.5 + (r1 + r2 + r3) / 15 (EN-HORSE-JUMP) and speed (9 + r1 + r2 + r3) / 42.16 (WC-ZH-SPEED, millionths)
 *>   ZOMBIE-HORSE-JOCKEY USING xoro state, zombie horse row                             19 3.6 "Zombie horse spawn extra": a natural zombie horse carries a zombie (JOCKEY) with an iron spear
 *>   SKELETON-HORSE-BORN USING row                                                      19 3.2: the jump strength of the shared horse formula; health stays 15
@@ -117,6 +117,10 @@
      END-IF
      IF WS-KEY = "zombie_horse"
          CALL "ZOMBIE-HORSE-JOCKEY" USING L-STATE L-ROW
+     END-IF
+*>   A natural drowned: its default equipment and the zombie nautilus jockey of a trident holder (20 section 4.5; core/src/mob-drowned-spawn.cob).
+     IF WS-KEY = "drowned"
+         CALL "DROWNED-FINALIZE" USING L-STATE L-ROW
      END-IF
      GOBACK.
  END PROGRAM MS6-PACK-EXTRA.

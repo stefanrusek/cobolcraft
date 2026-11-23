@@ -59,6 +59,7 @@
  01 WS-HORSE               BINARY-LONG.
  01 WS-HEAL                BINARY-LONG.
  01 WS-TEMPER              BINARY-LONG.
+ 01 WS-NAU-FOOD            BINARY-LONG.
  LINKAGE SECTION.
  01 L-SPECIES              PIC X(24).
  01 L-ITEM                 PIC X(24).
@@ -106,6 +107,13 @@
              MOVE L-FOUND TO L-LOVE
              MOVE 1 TO L-TAME
          END-IF
+         IF L-SPECIES = "nautilus"
+*>           nautilus_food (44-7 section 9.3: the fishes and the bucket foods): a tame adult falls in love with it (10.2 step 4: the tame flag), a baby of any owner grows up on it.
+             CALL "Q7-NAU-FOOD" USING L-ITEM WS-NAU-FOOD WS-HEAL
+             IF WS-NAU-FOOD > 0
+                 MOVE 1 TO L-FOUND L-LOVE L-TAME
+             END-IF
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM M188-FOOD.
@@ -123,6 +131,7 @@
      EVALUATE L-SPECIES
          WHEN "pig" WHEN "cow" WHEN "mooshroom" WHEN "sheep" WHEN "chicken" WHEN "horse" WHEN "donkey" WHEN "llama"
          WHEN "camel" WHEN "rabbit" WHEN "goat" WHEN "fox" WHEN "panda" WHEN "bee" WHEN "turtle" WHEN "wolf"
+         WHEN "nautilus"
              MOVE 1 TO L-OK
      END-EVALUATE
      GOBACK.
@@ -414,6 +423,10 @@
 *>   The nautilus family (44-7 section 10.2): tame, dash and the zombie nautilus variant are entity data too.
      IF WS-M > 0
          CALL "NAUTILUS-NEEDED" USING L-ROW L-NEEDED
+*>       A baby nautilus (10.1; a water animal of kind 7) sends the baby flag as its age says; the zombie nautilus is never a baby.
+         IF SM-KEY(WS-M) = "nautilus" AND EN-MOBAGE(L-ROW) < 0
+             MOVE 1 TO L-BABY L-NEEDED
+         END-IF
      END-IF
 *>   The tadpole is a water animal (kind 2): its lock is sent too (19 section 11.2).
      IF WS-M > 0
@@ -779,11 +792,10 @@
  END PROGRAM MOB-PARTNER.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. MOB-BREED.
-*> USING row a, row b: Animal.spawnChildFromBreeding and finalizeSpawnChildFromBreeding (8.1): the baby of M188-OFFSPRING at the first parent's position with yaw 0, age -24000 and the
-*> baby flag; both parents get age 6000 (the 5-minute cooldown), lose love and partner; Entity Event 18 (hearts) goes to the viewers of the first parent; one experience orb
-*> of 1 + nextInt(7) points appears at it. The baby of two sheep has M19-SHEEP-MIX's colour, of two mooshrooms M19-MOOSHROOM-BREED's type, otherwise the colour or variant
-*> of a parent by a coin. The animals_bred statistic and the mob_drops game rule are not modelled yet.
+ PROGRAM-ID. MOB-BREED-BABY.
+*> USING row a, row b, baby out: the child of Animal.spawnChildFromBreeding (8.1) and of the spawn egg used on an ageable mob (the clicked mob is both parents, 44-7 section 6.2): the baby of M188-OFFSPRING at
+*> the first parent's position with yaw 0, age -24000 and the baby flag. The baby of two sheep has M19-SHEEP-MIX's colour, of two mooshrooms M19-MOOSHROOM-BREED's type, otherwise the colour or variant
+*> of a parent by a coin; a nautilus copies the owner and the tame flag of its first parent (44-7 section 10.1). The animals_bred statistic is not modelled yet.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -825,16 +837,10 @@
  LINKAGE SECTION.
  01 L-A                    BINARY-LONG.
  01 L-B                    BINARY-LONG.
- PROCEDURE DIVISION USING L-A L-B.
+ 01 L-BABY-OUT             BINARY-LONG.
+ PROCEDURE DIVISION USING L-A L-B L-BABY-OUT.
      CALL "MOB-SPECIES-KEY" USING L-A WS-KEY-A
      CALL "MOB-SPECIES-KEY" USING L-B WS-KEY-B
-     IF WS-KEY-A = "turtle"
-*>       Two turtles make no baby: the first one gets the egg (19 section 12).
-         MOVE 1 TO EN-TURTLE-EGG(L-A)
-         CALL "MOB-DATA-SEND" USING L-A
-         CALL "MOB-BREED-DONE" USING L-A L-B
-         GOBACK
-     END-IF
      CALL "M188-OFFSPRING" USING WS-KEY-A WS-KEY-B WS-KEY
      MOVE SPACES TO WS-FULL
      STRING "minecraft:" DELIMITED BY SIZE WS-KEY DELIMITED BY SPACE INTO WS-FULL
@@ -869,6 +875,12 @@
              COMPUTE WS-COLOR-B = FUNCTION MOD(EN-WOOL(L-B), 16)
              CALL "M19-SHEEP-MIX" USING WS-COLOR-A WS-COLOR-B WS-COIN WS-CHILD-COLOR
              MOVE WS-CHILD-COLOR TO EN-WOOL(WS-BABY)
+         WHEN "nautilus"
+*>           getBreedOffspring (44-7 section 10.1): the child of a tame parent gets its owner and the tame flag.
+             MOVE EN-TAMED(L-A) TO EN-TAMED(WS-BABY)
+             IF EN-TAMED(L-A) = 1
+                 MOVE EN-OWNER-UUID(L-A) TO EN-OWNER-UUID(WS-BABY)
+             END-IF
          WHEN "goat"
 *>           The kid has both horns; it screams when the parent chosen by the coin screams or by the 2 percent roll (19 section 10).
              CALL "XP-RANDOM" USING WS-SALT-GK WS-BOUND-GK WS-DRAW-K
@@ -894,6 +906,31 @@
              END-IF
      END-EVALUATE
      CALL "MOB-DATA-SEND" USING WS-BABY
+     MOVE WS-BABY TO L-BABY-OUT
+     GOBACK.
+ END PROGRAM MOB-BREED-BABY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-BREED.
+*> USING row a, row b: Animal.spawnChildFromBreeding and finalizeSpawnChildFromBreeding (8.1): the baby of MOB-BREED-BABY, then the end of the breeding (MOB-BREED-DONE: both parents get age 6000,
+*> lose love and partner, hearts and one experience orb). Two turtles make no baby: the first one gets the egg (19 section 12).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-KEY-A               PIC X(24).
+ 01 WS-BABY                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-A                    BINARY-LONG.
+ 01 L-B                    BINARY-LONG.
+ PROCEDURE DIVISION USING L-A L-B.
+     CALL "MOB-SPECIES-KEY" USING L-A WS-KEY-A
+     IF WS-KEY-A = "turtle"
+         MOVE 1 TO EN-TURTLE-EGG(L-A)
+         CALL "MOB-DATA-SEND" USING L-A
+         CALL "MOB-BREED-DONE" USING L-A L-B
+         GOBACK
+     END-IF
+     CALL "MOB-BREED-BABY" USING L-A L-B WS-BABY
      CALL "MOB-BREED-DONE" USING L-A L-B
      GOBACK.
  END PROGRAM MOB-BREED.
@@ -1321,7 +1358,7 @@
      CALL "M188-FEED" USING EN-MOBAGE(L-ENTITY) EN-LOVE(L-ENTITY) WS-FOUND WS-FIXED WS-CAN WS-ACTION WS-SECONDS
      EVALUATE WS-ACTION
          WHEN 1
-             CALL "MOB-TAKE" USING L-ROW
+             CALL "MOB-FEED-TAKE" USING L-ROW WS-KEY WS-ITEM
              MOVE 600 TO EN-LOVE(L-ENTITY)
              MOVE L-ROW TO EN-LOVE-CAUSE(L-ENTITY)
              CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
@@ -1329,7 +1366,7 @@
              CALL "HEALTH-VIEWERS-SEND" USING L-ENTITY PB-BUFFER
              CALL "PB-FREE" USING PB-BUFFER
          WHEN 2
-             CALL "MOB-TAKE" USING L-ROW
+             CALL "MOB-FEED-TAKE" USING L-ROW WS-KEY WS-ITEM
              CALL "M188-AGE-UP" USING EN-MOBAGE(L-ENTITY) WS-SECONDS EN-FORCED(L-ENTITY)
              IF EN-MOBAGE(L-ENTITY) = 0
                  MOVE 0 TO EN-VARIANT(L-ENTITY)
@@ -1338,6 +1375,34 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM MOB-FEED-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-FEED-TAKE.
+*> USING player row, species key (PIC X(24)), item key (PIC X(24)): usePlayerItem of an animal food: one item is used (MOB-TAKE); a bucket food of a nautilus (nautilus_bucket_food, 44-7 section 10.2)
+*> leaves a water bucket in the hand (MOB-SWAP).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-FOOD                BINARY-LONG.
+ 01 WS-TAMING              BINARY-LONG.
+ 01 WS-WATER               PIC X(24) VALUE "water_bucket".
+ 01 WS-WATER-ID            BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-SPECIES              PIC X(24).
+ 01 L-ITEM                 PIC X(24).
+ PROCEDURE DIVISION USING L-ROW L-SPECIES L-ITEM.
+     MOVE 0 TO WS-FOOD
+     IF L-SPECIES = "nautilus"
+         CALL "Q7-NAU-FOOD" USING L-ITEM WS-FOOD WS-TAMING
+     END-IF
+     IF WS-FOOD = 2
+         CALL "MOB-ITEM-ID" USING WS-WATER WS-WATER-ID
+         CALL "MOB-SWAP" USING L-ROW WS-WATER-ID
+     ELSE
+         CALL "MOB-TAKE" USING L-ROW
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-FEED-TAKE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-WOLF-USE.
@@ -1659,6 +1724,12 @@
          IF WS-USED = 1
              GOBACK
          END-IF
+     END-IF
+*>   Mob.interact step 1a (44-7 section 10.3.1): a held spawn egg of the mob's own type makes a baby of an ageable mob (6.2; core/src/mob-egg-baby.cob).
+     CALL "MOB-EGG-BABY" USING WS-ROW WS-ENTITY WS-KEY48 WS-USED
+     IF WS-USED = 1
+         CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
+         GOBACK
      END-IF
      IF WS-KEY = "villager" OR "wandering_trader"
          CALL "MERCHANT-INTERACT" USING WS-ROW WS-ENTITY WS-USED

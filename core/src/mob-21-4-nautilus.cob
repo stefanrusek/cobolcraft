@@ -13,7 +13,7 @@
 *>   NAUTILUS-USE USING player row, entity row, held key, handled out   taming with pufferfish (1 in 3), feeding a tame one (10.2)
 *>   NAUTILUS-TICK USING row, table row, in water  the brain of both kinds: countdowns, the target, the charge, temptation, the stroll (AQUA-SWIM, RandomStroll.swim(1.0))
 *> Gaps (recorded on T24090): line of sight of the charge and the target sensor, the hit test uses axis-aligned boxes of the entity types, no knockback resistance of mob targets, the angry attacker must
-*> be a player (mob attackers do not reach NAUTILUS-HURT), love mode (AnimalMakeLove), the swim controls' turn rates. The home restriction of a tame one is in mob-nautilus-home.cob.
+*> be a player (mob attackers do not reach NAUTILUS-HURT), the swim controls' turn rates. Love mode and babies (AnimalMakeLove) are in mob-nautilus-love.cob. The home restriction of a tame one is in mob-nautilus-home.cob.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. NAUTILUS-FINALIZE.
@@ -650,6 +650,7 @@
  01 WS-TEMPTED             BINARY-LONG.
  01 WS-T                   BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
+ 01 WS-LOVING              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
@@ -679,6 +680,10 @@
              MOVE 0 TO WC-NAU-ANGRY(L-ROW)
          END-IF
      END-IF
+*>   AgeableMob.aiStep and Animal.aiStep: the age and the love counter of a nautilus (the zombie nautilus has neither, 44-7 section 10.8).
+     IF SM-KIND(L-M) = 7
+         CALL "NAUTILUS-LIFE" USING L-ROW
+     END-IF
      IF L-WET = 0
          GOBACK
      END-IF
@@ -690,12 +695,21 @@
      IF EN-FOE(L-ROW) = 0
          CALL "NAUTILUS-PICK" USING L-ROW L-M
      END-IF
-     IF EN-FOE(L-ROW) > 0 AND WC-NAU-CHARGE-CD(L-ROW) = 0
+*>   ChargeAttack runs only while BREED_TARGET is absent (10.5).
+     IF EN-FOE(L-ROW) > 0 AND WC-NAU-CHARGE-CD(L-ROW) = 0 AND EN-LOVE-PARTNER(L-ROW) = 0
          CALL "NAUTILUS-CHARGE-START" USING L-ROW L-M WS-STARTED
          IF WS-STARTED = 1
              CALL "NAUTILUS-CHARGE" USING L-ROW L-M
              GOBACK
          END-IF
+     END-IF
+*>   IDLE priority 1: AnimalMakeLove(NAUTILUS, 0.4, 2) (mob-nautilus-love.cob); a pairing that walks leaves the other behaviours alone this tick.
+     MOVE 0 TO WS-LOVING
+     IF SM-KIND(L-M) = 7
+         CALL "NAUTILUS-LOVE" USING L-ROW L-M WS-LOVING
+     END-IF
+     IF WS-LOVING = 1
+         GOBACK
      END-IF
 *>   IDLE: panic (the nautilus), temptation, then the stroll (AQUA-SWIM carries the panic of EN-FLEE).
      CALL "NAUTILUS-TEMPT" USING L-ROW L-M WS-TEMPTED
