@@ -183,11 +183,11 @@
      PERFORM WRITE-STRUCTURES
      MOVE "structures.starts.minecraft:alpha" TO WS-PATH
      PERFORM GET-TEXT
-     MOVE "acceptance US12 36-1§13.3 start tag: id, ChunkX, ChunkZ, references and Children of the two named pieces (id, BB, O, GD); the unnamed builder piece is left out" TO TL-CASE
+     MOVE "acceptance US12 36-1§13.3 start tag: id, ChunkX, ChunkZ, references and Children of the two named pieces (id, BB, O, GD and the mineshaft keys of 36-5 2.6 and 2.11); the unnamed builder piece is left out" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED
      STRING "{id:minecraft:alpha,ChunkX:3,ChunkZ:-4,references:1,Children:["
-         "{id:minecraft:mscorridor,BB:I[48,60,-64,52,63,-58],O:2,GD:3},"
-         "{id:minecraft:mscrossing,BB:I[40,61,-70,47,64,-63],O:-1,GD:0}]}"
+         "{id:minecraft:mscorridor,BB:I[48,60,-64,52,63,-58],O:2,GD:3,hr:0,sc:0,hps:0,Num:0,MST:0},"
+         "{id:minecraft:mscrossing,BB:I[40,61,-70,47,64,-63],O:-1,GD:0,tf:0,D:0,MST:0}]}"
          DELIMITED BY SIZE INTO TL-EXPECTED
      PERFORM CHECK-TEXT
      MOVE "structures.starts.minecraft:beta" TO WS-PATH

@@ -586,9 +586,11 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTPIECE.
+ COPY STRUCTTPL.
  01 WS-I                   BINARY-LONG.
  01 WS-FLAG                BINARY-LONG.
  01 WS-CY                  BINARY-LONG.
+ 01 WS-TKEY                PIC X(96).
  PROCEDURE DIVISION.
 *>   The pivot (36-1 8): the centre x, the min y and the centre z of the first piece's box.
      IF SP-COUNT > 0
@@ -599,9 +601,14 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SP-COUNT
          CALL "SPB-BOX-INTERSECTS" USING SP-BOX(WS-I) SP-WBOX WS-FLAG
          IF WS-FLAG = 1
+             MOVE SPACES TO WS-TKEY
+             IF SP-TYPE(WS-I) = 100 AND SP-T-ROW(WS-I) >= 1 AND SP-T-ROW(WS-I) <= TP-COUNT
+                 MOVE TP-KEY(SP-T-ROW(WS-I)) TO WS-TKEY
+             END-IF
              EVALUATE TRUE
-*>               the nether fossil (template kind 0): its post-process takes the whole template box into the write box and ends with the dried ghast (36-4 9.2, NFOS-POST)
-                 WHEN SP-TYPE(WS-I) = 100 AND SP-T-KIND(WS-I) = 0
+*>               the nether fossil (template kind 0 with a template of minecraft:nether_fossils/; any other kind 0 template piece has no hook): its post-process takes the whole template box into
+*>               the write box and ends with the dried ghast (36-4 9.2, NFOS-POST)
+                 WHEN SP-TYPE(WS-I) = 100 AND SP-T-KIND(WS-I) = 0 AND WS-TKEY(1:25) = "minecraft:nether_fossils/"
                      CALL "NFOS-POST" USING WS-I
                  WHEN SP-TYPE(WS-I) = 100
                      CALL "STRUCT-TPL-POST" USING WS-I
