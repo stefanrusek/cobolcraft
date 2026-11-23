@@ -152,6 +152,8 @@
  01 WS-OVB                 FLOAT-LONG.
  01 WS-OVM                 BINARY-LONG.
  01 WS-PLAYER-KEY          PIC X(24).
+ 01 WS-ARM                 BINARY-LONG.
+ 01 WS-PREVIEW             BINARY-LONG.
  COPY CLCONST.
  COPY CONTENT.
  LINKAGE SECTION.
@@ -210,12 +212,20 @@
              CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
          END-IF
      END-PERFORM
-*>   The first-person arm of an empty main hand (12 section 6.5, hand-arm.cob) wears the model row "player" with its own image: its slot, in a standard world on the world screen.
+*>   The first-person arm of an empty main hand (12 section 6.5, hand-arm.cob) and the player-model preview of an inventory screen (preview.cob) wear the local figure's model and skin (the slim
+*>   model with a slim skin, the default skin of the player's UUID: LOCAL-FIGURE-KEY): its slot, in a standard world on the world screen (the arm) or under the screen's preview.
+     MOVE 0 TO WS-ARM
      IF CL-CAMERA = 0 AND SM-SCREEN = SCR-WORLD AND CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
-         MOVE "player" TO WS-PLAYER-KEY
-         CALL "ENTITY-MODEL-FIND" USING WS-PLAYER-KEY WS-EM
-         MOVE 0 TO WS-TEX
-         CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
+         MOVE 1 TO WS-ARM
+     END-IF
+     CALL "PREVIEW-WIDGET" USING CLIENT-STATE WS-PREVIEW
+     IF WS-ARM = 1 OR WS-PREVIEW > 0
+         CALL "LOCAL-FIGURE-KEY" USING CLIENT-STATE WS-EM WS-TEX
+         IF WS-EM > 0
+             CALL "ENTITY-SLOT-ENSURE" USING CLIENT-STATE WS-EM WS-TEX WS-NEW
+         END-IF
+     END-IF
+     IF WS-ARM = 1
          CALL "HAND-BANNER-SLOTS" USING CLIENT-STATE WS-NEW
          CALL "HAND-SHIELD-SLOTS" USING CLIENT-STATE WS-NEW
      END-IF
