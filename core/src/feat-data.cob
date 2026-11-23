@@ -2340,6 +2340,17 @@
              ELSE
                  MOVE LS-SAVED-BAD TO FD-BAD
              END-IF
+         WHEN 31
+         WHEN 39
+*>           ore and scattered_ore (feat-ore.cob): unsupported when the targets, the size or the chance cannot be read or are out of range
+             MOVE FD-BAD TO LS-SAVED-BAD
+             MOVE 0 TO FD-BAD
+             CALL "FD-ORE-NODE" USING JSON-DOC L-NODE FT-A(LS-ROW) FT-B(LS-ROW) FT-C(LS-ROW) FT-E(LS-ROW) FT-F(LS-ROW)
+             IF FD-BAD = 1
+                 MOVE -1 TO FT-TYPE(LS-ROW)
+             ELSE
+                 MOVE LS-SAVED-BAD TO FD-BAD
+             END-IF
          WHEN 46
 *>           speleothem_cluster (feat-35-6.cob): unsupported when a block, a provider or a number is missing
              MOVE FD-BAD TO LS-SAVED-BAD

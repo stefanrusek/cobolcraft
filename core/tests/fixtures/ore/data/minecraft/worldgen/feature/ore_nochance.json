@@ -1,0 +1,1 @@
+{ "type": "minecraft:scattered_ore", "size": 4, "targets": [ { "state": "minecraft:ancient_debris", "target": { "predicate_type": "minecraft:tag_match", "tag": "minecraft:ore_test_base" } } ] }
