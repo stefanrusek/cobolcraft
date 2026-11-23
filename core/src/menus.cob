@@ -1212,6 +1212,14 @@
              GOBACK
          END-IF
      END-IF
+*>   A mount's saddle and body slots cannot be emptied while the stack has prevent_armor_change, unless the player is in creative mode (40-6 section 2.3, ArmorSlot.mayPickup).
+     IF MN-WINDOW(L-ROW) > 0 AND MN-CFAMILY(L-ROW) = 15 AND L-SLOT >= 0 AND L-SLOT <= 1
+             AND (L-TYPE = 0 OR L-TYPE = 1 OR L-TYPE = 2 OR L-TYPE = 4)
+         CALL "MNT-MAYPICKUP" USING L-ROW L-SLOT WS-MAY
+         IF WS-MAY = 0
+             GOBACK
+         END-IF
+     END-IF
      EVALUATE TRUE
          WHEN (L-TYPE = 0 OR L-TYPE = 1) AND L-BUTTON >= 0 AND L-BUTTON <= 1
              CALL "MENU-CLICK-PICK" USING L-ROW L-SLOT L-BUTTON L-TYPE
