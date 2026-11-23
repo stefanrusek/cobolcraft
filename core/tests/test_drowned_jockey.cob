@@ -1,7 +1,7 @@
-*> Implementation test (wrap I2 round 6, T24090; docs/protocol/20-mobs-overworld-hostile.md section 4.5 "Equipment" and "finalizeSpawn", 20 section 18.3, 44-7 10.1): a naturally spawned drowned
-*> gets its default equipment (nextFloat > 0.9: a weapon, nextInt(16) < 10 a trident, else a fishing rod), and a drowned with a trident in the main hand (nextFloat < 0.5, not a baby, the biome not in
-*> more_frequent_drowned_spawns) rides a zombie_nautilus created at its position (the drowned jockey). The pure rules are checked with given draws; the whole rule runs over 600 drowned spawned with a
-*> fixed seed: every jockey holds a trident, rides a zombie nautilus at its own position and sits at the seat y 1.1375 less the 0.7 riding offset of the zombie family.
+*> Implementation test (wrap I2 round 6, T24090; docs/protocol/20-mobs-overworld-hostile.md section 4.5 "finalizeSpawn", 20 section 18.3, 44-7 10.1): a naturally spawned drowned (STDMOB-FINALIZE rolls its
+*> default equipment, MS6-PACK-EXTRA is the hook of the natural spawn) with a trident in the main hand (nextFloat < 0.5, not a baby, the biome not in more_frequent_drowned_spawns) rides a zombie_nautilus
+*> created at its position (the drowned jockey). The pure rule is checked with given draws; the whole rule runs over 600 drowned spawned with a fixed seed: every jockey holds a trident, rides a zombie
+*> nautilus at its own position and sits at the seat y 1.1375 less the 0.7 riding offset of the zombie family.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-DROWNED-JOCKEY.
  DATA DIVISION.
@@ -30,8 +30,6 @@
  01 WS-TRIDENT             BINARY-LONG.
  01 WS-ROD                 BINARY-LONG.
  01 WS-DRAW                FLOAT-LONG.
- 01 WS-PICK                BINARY-LONG.
- 01 WS-WEAPON              BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-ZERO                BINARY-LONG VALUE 0.
@@ -74,27 +72,6 @@
      COMPUTE WS-OBSERVE ROUNDED = WS-SEAT-Y * 10000
      PERFORM CHECK
 
-*>   The default weapon (populateDefaultEquipmentSlots): nextFloat > 0.9, then nextInt(16) < 10 a trident, else a fishing rod.
-     MOVE 0.95 TO WS-DRAW
-     MOVE 9 TO WS-PICK
-     CALL "DROWNED-WEAPON" USING WS-DRAW WS-PICK WS-WEAPON
-     MOVE "implementation 20 4.5 draw above 0.9 and pick 9 of 16: a trident" TO WS-CASE
-     MOVE 1 TO WS-EXPECT
-     MOVE WS-WEAPON TO WS-OBSERVE
-     PERFORM CHECK
-     MOVE 10 TO WS-PICK
-     CALL "DROWNED-WEAPON" USING WS-DRAW WS-PICK WS-WEAPON
-     MOVE "implementation 20 4.5 pick 10 of 16: a fishing rod" TO WS-CASE
-     MOVE 2 TO WS-EXPECT
-     MOVE WS-WEAPON TO WS-OBSERVE
-     PERFORM CHECK
-     MOVE 0.9 TO WS-DRAW
-     CALL "DROWNED-WEAPON" USING WS-DRAW WS-PICK WS-WEAPON
-     MOVE "implementation 20 4.5 the draw 0.9 is not above 0.9: no weapon" TO WS-CASE
-     MOVE 0 TO WS-EXPECT
-     MOVE WS-WEAPON TO WS-OBSERVE
-     PERFORM CHECK
-
 *>   The jockey test: a trident, nextFloat < 0.5, not a baby, the biome not in more_frequent_drowned_spawns.
      MOVE 0.49 TO WS-DRAW
      CALL "DROWNED-JOCKEY-OK" USING WS-ONE WS-DRAW WS-NO-BABY WS-NO-FREQ WS-OK
@@ -133,6 +110,7 @@
      MOVE 0 TO WS-TRIDENTS WS-RODS WS-JOCKEYS WS-BAD
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 600
          CALL "MOB-SPAWN" USING WS-DIM WS-TYPE-D WS-X WS-Y WS-Z WS-YAW WS-ROW
+         CALL "STDMOB-FINALIZE" USING XR-STATE WS-ROW
          CALL "MS6-PACK-EXTRA" USING XR-STATE WS-ROW WS-ZERO
          IF EN-HAND(WS-ROW) = 1000 + WS-TRIDENT
              ADD 1 TO WS-TRIDENTS
