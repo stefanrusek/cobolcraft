@@ -233,6 +233,7 @@
  01 WS-BIT                 BINARY-LONG VALUE 64.
  01 WS-ON                  BINARY-LONG.
  01 WS-OFF                 BINARY-LONG VALUE 0.
+ 01 WS-CONTINUE            BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-PLANTED              BINARY-LONG.
@@ -244,7 +245,9 @@
              MOVE 40 TO EN-FOX-FP(L-ROW)
          END-IF
          SUBTRACT 1 FROM EN-FOX-FP(L-ROW)
-         IF EN-FOX-FP(L-ROW) > 0
+*>       FaceplantGoal.canContinueToUse (44-x1 section 8.7, X1-FACEPLANT): faceplanted and the countdown above 0; otherwise the stop clears the flag.
+         CALL "X1-FACEPLANT" USING WS-ON EN-FOX-FP(L-ROW) WS-CONTINUE
+         IF WS-CONTINUE = 1
              MOVE 1 TO L-PLANTED
          ELSE
              CALL "M44-FOX-SETFLAG" USING L-ROW WS-BIT WS-OFF
