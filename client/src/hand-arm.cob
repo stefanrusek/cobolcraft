@@ -11,14 +11,18 @@
 *> USING CLIENT-STATE, prefix (12 FLOAT-LONG, the view pose of HAND-PREFIX), side (+1 right, -1 left), equip offset E (FLOAT-LONG), light 0 to 1 (FLOAT-LONG).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
-*> The cuboids, right arm and sleeve then left arm and sleeve: pivot x y z, origin x y z, size w h d (pixels), texture u v, grow (the wide arm of 12 section 7.4).
+*> The cuboids, right arm and sleeve then left arm and sleeve of the wide model, then the same four of the slim one (3 pixel arms): pivot x y z, origin x y z, size w h d (pixels), texture u v, grow (12 section 7.4).
  01 WS-CUBE-DATA.
     05 FILLER PIC X(66) VALUE "-00500+00200+00000-00300-00200-00200+00400+01200+00400+040+016+000".
     05 FILLER PIC X(66) VALUE "-00500+00200+00000-00300-00200-00200+00400+01200+00400+040+032+025".
     05 FILLER PIC X(66) VALUE "+00500+00200+00000-00100-00200-00200+00400+01200+00400+032+048+000".
     05 FILLER PIC X(66) VALUE "+00500+00200+00000-00100-00200-00200+00400+01200+00400+048+048+025".
+    05 FILLER PIC X(66) VALUE "-00500+00200+00000-00200-00200-00200+00300+01200+00400+040+016+000".
+    05 FILLER PIC X(66) VALUE "-00500+00200+00000-00200-00200-00200+00300+01200+00400+040+032+025".
+    05 FILLER PIC X(66) VALUE "+00500+00200+00000-00100-00200-00200+00300+01200+00400+032+048+000".
+    05 FILLER PIC X(66) VALUE "+00500+00200+00000-00100-00200-00200+00300+01200+00400+048+048+025".
  01 WS-CUBES REDEFINES WS-CUBE-DATA.
-    05 WS-CUBE OCCURS 4 TIMES.
+    05 WS-CUBE OCCURS 8 TIMES.
        10 WS-CPX              PIC S999V99 SIGN LEADING SEPARATE.
        10 WS-CPY              PIC S999V99 SIGN LEADING SEPARATE.
        10 WS-CPZ              PIC S999V99 SIGN LEADING SEPARATE.
@@ -36,7 +40,8 @@
  01 WS-LENGTH              BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
- 01 WS-KEY                 PIC X(24) VALUE "player".
+ 01 WS-TEX                 BINARY-LONG.
+ COPY CLMODELS.
  01 WS-S                   BINARY-LONG.
  01 WS-FIRST               BINARY-LONG.
  01 WS-LAST                BINARY-LONG.
@@ -66,10 +71,11 @@
  01 L-LIGHT                FLOAT-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-PREFIX L-SIDE L-E L-LIGHT.
      MOVE 0 TO RL-HA-COUNT
-     CALL "ENTITY-MODEL-FIND" USING WS-KEY WS-ROW
+*>   The arm wears the local figure's skin: the model (the slim one with a slim default skin) and the image of the player's UUID (LOCAL-FIGURE-KEY).
+     CALL "LOCAL-FIGURE-KEY" USING CLIENT-STATE WS-ROW WS-TEX
      MOVE 0 TO WS-S
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > EA-MT-COUNT
-         IF EA-MT-MODEL(WS-K) = WS-ROW AND EA-MT-TEX(WS-K) = 0
+         IF WS-ROW > 0 AND EA-MT-MODEL(WS-K) = WS-ROW AND EA-MT-TEX(WS-K) = WS-TEX
              MOVE WS-K TO WS-S
          END-IF
      END-PERFORM
@@ -117,6 +123,10 @@
      IF L-SIDE < 0
          MOVE 3 TO WS-FIRST
          MOVE "modelPart_left_sleeve" TO WS-NAME
+     END-IF
+*>   The slim model's cuboids follow the wide model's four.
+     IF CL-MD-KEY(WS-ROW) = "player_slim"
+         ADD 4 TO WS-FIRST
      END-IF
      MOVE WS-FIRST TO WS-LAST
      CALL "OPTIONS-GET" USING CLIENT-STATE WS-NAME WS-VALUE WS-LENGTH WS-FOUND
