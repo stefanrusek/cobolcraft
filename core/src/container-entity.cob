@@ -2,6 +2,7 @@
 *> (ContainerEntity) and 44-residual-mob-questions-8 section 4.6 (container carts). Wrap C round 5, T24208 (core/copy/ECVSTATE.cpy holds the contents, one entry per tracker row).
 *> The menu is the player's container menu with MN-CFAMILY 14 (MN-BENCH-X the tracker row, MN-BENCH-Y the entity id, MN-BENCH-DIM the dimension); menu-container.cob routes the slots of
 *> that family here. The menu is valid while the entity lasts and the player's eye is within 3.0 + 4.0 blocks of its box (isChestVehicleStillValid).
+*> Chest boats and chest rafts (EN-BT-KIND 2, T24205) use the same menu: BOAT-USE opens it (a sneaking player, a boat that cannot take a passenger) and BOAT-HURT scatters the contents.
 *> Not built: the loot table of a mineshaft chest cart (key, seed, unpacking), the saved Items, container entities as the source of a hopper above, container_open and container_close game events.
 *>
 *>   ECV-ROW-OPEN USING row                                   the entry of the row is this entity's (a stale one is cleared)
@@ -40,7 +41,10 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY PROJSTATE.
+ COPY MOB181.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-KEY-LENGTH          BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SIZE                 BINARY-LONG.
@@ -64,6 +68,15 @@
                  MOVE "entity.minecraft.hopper_minecart" TO L-NAME
                  MOVE 32 TO L-NAME-LENGTH
          END-EVALUATE
+     END-IF
+*>   A chest boat or chest raft (EN-BT-KIND 2): 27 slots, generic_9x3, titled by the entity's own name entity.minecraft.<key> (44-8 3.9).
+     IF EN-BT-KIND(L-ROW) = 2
+         MOVE 27 TO L-SIZE
+         MOVE 2 TO L-TYPE
+         COMPUTE WS-ROW = EN-TYPE(L-ROW) + 1
+         COMPUTE WS-KEY-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(M1-KEY(WS-ROW)))
+         STRING "entity.minecraft." FUNCTION TRIM(M1-KEY(WS-ROW)) DELIMITED BY SIZE INTO L-NAME
+         COMPUTE L-NAME-LENGTH = 17 + WS-KEY-LENGTH
      END-IF
      GOBACK.
  END PROGRAM ECV-KIND.

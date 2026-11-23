@@ -8,6 +8,7 @@
  COPY TESTLIB.
  COPY CORESTATE.
  COPY CONTENT.
+ COPY CMENU.
  COPY PROTO.
  01 WS-P1                  BINARY-LONG.
  01 WS-P2                  BINARY-LONG.
@@ -155,7 +156,7 @@
      MOVE 0 TO WS-E
      COMPUTE WS-O = EN-VEHICLE(PL-ENTITY-ROW(WS-P1)) + EN-VEHICLE(PL-ENTITY-ROW(WS-P2))
      PERFORM CHECK-N
-*>   A chest boat takes one passenger only (getMaxPassengers 1).
+*>   A chest boat takes one passenger only (getMaxPassengers 1): the second player's click opens its menu instead (44-8 3.9).
      MOVE "minecraft:oak_chest_boat" TO WS-KEY
      CALL "BOAT-SPAWN" USING WS-DIM WS-PX WS-PY WS-PZ WS-YAW WS-KEY WS-ROW
      CALL "BOAT-USE" USING WS-P1 WS-ROW WS-USED
@@ -163,7 +164,7 @@
      MOVE "acceptance US15 44-8§3.1 a chest boat takes one passenger" TO WS-CASE
      MOVE 1 TO WS-E
      MOVE 0 TO WS-O
-     IF WS-USED = 0 AND EN-RIDER(WS-ROW) = WS-P1 AND EN-RIDER2(WS-ROW) = 0
+     IF WS-USED = 1 AND MN-CFAMILY(WS-P2) = 14 AND EN-RIDER(WS-ROW) = WS-P1 AND EN-RIDER2(WS-ROW) = 0
          MOVE 1 TO WS-O
      END-IF
      PERFORM CHECK-N
