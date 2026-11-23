@@ -126,7 +126,10 @@
              CALL "RL-DISP-HEAD" USING L-DIM L-X L-Y L-Z L-FACING L-BARE L-ITEM L-HANDLED L-CONSUMED
          WHEN OTHER
 *>           4.9, the default rule of an item with the equippable component: worn by an armor stand or a player in front, else the default drop
-             CALL "RL-DISP-EQUIP" USING L-DIM L-X L-Y L-Z L-ITEM L-CONSUMED
+             CALL "RL-DISP-MOB" USING L-DIM L-X L-Y L-Z L-ITEM L-VAR L-CONSUMED
+             IF L-CONSUMED = 0
+                 CALL "RL-DISP-EQUIP" USING L-DIM L-X L-Y L-Z L-ITEM L-CONSUMED
+             END-IF
 *>           4.12 (3.1 rule 2): an item nobody wears that is in the tag sulfur_cube_swallowable goes to a sulfur cube in front (redstone-live-q.cob)
              IF L-CONSUMED = 0
                  CALL "SULFUR-ARCH-MASK" USING L-ITEM LS-MASK

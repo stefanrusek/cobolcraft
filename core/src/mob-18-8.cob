@@ -1667,6 +1667,12 @@
      IF WS-KEY = "camel_husk" OR "nautilus" OR "zombie_nautilus"
          MOVE 1 TO EN-PERSISTENT(WS-ENTITY)
      END-IF
+*>   Mob.interact: shears shear the equipment of a mob that is no vehicle before the lead rules (44-7 section 10.3.1; core/src/mob-shear-equip.cob)
+     CALL "MOB-SHEAR-EQUIP" USING WS-ROW WS-ENTITY WS-USED
+     IF WS-USED = 1
+         CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
+         GOBACK
+     END-IF
 *>   Mob.interact posts entity_interact (the mob's position, the player as the source) after the common interactions (the leash) or mobInteract consumed the action (30-8 14.3.7)
      CALL "MOB-LEASH-USE" USING WS-ROW WS-ENTITY WS-HELD WS-USED
      IF WS-USED = 1
