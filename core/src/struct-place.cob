@@ -600,6 +600,9 @@
          CALL "SPB-BOX-INTERSECTS" USING SP-BOX(WS-I) SP-WBOX WS-FLAG
          IF WS-FLAG = 1
              EVALUATE TRUE
+*>               the nether fossil (template kind 0): its post-process takes the whole template box into the write box and ends with the dried ghast (36-4 9.2, NFOS-POST)
+                 WHEN SP-TYPE(WS-I) = 100 AND SP-T-KIND(WS-I) = 0
+                     CALL "NFOS-POST" USING WS-I
                  WHEN SP-TYPE(WS-I) = 100
                      CALL "STRUCT-TPL-POST" USING WS-I
                  WHEN SP-TYPE(WS-I) = 60
