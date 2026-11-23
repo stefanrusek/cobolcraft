@@ -18,8 +18,6 @@
 *>   mob equipment (core/src/mob-18-7-equip.cob, 18 section 7.2): WC-LOOT canPickUpLoot (1 yes, rolled at spawn), WC-EQ the five slots head, chest, legs, feet, main hand (the order of EN-EQUIP):
 *>   WC-EQ-ITEM the item id of a piece the mob picked up (0 none: the slot then shows what EN-EQUIP gives; the main hand is EN-HAND = 1000 + id), WC-EQ-VAR the patch handle of its components
 *>   and WC-EQ-KEEP 1 when its drop chance is the preserve value 2 (guaranteed drop, 7.1.4; the default chance is 0.085).
-*>   fox faceplant (core/src/mob-44-fox.cob, 44-x1 section 8.7): WC-FOX-FACE the FaceplantGoal countdown (0 not started). Look target (44-x1 section 8.6): WC-LOOK-TICKS the Ticker
-*>   counter of SetEntityLookTargetSometimes, WC-LOOK-TARGET the entity id of the LOOK_TARGET memory (0 absent).
  78 WC-MAX                VALUE 1024.
  01 WC-STATE EXTERNAL.
     05 WC-ROW                OCCURS 1024 TIMES.
@@ -63,9 +61,6 @@
           15 WC-EQ-ITEM      BINARY-LONG.
           15 WC-EQ-VAR       BINARY-LONG.
           15 WC-EQ-KEEP      BINARY-LONG.
-       10 WC-FOX-FACE        BINARY-LONG.
-       10 WC-LOOK-TICKS      BINARY-LONG.
-       10 WC-LOOK-TARGET     BINARY-LONG.
        10 WC-INV             OCCURS 15 TIMES.
           15 WC-INV-ITEM     BINARY-LONG.
           15 WC-INV-COUNT    BINARY-LONG.
