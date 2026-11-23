@@ -135,6 +135,8 @@
        10 PL-SWIMMING        PIC 9.              *> 1 while the swimming flag (53 section 4) is set: sprinting in water
        10 PL-POSE-FLAGS      BINARY-LONG.        *> the shared-flags byte of the player's entity (18 section 1.4): 0x02 shift key down, 0x08 sprinting, 0x10 swimming
        10 PL-POSE-SENT       BINARY-LONG.        *> 0, or 1 + pose x 256 + flags as last sent in Set Entity Data
+       10 PL-MODEL-PARTS     BINARY-LONG.        *> the displayed skin parts byte of Client Information (47 section 5.3; 0 until it arrives), entry 16 of the player's entity data
+       10 PL-PARTS-SENT      BINARY-LONG.        *> the skin parts byte as last sent in Set Entity Data (0 = none yet)
        10 PL-EATING-ITEM     BINARY-LONG.        *> 0 = not eating
        10 PL-EATING-SLOT     BINARY-LONG.
        10 PL-EATING-START    BINARY-DOUBLE.
