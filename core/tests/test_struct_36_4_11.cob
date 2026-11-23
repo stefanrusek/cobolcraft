@@ -2,7 +2,7 @@
 *> template: the igloo basement chest is the template's chest at local (1, 1, 6) of igloo/bottom with no table of its own, its data marker `chest` is the structure block of mode
 *> data at (1, 2, 6), igloo/top has no randomizable container (its furnace is not one); the ruined portals' chests carry LootTable minecraft:chests/ruined_portal in the template (portal_1 and
 *> giant_portal_1: kind 1, one container each). STRUCT-PLACE-BE draws one seed per container with or without a table and requests only a container with a table: a container of the table
-*> above gets it, one with none draws and requests nothing, a table key longer than the 48 bytes of the request channel draws and requests nothing (GENBE.cpy). The desert, jungle, buried
+*> above gets it, one with none draws and requests nothing, a minecraft table key longer than the 48 bytes of the request channel is requested without its namespace (a key of another namespace that long requests nothing; GENBE.cpy). The desert, jungle, buried
 *> treasure and suspicious sand rows are test_struct_scatter's cases of 36-4 3.4, 3.5, 4.4 and 7.2; the swamp hut and the nether fossil have no container.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-STRUCT-36-4-11.
@@ -167,9 +167,12 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 3 TO WS-TAG
      CALL "STRUCT-PLACE-BE" USING WS-X WS-Y WS-Z WS-STATE WS-TAG
-     MOVE "acceptance US12 36-4§11 a table key longer than the channel's 48 bytes (chests/trial_chambers/intersection_barrel) is not requested" TO TL-CASE
-     MOVE WS-BEFORE TO TL-EXPECTED-N
-     MOVE GBL-COUNT TO TL-OBSERVED-N
+     MOVE "acceptance US12 36-4§11 a minecraft table key longer than the channel's 48 bytes (chests/trial_chambers/intersection_barrel) is requested without its namespace" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF GBL-COUNT = WS-BEFORE + 1 AND GBL-KIND(GBL-COUNT) = 1 AND GBL-LOOT(GBL-COUNT) = "chests/trial_chambers/intersection_barrel"
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

@@ -122,7 +122,17 @@
      COMPUTE WS-CELL = (0 + 64) * 256 + (-2 + 16) * 16 + (33 - 32) + 1
      MOVE WS-STONE TO CE-STATE(WS-CELL)
      MOVE 0 TO EG-COUNT
-     MOVE 5 TO GB-COUNT
+     MOVE 6 TO GB-COUNT
+*>   kind 1 with a loot key that the 48-byte channel carries without its namespace ("chests/trial_chambers/intersection_barrel": the key is 51 bytes with minecraft:) at (37, 12, -6)
+     COMPUTE WS-CELL = (12 + 64) * 256 + (-6 + 16) * 16 + (37 - 32) + 1
+     MOVE WS-CHEST TO CE-STATE(WS-CELL)
+     MOVE 37 TO GB-X(6)
+     MOVE 12 TO GB-Y(6)
+     MOVE -6 TO GB-Z(6)
+     MOVE 1 TO GB-KIND(6)
+     MOVE 77 TO GB-SEED(6)
+     MOVE "chests/trial_chambers/intersection_barrel" TO GB-LOOT(6)
+     MOVE SPACES TO GB-TEXT(6)
 *>   kind 4: a bee nest at (36, 20, -5) with 3 occupants whose ticks in the hive are 10, 20 and 300 (GB-SEED = n x 10^9 + t1 x 10^6 + t2 x 10^3 + t3)
      COMPUTE WS-CELL = (20 + 64) * 256 + (-5 + 16) * 16 + (36 - 32) + 1
      MOVE WS-NEST TO CE-STATE(WS-CELL)
@@ -177,6 +187,16 @@
      MOVE BE-SEED(WS-INDEX) TO TL-OBSERVED-N
      MOVE -5 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 37 TO WS-X
+     MOVE 12 TO WS-Y
+     MOVE -6 TO WS-Z
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-INDEX
+     MOVE "T" TO TL-MODE
+     MOVE "test gen be: a loot key without a namespace is of the minecraft namespace (the 51 byte trial chambers barrel key)" TO TL-CASE
+     MOVE BE-LOOT(WS-INDEX)(1:BE-LOOT-LENGTH(WS-INDEX)) TO TL-OBSERVED
+     MOVE "minecraft:chests/trial_chambers/intersection_barrel" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
      MOVE 40 TO WS-X
      MOVE -5 TO WS-Y
      MOVE -16 TO WS-Z
