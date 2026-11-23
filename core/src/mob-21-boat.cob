@@ -600,7 +600,7 @@
  PROGRAM-ID. BOAT-USE.
 *> USING player row, boat row, used out: the main hand of an alive player on a boat (3.9 interact): within the interaction reach of the boat's box, the player not sneaking, riding
 *> nothing, the boat free (one passenger, two on a boat or raft without a chest), not out of control (EN-BT-OOC below 60) and not under water: the player boards (Set Passengers to the viewers). A chest boat opens its menu
-*> when the player sneaks (open: it does nothing). used is 1 when the player boarded.
+*> instead when the player sneaks or it cannot take a passenger (a rider aboard, under water). used is 1 when the player boarded.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -628,6 +628,17 @@
      COMPUTE WS-REACH = RULE-ATTACK-REACH-MILLI / 1000
      IF WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ > WS-REACH * WS-REACH
          GOBACK
+     END-IF
+*>   A chest boat (AbstractChestBoat.interact): when it can take a passenger (a free seat, not under water) and the player does not sneak the base riding rule applies, else the click
+*>   opens the 27-slot menu (ECV-OPEN) and the piglins that see the player are angered (44-8 3.9, 44-6 2.9).
+     IF EN-BT-KIND(L-ROW) = 2
+         IF PL-SNEAKING(L-PLAYER) = 1 OR EN-RIDER(L-ROW) > 0 OR EN-BT-STATUS(L-ROW) = 1 OR EN-BT-STATUS(L-ROW) = 2
+             CALL "ECV-OPEN" USING PL-CONN(L-PLAYER) L-ROW L-USED
+             IF L-USED = 1
+                 CALL "PIGLIN-CONTAINER-OPENED" USING L-PLAYER
+             END-IF
+             GOBACK
+         END-IF
      END-IF
      IF PL-SNEAKING(L-PLAYER) = 0 AND EN-VEHICLE(PL-ENTITY-ROW(L-PLAYER)) = 0
              AND EN-BT-OOC(L-ROW) < 60 AND EN-BT-STATUS(L-ROW) NOT = 1 AND EN-BT-STATUS(L-ROW) NOT = 2
@@ -684,7 +695,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BOAT-HURT.
 *> USING row, amount (whole points), attacker player row (0 none): VehicleEntity.hurtServer (44 part 8 section 2): the hurt direction flips, the hurt time is 10, the damage grows by
-*> 10 x amount and the viewers get the metadata; a non-creative attacker with the damage above 40 destroys the boat (rider off, entity gone, one boat item with the rule entity_drops);
+*> 10 x amount and the viewers get the metadata; a non-creative attacker with the damage above 40 destroys the boat (rider off, entity gone, one boat item with the rule entity_drops, a chest boat's contents scatter first);
 *> a creative attacker removes it without a drop. The game event, custom names and chest contents are open.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -728,6 +739,10 @@
                  CALL "MOB-RIDE-STOP" USING L-ROW
              END-IF
          END-PERFORM
+*>       chestVehicleDestroyed (44-x2 section 5): a chest boat's contents scatter and a player's hit angers the piglins that see him.
+         IF EN-BT-KIND(L-ROW) = 2
+             CALL "ECV-DESTROYED" USING L-ROW L-ATTACKER
+         END-IF
          CALL "BR-RULE-GET" USING WS-RULE-NAME WS-RULE
          IF WS-RULE NOT = 0
              COMPUTE WS-ROW = EN-TYPE(L-ROW) + 1
@@ -746,6 +761,9 @@
                  CALL "MOB-RIDE-STOP" USING L-ROW
              END-IF
          END-PERFORM
+         IF EN-BT-KIND(L-ROW) = 2
+             CALL "ECV-DESTROYED" USING L-ROW L-ATTACKER
+         END-IF
          CALL "ENTITY-REMOVE" USING L-ROW
          GOBACK
      END-IF

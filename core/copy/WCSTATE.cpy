@@ -4,6 +4,7 @@
 *>   rabbit (core/src/mob-19-4b.cob, 19 section 4, 44 part 4 section 3): WC-JUMP-DELAY the jumpDelayTicks, WC-MORE-CARROT the moreCarrotTicks, WC-HOPPING 1 from a hop's start until it lands,
 *>   WC-HOP-TICKS the ticks of the hop so far (the 15-tick animation), WC-WAS-GROUND the on-ground flag of the last tick, WC-RAID-ON 1 while RaidGarden walks to a crop
 *>   (WC-RAID-X/-Y/-Z the crop cell, WC-RAID-TRY the ticks spent, WC-RAID-WAIT the ticks to the goal's next start).
+*>   donkey and mule (core/src/mob-19-3c.cob, 19 section 3.5 step 5): WC-CHEST 1 when a chest is attached (the chest flag, metadata 19; saved as ChestedHorse).
  78 WC-MAX                VALUE 1024.
  01 WC-STATE EXTERNAL.
     05 WC-ROW                OCCURS 1024 TIMES.
@@ -19,3 +20,4 @@
        10 WC-RAID-Z          BINARY-LONG.
        10 WC-RAID-TRY        BINARY-LONG.
        10 WC-RAID-WAIT       BINARY-LONG.
+       10 WC-CHEST           BINARY-LONG.

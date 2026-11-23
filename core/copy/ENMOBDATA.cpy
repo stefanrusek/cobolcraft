@@ -19,6 +19,7 @@
     05 MQ-VARIANT-INT      BINARY-LONG.
     05 MQ-STRENGTH         BINARY-LONG.
     05 MQ-TEMPER           BINARY-LONG.
+    05 MQ-CHEST            BINARY-LONG.
     05 MQ-EGG              BINARY-LONG.
     05 MQ-GENE-MAIN        PIC X(48).
     05 MQ-GENE-HIDDEN      PIC X(48).

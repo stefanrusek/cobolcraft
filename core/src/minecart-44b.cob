@@ -51,6 +51,10 @@
 *>   A chest or hopper cart opens its menu (AbstractMinecartContainer.interact: interactWithContainerVehicle, 44 part x2 section 5), whether the player sneaks or not.
      IF PJ-I1(WS-SLOT) = 2 OR PJ-I1(WS-SLOT) = 3
          CALL "ECV-OPEN" USING PL-CONN(L-PLAYER) L-ROW L-USED
+*>       MinecartChest.interact angers the piglins that see the player once the menu opened (44-6 section 2.9); the hopper cart's interact is not stated there.
+         IF L-USED = 1 AND PJ-I1(WS-SLOT) = 2
+             CALL "PIGLIN-CONTAINER-OPENED" USING L-PLAYER
+         END-IF
          GOBACK
      END-IF
      IF PJ-I1(WS-SLOT) NOT = 1
