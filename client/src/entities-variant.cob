@@ -99,6 +99,12 @@
              MOVE L-INT TO EN-FDIR(L-ROW)
          WHEN (EN-KEY(L-ROW) = "item_frame" OR "glow_item_frame") AND L-INDEX = 10 AND L-SERIALIZER = 1
              COMPUTE EN-FROT(L-ROW) = FUNCTION MOD(L-INT, 8)
+*>   A snow golem's pumpkin flags (entry 16, BYTE; bit 16 set = the pumpkin head is on, the default): EN-X1 is 1 once it is shorn (19 section 20, 34-3 8).
+         WHEN EN-KEY(L-ROW) = "snow_golem" AND L-INDEX = 16 AND L-SERIALIZER = 0
+             MOVE 1 TO EN-X1(L-ROW)
+             IF FUNCTION MOD(FUNCTION INTEGER(L-INT / 16), 2) = 1
+                 MOVE 0 TO EN-X1(L-ROW)
+             END-IF
 *>   An axolotl's playing-dead flag (entry 19, BOOLEAN, 19 section 18).
          WHEN EN-KEY(L-ROW) = "axolotl" AND L-INDEX = 19 AND L-SERIALIZER = 8
              MOVE L-INT TO EN-AX-PD(L-ROW)
