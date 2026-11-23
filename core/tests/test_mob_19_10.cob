@@ -10,6 +10,8 @@
  COPY CONTENT.
  COPY BRWORLD.
  COPY STDMOBS.
+ COPY XORO.
+ 01 WS-SEED                BINARY-DOUBLE UNSIGNED.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-KEY                 PIC X(112).
  01 WS-ENTITY-ROW          PIC X(66).
@@ -63,11 +65,15 @@
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
      MOVE "N" TO TL-MODE
 
-*>   Spawn state over 1000 goats: screaming about 20, one horn missing about 100, none of them more than one horn.
+*>   Spawn state over 1000 goats finalized from the Xoroshiro streams of the seeds 1 to 1000 (44-x1 section 8.10: STDMOB-FINALIZE, nextDouble, nextFloat, nextBoolean; the expected counts were derived in
+*>   Python from 10 sections 2.1 to 2.3, scratchpad/i3/goat_derive.py, not from the code): 21 screaming, 39 + 60 = 99 with one horn missing, none with more than one horn missing.
      MOVE 0 TO WS-SCREAM WS-ONE-HORN WS-BOTH
      COMPUTE WS-X = WS-PX + 4
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 1000
+         MOVE WS-I TO WS-SEED
+         CALL "XORO-SEED" USING WS-SEED XR-STATE
          CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-PZ WS-YAW WS-A
+         CALL "STDMOB-FINALIZE" USING XR-STATE WS-A
          IF FUNCTION MOD(EN-WOOL(WS-A), 2) = 1
              ADD 1 TO WS-SCREAM
          END-IF
@@ -80,19 +86,13 @@
          END-EVALUATE
          CALL "ENTITY-REMOVE" USING WS-A
      END-PERFORM
-     MOVE "acceptance US15 19§10 Goat: screaming at spawn is about 2 percent (8 to 40 of 1000)" TO TL-CASE
-     MOVE 1 TO TL-EXPECTED-N
-     MOVE 0 TO TL-OBSERVED-N
-     IF WS-SCREAM >= 8 AND WS-SCREAM <= 40
-         MOVE 1 TO TL-OBSERVED-N
-     END-IF
+     MOVE "acceptance US15 19§10 Goat: screaming at spawn is 2 percent: 21 of the seeds 1 to 1000" TO TL-CASE
+     MOVE 21 TO TL-EXPECTED-N
+     MOVE WS-SCREAM TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "acceptance US15 19§10 Goat: one horn is missing at spawn in about 10 percent (60 to 140 of 1000)" TO TL-CASE
-     MOVE 1 TO TL-EXPECTED-N
-     MOVE 0 TO TL-OBSERVED-N
-     IF WS-ONE-HORN >= 60 AND WS-ONE-HORN <= 140
-         MOVE 1 TO TL-OBSERVED-N
-     END-IF
+     MOVE "acceptance US15 19§10 Goat: one horn is missing at spawn in 10 percent: 99 of the seeds 1 to 1000" TO TL-CASE
+     MOVE 99 TO TL-EXPECTED-N
+     MOVE WS-ONE-HORN TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "acceptance US15 19§10 Goat: never both horns missing" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N

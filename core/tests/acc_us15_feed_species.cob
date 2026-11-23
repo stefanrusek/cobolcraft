@@ -136,6 +136,18 @@
              END-PERFORM
          END-PERFORM
      END-PERFORM
+*>   A wall of two blocks round the platform keeps the animals on it: a fox that wanders east walks off the edge and breeds below the platform (the draws of the xoroshiro-free
+*>   spawn state moved when the goat's spawn rolls left MOB-BORN for STDMOB-FINALIZE, and the fox's wander moved with them).
+     PERFORM VARYING WS-X FROM WS-XLO BY 1 UNTIL WS-X > WS-XHI
+         PERFORM VARYING WS-Z FROM WS-ZLO BY 1 UNTIL WS-Z > WS-ZHI
+             IF WS-X = WS-XLO OR WS-X = WS-XHI OR WS-Z = WS-ZLO OR WS-Z = WS-ZHI
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2
+                     COMPUTE WS-E = WS-FLOOR + WS-I
+                     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-E WS-Z WS-STATE
+                 END-PERFORM
+             END-IF
+         END-PERFORM
+     END-PERFORM
      COMPUTE PL-X(WS-PLAYER) = WS-CX + 0.5
      COMPUTE PL-Y(WS-PLAYER) = WS-FLOOR + 1
      COMPUTE PL-Z(WS-PLAYER) = WS-CZ + 0.5

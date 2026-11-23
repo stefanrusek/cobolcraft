@@ -570,7 +570,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-BORN.
 *> USING row: the first state of a new mob (19 sections 2.4 and 2.5): a sheep gets its spawn colour (M19-SHEEP-COLOR, the configuration by the biome tags), a chicken its egg timer
-*> 6000 + nextInt(6000); the variant of a wolf, frog, fox, pig, cow and chicken follows the biome of the cell (1.6).
+*> 6000 + nextInt(6000) (a goat's screaming flag and horns are rolled by STDMOB-FINALIZE from the spawn's xoroshiro stream, 44-x1 section 8.10); the variant of a wolf, frog, fox, pig, cow and chicken follows the biome of the cell (1.6).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -587,13 +587,6 @@
  01 WS-SALT-P              BINARY-LONG VALUE 43.
  01 WS-BOUND-P             BINARY-LONG VALUE 5.
  01 WS-SALT-S              BINARY-LONG VALUE 53.
- 01 WS-SALT-GS             BINARY-LONG VALUE 54.
- 01 WS-SALT-GH             BINARY-LONG VALUE 55.
- 01 WS-SALT-GC             BINARY-LONG VALUE 56.
- 01 WS-BOUND-GS            BINARY-LONG VALUE 50.
- 01 WS-BOUND-GH            BINARY-LONG VALUE 10.
- 01 WS-BOUND-GC            BINARY-LONG VALUE 2.
- 01 WS-DRAW-G              BINARY-LONG.
  01 WS-VL-VILLAGER         BINARY-LONG VALUE 1.
  01 WS-VL-TRADER           BINARY-LONG VALUE 2.
  01 WS-VL-PLAINS           BINARY-LONG VALUE 2.
@@ -673,17 +666,6 @@
              COMPUTE EN-EGG(L-ROW) = 6000 + WS-DRAW
          WHEN "parrot"
              CALL "XP-RANDOM" USING WS-SALT-P WS-BOUND-P EN-WOOL(L-ROW)
-         WHEN "goat"
-*>           Screaming with chance 2 percent; an adult loses one horn, left or right 50/50, with chance 10 percent (19 section 10). EN-WOOL: 1 screaming, 2 no left horn, 4 no right horn.
-             CALL "XP-RANDOM" USING WS-SALT-GS WS-BOUND-GS WS-DRAW-G
-             IF WS-DRAW-G = 0
-                 MOVE 1 TO EN-WOOL(L-ROW)
-             END-IF
-             CALL "XP-RANDOM" USING WS-SALT-GH WS-BOUND-GH WS-DRAW-G
-             IF WS-DRAW-G = 0
-                 CALL "XP-RANDOM" USING WS-SALT-GC WS-BOUND-GC WS-DRAW-G
-                 COMPUTE EN-WOOL(L-ROW) = EN-WOOL(L-ROW) + 2 + 2 * WS-DRAW-G
-             END-IF
          WHEN "cat"
 *>           The cat variant (19 section 1.6): the moon brightness of the overworld clock decides whether all_black joins the pool (the swamp hut structure test is not known here).
              COMPUTE WS-TOTAL = FUNCTION MOD(CW-TIME, 192000)
