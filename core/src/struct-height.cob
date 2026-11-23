@@ -19,6 +19,33 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-BASE-HEIGHT.
+*> USING x, z, kind, height out: the column query without structures (37-2 section 6.5, 36-1 5.4): the beardifier of the chunk being generated (STRUCTBEARD.cpy) is switched off for the walk and
+*> back on after it, with SBD-GEN changed each way so that the density memo does not carry a value over (STRUCT-BASE-HEIGHT-RAW is the walk).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTBEARD.
+ 01 WS-WAS                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-HEIGHT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-X L-Z L-KIND L-HEIGHT.
+     MOVE SBD-ACTIVE TO WS-WAS
+     IF WS-WAS = 1
+         MOVE 0 TO SBD-ACTIVE
+         ADD 1 TO SBD-GEN
+     END-IF
+     CALL "STRUCT-BASE-HEIGHT-RAW" USING L-X L-Z L-KIND L-HEIGHT
+     IF WS-WAS = 1
+         MOVE 1 TO SBD-ACTIVE
+         ADD 1 TO SBD-GEN
+     END-IF
+     GOBACK.
+ END PROGRAM STRUCT-BASE-HEIGHT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-BASE-HEIGHT-RAW.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTWORLDGEN.
@@ -254,4 +281,4 @@
          MOVE WS-H0 TO L-HEIGHT
      END-IF
      GOBACK.
- END PROGRAM STRUCT-BASE-HEIGHT.
+ END PROGRAM STRUCT-BASE-HEIGHT-RAW.

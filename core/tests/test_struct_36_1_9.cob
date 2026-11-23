@@ -106,6 +106,8 @@
      MOVE 0.0033355257473886013 TO WS-WANT
      MOVE "kernel[12, 5, 18]" TO WS-NAME
      PERFORM CHECK-KERNEL
+     MOVE "kernel[12, 5, 18] a second time (kept)" TO WS-NAME
+     PERFORM CHECK-KERNEL
      MOVE 0 TO WS-DX
      MOVE 0 TO WS-DY
      MOVE 0 TO WS-DZ

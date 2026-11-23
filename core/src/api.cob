@@ -570,6 +570,10 @@
  01 WS-PORTAL-SWAMP        PIC X(80) VALUE "minecraft:ruined_portal_swamp".
  01 WS-PORTAL-MOUNTAIN     PIC X(80) VALUE "minecraft:ruined_portal_mountain".
  01 WS-PORTAL-OCEAN        PIC X(80) VALUE "minecraft:ruined_portal_ocean".
+ 01 WS-MONUMENT            PIC X(80) VALUE "minecraft:monument".
+ 01 WS-ANCIENT-CITY        PIC X(80) VALUE "minecraft:ancient_city".
+ 01 WS-TRIAL-CHAMBERS      PIC X(80) VALUE "minecraft:trial_chambers".
+ 01 WS-TRAIL-RUINS         PIC X(80) VALUE "minecraft:trail_ruins".
  LINKAGE SECTION.
  01 L-TYPE                 PIC X(10).
  01 L-DIR                  PIC X(1024).
@@ -599,14 +603,14 @@
 *>       the ocean ruins (struct-ruin.cob): warm and cold, tested on the real data with the worker equal to the atomic path
          CALL "STRUCT-GATE-ON" USING WS-RUIN-WARM
          CALL "STRUCT-GATE-ON" USING WS-RUIN-COLD
-*>       the jigsaw structures (struct-jig.cob): the pillager outpost and the five villages (no beardifier; the feature elements run their placed feature, JIG-FEATURE)
+*>       the jigsaw structures (struct-jig.cob): the pillager outpost and the five villages (their terrain adaptation is the beardifier of struct-beard.cob; the feature elements run their placed feature, JIG-FEATURE)
          CALL "STRUCT-GATE-ON" USING WS-OUTPOST
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-PLAINS
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-DESERT
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-SAVANNA
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-SNOWY
          CALL "STRUCT-GATE-ON" USING WS-VILLAGE-TAIGA
-*>       the stronghold (struct-stronghold.cob, struct-sh-place.cob; the terrain adaptation is not done)
+*>       the stronghold (struct-stronghold.cob, struct-sh-place.cob; the terrain adaptation is the beardifier of struct-beard.cob)
          CALL "STRUCT-GATE-ON" USING WS-STRONGHOLD
 *>       the woodland mansion (struct-mansion.cob, struct-man-place.cob, struct-man-start.cob; no mob markers)
          CALL "STRUCT-GATE-ON" USING WS-MANSION
@@ -627,6 +631,11 @@
 *>       the end city (36-8 section 8), placed by the End's own chunk generator (struct-endcity-place.cob)
          CALL "STRUCT-GATE-ON" USING WS-END-CITY
          CALL "STRUCT-GATE-ON" USING WS-BASTION
+*>       the ocean monument (36-6, struct-monument.cob, struct-mon-build.cob) and the three jigsaw structures of 36-10: the ancient city, the trial chambers and the trail ruins (struct-jig.cob engine)
+         CALL "STRUCT-GATE-ON" USING WS-MONUMENT
+         CALL "STRUCT-GATE-ON" USING WS-ANCIENT-CITY
+         CALL "STRUCT-GATE-ON" USING WS-TRIAL-CHAMBERS
+         CALL "STRUCT-GATE-ON" USING WS-TRAIL-RUINS
          MOVE 1 TO FI-GATE
          CALL "GEN-QUEUE-RESET"
      END-IF
