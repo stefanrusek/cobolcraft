@@ -1,0 +1,286 @@
+ *> Implementation test of the displayed skin parts of a player (T51007/T51214 core half; docs/protocol/47 section 5.3, 03 Client Information):
+*> the model customisation byte of Client Information (configuration 0x00 and play 0x0E) is kept in PL-MODEL-PARTS (0 until the packet arrives),
+*> and Set Entity Data (0x65) of a player carries entry 16 (BYTE) with it: to a viewer when the byte changes in play, and to a viewer who
+*> comes into view later (core/src/poses.cob POSE-DATA-BUILD, entities.cob).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PLAYER-PARTS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ 01 WS-ALICE-NAME          PIC X(16) VALUE "Alice".
+ 01 WS-BOB-NAME            PIC X(16) VALUE "Bob".
+ 01 WS-CHARLIE-NAME        PIC X(16) VALUE "Charlie".
+ 01 WS-5                   BINARY-LONG VALUE 5.
+ 01 WS-3                   BINARY-LONG VALUE 3.
+ 01 WS-7                   BINARY-LONG VALUE 7.
+ 01 WS-PLAY                BINARY-LONG VALUE 14.
+ 01 WS-PARTS               BINARY-LONG.
+ 01 WS-ALICE               BINARY-LONG.
+ 01 WS-BOB                 BINARY-LONG.
+ 01 WS-CHARLIE             BINARY-LONG.
+ 01 WS-ALICE-ROW           BINARY-LONG.
+ 01 WS-BOB-ROW             BINARY-LONG.
+ 01 WS-CHARLIE-ROW         BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG.
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-WANT                PIC X(1024).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-EDIT-2              PIC -(9)9.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-DEFAULT-MODE
+     MOVE 2 TO CS-VIEW-DISTANCE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+*>   Alice's configuration-phase Client Information says 126 (every part but the cape); Bob's is the fixture's 0.
+     MOVE 126 TO WS-PARTS
+     CALL "TEST-JOIN-PARTS" USING WS-ALICE-NAME WS-5 WS-PARTS WS-ALICE
+     CALL "TEST-JOIN" USING WS-BOB-NAME WS-3 WS-BOB
+     CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
+     MOVE CN-PLAYER(WS-ALICE) TO WS-ALICE-ROW
+     MOVE CN-PLAYER(WS-BOB) TO WS-BOB-ROW
+     MOVE "N" TO TL-MODE
+
+     MOVE "test player parts configuration Client Information 126 is kept in PL-MODEL-PARTS" TO TL-CASE
+     MOVE 126 TO TL-EXPECTED-N
+     MOVE PL-MODEL-PARTS(WS-ALICE-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "test player parts the fixture's Client Information (model customisation 0) keeps 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PL-MODEL-PARTS(WS-BOB-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Bob's Client Information in play with 127: Alice, who sees Bob, gets Set Entity Data with entries 0, 6 and 16.
+     MOVE 127 TO WS-PARTS
+     CALL "TEST-CLIENT-INFO" USING WS-BOB WS-PLAY WS-PARTS
+     CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
+     MOVE "test player parts play Client Information 127 is kept in PL-MODEL-PARTS" TO TL-CASE
+     MOVE 127 TO TL-EXPECTED-N
+     MOVE PL-MODEL-PARTS(WS-BOB-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+     MOVE "test player parts a changed byte reaches a viewer as entry 16 of Set Entity Data" TO TL-CASE
+     MOVE EN-ID(PL-ENTITY-ROW(WS-BOB-ROW)) TO WS-EDIT
+     MOVE SPACES TO WS-WANT
+     STRING "e" FUNCTION TRIM(WS-EDIT) ": 0=0 6=0 16=127" DELIMITED BY SIZE INTO WS-WANT
+     MOVE WS-WANT TO TL-EXPECTED
+     MOVE WS-TEXT(1:80) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The same byte again sends nothing.
+     CALL "TEST-CLIENT-INFO" USING WS-BOB WS-PLAY WS-PARTS
+     CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
+     MOVE "test player parts an unchanged byte sends nothing" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-TEXT(1:80) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A pose change carries the byte too (shift: pose 5, flags 2).
+     MOVE 32 TO WS-FLAGS
+     CALL "TEST-INPUT" USING WS-BOB WS-FLAGS
+     CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
+     MOVE "test player parts a pose change sends the byte with it" TO TL-CASE
+     MOVE SPACES TO WS-WANT
+     STRING "e" FUNCTION TRIM(WS-EDIT) ": 0=2 6=5 16=127" DELIMITED BY SIZE INTO WS-WANT
+     MOVE WS-WANT TO TL-EXPECTED
+     MOVE WS-TEXT(1:80) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-FLAGS
+     CALL "TEST-INPUT" USING WS-BOB WS-FLAGS
+     CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
+
+*>   Charlie (configuration byte 90) comes into view later: his join carries Alice's 126 and Bob's 127 as entry 16.
+     MOVE 90 TO WS-PARTS
+     CALL "TEST-JOIN-PARTS-UNDRAINED" USING WS-CHARLIE-NAME WS-7 WS-PARTS WS-CHARLIE
+     CALL "TEST-DRAIN-DATA" USING WS-CHARLIE WS-TEXT
+     MOVE CN-PLAYER(WS-CHARLIE) TO WS-CHARLIE-ROW
+     MOVE "test player parts a player coming into view later gets the bytes of Alice and Bob" TO TL-CASE
+     MOVE EN-ID(PL-ENTITY-ROW(WS-ALICE-ROW)) TO WS-EDIT
+     MOVE EN-ID(PL-ENTITY-ROW(WS-BOB-ROW)) TO WS-EDIT-2
+     MOVE SPACES TO WS-WANT
+     STRING "e" FUNCTION TRIM(WS-EDIT) ": 0=0 6=0 16=126|e" FUNCTION TRIM(WS-EDIT-2) ": 0=0 6=0 16=127"
+         DELIMITED BY SIZE INTO WS-WANT
+     MOVE WS-WANT TO TL-EXPECTED
+     MOVE WS-TEXT(1:160) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     MOVE "test player parts Charlie's configuration byte 90 is kept" TO TL-CASE
+     MOVE 90 TO TL-EXPECTED-N
+     MOVE PL-MODEL-PARTS(WS-CHARLIE-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Bob turns every part off: viewers get entry 16 = 0 (Alice's queue still holds Charlie's arrival, so it is emptied first).
+     CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
+     MOVE 0 TO WS-PARTS
+     CALL "TEST-CLIENT-INFO" USING WS-BOB WS-PLAY WS-PARTS
+     CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
+     MOVE "T" TO TL-MODE
+     MOVE "test player parts turning every part off sends entry 16 = 0" TO TL-CASE
+     MOVE EN-ID(PL-ENTITY-ROW(WS-BOB-ROW)) TO WS-EDIT
+     MOVE SPACES TO WS-WANT
+     STRING "e" FUNCTION TRIM(WS-EDIT) ": 0=0 6=0 16=0" DELIMITED BY SIZE INTO WS-WANT
+     MOVE WS-WANT TO TL-EXPECTED
+     MOVE WS-TEXT(1:80) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-PLAYER-PARTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CLIENT-INFO.
+*> USING connection id, packet id (0 configuration, 14 play), model customisation byte: feeds a Client Information (03 layout).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 128.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-EIGHT               BINARY-LONG VALUE 8.
+ 01 WS-LANGUAGE            PIC X(5) VALUE "en_us".
+ 01 WS-LANGUAGE-LENGTH     BINARY-LONG VALUE 5.
+ 01 WS-MAX16               BINARY-LONG VALUE 16.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-PACKET-ID            BINARY-LONG.
+ 01 L-PARTS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-PACKET-ID L-PARTS.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-PACKET-ID
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-LANGUAGE WS-LANGUAGE-LENGTH WS-MAX16
+     CALL "PB-PUT-BYTE" USING PB-BUFFER WS-EIGHT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER L-PARTS
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-CLIENT-INFO.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-JOIN-PARTS-UNDRAINED.
+*> USING name (PIC X(16)), name length, model customisation byte, connection id out: TEST-JOIN-KIND with a Client Information of that byte.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY COREAPI.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-MAX                 BINARY-LONG VALUE 16.
+ 01 WS-UUID                PIC X(16) VALUE LOW-VALUES.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-KIND                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(16).
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-PARTS                BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-NAME L-NAME-LENGTH L-PARTS L-ID.
+     MOVE CORE-CONN-MEMORY TO WS-KIND
+     CALL "CORE-CONN-OPEN" USING WS-KIND L-ID
+     MOVE "contract/fixtures/wire/handshake-c2s-00-intention-login.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-NAME L-NAME-LENGTH WS-MAX
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
+     MOVE "contract/fixtures/wire/login-c2s-03-login-acknowledged.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     MOVE "contract/fixtures/wire/config-c2s-02-custom-payload-brand.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     CALL "TEST-CLIENT-INFO" USING L-ID WS-ZERO L-PARTS
+     MOVE "contract/fixtures/wire/config-c2s-07-select-known-packs.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     MOVE "contract/fixtures/wire/config-c2s-03-finish-configuration.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     CALL "TEST-ACCEPT-TELEPORT" USING L-ID
+     MOVE "contract/fixtures/wire/play-c2s-0b-chunk-batch-received.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     MOVE "contract/fixtures/wire/play-c2s-2c-player-loaded.hex" TO WS-PATH
+     CALL "TEST-FEED" USING L-ID WS-PATH
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-JOIN-PARTS-UNDRAINED.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-JOIN-PARTS.
+*> USING name, name length, model customisation byte, connection id out: TEST-JOIN-PARTS-UNDRAINED, then the queued output is drained.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(16).
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-PARTS                BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-NAME L-NAME-LENGTH L-PARTS L-ID.
+     CALL "TEST-JOIN-PARTS-UNDRAINED" USING L-NAME L-NAME-LENGTH L-PARTS L-ID
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-JOIN-PARTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DRAIN-DATA.
+*> USING connection id, text out (PIC X(1024)): every Set Entity Data (0x65) the connection has queued, as "e<entity id>: <index>=<value> ..." (BYTE and POSE entries;
+*> the pose entry's value is the pose id), the packets separated by "|".
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-MORE                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TEXT                 PIC X(1024).
+ PROCEDURE DIVISION USING L-ID L-TEXT.
+     MOVE SPACES TO L-TEXT
+     MOVE 1 TO WS-PTR
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     MOVE 0 TO WS-OUTCOME
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID = 101
+             IF WS-PTR > 1
+                 STRING "|" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             END-IF
+             CALL "PB-GET-VARINT" USING PK-BUFFER WS-ENTITY
+             MOVE WS-ENTITY TO WS-EDIT
+             STRING "e" FUNCTION TRIM(WS-EDIT) ":" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+             MOVE 1 TO WS-MORE
+             PERFORM UNTIL WS-MORE = 0
+                 CALL "PB-GET-ENTITY-METADATA" USING PK-BUFFER PK-METADATA-ENTRY
+                 IF PK-MD-INDEX = PK-MD-END OR PK-ERROR = 1
+                     MOVE 0 TO WS-MORE
+                 ELSE
+                     MOVE PK-MD-INDEX TO WS-EDIT
+                     STRING " " FUNCTION TRIM(WS-EDIT) "=" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                     MOVE PK-MD-INT TO WS-EDIT
+                     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     GOBACK.
+ END PROGRAM TEST-DRAIN-DATA.
+
+ COPY CORETEST.
+ COPY BETEST.

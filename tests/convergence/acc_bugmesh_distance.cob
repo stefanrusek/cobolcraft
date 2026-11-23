@@ -5,7 +5,7 @@
 *> test allows, every section whose cells expose a face (an opaque cell with a non-opaque neighbour inside the chunk) has been meshed, its mesh has
 *> been listed as an upload and it is in the draw list of the render lists of four views (north, east, south, west); no section is left dirty
 *> and no section a chunk received left out of the queue.
-*> BM_VIEW (default 8; the report was 12) is the view distance, BM_FRAMES (default 9000: the standard generator's chunks arrive at most one a tick since lane perfsteady, the world of view 8 is complete at about 6200 frames) the frames allowed after the join, BM_SEED the seed text, BM_CREDIT (default
+*> BM_VIEW (default 8; the report was 12) is the view distance, BM_FRAMES (default 9000: the standard generator's chunks arrive at most one a tick since lane perfsteady, the world of view 8 is complete at about 6200 frames) the frames allowed after the join, BM_SEED the seed text (default "bugmesh-distance": fixed, so a run is repeatable), BM_CREDIT (default
 *> 1) the credit switch; BM_TRACE=1 prints progress lines (every 25 frames) and the per-frame cost.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-BUGMESH-DISTANCE.
@@ -118,6 +118,10 @@
      MOVE SP-SETTINGS TO CORE-SETTINGS
      MOVE SPACES TO WS-ENV
      ACCEPT WS-ENV FROM ENVIRONMENT "BM_SEED"
+*>   An empty seed text would make the world random (11 seed rule), so a run without BM_SEED is not repeatable: it takes a fixed default seed.
+     IF WS-ENV = SPACES
+         MOVE "bugmesh-distance" TO WS-ENV
+     END-IF
      MOVE WS-ENV TO CS-SEED-TEXT
      MOVE WS-VIEW TO CS-VIEW-DISTANCE
      MOVE CORE-SETTINGS TO SP-SETTINGS

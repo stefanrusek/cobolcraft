@@ -210,6 +210,9 @@
              END-IF
          WHEN L-PACKET-ID = 14
              MOVE PSB-VIEW-DISTANCE TO PL-VIEW-DISTANCE(WS-ROW)
+*>           The displayed skin parts (47 section 5.3): a changed byte goes to the viewers as entry 16 of Set Entity Data (POSE-UPDATE).
+             MOVE PSB-MODEL-PARTS TO PL-MODEL-PARTS(WS-ROW)
+             CALL "POSE-UPDATE" USING WS-ROW
          WHEN L-PACKET-ID = 28
              CALL "CORE-KEEPALIVE-ANSWER" USING L-ID PSB-KEEPALIVE
          WHEN L-PACKET-ID = 44
@@ -373,6 +376,7 @@
              CALL "CONFIG-DECODE" USING WS-CONFIG-ID PB-BUFFER CONFIG-SERVERBOUND
                  WS-CONFIG-OUTCOME
              MOVE CSB-VIEW-DISTANCE TO PSB-VIEW-DISTANCE
+             MOVE CSB-MODEL-PARTS TO PSB-MODEL-PARTS
          WHEN 28
              CALL "PB-GET-LONG" USING PB-BUFFER PSB-KEEPALIVE
          WHEN 44
