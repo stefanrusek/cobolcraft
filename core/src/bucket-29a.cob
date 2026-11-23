@@ -208,9 +208,18 @@
      IF WS-MODE = 1
          CALL "FLUID-CONTAINER" USING WS-STATE WS-CLASS WS-FULL
          IF WS-CLASS = 2 AND WS-FULL = 0
-             MOVE "true" TO WS-WL-TEXT
-             CALL "BLOCK-STATE-PROP" USING WS-WL-MODE WS-STATE WS-WL-NAME WS-WL-TEXT WS-WL-STATE
-             CALL "BLOCK-CHANGE" USING WS-DIM WS-CX WS-CY WS-CZ WS-WL-STATE
+*>           water_evaporates (37-nether-1 section 3.1) holds for the container too: the sound and the smoke instead of the waterlogging
+             MOVE 0 TO WS-EVAPORATES
+             IF DM-KEY(WS-DIM) = "minecraft:the_nether"
+                 CALL "NETHER-DIM-FLAG" USING WS-FLAG-CODE WS-EVAPORATES
+             END-IF
+             IF WS-EVAPORATES = 1
+                 CALL "NETHER-EVAPORATE" USING WS-DIM WS-CX WS-CY WS-CZ
+             ELSE
+                 MOVE "true" TO WS-WL-TEXT
+                 CALL "BLOCK-STATE-PROP" USING WS-WL-MODE WS-STATE WS-WL-NAME WS-WL-TEXT WS-WL-STATE
+                 CALL "BLOCK-CHANGE" USING WS-DIM WS-CX WS-CY WS-CZ WS-WL-STATE
+             END-IF
              IF PL-MODE(WS-ROW) = 0
                  CALL "CONTENT-ITEM-BY-KEY" USING WS-EMPTY-KEY WS-EMPTY-ID WS-ITEM-ROW WS-STATUS
                  MOVE WS-EMPTY-ID TO PL-SLOT-ITEM(WS-ROW, WS-SLOT)
