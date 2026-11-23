@@ -206,6 +206,8 @@
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
          CALL "LIGHTNING-HIT" USING L-SLOT L-ROW WS-LIST-ROW(WS-I) WS-NONE2
      END-PERFORM
+*>   A cushion in the box is killed and drops its item (Cushion.thunderHit, 44-9 section 2.1).
+     CALL "CUSHION-THUNDER" USING L-ROW
      GOBACK.
  END PROGRAM LIGHTNING-STRIKE.
 

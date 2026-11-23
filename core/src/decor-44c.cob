@@ -4,7 +4,7 @@
 *>     variants are open) and the minecart items on a rail (44 part 8 section 4: at the rail height 0.0625, 0.5 higher on a slope; the spawner cart has no item); one item is used up.
 *>   DECOR-INTERACT USING player row, entity row, hit y (FLOAT-LONG), done out: MOB-INTERACT's hook: armor stand, item frame, and coal or charcoal on a furnace minecart (MINECART-FUEL; boarding a
 *>     plain minecart is open).
-*>   DECOR-ATTACK USING player row, entity row, done out: HEALTH-ATTACK's hook: armor stand (ARMOR-STAND-HIT), item frame (ITEM-FRAME-HURT), painting (PAINTING-HURT), interaction (INTERACTION-ATTACK, mob-21-8-9.cob).
+*>   DECOR-ATTACK USING player row, entity row, done out: HEALTH-ATTACK's hook: armor stand (ARMOR-STAND-HIT), item frame (ITEM-FRAME-HURT), painting (PAINTING-HURT), interaction (INTERACTION-ATTACK, mob-21-8-9.cob), cushion (CUSHION-HURT, mob-21-8-16.cob).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DECOR-ITEM-USE.
@@ -38,6 +38,7 @@
  01 WS-SHAPE               BINARY-LONG.
  01 WS-POWERED             BINARY-LONG.
  01 WS-PLACED-FLAG         BINARY-LONG.
+ 01 WS-CUSHION             BINARY-LONG.
  01 WS-MC                  BINARY-LONG.
  01 WS-COUNT               BINARY-LONG VALUE 1.
  01 WS-WIDTHS.
@@ -92,6 +93,13 @@
              MOVE 7 TO WS-MC
      END-EVALUATE
      IF WS-KIND = 0
+*>       A cushion item (21 section 8.16.1; the dye colour of the item, -1 for any other item) is used by CUSHION-ITEM-USE.
+         CALL "CUSHION-KIND" USING L-ITEM WS-CUSHION
+         IF WS-CUSHION >= 0
+             MOVE 1 TO L-HANDLED
+             MOVE CN-PLAYER(L-ID) TO WS-ROW
+             CALL "CUSHION-ITEM-USE" USING WS-ROW PLAY-SERVERBOUND L-ITEM WS-PLACED-FLAG
+         END-IF
          GOBACK
      END-IF
      MOVE 1 TO L-HANDLED
@@ -259,6 +267,8 @@
              MOVE 1 TO L-DONE
          WHEN 44
              CALL "INTERACTION-ATTACK" USING L-PLAYER L-ROW L-DONE
+         WHEN 45
+             CALL "CUSHION-HURT" USING L-ROW L-PLAYER L-DONE
      END-EVALUATE
      GOBACK.
  END PROGRAM DECOR-ATTACK.

@@ -29,7 +29,8 @@
 *>   DISPLAY-COMMON-PUT USING PB-BUFFER                                                      entries 8 to 22 with the defaults of 21 section 8.9.3
 *>   MANNEQUIN-SPAWN USING dim, x, y, z, row out
 *>   CUSHION-SPAWN USING dim, x, y, z, dye colour, row out
-*>   CUSHION-USE USING player row, entity row, used out
+*>   CUSHION-SPAWN-YAW USING dim, x, y, z, dye colour, yaw (FLOAT-LONG), row out (placement, core/src/mob-21-8-16.cob)
+*>   CUSHION-USE USING player row, entity row, used out (the rider goes to the seat point, CUSHION-SEAT in mob-21-8-16.cob)
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. DECOR-NEW.
@@ -619,9 +620,11 @@
  END PROGRAM MANNEQUIN-SPAWN.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. CUSHION-SPAWN.
+ PROGRAM-ID. CUSHION-SPAWN-YAW.
+*> USING dim, x, y, z, dye colour, yaw (FLOAT-LONG, degrees), row out: the cushion with its yaw set before the viewers get the Add Entity (the placement of 21 section 8.16.1 snaps the yaw to 90).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  COPY PROJSTATE.
  01 WS-KEY                 PIC X(112) VALUE "minecraft:cushion".
  01 WS-KIND                BINARY-LONG VALUE 45.
@@ -632,14 +635,33 @@
  01 L-Y                    FLOAT-LONG.
  01 L-Z                    FLOAT-LONG.
  01 L-COLOUR               BINARY-LONG.
+ 01 L-YAW                  FLOAT-LONG.
  01 L-ROW                  BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-COLOUR L-ROW.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-COLOUR L-YAW L-ROW.
      CALL "DECOR-NEW" USING WS-KIND WS-KEY L-DIM L-X L-Y L-Z L-ROW WS-SLOT
      IF L-ROW > 0
          MOVE L-COLOUR TO PJ-I1(WS-SLOT)
+         MOVE L-YAW TO EN-YAW(L-ROW)
          CALL "ENTITY-TRACK" USING L-ROW
          CALL "DECOR-DATA-SYNC" USING L-ROW
      END-IF
+     GOBACK.
+ END PROGRAM CUSHION-SPAWN-YAW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CUSHION-SPAWN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-YAW                 FLOAT-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-COLOUR               BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-COLOUR L-ROW.
+     CALL "CUSHION-SPAWN-YAW" USING L-DIM L-X L-Y L-Z L-COLOUR WS-YAW L-ROW
      GOBACK.
  END PROGRAM CUSHION-SPAWN.
 
@@ -666,6 +688,7 @@
      IF PL-SNEAKING(L-PLAYER) = 0 AND EN-RIDER(L-ENTITY) = 0 AND EN-VEHICLE(PL-ENTITY-ROW(L-PLAYER)) = 0
          MOVE L-PLAYER TO EN-RIDER(L-ENTITY)
          MOVE L-ENTITY TO EN-VEHICLE(PL-ENTITY-ROW(L-PLAYER))
+         CALL "CUSHION-SEAT" USING L-ENTITY
          CALL "MOB-RIDE-SEND" USING L-ENTITY
          MOVE 1 TO L-USED
      END-IF
