@@ -27,8 +27,11 @@
      MOVE LOW-VALUES TO CE-BIOMES
      CALL "NETHER-SETUP" USING L-SEED
      CALL "NETHER-STATES"
+*>   the beardifier of the chunk (37-2 section 10: the nether_fossil starts nearby) before its own corners: a start's base column fills NH-CORNER too
+     CALL "NETHER-BEARD-COLLECT" USING L-SEED L-CX L-CZ
      CALL "NETHER-CORNERS" USING L-CX L-CZ
      CALL "NETHER-FILL" USING L-CHUNK
+     CALL "NETHER-BEARD-CLEAR"
      CALL "NETHER-BIOME-GRID" USING L-CX L-CZ
      CALL "NETHER-BIOME-STORE" USING L-CHUNK
      CALL "NETHER-SURFACE" USING L-CHUNK L-CX L-CZ
