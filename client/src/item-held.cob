@@ -159,6 +159,148 @@
  END PROGRAM ENTITY-BANNER-HELD.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. ICON-GLINT-QUADS.
+*> USING CLIENT-STATE, placement (12 FLOAT-LONG: the 3 x 3 matrix by rows, then the translation, as HAND-QUAD takes it; the icon's unit square is x and y from 0 to 1, y up, at z 17/32 and 15/32 of the model),
+*> sprite (atlas row of the item icon): the glint layer of a flat item icon (54 section 19.3, T9903) in RL-WG-VERTEX (HAND-QUAD glint 6): one quad of each opaque texel (alpha above 0) on the front and on the back,
+*> its glint coordinates those of the texel's corners. Shared by the item a mob holds, the framed item (ITEM-POSED-DRAW) and the dropped item (VANILLA-ITEMS-MESH).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CORNER-DATA.
+    05 FILLER PIC X(12) VALUE "011111101001".
+    05 FILLER PIC X(12) VALUE "110010000100".
+ 01 WS-CORNER-TABLE REDEFINES WS-CORNER-DATA.
+    05 WS-FACE OCCURS 2 TIMES.
+       10 WS-PICK            PIC 9 OCCURS 12 TIMES.
+ 01 WS-GMODE               BINARY-LONG VALUE 6.
+ 01 WS-LIGHT               FLOAT-LONG VALUE 1.
+ 01 WS-F                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-GN                  BINARY-LONG.
+ 01 WS-PX                  BINARY-LONG.
+ 01 WS-PY                  BINARY-LONG.
+ 01 WS-OFF                 BINARY-LONG.
+ 01 WS-OPAQUE              PIC 9 OCCURS 1024 TIMES.
+ 01 WS-CELL                FLOAT-LONG.
+ 01 B-ATLAS                PIC X(1073741824) BASED.
+ 01 WS-CORNERS.
+    05 WS-CP               FLOAT-LONG OCCURS 12 TIMES.
+ 01 WS-UV.
+    05 WS-U16              FLOAT-SHORT OCCURS 4 TIMES.
+    05 WS-V16              FLOAT-SHORT OCCURS 4 TIMES.
+ 01 WS-TEXEL.
+    05 WS-TU               FLOAT-SHORT OCCURS 4 TIMES.
+    05 WS-TV               FLOAT-SHORT OCCURS 4 TIMES.
+ 01 WS-N3.
+    05 WS-NV               FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-NOQ.
+    05 WS-NOQV              FLOAT-LONG OCCURS 9 TIMES VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-M.
+    05 L-MV                FLOAT-LONG OCCURS 12 TIMES.
+ 01 L-SPRITE               BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-M L-SPRITE.
+     MOVE AT-SW(L-SPRITE) TO WS-GN
+     IF WS-GN > 32
+         MOVE 32 TO WS-GN
+     END-IF
+     SET ADDRESS OF B-ATLAS TO AT-ADDR
+     COMPUTE WS-CELL = 1 / WS-GN
+     PERFORM VARYING WS-PY FROM 0 BY 1 UNTIL WS-PY >= WS-GN
+         PERFORM VARYING WS-PX FROM 0 BY 1 UNTIL WS-PX >= WS-GN
+             COMPUTE WS-OFF = ((AT-Y(L-SPRITE) + WS-PY) * AT-W + AT-X(L-SPRITE) + WS-PX) * 4 + 4
+             MOVE 0 TO WS-OPAQUE(WS-PY * WS-GN + WS-PX + 1)
+             IF FUNCTION ORD(B-ATLAS(WS-OFF:1)) > 1
+                 MOVE 1 TO WS-OPAQUE(WS-PY * WS-GN + WS-PX + 1)
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     MOVE 0 TO WS-NV(1) WS-NV(2)
+     PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 2
+         COMPUTE WS-NV(3) = 3 - 2 * WS-F
+         PERFORM VARYING WS-PY FROM 0 BY 1 UNTIL WS-PY >= WS-GN
+             PERFORM VARYING WS-PX FROM 0 BY 1 UNTIL WS-PX >= WS-GN
+                 IF WS-OPAQUE(WS-PY * WS-GN + WS-PX + 1) = 1
+                     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                         COMPUTE WS-CP((WS-K - 1) * 3 + 1) = (WS-PX + WS-PICK(WS-F, (WS-K - 1) * 3 + 1)) * WS-CELL
+                         COMPUTE WS-CP((WS-K - 1) * 3 + 2) = 1 - (WS-PY + 1 - WS-PICK(WS-F, (WS-K - 1) * 3 + 2)) * WS-CELL
+                         COMPUTE WS-CP((WS-K - 1) * 3 + 3) = (19 - 2 * WS-F) / 32
+                         COMPUTE WS-U16(WS-K) = (WS-PX + FUNCTION MOD(FUNCTION INTEGER(WS-K / 2), 2)) * 16 / WS-GN
+                         COMPUTE WS-V16(WS-K) = (WS-PY + FUNCTION INTEGER(WS-K / 3)) * 16 / WS-GN
+                         CALL "ATLAS-UV" USING CLIENT-STATE L-SPRITE WS-U16(WS-K) WS-V16(WS-K) WS-TU(WS-K) WS-TV(WS-K)
+                     END-PERFORM
+                     CALL "HAND-QUAD" USING CLIENT-STATE L-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-GMODE WS-NOQ
+                 END-IF
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ICON-GLINT-QUADS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. GROUND-GLINT.
+*> USING CLIENT-STATE, corners (four of x, y, z, u, v FLOAT-SHORT: a quad of a dropped item as it is drawn, top-left, top-right, bottom-right, bottom-left, relative to the eye, with its atlas
+*> coordinates), sprite (the icon's atlas row), flat (1 the quad is the item's flat icon: ICON-GLINT-QUADS over its opaque texels, the quad's parallelogram as the placement; 0 one face of a cube:
+*> the same corners and coordinates in the glint layer, HAND-QUAD glint 6): the glint layer of a dropped item with the enchantment glint (54 section 19.3, T9903).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-GMODE               BINARY-LONG VALUE 6.
+ 01 WS-LIGHT               FLOAT-LONG VALUE 1.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-M.
+    05 WS-MV               FLOAT-LONG OCCURS 12 TIMES.
+ 01 WS-CORNERS.
+    05 WS-CP               FLOAT-LONG OCCURS 12 TIMES.
+ 01 WS-TEXEL.
+    05 WS-TU               FLOAT-SHORT OCCURS 4 TIMES.
+    05 WS-TV               FLOAT-SHORT OCCURS 4 TIMES.
+ 01 WS-N3.
+    05 WS-NV               FLOAT-LONG OCCURS 3 TIMES VALUE 0.
+ 01 WS-NOQ.
+    05 WS-NOQV             FLOAT-LONG OCCURS 9 TIMES VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-CORNERS.
+    05 L-C OCCURS 4 TIMES.
+       10 L-CX             FLOAT-SHORT.
+       10 L-CY             FLOAT-SHORT.
+       10 L-CZ             FLOAT-SHORT.
+       10 L-CU             FLOAT-SHORT.
+       10 L-CV             FLOAT-SHORT.
+ 01 L-SPRITE               BINARY-LONG.
+ 01 L-FLAT                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-CORNERS L-SPRITE L-FLAT.
+     IF L-FLAT = 1
+*>       The icon's unit square (x right, y up) maps to the quad: its bottom-left corner 4 is the origin, the right edge 3 - 4 and the up edge 1 - 4 the columns of the matrix.
+         MOVE 0 TO WS-MV(3) WS-MV(6) WS-MV(9)
+         COMPUTE WS-MV(1) = L-CX(3) - L-CX(4)
+         COMPUTE WS-MV(4) = L-CY(3) - L-CY(4)
+         COMPUTE WS-MV(7) = L-CZ(3) - L-CZ(4)
+         COMPUTE WS-MV(2) = L-CX(1) - L-CX(4)
+         COMPUTE WS-MV(5) = L-CY(1) - L-CY(4)
+         COMPUTE WS-MV(8) = L-CZ(1) - L-CZ(4)
+         MOVE L-CX(4) TO WS-MV(10)
+         MOVE L-CY(4) TO WS-MV(11)
+         MOVE L-CZ(4) TO WS-MV(12)
+         CALL "ICON-GLINT-QUADS" USING CLIENT-STATE WS-M L-SPRITE
+         GOBACK
+     END-IF
+     MOVE 0 TO WS-MV(2) WS-MV(3) WS-MV(4) WS-MV(6) WS-MV(7) WS-MV(8) WS-MV(10) WS-MV(11) WS-MV(12)
+     MOVE 1 TO WS-MV(1) WS-MV(5) WS-MV(9)
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+         COMPUTE WS-R = (WS-K - 1) * 3
+         MOVE L-CX(WS-K) TO WS-CP(WS-R + 1)
+         MOVE L-CY(WS-K) TO WS-CP(WS-R + 2)
+         MOVE L-CZ(WS-K) TO WS-CP(WS-R + 3)
+         MOVE L-CU(WS-K) TO WS-TU(WS-K)
+         MOVE L-CV(WS-K) TO WS-TV(WS-K)
+     END-PERFORM
+     CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-GMODE WS-NOQ
+     GOBACK.
+ END PROGRAM GROUND-GLINT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. ITEM-POSED-DRAW.
 *> USING CLIENT-STATE, placement (12 FLOAT-LONG: the columns of the 3 x 3 matrix, then the translation, relative to the eye), item registry id, display context (1 thirdperson_righthand,
 *> 2 thirdperson_lefthand, 3 fixed), replica row whose cell gives the light, eye (3 FLOAT-LONG), bright (BINARY-LONG, 1 for full bright), foil (BINARY-LONG, 1 when the stack has the
@@ -217,13 +359,6 @@
  01 WS-BLK                 BINARY-LONG.
  01 WS-MODE                BINARY-LONG VALUE 4.
  01 WS-GMODE               BINARY-LONG VALUE 6.
- 01 WS-GN                  BINARY-LONG.
- 01 WS-PX                  BINARY-LONG.
- 01 WS-PY                  BINARY-LONG.
- 01 WS-OFF                 BINARY-LONG.
- 01 WS-OPAQUE              PIC 9 OCCURS 1024 TIMES.
- 01 WS-CELL                FLOAT-LONG.
- 01 B-ATLAS                PIC X(1073741824) BASED.
  01 WS-CORNERS.
     05 WS-CP               FLOAT-LONG OCCURS 12 TIMES.
  01 WS-UV.
@@ -388,43 +523,9 @@
          MOVE WS-NRM-V(WS-F, 3) TO WS-NV(3)
          CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-MODE WS-NOQ
      END-PERFORM
-*>   The glint of a foil icon covers the opaque texels only (the sprite's alpha above 0): one quad of each on the front and the back, its coordinates those of its texel corners.
+*>   The glint of a foil icon covers the opaque texels only (ICON-GLINT-QUADS).
      IF L-FOIL = 1
-         MOVE AT-SW(WS-SPRITE) TO WS-GN
-         IF WS-GN > 32
-             MOVE 32 TO WS-GN
-         END-IF
-         SET ADDRESS OF B-ATLAS TO AT-ADDR
-         COMPUTE WS-CELL = 1 / WS-GN
-         PERFORM VARYING WS-PY FROM 0 BY 1 UNTIL WS-PY >= WS-GN
-             PERFORM VARYING WS-PX FROM 0 BY 1 UNTIL WS-PX >= WS-GN
-                 COMPUTE WS-OFF = ((AT-Y(WS-SPRITE) + WS-PY) * AT-W + AT-X(WS-SPRITE) + WS-PX) * 4 + 4
-                 MOVE 0 TO WS-OPAQUE(WS-PY * WS-GN + WS-PX + 1)
-                 IF FUNCTION ORD(B-ATLAS(WS-OFF:1)) > 1
-                     MOVE 1 TO WS-OPAQUE(WS-PY * WS-GN + WS-PX + 1)
-                 END-IF
-             END-PERFORM
-         END-PERFORM
-         PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 2
-             MOVE WS-NRM-V(WS-F, 1) TO WS-NV(1)
-             MOVE WS-NRM-V(WS-F, 2) TO WS-NV(2)
-             MOVE WS-NRM-V(WS-F, 3) TO WS-NV(3)
-             PERFORM VARYING WS-PY FROM 0 BY 1 UNTIL WS-PY >= WS-GN
-                 PERFORM VARYING WS-PX FROM 0 BY 1 UNTIL WS-PX >= WS-GN
-                     IF WS-OPAQUE(WS-PY * WS-GN + WS-PX + 1) = 1
-                         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
-                             COMPUTE WS-CP((WS-K - 1) * 3 + 1) = (WS-PX + WS-PICK(WS-F, (WS-K - 1) * 3 + 1)) * WS-CELL
-                             COMPUTE WS-CP((WS-K - 1) * 3 + 2) = 1 - (WS-PY + 1 - WS-PICK(WS-F, (WS-K - 1) * 3 + 2)) * WS-CELL
-                             COMPUTE WS-CP((WS-K - 1) * 3 + 3) = (19 - 2 * WS-F) / 32
-                             COMPUTE WS-U16(WS-K) = (WS-PX + FUNCTION MOD(FUNCTION INTEGER(WS-K / 2), 2)) * 16 / WS-GN
-                             COMPUTE WS-V16(WS-K) = (WS-PY + FUNCTION INTEGER(WS-K / 3)) * 16 / WS-GN
-                             CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-U16(WS-K) WS-V16(WS-K) WS-TU(WS-K) WS-TV(WS-K)
-                         END-PERFORM
-                         CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-GMODE WS-NOQ
-                     END-IF
-                 END-PERFORM
-             END-PERFORM
-         END-PERFORM
+         CALL "ICON-GLINT-QUADS" USING CLIENT-STATE WS-M WS-SPRITE
      END-IF
      GOBACK.
  END PROGRAM ITEM-POSED-DRAW.
@@ -516,7 +617,7 @@
      IF EN-KEY(L-ROW) = "glow_item_frame"
          MOVE 1 TO WS-BRIGHT
      END-IF
-     MOVE 0 TO WS-FFOIL
+     MOVE EN-STACK-FOIL(L-ROW) TO WS-FFOIL
      CALL "ITEM-POSED-DRAW" USING CLIENT-STATE WS-M EN-STACK-ITEM(L-ROW) WS-CONTEXT L-ROW L-EYE-TABLE WS-BRIGHT WS-FFOIL
      GOBACK.
  END PROGRAM ENTITY-FRAME-EMIT.
