@@ -34,6 +34,8 @@
        10 VL-DESPAWN         BINARY-LONG.        *> wandering trader: ticks to despawn (48000 from the spawner, 0 none), T8802
        10 VL-LLAMA-A         BINARY-LONG.        *> wandering trader: entity ids of its two trader llamas
        10 VL-LLAMA-B         BINARY-LONG.
+       10 VL-UNHAPPY         BINARY-LONG.        *> the head shake: the unhappy counter of entity data 18 (40 after a refusal, counts down 1 a tick), T59603
+       10 VL-UNHAPPY-ZERO    BINARY-LONG.        *> 1 while the tick that counted it to 0 is sent (the data entry 18 carries the final 0)
        10 VL-O-N             BINARY-LONG.
        10 VL-OFFER           OCCURS 16 TIMES.
           15 VL-O-ROW        BINARY-LONG.

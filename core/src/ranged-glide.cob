@@ -98,6 +98,7 @@
  01 WS-HURT                BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-CHEST               BINARY-LONG VALUE 3.
+ 01 WS-EV-GLIDE            PIC X(32) VALUE "elytra_glide".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -114,6 +115,10 @@
      CALL "TOOL-ELYTRA-DURABILITY" USING TS-GLIDE-TICKS(L-ROW) WS-HURT
      IF WS-HURT = 1
          CALL "COMBAT-EQUIP-HURT" USING L-ROW WS-CHEST WS-ONE
+     END-IF
+*>   30-8 14.1.9: elytra_glide at the player's own position with the player as source on every 10th gliding tick (n mod 10 = 0), after the wear.
+     IF FUNCTION MOD(TS-GLIDE-TICKS(L-ROW), 10) = 0
+         CALL "GAME-EVENT-AT" USING WS-EV-GLIDE PL-ENTITY-ROW(L-ROW)
      END-IF
      ADD 1 TO TS-GLIDE-TICKS(L-ROW)
      MOVE PL-X(L-ROW) TO TS-GLIDE-LAST-X(L-ROW)

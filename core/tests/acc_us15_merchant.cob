@@ -69,10 +69,10 @@
      CALL "MOB-SPAWN" USING PL-DIM(WS-ROW) WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-VROW
      CALL "VL-FIND" USING EN-ID(WS-VROW) WS-ONE WS-SLOT
      MOVE "T" TO TL-MODE
-*>   Without a profession nothing opens.
+*>   Without a profession nothing opens; the villager shakes its head and the action is consumed (CONSUME, 19 section 22.4; wrap C T59603).
      CALL "MERCHANT-INTERACT" USING WS-ROW WS-VROW WS-USED
-     MOVE "acceptance US15 19§22.4 a villager without a profession opens no window" TO TL-CASE
-     MOVE "0 0 0" TO TL-EXPECTED
+     MOVE "acceptance US15 19§22.4 a villager without a profession opens no window (the head shake consumes the click)" TO TL-CASE
+     MOVE "0 1 0" TO TL-EXPECTED
      MOVE MN-WINDOW(WS-ROW) TO WS-F1
      MOVE WS-USED TO WS-F2
      MOVE 0 TO WS-F3
