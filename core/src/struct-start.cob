@@ -7,6 +7,7 @@
 *>   STRUCT-START-PUT USING structure row, chunk x, chunk z, references, start row out: finds or creates the start and drops its pieces (a full store is emptied first); only the start put last takes pieces
 *>   STRUCT-START-PIECE-ADD USING start row, type, orientation, depth, jigsaw kind (0, 1 rigid, 2 terrain_matching), ground level delta, x0, y0, z0, x1, y1, z1, piece row out (0 when it cannot be added)
 *>   STRUCT-START-JUNCTION-ADD USING piece row, source x, ground y, source z: a junction of the piece added last
+*>   STRUCT-START-ENTRANCE-ADD USING piece row, x0, y0, z0, x1, y1, z1: an entrance box (a mineshaft room's `Entrances`) of the piece added last
 *>   STRUCT-START-BOX USING start row, x0, y0, z0, x1, y1, z1 out, valid out: getBoundingBox (5.6: the union of the piece boxes, inflated by 12 for a terrain-adapting structure) and isValid
 *>   STRUCT-START-CAN-REF USING start row, flag out: references < 1; STRUCT-START-ADD-REF USING start row: references + 1
 *>   STRUCT-REF-ADD USING chunk x, chunk z, structure row, source chunk x, source chunk z: one reference of the chunk (a set: an entry is kept once)
@@ -23,7 +24,7 @@
  WORKING-STORAGE SECTION.
  COPY STRUCTSTART.
  PROCEDURE DIVISION.
-     MOVE 0 TO SST-COUNT SST-PIECE-COUNT SST-JUNC-COUNT SST-REF-COUNT SST-LOST
+     MOVE 0 TO SST-COUNT SST-PIECE-COUNT SST-JUNC-COUNT SST-REF-COUNT SST-ENT-COUNT SST-LOST
      GOBACK.
  END PROGRAM STRUCT-STORE-RESET.
 
@@ -71,6 +72,7 @@
  WORKING-STORAGE SECTION.
  COPY STRUCTSTART.
  01 WS-LIMIT               BINARY-LONG.
+ 01 WS-ELIMIT              BINARY-LONG.
  LINKAGE SECTION.
  01 L-STRUCT               BINARY-LONG.
  01 L-CX                   BINARY-LONG.
@@ -80,10 +82,11 @@
  PROCEDURE DIVISION USING L-STRUCT L-CX L-CZ L-REFS L-ROW.
      CALL "STRUCT-START-FIND" USING L-STRUCT L-CX L-CZ L-ROW
      COMPUTE WS-LIMIT = SST-MAX-PIECES - 1024
-     IF L-ROW = 0 AND (SST-COUNT >= SST-MAX-STARTS OR SST-PIECE-COUNT > WS-LIMIT)
+     COMPUTE WS-ELIMIT = SST-MAX-ENT - SST-ENT-HEADROOM
+     IF L-ROW = 0 AND (SST-COUNT >= SST-MAX-STARTS OR SST-PIECE-COUNT > WS-LIMIT OR SST-ENT-COUNT > WS-ELIMIT)
          CALL "STRUCT-STORE-RESET"
      END-IF
-     IF L-ROW > 0 AND SST-PIECE-COUNT > WS-LIMIT
+     IF L-ROW > 0 AND (SST-PIECE-COUNT > WS-LIMIT OR SST-ENT-COUNT > WS-ELIMIT)
          CALL "STRUCT-STORE-RESET"
          MOVE 0 TO L-ROW
      END-IF
@@ -137,6 +140,8 @@
      MOVE L-GROUND TO SPC-GROUND(L-ROW)
      COMPUTE SPC-J-FIRST(L-ROW) = SST-JUNC-COUNT + 1
      MOVE 0 TO SPC-J-N(L-ROW)
+     COMPUTE SPC-ENT-FIRST(L-ROW) = SST-ENT-COUNT + 1
+     MOVE 0 TO SPC-ENT-N(L-ROW)
      MOVE L-X0 TO SPC-X0(L-ROW)
      MOVE L-Y0 TO SPC-Y0(L-ROW)
      MOVE L-Z0 TO SPC-Z0(L-ROW)
@@ -172,6 +177,38 @@
      MOVE L-Z TO SJ-Z(SST-JUNC-COUNT)
      GOBACK.
  END PROGRAM STRUCT-START-JUNCTION-ADD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-START-ENTRANCE-ADD.
+*> USING piece row, x0, y0, z0, x1, y1, z1: an entrance box of the piece added last (a mineshaft room's `Entrances`, 36-5 2.5); a box that cannot be added is lost and counted
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTSTART.
+ 01 WS-END                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-X0                   BINARY-LONG.
+ 01 L-Y0                   BINARY-LONG.
+ 01 L-Z0                   BINARY-LONG.
+ 01 L-X1                   BINARY-LONG.
+ 01 L-Y1                   BINARY-LONG.
+ 01 L-Z1                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-X0 L-Y0 L-Z0 L-X1 L-Y1 L-Z1.
+     COMPUTE WS-END = SPC-ENT-FIRST(L-ROW) + SPC-ENT-N(L-ROW)
+     IF L-ROW NOT = SST-PIECE-COUNT OR WS-END NOT = SST-ENT-COUNT + 1 OR SST-ENT-COUNT >= SST-MAX-ENT
+         ADD 1 TO SST-LOST
+         GOBACK
+     END-IF
+     ADD 1 TO SST-ENT-COUNT
+     ADD 1 TO SPC-ENT-N(L-ROW)
+     MOVE L-X0 TO SSE-X0(SST-ENT-COUNT)
+     MOVE L-Y0 TO SSE-Y0(SST-ENT-COUNT)
+     MOVE L-Z0 TO SSE-Z0(SST-ENT-COUNT)
+     MOVE L-X1 TO SSE-X1(SST-ENT-COUNT)
+     MOVE L-Y1 TO SSE-Y1(SST-ENT-COUNT)
+     MOVE L-Z1 TO SSE-Z1(SST-ENT-COUNT)
+     GOBACK.
+ END PROGRAM STRUCT-START-ENTRANCE-ADD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-START-BOX.
@@ -517,7 +554,8 @@
 *> USING structure row, chunk x, chunk z, start row out: stores the start whose pieces are in the builder (STRUCTPIECE.cpy, after STRUCT-FIND-POINT and the placement) as the start of that structure
 *> held by the chunk, once: a start already in the store is left as it is (its row is returned). A piece of the jigsaw assembler (builder type 60) is stored with the registry id of the jigsaw piece,
 *> its projection (SP-T-AUX: 0 rigid, 1 terrain_matching), ground level delta (SP-F2) and the junctions of STRUCTJIG.cpy that it owns; the scattered pieces (101 to 104) and the template pieces of the igloo, the
-*> ruined portal and the nether fossil get their registry ids (tedp, tejp, tesh, btp, iglu, rupo, nefos) and their type-specific keys (STRUCT-PIECE-KEYS-CAPTURE, struct-piece-keys.cob); any other builder type keeps its own number.
+*> shipwreck, the ocean ruin, the ruined portal, the woodland mansion, the end city and the nether fossil get their registry ids (tedp, tejp, tesh, btp, iglu, shipwreck, orp, rupo, wmp, ecp, nefos) and
+*> their type-specific keys (STRUCT-PIECE-KEYS-CAPTURE, struct-piece-keys.cob); any other builder type keeps its own number (the mineshaft, fortress, stronghold and monument types already are registry ids).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY STRUCTSTART.
@@ -559,7 +597,8 @@
          MOVE SP-TYPE(WS-I) TO WS-TYPE
          MOVE 0 TO WS-JIG WS-GROUND
          MOVE SPACES TO WS-PNAME
-*>       the builder types that have a registry name (36-1 2.4): the scattered pieces 101 to 103 and the buried treasure 104, a template piece of the igloo (kind 1), the ruined portal (4) and the nether fossil (0)
+*>       the builder types that have a registry name (36-1 2.4): the scattered pieces 101 to 103 and the buried treasure 104, a template piece of the nether fossil (kind 0), the igloo (1), the shipwreck (2),
+*>       the ocean ruin (3), the ruined portal (4), the woodland mansion (5) and the end city (16); the other builder types (mineshaft 0 to 3, fortress 4 to 18, stronghold 19 to 31, monument 38) are the registry ids
          EVALUATE TRUE
              WHEN WS-TYPE = 60
                  MOVE WS-JIGSAW TO WS-TYPE
@@ -577,8 +616,16 @@
                  MOVE "nefos" TO WS-PNAME
              WHEN WS-TYPE = 100 AND SP-T-KIND(WS-I) = 1
                  MOVE "iglu" TO WS-PNAME
+             WHEN WS-TYPE = 100 AND SP-T-KIND(WS-I) = 2
+                 MOVE "shipwreck" TO WS-PNAME
+             WHEN WS-TYPE = 100 AND SP-T-KIND(WS-I) = 3
+                 MOVE "orp" TO WS-PNAME
              WHEN WS-TYPE = 100 AND SP-T-KIND(WS-I) = 4
                  MOVE "rupo" TO WS-PNAME
+             WHEN WS-TYPE = 100 AND SP-T-KIND(WS-I) = 5
+                 MOVE "wmp" TO WS-PNAME
+             WHEN WS-TYPE = 100 AND SP-T-KIND(WS-I) = 16
+                 MOVE "ecp" TO WS-PNAME
          END-EVALUATE
          IF WS-PNAME NOT = SPACES
              CALL "STRUCT-ENUM-ID" USING WS-KIND WS-PNAME WS-TYPE

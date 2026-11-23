@@ -536,8 +536,8 @@
      COMPUTE TL-OBSERVED-N = EN-HEALTH(WS-ROW) * 100 + PL-SLOT-COUNT(WS-PLAYER, 1)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "TEST-INTERACT" USING WS-CONN WS-ID WS-HAND0 WS-SNEAK0
-     MOVE "implementation 44-7 10.2 at full health a tame nautilus takes no food" TO TL-CASE
-     MOVE 1502 TO TL-EXPECTED-N
+     MOVE "implementation 44-7 10.2 at full health a tame nautilus is not healed: its food starts love mode and uses one item (step 4)" TO TL-CASE
+     MOVE 1501 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = EN-HEALTH(WS-ROW) * 100 + PL-SLOT-COUNT(WS-PLAYER, 1)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "ENTITY-REMOVE" USING WS-ROW
@@ -718,11 +718,12 @@
      COMPUTE PL-X(WS-PLAYER) = WS-X0 + 4.5
      MOVE PL-X(WS-PLAYER) TO EN-X(PL-ENTITY-ROW(WS-PLAYER))
      CALL "TEST-INTERACT" USING WS-CONN WS-ID WS-HAND0 WS-SNEAK0
-     MOVE "implementation 44-7 10.2 a baby nautilus follows the Animal rules: a cod is not used" TO TL-CASE
-     MOVE 1 TO TL-EXPECTED-N
-     MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO TL-OBSERVED-N
+     MOVE "implementation 44-7 10.2 a baby nautilus follows the Animal rules: a cod is used and ages it up (no whole second of -100 ticks)" TO TL-CASE
+     MOVE -100 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = EN-MOBAGE(WS-ROW) + PL-SLOT-COUNT(WS-PLAYER, 1)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 0 TO EN-MOBAGE(WS-ROW)
+     MOVE 1 TO PL-SLOT-COUNT(WS-PLAYER, 1)
      MOVE "minecraft:stick" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-STICK WS-ITEM-ROW WS-STATUS
      MOVE WS-STICK TO PL-SLOT-ITEM(WS-PLAYER, 1)
