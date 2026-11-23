@@ -1,9 +1,10 @@
 *> The chunk NBT of structure starts and references, and the piece tags (docs/protocol/36-structures-1-model-placement-starts.md sections 6.7 and 7.3; 07-nbt-and-anvil.md section 7; STRUCTSTART.cpy).
 *> A piece tag is {id, BB (int array of 6), O (-1 or 0 south, 1 west, 2 north, 3 east), GD}; a start tag {id, ChunkX, ChunkZ, references, Children}, or {id: "INVALID"} for a start without a piece; the
 *> `structures` compound of a chunk is {starts: {<structure key>: start}, References: {<structure key>: long array of packed chunk positions}}. Packed position: (x & 0xFFFFFFFF) | ((z & 0xFFFFFFFF) << 32).
-*> The base fields of 6.7 and the type-specific keys of the scattered pieces, the igloo, the ruined portal, the nether fossil (36-4 10) and the stronghold pieces (36-5 3.9) are written and read (STRUCT-PIECE-KEYS-WRITE,
-*> STRUCT-PIECE-KEY-SET, struct-piece-keys.cob); the keys of the other families (36-2 to 36-3, 36-5 mineshaft, 36-6 to 36-8) are not (the pieces are rebuilt from the seed by STRUCT-DECORATE, which is the source
-*> of truth), and a piece whose type has no registry name (a builder type of the other template pieces above 55) is left out of Children, so a start that has only such pieces is written as INVALID.
+*> The base fields of 6.7 and the type-specific keys of the scattered pieces, the igloo, the ruined portal, the nether fossil (36-4 10), the mineshaft pieces (36-5 2.5, 2.6, 2.11, 2.12: the room's Entrances list of
+*> boxes is read into the store's SST-ENT), the stronghold pieces (36-5 3.9) and the fortress pieces (36-8 3.5) are written and read (STRUCT-PIECE-KEYS-WRITE, STRUCT-PIECE-KEY-SET, struct-piece-keys.cob); the keys
+*> of the other families (36-2 to 36-3, 36-6 to 36-8) are not (the pieces are rebuilt from the seed by STRUCT-DECORATE, which is the source of truth), and a piece whose type has no registry name (a builder type of
+*> the other template pieces above 55) is left out of Children, so a start that has only such pieces is written as INVALID.
 *> Loading follows 7.3: a start whose key names no loaded structure is dropped, INVALID loads as an empty start, a piece with an unknown id or without BB is skipped (the rename table of 6.7 is in
 *> STRUCT-ENUM-ID), ChunkX, ChunkZ and references default to 0, a reference to a chunk at Chebyshev distance above 8 from the chunk being loaded is dropped. Not loaded here: the ocean monument's regenerated piece list.
 *>
@@ -250,6 +251,8 @@
        10 PC-KS.
           15 PC-K          BINARY-LONG OCCURS 8 TIMES.
        10 PC-TPL           PIC X(64).
+       10 PC-ENT-FIRST     BINARY-LONG.
+       10 PC-ENT-N         BINARY-LONG.
  01 WS-BB.
     05 WS-BB-N             BINARY-LONG OCCURS 6 TIMES.
  01 WS-BB-COUNT            BINARY-LONG.
@@ -295,8 +298,8 @@
     05 WS-PK-K             BINARY-LONG OCCURS 8 TIMES.
  01 WS-PK-TPL              PIC X(64).
  01 WS-HIT                 BINARY-LONG.
- 01 WS-DOOR-OK             BINARY-LONG.
- 01 WS-STRONG              BINARY-LONG.
+ 01 WS-REQ-HIT             BINARY-LONG.
+ 01 WS-REQ-N               BINARY-LONG.
  01 WS-J                   BINARY-LONG.
  01 WS-MEM-TYPE            BINARY-LONG.
  01 WS-MEM-NAME            PIC X(80).
@@ -305,6 +308,20 @@
  01 WS-NUM-STR             PIC X(64).
  01 WS-STR-LEN             BINARY-LONG.
  01 WS-STR-CAP             BINARY-LONG VALUE 64.
+*> the entrance boxes of the start being read (a mineshaft room's `Entrances`): the boxes of the pieces read so far, a piece's run from WS-ENT-BASE + 1, rolled back when the piece is not kept
+ 01 WS-ENTS.
+    05 WS-ENT OCCURS 1024 TIMES.
+       10 EN-B             BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-ENT-COUNT           BINARY-LONG.
+ 01 WS-ENT-BASE            BINARY-LONG.
+ 01 WS-EL-TYPE             BINARY-LONG.
+ 01 WS-EL-COUNT            BINARY-LONG.
+ 01 WS-EL-I                BINARY-LONG.
+ 01 WS-EB-COUNT            BINARY-LONG.
+ 01 WS-EB.
+    05 WS-EB-N             BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-EI                  BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-CX                   BINARY-LONG.
@@ -332,7 +349,7 @@
                          MOVE WN TO WS-STRUCT-KEY
                          CALL "STRUCT-FIND-STRUCT" USING WS-STRUCT-KEY WS-ST
 *>                       the start compound: id, ChunkX, ChunkZ, references, Children
-                         MOVE 0 TO WS-SCX WS-SCZ WS-REFS WS-INVALID WS-NP
+                         MOVE 0 TO WS-SCX WS-SCZ WS-REFS WS-INVALID WS-NP WS-ENT-COUNT
                          PERFORM UNTIL PB-ERROR = 1
                              MOVE SPACES TO WN
                              CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-INNER-TYPE WN WS-CAPACITY WL
@@ -360,6 +377,7 @@
                                          ELSE
                                              MOVE -1 TO WS-PTYPE
                                              MOVE 0 TO WS-PO WS-PD WS-HAS-BB WS-PAIR-N
+                                             MOVE WS-ENT-COUNT TO WS-ENT-BASE
                                              PERFORM UNTIL PB-ERROR = 1
                                                  MOVE SPACES TO WN
                                                  CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-CH-TYPE WN WS-CAPACITY WL
@@ -432,26 +450,41 @@
                                                                  CALL "NBT-READ-STRING" USING PB-BUFFER WS-NUM-STR WS-STR-CAP WS-STR-LEN
                                                                  MOVE WS-NUM-STR TO PR-STR(WS-PAIR-N)
                                                          END-EVALUATE
+                                                     WHEN WN = "Entrances" AND WS-CH-TYPE = 9
+*>                                                       the list of boxes of a mineshaft room (36-5 2.5; kept only for a room): an entry that is not an int array of six ints is skipped
+                                                         CALL "NBT-READ-LIST-BEGIN" USING PB-BUFFER WS-EL-TYPE WS-EL-COUNT
+                                                         PERFORM VARYING WS-EL-I FROM 1 BY 1 UNTIL WS-EL-I > WS-EL-COUNT OR PB-ERROR = 1
+                                                             IF WS-EL-TYPE NOT = 11
+                                                                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-EL-TYPE
+                                                             ELSE
+                                                                 MOVE 6 TO WS-EB-COUNT
+                                                                 CALL "NBT-READ-INT-ARRAY" USING PB-BUFFER WS-SIX WS-EB-COUNT WS-EB
+                                                                 IF WS-EB-COUNT = 6 AND WS-ENT-COUNT < 1024
+                                                                     ADD 1 TO WS-ENT-COUNT
+                                                                     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+                                                                         MOVE WS-EB-N(WS-K) TO EN-B(WS-ENT-COUNT, WS-K)
+                                                                     END-PERFORM
+                                                                 END-IF
+                                                             END-IF
+                                                         END-PERFORM
                                                      WHEN OTHER
                                                          CALL "NBT-READ-SKIP" USING PB-BUFFER WS-CH-TYPE
                                                  END-EVALUATE
                                              END-PERFORM
-*>                                           the type-specific keys (36-4 10, 36-5 3.9); a stronghold piece without a valid EntryDoor does not load (36-5 3.9)
+*>                                           the type-specific keys (36-4 10, 36-5 3.9, 36-6 2.4 and 4.3); a piece without a valid value of a key it requires (the stronghold's EntryDoor, the ocean ruin's Rot and BiomeType,
+*>                                           the shipwreck's Rot) does not load
                                              MOVE 0 TO WS-PK-K(1) WS-PK-K(2) WS-PK-K(3) WS-PK-K(4) WS-PK-K(5) WS-PK-K(6) WS-PK-K(7) WS-PK-K(8)
                                              MOVE SPACES TO WS-PK-TPL
-                                             MOVE 0 TO WS-DOOR-OK
+                                             MOVE 0 TO WS-REQ-HIT
                                              PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-PAIR-N
                                                  CALL "STRUCT-PIECE-KEY-SET" USING WS-PTYPE PR-NAME(WS-J) PR-VTYPE(WS-J) PR-INT(WS-J) PR-STR(WS-J)
                                                      WS-PK-KS WS-PK-TPL WS-HIT
-                                                 IF PR-NAME(WS-J) = "EntryDoor" AND WS-HIT = 1
-                                                     MOVE 1 TO WS-DOOR-OK
+                                                 IF WS-HIT = 3
+                                                     ADD 1 TO WS-REQ-HIT
                                                  END-IF
                                              END-PERFORM
-                                             MOVE 0 TO WS-STRONG
-                                             IF WS-PTYPE >= 19 AND WS-PTYPE <= 31 AND WS-DOOR-OK = 0
-                                                 MOVE 1 TO WS-STRONG
-                                             END-IF
-                                             IF WS-PTYPE >= 0 AND WS-HAS-BB = 1 AND WS-NP < 1024 AND WS-STRONG = 0
+                                             CALL "STRUCT-PIECE-REQUIRED" USING WS-PTYPE WS-REQ-N
+                                             IF WS-PTYPE >= 0 AND WS-HAS-BB = 1 AND WS-NP < 1024 AND WS-REQ-HIT >= WS-REQ-N
                                                  ADD 1 TO WS-NP
                                                  MOVE WS-PTYPE TO PC-TYPE(WS-NP)
                                                  MOVE WS-PO TO PC-ORIENT(WS-NP)
@@ -461,6 +494,16 @@
                                                  PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > 6
                                                      MOVE WS-BB-N(WS-ROW) TO PC-BB(WS-NP, WS-ROW)
                                                  END-PERFORM
+*>                                               the boxes of a room keep their run, those of any other piece are dropped
+                                                 COMPUTE PC-ENT-FIRST(WS-NP) = WS-ENT-BASE + 1
+                                                 MOVE 0 TO PC-ENT-N(WS-NP)
+                                                 IF WS-PTYPE = 2
+                                                     COMPUTE PC-ENT-N(WS-NP) = WS-ENT-COUNT - WS-ENT-BASE
+                                                 ELSE
+                                                     MOVE WS-ENT-BASE TO WS-ENT-COUNT
+                                                 END-IF
+                                             ELSE
+                                                 MOVE WS-ENT-BASE TO WS-ENT-COUNT
                                              END-IF
                                          END-IF
                                      END-PERFORM
@@ -491,6 +534,16 @@
                                      IF WS-PROW > 0
                                          MOVE PC-KS(WS-I) TO SPC-KS(WS-PROW)
                                          MOVE PC-TPL(WS-I) TO SPC-TPL(WS-PROW)
+                                         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > PC-ENT-N(WS-I)
+                                             COMPUTE WS-EI = PC-ENT-FIRST(WS-I) + WS-K - 1
+                                             MOVE EN-B(WS-EI, 1) TO WS-B0
+                                             MOVE EN-B(WS-EI, 2) TO WS-B1
+                                             MOVE EN-B(WS-EI, 3) TO WS-B2
+                                             MOVE EN-B(WS-EI, 4) TO WS-B3
+                                             MOVE EN-B(WS-EI, 5) TO WS-B4
+                                             MOVE EN-B(WS-EI, 6) TO WS-B5
+                                             CALL "STRUCT-START-ENTRANCE-ADD" USING WS-PROW WS-B0 WS-B1 WS-B2 WS-B3 WS-B4 WS-B5
+                                         END-PERFORM
                                      END-IF
                                  END-PERFORM
                              END-IF

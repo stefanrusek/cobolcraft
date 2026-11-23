@@ -7,6 +7,7 @@
 *>   STRUCT-START-PUT USING structure row, chunk x, chunk z, references, start row out: finds or creates the start and drops its pieces (a full store is emptied first); only the start put last takes pieces
 *>   STRUCT-START-PIECE-ADD USING start row, type, orientation, depth, jigsaw kind (0, 1 rigid, 2 terrain_matching), ground level delta, x0, y0, z0, x1, y1, z1, piece row out (0 when it cannot be added)
 *>   STRUCT-START-JUNCTION-ADD USING piece row, source x, ground y, source z: a junction of the piece added last
+*>   STRUCT-START-ENTRANCE-ADD USING piece row, x0, y0, z0, x1, y1, z1: an entrance box (a mineshaft room's `Entrances`) of the piece added last
 *>   STRUCT-START-BOX USING start row, x0, y0, z0, x1, y1, z1 out, valid out: getBoundingBox (5.6: the union of the piece boxes, inflated by 12 for a terrain-adapting structure) and isValid
 *>   STRUCT-START-CAN-REF USING start row, flag out: references < 1; STRUCT-START-ADD-REF USING start row: references + 1
 *>   STRUCT-REF-ADD USING chunk x, chunk z, structure row, source chunk x, source chunk z: one reference of the chunk (a set: an entry is kept once)
@@ -23,7 +24,7 @@
  WORKING-STORAGE SECTION.
  COPY STRUCTSTART.
  PROCEDURE DIVISION.
-     MOVE 0 TO SST-COUNT SST-PIECE-COUNT SST-JUNC-COUNT SST-REF-COUNT SST-LOST
+     MOVE 0 TO SST-COUNT SST-PIECE-COUNT SST-JUNC-COUNT SST-REF-COUNT SST-ENT-COUNT SST-LOST
      GOBACK.
  END PROGRAM STRUCT-STORE-RESET.
 
@@ -71,6 +72,7 @@
  WORKING-STORAGE SECTION.
  COPY STRUCTSTART.
  01 WS-LIMIT               BINARY-LONG.
+ 01 WS-ELIMIT              BINARY-LONG.
  LINKAGE SECTION.
  01 L-STRUCT               BINARY-LONG.
  01 L-CX                   BINARY-LONG.
@@ -80,10 +82,11 @@
  PROCEDURE DIVISION USING L-STRUCT L-CX L-CZ L-REFS L-ROW.
      CALL "STRUCT-START-FIND" USING L-STRUCT L-CX L-CZ L-ROW
      COMPUTE WS-LIMIT = SST-MAX-PIECES - 1024
-     IF L-ROW = 0 AND (SST-COUNT >= SST-MAX-STARTS OR SST-PIECE-COUNT > WS-LIMIT)
+     COMPUTE WS-ELIMIT = SST-MAX-ENT - SST-ENT-HEADROOM
+     IF L-ROW = 0 AND (SST-COUNT >= SST-MAX-STARTS OR SST-PIECE-COUNT > WS-LIMIT OR SST-ENT-COUNT > WS-ELIMIT)
          CALL "STRUCT-STORE-RESET"
      END-IF
-     IF L-ROW > 0 AND SST-PIECE-COUNT > WS-LIMIT
+     IF L-ROW > 0 AND (SST-PIECE-COUNT > WS-LIMIT OR SST-ENT-COUNT > WS-ELIMIT)
          CALL "STRUCT-STORE-RESET"
          MOVE 0 TO L-ROW
      END-IF
@@ -137,6 +140,8 @@
      MOVE L-GROUND TO SPC-GROUND(L-ROW)
      COMPUTE SPC-J-FIRST(L-ROW) = SST-JUNC-COUNT + 1
      MOVE 0 TO SPC-J-N(L-ROW)
+     COMPUTE SPC-ENT-FIRST(L-ROW) = SST-ENT-COUNT + 1
+     MOVE 0 TO SPC-ENT-N(L-ROW)
      MOVE L-X0 TO SPC-X0(L-ROW)
      MOVE L-Y0 TO SPC-Y0(L-ROW)
      MOVE L-Z0 TO SPC-Z0(L-ROW)
@@ -172,6 +177,38 @@
      MOVE L-Z TO SJ-Z(SST-JUNC-COUNT)
      GOBACK.
  END PROGRAM STRUCT-START-JUNCTION-ADD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-START-ENTRANCE-ADD.
+*> USING piece row, x0, y0, z0, x1, y1, z1: an entrance box of the piece added last (a mineshaft room's `Entrances`, 36-5 2.5); a box that cannot be added is lost and counted
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTSTART.
+ 01 WS-END                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-X0                   BINARY-LONG.
+ 01 L-Y0                   BINARY-LONG.
+ 01 L-Z0                   BINARY-LONG.
+ 01 L-X1                   BINARY-LONG.
+ 01 L-Y1                   BINARY-LONG.
+ 01 L-Z1                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-X0 L-Y0 L-Z0 L-X1 L-Y1 L-Z1.
+     COMPUTE WS-END = SPC-ENT-FIRST(L-ROW) + SPC-ENT-N(L-ROW)
+     IF L-ROW NOT = SST-PIECE-COUNT OR WS-END NOT = SST-ENT-COUNT + 1 OR SST-ENT-COUNT >= SST-MAX-ENT
+         ADD 1 TO SST-LOST
+         GOBACK
+     END-IF
+     ADD 1 TO SST-ENT-COUNT
+     ADD 1 TO SPC-ENT-N(L-ROW)
+     MOVE L-X0 TO SSE-X0(SST-ENT-COUNT)
+     MOVE L-Y0 TO SSE-Y0(SST-ENT-COUNT)
+     MOVE L-Z0 TO SSE-Z0(SST-ENT-COUNT)
+     MOVE L-X1 TO SSE-X1(SST-ENT-COUNT)
+     MOVE L-Y1 TO SSE-Y1(SST-ENT-COUNT)
+     MOVE L-Z1 TO SSE-Z1(SST-ENT-COUNT)
+     GOBACK.
+ END PROGRAM STRUCT-START-ENTRANCE-ADD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-START-BOX.

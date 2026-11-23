@@ -47,6 +47,23 @@
  01 WS-SAME                BINARY-LONG.
  01 WS-BEFORES.
     05 WS-BEFORE           PIC X(2048) OCCURS 8 TIMES.
+ 01 WS-SIX                 BINARY-LONG VALUE 6.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-BB.
+    05 WS-BB-N             BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-STR                 PIC X(64).
+ 01 WS-PID                 PIC X(32).
+ 01 WS-PIDLEN              BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-Q                   BINARY-LONG.
+ 01 WS-LOST0               BINARY-LONG.
+ 01 WS-REFS                BINARY-LONG VALUE 0.
+ 01 WS-GROUND              BINARY-LONG VALUE 0.
+ 01 WS-JIG                 BINARY-LONG VALUE 0.
+ 01 WS-PROW                BINARY-LONG.
+ 01 WS-FLOAT               FLOAT-SHORT.
  PROCEDURE DIVISION.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      MOVE 8 TO SD-ST-COUNT
@@ -93,59 +110,428 @@
          DELIMITED BY SIZE INTO TL-EXPECTED
      PERFORM CHECK-TEXT
 
-*>   the template pieces of the shipwreck (kind 2), the ocean ruin (3), the woodland mansion (5) and the end city (16) have registry names, so a start made of one of them is not INVALID
+*>   the template pieces of the shipwreck (kind 2), the ocean ruin (3), the woodland mansion (5) and the end city (16) have registry names (so a start made of them is not INVALID) and their keys
+     MOVE 7 TO TP-COUNT
      MOVE "minecraft:shipwreck/with_mast" TO TP-KEY(1)
+     MOVE "minecraft:underwater_ruin/big_mossy_2" TO TP-KEY(2)
+     MOVE "minecraft:underwater_ruin/warm_5" TO TP-KEY(3)
+     MOVE "minecraft:woodland_mansion/entrance" TO TP-KEY(4)
+     MOVE "minecraft:woodland_mansion/1x2_c1" TO TP-KEY(5)
+     MOVE "minecraft:end_city/base_floor" TO TP-KEY(6)
+     MOVE "minecraft:end_city/tower_piece" TO TP-KEY(7)
+     MOVE 4 TO SP-LIST-COUNT
+     MOVE "cobolcraft:inline/ruin/c/5" TO SPL-KEY(1)
+     MOVE "cobolcraft:inline/ruin/w/8" TO SPL-KEY(2)
+     MOVE "cobolcraft:inline/ignore_structure_block" TO SPL-KEY(3)
+     MOVE "cobolcraft:inline/ignore_structure_and_air" TO SPL-KEY(4)
+*>   a beached shipwreck rotated by 90 degrees (36-6 4.3): Template, TPX, TPY, TPZ, isBeached (the builder's SP-T-AUX), Rot and height_adjusted (true: the height is final when the start exists)
      CALL "SPB-RESET"
      MOVE 100 TO WS-BT MOVE 2 TO WS-BO MOVE 0 TO WS-BD
      MOVE 8 TO WS-X0 MOVE 60 TO WS-Y0 MOVE 8 TO WS-Z0 MOVE 16 TO WS-X1 MOVE 80 TO WS-Y1 MOVE 24 TO WS-Z1
      PERFORM BUILDER-PIECE
      MOVE 2 TO SP-T-KIND(WS-BR)
      MOVE 1 TO SP-T-ROW(WS-BR)
+     MOVE 10 TO SP-T-X(WS-BR) MOVE 62 TO SP-T-Y(WS-BR) MOVE 12 TO SP-T-Z(WS-BR)
+     MOVE 1 TO SP-T-ROT(WS-BR)
+     MOVE 1 TO SP-T-AUX(WS-BR)
      MOVE 2 TO WS-S
      PERFORM CAPTURE
      MOVE "structures.starts.minecraft:s02" TO WS-PATH
      PERFORM WRITE-AND-GET
-     MOVE "acceptance US12 36-6§4.3 saved keys: a start with a shipwreck template piece is not INVALID (the piece id is shipwreck)" TO TL-CASE
-     PERFORM CHECK-ID-START
-     MOVE "minecraft:underwater_ruin/warm_1" TO TP-KEY(1)
+     MOVE "acceptance US12 36-6§4.3 saved keys: the beached shipwreck is shipwreck with Template, TPX, TPY, TPZ, isBeached 1, Rot CLOCKWISE_90 and height_adjusted 1" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "{id:minecraft:s02,ChunkX:0,ChunkZ:0,references:0,Children:["
+         "{id:minecraft:shipwreck,BB:I[8,60,8,16,80,24],O:2,GD:0,Template:minecraft:shipwreck/with_mast,TPX:10,TPY:62,TPZ:12,isBeached:1,Rot:CLOCKWISE_90,height_adjusted:1}]}"
+         DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK-TEXT
+*>   a cold large ruin of integrity 0.5 and a warm small one of 0.8 (36-6 2.4): the integrity and the biome type come from the piece's processor list, IsLarge from SP-T-AUX
      CALL "SPB-RESET"
      MOVE 100 TO WS-BT MOVE 2 TO WS-BO MOVE 0 TO WS-BD
      MOVE 8 TO WS-X0 MOVE 60 TO WS-Y0 MOVE 8 TO WS-Z0 MOVE 16 TO WS-X1 MOVE 80 TO WS-Y1 MOVE 24 TO WS-Z1
      PERFORM BUILDER-PIECE
      MOVE 3 TO SP-T-KIND(WS-BR)
-     MOVE 1 TO SP-T-ROW(WS-BR)
+     MOVE 2 TO SP-T-ROW(WS-BR)
+     MOVE 12 TO SP-T-X(WS-BR) MOVE 90 TO SP-T-Y(WS-BR) MOVE 14 TO SP-T-Z(WS-BR)
+     MOVE 3 TO SP-T-ROT(WS-BR)
+     MOVE 1 TO SP-T-PROC(WS-BR)
+     MOVE 1 TO SP-T-AUX(WS-BR)
+     MOVE 40 TO WS-X0 MOVE 60 TO WS-Y0 MOVE 8 TO WS-Z0 MOVE 48 TO WS-X1 MOVE 70 TO WS-Y1 MOVE 16 TO WS-Z1
+     PERFORM BUILDER-PIECE
+     MOVE 3 TO SP-T-KIND(WS-BR)
+     MOVE 3 TO SP-T-ROW(WS-BR)
+     MOVE 44 TO SP-T-X(WS-BR) MOVE 91 TO SP-T-Y(WS-BR) MOVE 10 TO SP-T-Z(WS-BR)
+     MOVE 0 TO SP-T-ROT(WS-BR)
+     MOVE 2 TO SP-T-PROC(WS-BR)
+     MOVE 0 TO SP-T-AUX(WS-BR)
      MOVE 3 TO WS-S
      PERFORM CAPTURE
      MOVE "structures.starts.minecraft:s03" TO WS-PATH
      PERFORM WRITE-AND-GET
-     MOVE "acceptance US12 36-6§2.4 saved keys: a start with an ocean ruin template piece is not INVALID (the piece id is orp)" TO TL-CASE
-     PERFORM CHECK-ID-START
-     MOVE "minecraft:woodland_mansion/entrance" TO TP-KEY(1)
+     MOVE "acceptance US12 36-6§2.4 saved keys: the ocean ruins are orp with Rot, Integrity 0.5 or 0.8, BiomeType COLD or WARM and IsLarge" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "{id:minecraft:s03,ChunkX:0,ChunkZ:0,references:0,Children:["
+         "{id:minecraft:orp,BB:I[8,60,8,16,80,24],O:2,GD:0,Template:minecraft:underwater_ruin/big_mossy_2,TPX:12,TPY:90,TPZ:14,Rot:COUNTERCLOCKWISE_90,"
+         "Integrity:0.500,BiomeType:COLD,IsLarge:1},"
+         "{id:minecraft:orp,BB:I[40,60,8,48,70,16],O:2,GD:0,Template:minecraft:underwater_ruin/warm_5,TPX:44,TPY:91,TPZ:10,Rot:NONE,"
+         "Integrity:0.800,BiomeType:WARM,IsLarge:0}]}"
+         DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK-TEXT
+*>   the woodland mansion: the SHORT template name (after minecraft:woodland_mansion/), Rot and Mi
      CALL "SPB-RESET"
      MOVE 100 TO WS-BT MOVE 2 TO WS-BO MOVE 0 TO WS-BD
      MOVE 8 TO WS-X0 MOVE 60 TO WS-Y0 MOVE 8 TO WS-Z0 MOVE 16 TO WS-X1 MOVE 80 TO WS-Y1 MOVE 24 TO WS-Z1
      PERFORM BUILDER-PIECE
      MOVE 5 TO SP-T-KIND(WS-BR)
-     MOVE 1 TO SP-T-ROW(WS-BR)
+     MOVE 4 TO SP-T-ROW(WS-BR)
+     MOVE 10 TO SP-T-X(WS-BR) MOVE 64 TO SP-T-Y(WS-BR) MOVE 12 TO SP-T-Z(WS-BR)
+     MOVE 2 TO SP-T-ROT(WS-BR)
+     MOVE 0 TO SP-T-MIR(WS-BR)
+     MOVE 40 TO WS-X0 MOVE 60 TO WS-Y0 MOVE 8 TO WS-Z0 MOVE 48 TO WS-X1 MOVE 70 TO WS-Y1 MOVE 16 TO WS-Z1
+     PERFORM BUILDER-PIECE
+     MOVE 5 TO SP-T-KIND(WS-BR)
+     MOVE 5 TO SP-T-ROW(WS-BR)
+     MOVE 44 TO SP-T-X(WS-BR) MOVE 65 TO SP-T-Y(WS-BR) MOVE 10 TO SP-T-Z(WS-BR)
+     MOVE 3 TO SP-T-ROT(WS-BR)
+     MOVE 1 TO SP-T-MIR(WS-BR)
      MOVE 4 TO WS-S
      PERFORM CAPTURE
      MOVE "structures.starts.minecraft:s04" TO WS-PATH
      PERFORM WRITE-AND-GET
-     MOVE "acceptance US12 36-7§3 saved keys: a start with a woodland mansion template piece is not INVALID (the piece id is wmp)" TO TL-CASE
-     PERFORM CHECK-ID-START
-     MOVE "minecraft:end_city/base_floor" TO TP-KEY(1)
+     MOVE "acceptance US12 36-7§3 saved keys: the mansion pieces are wmp with the short Template name, TPX, TPY, TPZ, Rot and Mi" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "{id:minecraft:s04,ChunkX:0,ChunkZ:0,references:0,Children:["
+         "{id:minecraft:wmp,BB:I[8,60,8,16,80,24],O:2,GD:0,Template:entrance,TPX:10,TPY:64,TPZ:12,Rot:CLOCKWISE_180,Mi:NONE},"
+         "{id:minecraft:wmp,BB:I[40,60,8,48,70,16],O:2,GD:0,Template:1x2_c1,TPX:44,TPY:65,TPZ:10,Rot:COUNTERCLOCKWISE_90,Mi:LEFT_RIGHT}]}"
+         DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK-TEXT
+*>   the end city: the short template name, Rot and OW (true when the first processor is STRUCTURE_BLOCK: the list that ignores the structure block only)
      CALL "SPB-RESET"
      MOVE 100 TO WS-BT MOVE 2 TO WS-BO MOVE 0 TO WS-BD
      MOVE 8 TO WS-X0 MOVE 60 TO WS-Y0 MOVE 8 TO WS-Z0 MOVE 16 TO WS-X1 MOVE 80 TO WS-Y1 MOVE 24 TO WS-Z1
      PERFORM BUILDER-PIECE
      MOVE 16 TO SP-T-KIND(WS-BR)
-     MOVE 1 TO SP-T-ROW(WS-BR)
+     MOVE 6 TO SP-T-ROW(WS-BR)
+     MOVE 10 TO SP-T-X(WS-BR) MOVE 70 TO SP-T-Y(WS-BR) MOVE 12 TO SP-T-Z(WS-BR)
+     MOVE 1 TO SP-T-ROT(WS-BR)
+     MOVE 3 TO SP-T-PROC(WS-BR)
+     MOVE 40 TO WS-X0 MOVE 60 TO WS-Y0 MOVE 8 TO WS-Z0 MOVE 48 TO WS-X1 MOVE 70 TO WS-Y1 MOVE 16 TO WS-Z1
+     PERFORM BUILDER-PIECE
+     MOVE 16 TO SP-T-KIND(WS-BR)
+     MOVE 7 TO SP-T-ROW(WS-BR)
+     MOVE 44 TO SP-T-X(WS-BR) MOVE 75 TO SP-T-Y(WS-BR) MOVE 10 TO SP-T-Z(WS-BR)
+     MOVE 0 TO SP-T-ROT(WS-BR)
+     MOVE 4 TO SP-T-PROC(WS-BR)
      MOVE 5 TO WS-S
      PERFORM CAPTURE
      MOVE "structures.starts.minecraft:s05" TO WS-PATH
      PERFORM WRITE-AND-GET
-     MOVE "acceptance US12 36-8§9 saved keys: a start with an end city template piece is not INVALID (the piece id is ecp)" TO TL-CASE
-     PERFORM CHECK-ID-START
+     MOVE "acceptance US12 36-8§9 saved keys: the end city pieces are ecp with the short Template name, TPX, TPY, TPZ, Rot and OW (1 for the structure-block list, 0 for the other)" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "{id:minecraft:s05,ChunkX:0,ChunkZ:0,references:0,Children:["
+         "{id:minecraft:ecp,BB:I[8,60,8,16,80,24],O:2,GD:0,Template:base_floor,TPX:10,TPY:70,TPZ:12,Rot:CLOCKWISE_90,OW:1},"
+         "{id:minecraft:ecp,BB:I[40,60,8,48,70,16],O:2,GD:0,Template:tower_piece,TPX:44,TPY:75,TPZ:10,Rot:NONE,OW:0}]}"
+         DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK-TEXT
+
+*>   the mineshaft (36-5 2.5, 2.6, 2.11, 2.12): the corridor keeps hr, sc, hps (F1 to F3), Num (F4) and MST; the crossing tf (F1), D (the direction F2, the legacy 2D data value) and MST; a room its Entrances
+*>   (the builder's SP-ENTRANCE boxes of the piece's run, a list of int arrays) and MST; the stairs MST only. The two rooms have runs of 2 and 1 boxes of the builder's table
+     MOVE 1 TO WS-MST
+     CALL "SPB-RESET"
+     MOVE 0 TO WS-BT MOVE 2 TO WS-BO MOVE 3 TO WS-BD
+     MOVE 0 TO WS-X0 MOVE 50 TO WS-Y0 MOVE 0 TO WS-Z0 MOVE 2 TO WS-X1 MOVE 52 TO WS-Y1 MOVE 14 TO WS-Z1
+     PERFORM BUILDER-PIECE
+     MOVE 1 TO SP-F1(WS-BR) MOVE 0 TO SP-F2(WS-BR) MOVE 1 TO SP-F3(WS-BR) MOVE 3 TO SP-F4(WS-BR)
+     MOVE 1 TO WS-BT MOVE -1 TO WS-BO MOVE 4 TO WS-BD
+     MOVE 0 TO WS-X0 MOVE 50 TO WS-Y0 MOVE 15 TO WS-Z0 MOVE 4 TO WS-X1 MOVE 56 TO WS-Y1 MOVE 19 TO WS-Z1
+     PERFORM BUILDER-PIECE
+     MOVE 1 TO SP-F1(WS-BR) MOVE 2 TO SP-F2(WS-BR)
+     MOVE 2 TO WS-BT MOVE -1 TO WS-BO MOVE 2 TO WS-BD
+     MOVE 10 TO WS-X0 MOVE 50 TO WS-Y0 MOVE 20 TO WS-Z0 MOVE 22 TO WS-X1 MOVE 55 TO WS-Y1 MOVE 32 TO WS-Z1
+     PERFORM BUILDER-PIECE
+     MOVE 1 TO SP-ENT-FIRST(WS-BR) MOVE 2 TO SP-ENT-N(WS-BR)
+     MOVE 10 TO SE-X0(1) MOVE 51 TO SE-Y0(1) MOVE 20 TO SE-Z0(1) MOVE 12 TO SE-X1(1) MOVE 53 TO SE-Y1(1) MOVE 21 TO SE-Z1(1)
+     MOVE 30 TO SE-X0(2) MOVE 52 TO SE-Y0(2) MOVE 20 TO SE-Z0(2) MOVE 32 TO SE-X1(2) MOVE 54 TO SE-Y1(2) MOVE 21 TO SE-Z1(2)
+     MOVE 2 TO WS-BT MOVE -1 TO WS-BO MOVE 5 TO WS-BD
+     MOVE 40 TO WS-X0 MOVE 50 TO WS-Y0 MOVE 20 TO WS-Z0 MOVE 50 TO WS-X1 MOVE 54 TO WS-Y1 MOVE 30 TO WS-Z1
+     PERFORM BUILDER-PIECE
+     MOVE 3 TO SP-ENT-FIRST(WS-BR) MOVE 1 TO SP-ENT-N(WS-BR)
+     MOVE 45 TO SE-X0(3) MOVE 51 TO SE-Y0(3) MOVE 19 TO SE-Z0(3) MOVE 47 TO SE-X1(3) MOVE 53 TO SE-Y1(3) MOVE 21 TO SE-Z1(3)
+     MOVE 3 TO SP-ENT-COUNT
+     MOVE 3 TO WS-BT MOVE 3 TO WS-BO MOVE 6 TO WS-BD
+     MOVE 60 TO WS-X0 MOVE 50 TO WS-Y0 MOVE 20 TO WS-Z0 MOVE 62 TO WS-X1 MOVE 54 TO WS-Y1 MOVE 24 TO WS-Z1
+     PERFORM BUILDER-PIECE
+     MOVE 6 TO WS-S
+     PERFORM CAPTURE
+     MOVE "structures.starts.minecraft:s06" TO WS-PATH
+     PERFORM WRITE-AND-GET
+     MOVE "acceptance US12 36-5§2.5 saved keys: the mineshaft corridor, crossing, two rooms (Entrances of 2 and 1 boxes) and stairs are written with their keys" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "{id:minecraft:s06,ChunkX:0,ChunkZ:0,references:0,Children:["
+         "{id:minecraft:mscorridor,BB:I[0,50,0,2,52,14],O:2,GD:3,hr:1,sc:0,hps:1,Num:3,MST:1},"
+         "{id:minecraft:mscrossing,BB:I[0,50,15,4,56,19],O:-1,GD:4,tf:1,D:2,MST:1},"
+         "{id:minecraft:msroom,BB:I[10,50,20,22,55,32],O:-1,GD:2,Entrances:[I[10,51,20,12,53,21],I[30,52,20,32,54,21]],MST:1},"
+         "{id:minecraft:msroom,BB:I[40,50,20,50,54,30],O:-1,GD:5,Entrances:[I[45,51,19,47,53,21]],MST:1},"
+         "{id:minecraft:msstairs,BB:I[60,50,20,62,54,24],O:3,GD:6,MST:1}]}"
+         DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK-TEXT
+     MOVE SST-ENT-COUNT TO TL-OBSERVED-N
+     MOVE "acceptance US12 36-5§2.5 saved keys: the capture copies the three entrance boxes of the builder into the store" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     PERFORM CHECK-NUM
+*>   a room without entrance box writes an empty list (element type 0) and the type 0 MST
+     MOVE 0 TO WS-MST
+     CALL "SPB-RESET"
+     MOVE 2 TO WS-BT MOVE -1 TO WS-BO MOVE 1 TO WS-BD
+     MOVE 70 TO WS-X0 MOVE 50 TO WS-Y0 MOVE 20 TO WS-Z0 MOVE 80 TO WS-X1 MOVE 54 TO WS-Y1 MOVE 30 TO WS-Z1
+     PERFORM BUILDER-PIECE
+     MOVE 1 TO SP-ENT-FIRST(WS-BR) MOVE 0 TO SP-ENT-N(WS-BR)
+     MOVE 7 TO WS-S
+     PERFORM CAPTURE
+     MOVE "structures.starts.minecraft:s07" TO WS-PATH
+     PERFORM WRITE-AND-GET
+     MOVE "acceptance US12 36-5§2.5 saved keys: a room with no entrance box has an empty Entrances list and MST 0" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     STRING "{id:minecraft:s07,ChunkX:0,ChunkZ:0,references:0,Children:["
+         "{id:minecraft:msroom,BB:I[70,50,20,80,54,30],O:-1,GD:1,Entrances:[],MST:0}]}"
+         DELIMITED BY SIZE INTO TL-EXPECTED
+     PERFORM CHECK-TEXT
+
+*>   the starts written so far load into an empty store and write the same text again
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 7
+         PERFORM SET-START-PATH
+         PERFORM WRITE-AND-GET
+         MOVE TL-OBSERVED TO WS-BEFORE(WS-S)
+     END-PERFORM
+     CALL "STRUCT-STORE-RESET"
+     PERFORM READ-STRUCTURES
+     MOVE 0 TO WS-SAME
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 7
+         PERFORM SET-START-PATH
+         PERFORM WRITE-AND-GET
+         IF TL-OBSERVED = WS-BEFORE(WS-S)
+             ADD 1 TO WS-SAME
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US12 36-5§2.5 saved keys: the seven starts load into an empty store and write the same keys again (the mineshaft room's Entrances too)" TO TL-CASE
+     MOVE 7 TO TL-EXPECTED-N
+     MOVE WS-SAME TO TL-OBSERVED-N
+     PERFORM CHECK-NUM
+     MOVE 6 TO WS-S
+     CALL "STRUCT-START-FIND" USING WS-S WS-CX WS-CZ WS-ROW
+     MOVE SST-FIRST(WS-ROW) TO WS-P
+     COMPUTE WS-I = WS-P + 3
+     MOVE SPC-ENT-FIRST(WS-I) TO WS-Q
+     MOVE "acceptance US12 36-5§2.5 saved keys: the second loaded room has a run of 1 entrance box at the store's third place, x0 45" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = SPC-ENT-N(WS-I) * 1000 + WS-Q * 100 + SSE-X0(WS-Q)
+     MOVE 1345 TO TL-EXPECTED-N
+     PERFORM CHECK-NUM
+
+*>   reading: D is the 2D data value read as abs(v mod 4) (5 is west, -3 is east), MST outside 0 and 1 reads as 0, an Entrances entry of three ints is skipped, a list of strings gives no box,
+*>   Entrances of a piece that is not a room is ignored, and the boxes of a piece that does not load (no BB) are not kept
+     CALL "STRUCT-STORE-RESET"
+     MOVE 7 TO WS-N
+     PERFORM BEGIN-START
+     MOVE "minecraft:mscrossing" TO WS-PID MOVE 20 TO WS-PIDLEN
+     PERFORM PIECE-BEGIN
+     MOVE "D" TO WN MOVE 1 TO WL MOVE 5 TO WS-VALUE
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-VALUE
+     MOVE "MST" TO WN MOVE 3 TO WL MOVE 7 TO WS-VALUE
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-VALUE
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     PERFORM PIECE-BEGIN
+     MOVE "D" TO WN MOVE 1 TO WL MOVE -3 TO WS-VALUE
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-VALUE
+     MOVE "MST" TO WN MOVE 3 TO WL MOVE 1 TO WS-VALUE
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-VALUE
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE "minecraft:msroom" TO WS-PID MOVE 16 TO WS-PIDLEN
+     PERFORM PIECE-BEGIN
+     MOVE "Entrances" TO WN MOVE 9 TO WL MOVE 11 TO WS-VALUE MOVE 3 TO WS-N
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-VALUE WS-N
+     MOVE 1 TO WS-BB-N(1) MOVE 2 TO WS-BB-N(2) MOVE 3 TO WS-BB-N(3) MOVE 4 TO WS-BB-N(4) MOVE 5 TO WS-BB-N(5) MOVE 6 TO WS-BB-N(6)
+     MOVE -1 TO WL
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-SIX WS-BB
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-THREE WS-BB
+     MOVE 11 TO WS-BB-N(1) MOVE 12 TO WS-BB-N(2) MOVE 13 TO WS-BB-N(3) MOVE 14 TO WS-BB-N(4) MOVE 15 TO WS-BB-N(5) MOVE 16 TO WS-BB-N(6)
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-SIX WS-BB
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     PERFORM PIECE-BEGIN
+     MOVE "Entrances" TO WN MOVE 9 TO WL MOVE 8 TO WS-VALUE MOVE 2 TO WS-N
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-VALUE WS-N
+     MOVE "ab" TO WS-STR MOVE 2 TO WS-STRLEN MOVE -1 TO WL
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-STR WS-STRLEN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-STR WS-STRLEN
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE "minecraft:mscorridor" TO WS-PID MOVE 20 TO WS-PIDLEN
+     PERFORM PIECE-BEGIN
+     MOVE "Entrances" TO WN MOVE 9 TO WL MOVE 11 TO WS-VALUE MOVE 1 TO WS-N
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-VALUE WS-N
+     MOVE -1 TO WL
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-SIX WS-BB
+     MOVE "hr" TO WN MOVE 2 TO WL MOVE 1 TO WS-VALUE
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-VALUE
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE "minecraft:msroom" TO WS-PID MOVE 16 TO WS-PIDLEN
+     MOVE -1 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "id" TO WN MOVE 2 TO WL
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-PID WS-PIDLEN
+     MOVE "Entrances" TO WN MOVE 9 TO WL MOVE 11 TO WS-VALUE MOVE 1 TO WS-N
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-VALUE WS-N
+     MOVE 21 TO WS-BB-N(1) MOVE 22 TO WS-BB-N(2) MOVE 23 TO WS-BB-N(3) MOVE 24 TO WS-BB-N(4) MOVE 25 TO WS-BB-N(5) MOVE 26 TO WS-BB-N(6)
+     MOVE -1 TO WL
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-SIX WS-BB
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     PERFORM PIECE-BEGIN
+     MOVE "Entrances" TO WN MOVE 9 TO WL MOVE 11 TO WS-VALUE MOVE 1 TO WS-N
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-VALUE WS-N
+     MOVE 31 TO WS-BB-N(1) MOVE 32 TO WS-BB-N(2) MOVE 33 TO WS-BB-N(3) MOVE 34 TO WS-BB-N(4) MOVE 35 TO WS-BB-N(5) MOVE 36 TO WS-BB-N(6)
+     MOVE -1 TO WL
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-SIX WS-BB
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     PERFORM CLOSE-START
+     PERFORM READ-STRUCTURES
+     MOVE 6 TO WS-S
+     CALL "STRUCT-START-FIND" USING WS-S WS-CX WS-CZ WS-ROW
+     MOVE SST-FIRST(WS-ROW) TO WS-P
+     MOVE "acceptance US12 36-5§2.11 saved keys: of seven mineshaft pieces the one without BB does not load (six left)" TO TL-CASE
+     MOVE 6 TO TL-EXPECTED-N
+     MOVE SST-N(WS-ROW) TO TL-OBSERVED-N
+     PERFORM CHECK-NUM
+     MOVE "acceptance US12 36-5§2.11 saved keys: a crossing with D 5 and MST 7 reads D 1 (abs(5 mod 4)) and MST 0 (out of range)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = SPC-K(WS-P, 2) * 10 + SPC-K(WS-P, 3)
+     MOVE 10 TO TL-EXPECTED-N
+     PERFORM CHECK-NUM
+     COMPUTE WS-I = WS-P + 1
+     MOVE "acceptance US12 36-5§2.11 saved keys: a crossing with D -3 and a byte MST 1 reads D 3 and MST 1" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = SPC-K(WS-I, 2) * 10 + SPC-K(WS-I, 3)
+     MOVE 31 TO TL-EXPECTED-N
+     PERFORM CHECK-NUM
+     COMPUTE WS-I = WS-P + 2
+     MOVE SPC-ENT-FIRST(WS-I) TO WS-Q
+     COMPUTE WS-Q = WS-Q + 1
+     MOVE "acceptance US12 36-5§2.5 saved keys: a room whose Entrances list has an entry of three ints keeps the two boxes of six, the second at x0 11" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = SPC-ENT-N(WS-I) * 100 + SSE-X0(WS-Q)
+     MOVE 211 TO TL-EXPECTED-N
+     PERFORM CHECK-NUM
+     COMPUTE WS-I = WS-P + 3
+     MOVE "acceptance US12 36-5§2.5 saved keys: a room whose Entrances list holds strings has no box" TO TL-CASE
+     MOVE SPC-ENT-N(WS-I) TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM CHECK-NUM
+     COMPUTE WS-I = WS-P + 4
+     MOVE "acceptance US12 36-5§2.6 saved keys: a corridor ignores Entrances and reads hr 1" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = SPC-ENT-N(WS-I) * 10 + SPC-K(WS-I, 1)
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM CHECK-NUM
+     COMPUTE WS-I = WS-P + 5
+     MOVE SPC-ENT-FIRST(WS-I) TO WS-Q
+     MOVE "acceptance US12 36-5§2.5 saved keys: the boxes of the room that does not load are dropped: the last room holds the third box of the store, x0 31" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = SST-ENT-COUNT * 1000 + WS-Q * 100 + SSE-X0(WS-Q)
+     MOVE 3331 TO TL-EXPECTED-N
+     PERFORM CHECK-NUM
+
+*>   reading the template families: Rot and BiomeType are required for an ocean ruin and Rot for a shipwreck (a missing or non-constant value does not load the piece), Integrity is a float held in tenths,
+*>   the mansion's Template stays the short name; the loaded values are those of the keys
+     CALL "STRUCT-STORE-RESET"
+     MOVE 7 TO WS-N
+     PERFORM BEGIN-START
+     MOVE "minecraft:orp" TO WS-PID MOVE 13 TO WS-PIDLEN
+     PERFORM PIECE-BEGIN
+     PERFORM PUT-ROT-1
+     PERFORM PUT-BIOME-COLD
+     MOVE "Integrity" TO WN MOVE 9 TO WL
+     MOVE 0.3 TO WS-FLOAT
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WN WL WS-FLOAT
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     PERFORM PIECE-BEGIN
+     PERFORM PUT-ROT-1
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     PERFORM PIECE-BEGIN
+     PERFORM PUT-BIOME-COLD
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     PERFORM PIECE-BEGIN
+     PERFORM PUT-ROT-1
+     MOVE "BiomeType" TO WN MOVE 9 TO WL
+     MOVE "cold" TO WS-STR MOVE 4 TO WS-STRLEN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-STR WS-STRLEN
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE "minecraft:shipwreck" TO WS-PID MOVE 19 TO WS-PIDLEN
+     PERFORM PIECE-BEGIN
+     MOVE "Rot" TO WN MOVE 3 TO WL
+     MOVE "CLOCKWISE_180" TO WS-STR MOVE 13 TO WS-STRLEN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-STR WS-STRLEN
+     MOVE "isBeached" TO WN MOVE 9 TO WL MOVE 1 TO WS-VALUE
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-VALUE
+     MOVE "height_adjusted" TO WN MOVE 15 TO WL
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-VALUE
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     PERFORM PIECE-BEGIN
+     MOVE "isBeached" TO WN MOVE 9 TO WL MOVE 1 TO WS-VALUE
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL WS-VALUE
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE "minecraft:wmp" TO WS-PID MOVE 13 TO WS-PIDLEN
+     PERFORM PIECE-BEGIN
+     MOVE "Template" TO WN MOVE 8 TO WL
+     MOVE "entrance" TO WS-STR MOVE 8 TO WS-STRLEN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-STR WS-STRLEN
+     MOVE "Mi" TO WN MOVE 2 TO WL
+     MOVE "FRONT_BACK" TO WS-STR MOVE 10 TO WS-STRLEN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-STR WS-STRLEN
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     PERFORM CLOSE-START
+     PERFORM READ-STRUCTURES
+     MOVE 6 TO WS-S
+     CALL "STRUCT-START-FIND" USING WS-S WS-CX WS-CZ WS-ROW
+     MOVE SST-FIRST(WS-ROW) TO WS-P
+     MOVE "acceptance US12 36-6§2.4 saved keys: of four ocean ruins, two shipwrecks and a mansion piece, the ones without Rot or BiomeType, with a lower-case biome and without Rot load not (three left)" TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     MOVE SST-N(WS-ROW) TO TL-OBSERVED-N
+     PERFORM CHECK-NUM
+     MOVE "acceptance US12 36-6§2.4 saved keys: the loaded ruin holds Rot 1, Integrity 3 (tenths) and BiomeType 1 (COLD)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = SPC-K(WS-P, 4) * 100 + SPC-K(WS-P, 5) * 10 + SPC-K(WS-P, 6)
+     MOVE 131 TO TL-EXPECTED-N
+     PERFORM CHECK-NUM
+     COMPUTE WS-I = WS-P + 1
+     MOVE "acceptance US12 36-6§4.3 saved keys: the loaded shipwreck holds Rot 2, isBeached 1 and height_adjusted 1" TO TL-CASE
+     COMPUTE TL-OBSERVED-N = SPC-K(WS-I, 4) * 100 + SPC-K(WS-I, 5) * 10 + SPC-K(WS-I, 6)
+     MOVE 211 TO TL-EXPECTED-N
+     PERFORM CHECK-NUM
+     COMPUTE WS-I = WS-P + 2
+     MOVE "acceptance US12 36-7§3 saved keys: the loaded mansion piece holds the Template name entrance and Mi 2 (FRONT_BACK)" TO TL-CASE
+     MOVE SPC-K(WS-I, 5) TO WS-DIGIT
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(SPC-TPL(WS-I)) WS-DIGIT DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE SPACES TO TL-EXPECTED
+     MOVE "entrance02" TO TL-EXPECTED
+     PERFORM CHECK-TEXT
+
+*>   the store: a box added to a piece that is not the last one is lost, a full box table loses the next box, and a start put when the box table is within 256 of its end empties the store first
+     CALL "STRUCT-STORE-RESET"
+     MOVE 6 TO WS-S
+     CALL "STRUCT-START-PUT" USING WS-S WS-CX WS-CZ WS-REFS WS-ROW
+     MOVE 2 TO WS-BT
+     CALL "STRUCT-START-PIECE-ADD" USING WS-ROW WS-BT WS-BO WS-BD WS-JIG WS-GROUND WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 WS-PROW
+     CALL "STRUCT-START-PIECE-ADD" USING WS-ROW WS-BT WS-BO WS-BD WS-JIG WS-GROUND WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1 WS-P
+     MOVE SST-LOST TO WS-LOST0
+     CALL "STRUCT-START-ENTRANCE-ADD" USING WS-PROW WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1
+     COMPUTE TL-OBSERVED-N = (SST-LOST - WS-LOST0) * 10000 + SST-ENT-COUNT * 10 + SPC-ENT-N(WS-PROW)
+     MOVE "acceptance US12 36-5§2.5 saved keys: a box added to a piece that is not the last piece is lost and counted" TO TL-CASE
+     MOVE 10000 TO TL-EXPECTED-N
+     PERFORM CHECK-NUM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 1025
+         CALL "STRUCT-START-ENTRANCE-ADD" USING WS-P WS-X0 WS-Y0 WS-Z0 WS-X1 WS-Y1 WS-Z1
+     END-PERFORM
+     COMPUTE TL-OBSERVED-N = (SST-LOST - WS-LOST0) * 100000 + SST-ENT-COUNT
+     MOVE "acceptance US12 36-5§2.5 saved keys: 1025 boxes added to the last piece leave 1024 and one more lost" TO TL-CASE
+     MOVE 201024 TO TL-EXPECTED-N
+     PERFORM CHECK-NUM
+     MOVE 7 TO WS-S
+     PERFORM CAPTURE
+     COMPUTE TL-OBSERVED-N = SST-COUNT * 10000 + SST-ENT-COUNT
+     MOVE "acceptance US12 36-5§2.5 saved keys: a start put with 1024 boxes in the table empties the store first (one start, its box table emptied and refilled with its 0 boxes)" TO TL-CASE
+     MOVE 10000 TO TL-EXPECTED-N
+     PERFORM CHECK-NUM
      STOP RUN.
 
 *> a builder piece of type WS-BT, orientation WS-BO, depth WS-BD, mineshaft type WS-MST and the box WS-X0.. (row in WS-BR)
@@ -157,13 +543,60 @@
  CAPTURE.
      CALL "STRUCT-START-CAPTURE" USING WS-S WS-CX WS-CZ WS-ROW.
 
- CHECK-ID-START.
-     MOVE 0 TO TL-EXPECTED-N
-     MOVE 0 TO TL-OBSERVED-N
-     IF WS-TEXT = "{id:INVALID}"
-         MOVE 1 TO TL-OBSERVED-N
-     END-IF
-     PERFORM CHECK-NUM.
+*> the root compound, `structures`, `starts` and the start minecraft:s06 with a Children list of WS-N compounds (STRUCT-STARTS-READ reads from here)
+ BEGIN-START.
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 0 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "structures" TO WN MOVE 10 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "starts" TO WN MOVE 6 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "minecraft:s06" TO WN MOVE 13 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "Children" TO WN MOVE 8 TO WL
+     MOVE 10 TO WS-VALUE
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-VALUE WS-N.
+
+ CLOSE-START.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER.
+
+*> a piece compound of id WS-PID (length WS-PIDLEN) with the box (0, 0, 0, 1, 1, 1): the keys follow
+ PIECE-BEGIN.
+     MOVE -1 TO WL
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WN WL
+     MOVE "id" TO WN MOVE 2 TO WL
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-PID WS-PIDLEN
+     MOVE "BB" TO WN MOVE 2 TO WL
+     MOVE 0 TO WS-BB-N(1) MOVE 0 TO WS-BB-N(2) MOVE 0 TO WS-BB-N(3)
+     MOVE 1 TO WS-BB-N(4) MOVE 1 TO WS-BB-N(5) MOVE 1 TO WS-BB-N(6)
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-SIX WS-BB.
+
+ PUT-ROT-1.
+     MOVE "Rot" TO WN MOVE 3 TO WL
+     MOVE "CLOCKWISE_90" TO WS-STR MOVE 12 TO WS-STRLEN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-STR WS-STRLEN.
+
+ PUT-BIOME-COLD.
+     MOVE "BiomeType" TO WN MOVE 9 TO WL
+     MOVE "COLD" TO WS-STR MOVE 4 TO WS-STRLEN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-STR WS-STRLEN.
+
+ READ-STRUCTURES.
+     MOVE 0 TO PB-POS
+     CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
+     MOVE SPACES TO WN
+     MOVE 32 TO WS-STRLEN
+     CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-STRLEN WL
+     CALL "STRUCT-STARTS-READ" USING PB-BUFFER WS-CX WS-CZ WS-OUTCOME.
+
+ SET-START-PATH.
+     MOVE WS-S TO WS-DIGIT
+     MOVE SPACES TO WS-PATH
+     STRING "structures.starts.minecraft:s" WS-DIGIT DELIMITED BY SIZE INTO WS-PATH.
 
 *> write the chunk's structures compound and read the tag at WS-PATH into TL-OBSERVED (and WS-TEXT)
  WRITE-AND-GET.
