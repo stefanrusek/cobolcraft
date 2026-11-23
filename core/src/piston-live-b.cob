@@ -1,6 +1,6 @@
 *> Live pistons, part 2: the trigger, the block event, moveBlocks, the moving block and its block entity, the head (docs/protocol/30-redstone-3-pistons.md sections 2, 3, 6, 7 and 9.3).
 *> The moving_piston block entity (type 11) lives in the cells of CORE-BE: BE-XI 1 the moved state id, 2 the direction (the piston's facing), 3 extending, 4 source; BE-PROGRESS and BE-PROGRESS-OLD are
-*> progress and progressO; BE-TIME2 is lastTicked. Not here: the pushing of entities (section 8: moveCollidedEntities, honey sticking), the shape updates of the vacated cells' indirect neighbours
+*> progress and progressO; BE-TIME2 is lastTicked. Not here: the sticking of entities to honey (8.2; the pushing of entities is piston-push.cob), the shape updates of the vacated cells' indirect neighbours
 *> (6 steps 9 and 11, so wire next to a vacated cell is not told through them), the order of the vacated cells (the JDK map order of 6.1: they are done in list order), flag 256 of 7.4 (a moving cell that
 *> is overwritten does not finish at once), saving and loading a moving block entity, and the placed facing of 1 (the player's looking direction).
 *>   RL-SOUND-AT USING dim, x, y, z, sound key (PIC X(48), without minecraft:), source, volume x 1e6, pitch x 1e6      a Sound Effect (05b 0x77) to the viewers of the chunk

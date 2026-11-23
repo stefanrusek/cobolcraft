@@ -234,6 +234,10 @@
                  IF LS-OK = 0
                      MOVE 1001 TO LS-EVENT
                  END-IF
+*>               a projectile (4.1) launches with the launch sound
+                 IF LS-HANDLED = 1 AND LS-CONSUMED = 3
+                     MOVE 1002 TO LS-EVENT
+                 END-IF
                  CALL "LEVEL-EVENT" USING L-DIM LS-EVENT L-X L-Y L-Z LS-DATA LS-EXCLUDED
                  MOVE 2000 TO LS-EVENT
                  MOVE LS-F TO LS-DATA
