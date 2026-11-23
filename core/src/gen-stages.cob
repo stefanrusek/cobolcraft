@@ -103,12 +103,14 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GEN-STAGE-FILL.
-*> Slab GJ-SUB (0 to 95) of the terrain fill: TERRAIN-FILL-SLAB (terrain.cob).
+*> Slab GJ-SUB (0 to 95) of the terrain fill: TERRAIN-FILL-SLAB (terrain.cob), after the beardifier of the chunk is prepared (36-1 section 9: STRUCT-BEARD-PREPARE, once per chunk, seed and
+*> structure data; the density node `beardifier` is evaluated block by block here, outside the interpolated node).
  DATA DIVISION.
  LINKAGE SECTION.
  01 L-JOB.
     COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
  PROCEDURE DIVISION USING L-JOB.
+     CALL "STRUCT-BEARD-PREPARE" USING J-CX J-CZ
      CALL "TERRAIN-FILL-SLAB" USING L-JOB
      GOBACK.
  END PROGRAM GEN-STAGE-FILL.

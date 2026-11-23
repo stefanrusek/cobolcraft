@@ -11,6 +11,7 @@
  WORKING-STORAGE SECTION.
  COPY TESTLIB.
  COPY DENSITY.
+ COPY STRUCTBEARD.
  01 WS-DIR                 PIC X(1100) VALUE "core/tests/fixtures/hull".
  01 WS-STATUS              BINARY-LONG.
  01 WS-SEED                BINARY-DOUBLE UNSIGNED VALUE 0.
@@ -52,6 +53,8 @@
  01 WS-ZERO-K              BINARY-LONG VALUE 0.
  01 WS-ZERO-J              BINARY-LONG VALUE 0.
  01 WS-ZERO-N              BINARY-LONG VALUE 0.
+ 01 WS-CELL-I              BINARY-LONG VALUE 0.
+ 01 WS-CELL-J              BINARY-LONG VALUE 0.
  01 WS-LO                  FLOAT-LONG.
  01 WS-HI                  FLOAT-LONG.
  01 WS-V                   FLOAT-LONG.
@@ -279,6 +282,80 @@
      MOVE "test density hull the node 0 has the bounds 0 and 0" TO TL-CASE
      COMPUTE TL-OBSERVED-N = WS-LO + WS-HI
      MOVE 0 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   with a prepared beardifier (36-1 section 9) the beardifier node is bounded by the records and junctions that can reach the cell: each rigid record adds at most 0.8, each junction at
+*>   most 0.4, plus 1 when any does (a record or junction that the sampler's range test (12 blocks in x, z, and in y around the layers or the junction) leaves out adds exactly 0).
+*>   t/consts is 1 + 0 + (beardifier + 2.5), so the bounds are 3.5 - h and 3.5 + h for h the bound of the beardifier
+     MOVE 1 TO DNG-ACTIVE
+     MOVE 0 TO DNG-X0 DNG-Z0
+     MOVE 1 TO SBD-ACTIVE
+     MOVE 2 TO SBD-RIGID-COUNT
+     MOVE 1 TO SBD-JUNC-COUNT
+     MOVE 0 TO SBR-MODE(1) SBR-MODE(2) SBR-GROUND(1) SBR-GROUND(2)
+     MOVE 0 TO SBR-X0(1) SBR-Z0(1) SBR-X0(2) SBR-Z0(2)
+     MOVE 3 TO SBR-X1(1) SBR-Z1(1) SBR-X1(2) SBR-Z1(2)
+     MOVE -64 TO SBR-Y0(1) SBR-Y0(2)
+     MOVE -57 TO SBR-Y1(1) SBR-Y1(2)
+     MOVE 0 TO SBJ-X(1) SBJ-Z(1)
+     MOVE -60 TO SBJ-Y(1)
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:t/consts" TO WS-KEY
+     CALL "WG-FIND" USING WS-KIND WS-KEY WS-ROOT
+     CALL "DENSITY-HULL" USING WS-ROOT WS-ZERO WS-ZERO-K WS-ZERO-J WS-LO WS-HI
+     MOVE "test density hull a prepared beardifier with two records and a junction at the cell widens the bounds of t/consts to 0.5 .. 6.5 (thousandths)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-LO * 1000 * 100000 + WS-HI * 1000
+     COMPUTE TL-EXPECTED-N = 500 * 100000 + 6500
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   the second record 500 blocks away cannot reach the cell: 0.8 + 0.4 + 1 = 2.2
+     MOVE 500 TO SBR-X0(2)
+     MOVE 503 TO SBR-X1(2)
+     CALL "DENSITY-HULL" USING WS-ROOT WS-ZERO WS-ZERO-K WS-ZERO-J WS-LO WS-HI
+     MOVE "test density hull a record out of range of the cell adds nothing to the bounds (1.3 .. 5.7)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-LO * 1000 * 100000 + WS-HI * 1000
+     COMPUTE TL-EXPECTED-N = 1300 * 100000 + 5700
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   the neighbouring cell in x (blocks 4 to 7) is within 12 blocks of the record at x 0 to 3
+     MOVE 1 TO WS-CELL-I
+     CALL "DENSITY-HULL" USING WS-ROOT WS-CELL-I WS-ZERO-K WS-ZERO-J WS-LO WS-HI
+     MOVE "test density hull the cell next to a record is within its range (1.3 .. 5.7)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-LO * 1000 * 100000 + WS-HI * 1000
+     COMPUTE TL-EXPECTED-N = 1300 * 100000 + 5700
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   a cell in y that is above the layers of every record and junction: y -40 to -33 is above the records' range (up to -57 + 13 = -44) and the junction's (-60 + 12 = -48)
+     MOVE 3 TO WS-CELL-J
+     CALL "DENSITY-HULL" USING WS-ROOT WS-ZERO WS-ZERO-K WS-CELL-J WS-LO WS-HI
+     MOVE "test density hull a cell above every record and junction has the bounds of the inactive node (3.5 .. 3.5)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-LO * 1000 * 100000 + WS-HI * 1000
+     COMPUTE TL-EXPECTED-N = 3500 * 100000 + 3500
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   a ground level delta of 30 lifts the second record's layers to y -34 (above its box: up to -34 + 13 = -21), so it reaches the cell of y -40 to -33 and the first record does not: 0.8 + 1
+     MOVE 0 TO SBR-X0(2)
+     MOVE 3 TO SBR-X1(2)
+     MOVE 30 TO SBR-GROUND(2)
+     CALL "DENSITY-HULL" USING WS-ROOT WS-ZERO WS-ZERO-K WS-CELL-J WS-LO WS-HI
+     MOVE "test density hull a record lifted by its ground level delta reaches the cell above its box (1.7 .. 5.3)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-LO * 1000 * 100000 + WS-HI * 1000
+     COMPUTE TL-EXPECTED-N = 1700 * 100000 + 5300
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 500 TO SBR-X0(2)
+     MOVE 503 TO SBR-X1(2)
+     MOVE 0 TO SBR-GROUND(2)
+*>   the first record and the junction moved away too: none of them reaches the cell
+     MOVE 500 TO SBR-X0(1)
+     MOVE 503 TO SBR-X1(1)
+     MOVE 500 TO SBJ-X(1)
+     CALL "DENSITY-HULL" USING WS-ROOT WS-ZERO WS-ZERO-K WS-ZERO-J WS-LO WS-HI
+     MOVE "test density hull with every record and junction out of range the bounds are those of the inactive node (3.5 .. 3.5)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-LO * 1000 * 100000 + WS-HI * 1000
+     COMPUTE TL-EXPECTED-N = 3500 * 100000 + 3500
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   without the grid mode (no chunk, no cell geometry) the bounds are those of every record and junction of the beardifier
+     MOVE 0 TO DNG-ACTIVE
+     CALL "DENSITY-HULL" USING WS-ROOT WS-ZERO WS-ZERO-K WS-ZERO-J WS-LO WS-HI
+     MOVE 0 TO SBD-ACTIVE SBD-RIGID-COUNT SBD-JUNC-COUNT
+     MOVE "test density hull without the grid mode the beardifier is bounded by all its records (0.5 .. 6.5)" TO TL-CASE
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-LO * 1000 * 100000 + WS-HI * 1000
+     COMPUTE TL-EXPECTED-N = 500 * 100000 + 6500
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

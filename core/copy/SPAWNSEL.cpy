@@ -5,7 +5,7 @@
 *>   SPS-STARTS starts (up to 4); per start SPS-VALID (the start has pieces), SPS-PIECES (up to 8) with SPS-PX0..SPS-PZ1 the piece boxes and SPS-BX0..SPS-BZ1 the start's bounding box.
  78 SPS-MAX-STRUCTS      VALUE 8.
  78 SPS-MAX-STARTS       VALUE 4.
- 78 SPS-MAX-PIECES       VALUE 8.
+ 78 SPS-MAX-PIECES       VALUE 512.
  01 SPAWN-SELECT.
     05 SPS-COUNT            BINARY-LONG.
     05 SPS-STRUCT OCCURS 8 TIMES.
@@ -21,7 +21,7 @@
           15 SPS-BX1        BINARY-LONG.
           15 SPS-BY1        BINARY-LONG.
           15 SPS-BZ1        BINARY-LONG.
-          15 SPS-PIECE OCCURS 8 TIMES.
+          15 SPS-PIECE OCCURS 512 TIMES.
              20 SPS-PX0     BINARY-LONG.
              20 SPS-PY0     BINARY-LONG.
              20 SPS-PZ0     BINARY-LONG.
