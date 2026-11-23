@@ -8,24 +8,29 @@
 *> Set Entity Data (05b 0x65: index 0 Byte flags, index 6 Pose, index 16 Byte skin parts).
 *>
 *> Entry points:
-*>   POSE-DATA-BUILD USING entity id, flags, pose, skin parts, PB-BUFFER
+*>   POSE-DATA-BUILD USING entity id, flags, pose, skin parts, hand, PB-BUFFER
 *>   POSE-UPDATE USING player row
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. POSE-DATA-BUILD.
-*> USING entity id, flags (the shared-flags Byte), pose (id), skin parts (the displayed skin parts byte, 47 section 5.3), PB-BUFFER: Set Entity Data 0x65 with
-*> entry 0 (BYTE flags), entry 6 (POSE), entry 16 (BYTE skin parts: DATA_PLAYER_MODE_CUSTOMISATION), 0xFF.
+*> USING entity id, flags (the shared-flags Byte), pose (id), skin parts (the displayed skin parts byte, 47 section 5.3), hand (0 no entry, 1 the left main hand, 2 the right one),
+*> PB-BUFFER: Set Entity Data 0x65 with entry 0 (BYTE flags), entry 6 (POSE), entry 15 (HUMANOID_ARM, serializer 42: 0 left, 1 right; DATA_PLAYER_MAIN_HAND, 47 section 5.3) when the
+*> hand is 1 or 2, entry 16 (BYTE skin parts: DATA_PLAYER_MODE_CUSTOMISATION), 0xFF.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
  01 WS-PACKET-ID           BINARY-LONG VALUE 101.
+ 01 WS-INDEX-HAND          BINARY-LONG VALUE 15.
+ 01 WS-HUMANOID-ARM        BINARY-LONG VALUE 42.
+ 01 WS-ARM                 BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ENTITY-ID            BINARY-LONG.
  01 L-FLAGS                BINARY-LONG.
  01 L-POSE                 BINARY-LONG.
  01 L-PARTS                BINARY-LONG.
- PROCEDURE DIVISION USING L-ENTITY-ID L-FLAGS L-POSE L-PARTS PB-BUFFER.
+ 01 L-HAND                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ENTITY-ID L-FLAGS L-POSE L-PARTS L-HAND PB-BUFFER.
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PB-PUT-VARINT" USING PB-BUFFER L-ENTITY-ID
      INITIALIZE MD-METADATA-ENTRY
@@ -38,6 +43,13 @@
      MOVE MD-MDS-POSE TO MD-MD-SERIALIZER
      MOVE L-POSE TO MD-MD-INT
      CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+*>   Entry 15 by hand (the entries go in index order; PB-PUT-ENTITY-METADATA does not know the serializer, so the entry is written here).
+     IF L-HAND > 0
+         COMPUTE WS-ARM = L-HAND - 1
+         CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-INDEX-HAND
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-HUMANOID-ARM
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ARM
+     END-IF
      INITIALIZE MD-METADATA-ENTRY
      MOVE 16 TO MD-MD-INDEX
      MOVE MD-MDS-BYTE TO MD-MD-SERIALIZER
@@ -73,6 +85,7 @@
  01 WS-TRACKER             BINARY-LONG.
  01 WS-WET                 BINARY-LONG.
  01 WS-EYE                 BINARY-LONG.
+ 01 WS-HAND                BINARY-LONG.
  01 WS-VIEWER              BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
@@ -140,17 +153,27 @@
      IF WS-OLD = 0
          MOVE 1 TO WS-OLD
      END-IF
-     IF (WS-STATE NOT = WS-OLD OR PL-MODEL-PARTS(L-ROW) NOT = PL-PARTS-SENT(L-ROW)) AND PL-ENTITY-ROW(L-ROW) > 0
+     IF (WS-STATE NOT = WS-OLD OR PL-MODEL-PARTS(L-ROW) NOT = PL-PARTS-SENT(L-ROW) OR PL-LEFT-HAND(L-ROW) NOT = PL-HAND-SENT(L-ROW))
+         AND PL-ENTITY-ROW(L-ROW) > 0
          IF WS-READY = 0
              CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
              MOVE 1 TO WS-READY
          END-IF
          MOVE WS-STATE TO PL-POSE-SENT(L-ROW)
          MOVE PL-MODEL-PARTS(L-ROW) TO PL-PARTS-SENT(L-ROW)
+*>       The main hand: entry 15 while it is the left one, and once more as the right one when it goes back (the viewers keep the last value).
+         MOVE 0 TO WS-HAND
+         IF PL-LEFT-HAND(L-ROW) = 1
+             MOVE 1 TO WS-HAND
+         END-IF
+         IF PL-LEFT-HAND(L-ROW) = 0 AND PL-HAND-SENT(L-ROW) = 1
+             MOVE 2 TO WS-HAND
+         END-IF
+         MOVE PL-LEFT-HAND(L-ROW) TO PL-HAND-SENT(L-ROW)
          MOVE PL-ENTITY-ROW(L-ROW) TO WS-TRACKER
          CALL "PB-RESET" USING PB-BUFFER
          CALL "POSE-DATA-BUILD" USING EN-ID(WS-TRACKER) PL-POSE-FLAGS(L-ROW) PL-POSE(L-ROW) PL-MODEL-PARTS(L-ROW)
-             PB-BUFFER
+             WS-HAND PB-BUFFER
          PERFORM VARYING WS-VIEWER FROM 1 BY 1 UNTIL WS-VIEWER > CORE-MAX-PLAYERS
              IF VW-SEEN(WS-VIEWER)(WS-TRACKER:1) = "1"
                  CALL "CORE-SEND" USING PL-CONN(WS-VIEWER) PB-BUFFER

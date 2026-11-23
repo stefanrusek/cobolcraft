@@ -12,6 +12,11 @@
  01 WS-ALICE-NAME          PIC X(16) VALUE "Alice".
  01 WS-BOB-NAME            PIC X(16) VALUE "Bob".
  01 WS-CHARLIE-NAME        PIC X(16) VALUE "Charlie".
+ 01 WS-DORA-NAME           PIC X(16) VALUE "Dora".
+ 01 WS-4                   BINARY-LONG VALUE 4.
+ 01 WS-LEFT                BINARY-LONG VALUE 0.
+ 01 WS-RIGHT               BINARY-LONG VALUE 1.
+ 01 WS-DORA                BINARY-LONG.
  01 WS-5                   BINARY-LONG VALUE 5.
  01 WS-3                   BINARY-LONG VALUE 3.
  01 WS-7                   BINARY-LONG VALUE 7.
@@ -28,6 +33,7 @@
  01 WS-WANT                PIC X(1024).
  01 WS-EDIT                PIC -(9)9.
  01 WS-EDIT-2              PIC -(9)9.
+ 01 WS-EDIT-3              PIC -(9)9.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE 0 TO CS-DEFAULT-MODE
@@ -123,12 +129,82 @@
      MOVE WS-WANT TO TL-EXPECTED
      MOVE WS-TEXT(1:80) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The main hand (47 section 5.3): Bob's left hand is entry 15 = 0 with the rest, going back to the right hand sends 15 = 1 once, a repeat sends nothing.
+     CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
+     CALL "TEST-CLIENT-INFO-HAND" USING WS-BOB WS-PLAY WS-PARTS WS-LEFT
+     CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
+     MOVE "test player parts a left main hand reaches a viewer as entry 15 = 0" TO TL-CASE
+     MOVE SPACES TO WS-WANT
+     STRING "e" FUNCTION TRIM(WS-EDIT) ": 0=0 6=0 15=0 16=0" DELIMITED BY SIZE INTO WS-WANT
+     MOVE WS-WANT TO TL-EXPECTED
+     MOVE WS-TEXT(1:80) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     MOVE "test player parts the left main hand is kept in PL-LEFT-HAND" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE PL-LEFT-HAND(WS-BOB-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Dora comes into view later: Bob's left hand is in his entry data.
+     CALL "TEST-JOIN-PARTS-UNDRAINED" USING WS-DORA-NAME WS-4 WS-PARTS WS-DORA
+     CALL "TEST-DRAIN-DATA" USING WS-DORA WS-TEXT
+     MOVE "T" TO TL-MODE
+     MOVE "test player parts a player coming into view later gets the left hand of Bob as entry 15" TO TL-CASE
+     MOVE EN-ID(PL-ENTITY-ROW(WS-ALICE-ROW)) TO WS-EDIT-2
+     MOVE SPACES TO WS-WANT
+     MOVE EN-ID(PL-ENTITY-ROW(WS-CHARLIE-ROW)) TO WS-EDIT-3
+     STRING "e" FUNCTION TRIM(WS-EDIT-2) ": 0=0 6=0 16=126|e" FUNCTION TRIM(WS-EDIT) ": 0=0 6=0 15=0 16=0|e" FUNCTION TRIM(WS-EDIT-3)
+         ": 0=0 6=0 16=90" DELIMITED BY SIZE INTO WS-WANT
+     MOVE WS-WANT TO TL-EXPECTED
+     MOVE WS-TEXT(1:120) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-CLIENT-INFO-HAND" USING WS-BOB WS-PLAY WS-PARTS WS-RIGHT
+     CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
+     MOVE "test player parts the right main hand again is entry 15 = 1" TO TL-CASE
+     MOVE SPACES TO WS-WANT
+     STRING "e" FUNCTION TRIM(WS-EDIT) ": 0=0 6=0 15=1 16=0" DELIMITED BY SIZE INTO WS-WANT
+     MOVE WS-WANT TO TL-EXPECTED
+     MOVE WS-TEXT(1:80) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-CLIENT-INFO-HAND" USING WS-BOB WS-PLAY WS-PARTS WS-RIGHT
+     CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
+     MOVE "test player parts an unchanged right hand sends nothing" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-TEXT(1:80) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Player Info UPDATE_HAT (47 section 5.3): the hat bit 0x40 turning on and off is sent to every player; another part changing sends none.
+     MOVE 64 TO WS-PARTS
+     CALL "TEST-CLIENT-INFO" USING WS-BOB WS-PLAY WS-PARTS
+     CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
+     MOVE "test player parts the hat turned on goes to Alice as UPDATE_HAT true" TO TL-CASE
+     MOVE "hat1|" TO TL-EXPECTED
+     MOVE WS-TEXT(513:5) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-DRAIN-DATA" USING WS-BOB WS-TEXT
+     MOVE "test player parts the hat turned on goes to Bob himself too" TO TL-CASE
+     MOVE WS-TEXT(513:5) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 65 TO WS-PARTS
+     CALL "TEST-CLIENT-INFO" USING WS-BOB WS-PLAY WS-PARTS
+     CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
+     MOVE "test player parts a change of the cape bit sends no UPDATE_HAT" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-TEXT(513:5) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-PARTS
+     CALL "TEST-CLIENT-INFO" USING WS-BOB WS-PLAY WS-PARTS
+     CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
+     MOVE "test player parts the hat turned off goes to Alice as UPDATE_HAT false" TO TL-CASE
+     MOVE "hat0|" TO TL-EXPECTED
+     MOVE WS-TEXT(513:5) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-PLAYER-PARTS.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. TEST-CLIENT-INFO.
-*> USING connection id, packet id (0 configuration, 14 play), model customisation byte: feeds a Client Information (03 layout).
+ PROGRAM-ID. TEST-CLIENT-INFO-HAND.
+*> USING connection id, packet id (0 configuration, 14 play), model customisation byte, main hand (0 left, 1 right): feeds a Client Information (03 layout).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY PROTO.
@@ -143,7 +219,8 @@
  01 L-ID                   BINARY-LONG.
  01 L-PACKET-ID            BINARY-LONG.
  01 L-PARTS                BINARY-LONG.
- PROCEDURE DIVISION USING L-ID L-PACKET-ID L-PARTS.
+ 01 L-HAND                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-PACKET-ID L-PARTS L-HAND.
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "PB-PUT-VARINT" USING PB-BUFFER L-PACKET-ID
      CALL "PB-PUT-STRING" USING PB-BUFFER WS-LANGUAGE WS-LANGUAGE-LENGTH WS-MAX16
@@ -151,12 +228,27 @@
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
      CALL "PB-PUT-UBYTE" USING PB-BUFFER L-PARTS
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-HAND
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
      CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-CLIENT-INFO-HAND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CLIENT-INFO.
+*> USING connection id, packet id (0 configuration, 14 play), model customisation byte: a Client Information with the right main hand.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-RIGHT               BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-PACKET-ID            BINARY-LONG.
+ 01 L-PARTS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-PACKET-ID L-PARTS.
+     CALL "TEST-CLIENT-INFO-HAND" USING L-ID L-PACKET-ID L-PARTS WS-RIGHT
      GOBACK.
  END PROGRAM TEST-CLIENT-INFO.
 
@@ -230,7 +322,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-DRAIN-DATA.
 *> USING connection id, text out (PIC X(1024)): every Set Entity Data (0x65) the connection has queued, as "e<entity id>: <index>=<value> ..." (BYTE and POSE entries;
-*> the pose entry's value is the pose id), the packets separated by "|".
+*> the pose entry's value is the pose id, the main hand entry's the arm), the packets separated by "|"; from position 513 the Player Info Update packets with the single action
+*> UPDATE_HAT, as "hat<0 or 1>|" each.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY PROTO.
@@ -244,12 +337,18 @@
  01 WS-PTR                 BINARY-LONG.
  01 WS-EDIT                PIC -(9)9.
  01 WS-MORE                BINARY-LONG.
+ 01 WS-HPTR                BINARY-LONG.
+ 01 WS-ACTION              BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-UUID                PIC X(16).
+ 01 WS-HAT                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-ID                   BINARY-LONG.
  01 L-TEXT                 PIC X(1024).
  PROCEDURE DIVISION USING L-ID L-TEXT.
      MOVE SPACES TO L-TEXT
      MOVE 1 TO WS-PTR
+     MOVE 513 TO WS-HPTR
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
      CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
      CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
@@ -265,16 +364,26 @@
              STRING "e" FUNCTION TRIM(WS-EDIT) ":" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
              MOVE 1 TO WS-MORE
              PERFORM UNTIL WS-MORE = 0
-                 CALL "PB-GET-ENTITY-METADATA" USING PK-BUFFER PK-METADATA-ENTRY
-                 IF PK-MD-INDEX = PK-MD-END OR PK-ERROR = 1
+                 CALL "PB-GET-METADATA-ENTRY-X" USING PK-BUFFER PK-METADATA-ENTRY-X
+                 IF PK-MX-INDEX = PK-MD-END OR PK-ERROR = 1
                      MOVE 0 TO WS-MORE
                  ELSE
-                     MOVE PK-MD-INDEX TO WS-EDIT
+                     MOVE PK-MX-INDEX TO WS-EDIT
                      STRING " " FUNCTION TRIM(WS-EDIT) "=" DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
-                     MOVE PK-MD-INT TO WS-EDIT
+                     MOVE PK-MX-INT TO WS-EDIT
                      STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO L-TEXT POINTER WS-PTR
                  END-IF
              END-PERFORM
+         END-IF
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID = 71
+             CALL "PB-GET-UBYTE" USING PK-BUFFER WS-ACTION
+             IF WS-ACTION = 128
+                 CALL "PB-GET-VARINT" USING PK-BUFFER WS-COUNT
+                 CALL "PB-GET-UUID" USING PK-BUFFER WS-UUID
+                 CALL "PB-GET-BOOL" USING PK-BUFFER WS-HAT
+                 MOVE WS-HAT TO WS-EDIT
+                 STRING "hat" FUNCTION TRIM(WS-EDIT) "|" DELIMITED BY SIZE INTO L-TEXT POINTER WS-HPTR
+             END-IF
          END-IF
      END-PERFORM
      CALL "PB-FREE" USING PB-BUFFER

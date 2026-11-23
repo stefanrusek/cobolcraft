@@ -137,6 +137,8 @@
        10 PL-POSE-SENT       BINARY-LONG.        *> 0, or 1 + pose x 256 + flags as last sent in Set Entity Data
        10 PL-MODEL-PARTS     BINARY-LONG.        *> the displayed skin parts byte of Client Information (47 section 5.3; 0 until it arrives), entry 16 of the player's entity data
        10 PL-PARTS-SENT      BINARY-LONG.        *> the skin parts byte as last sent in Set Entity Data (0 = none yet)
+       10 PL-LEFT-HAND       BINARY-LONG.        *> 1 when the main hand of Client Information is the left one (0 left on the wire; entry 15, 47 section 5.3), else 0 (the right hand, the default)
+       10 PL-HAND-SENT       BINARY-LONG.        *> PL-LEFT-HAND as last sent in Set Entity Data (0 = the default or the right hand)
        10 PL-EATING-ITEM     BINARY-LONG.        *> 0 = not eating
        10 PL-EATING-SLOT     BINARY-LONG.
        10 PL-EATING-START    BINARY-DOUBLE.
