@@ -199,6 +199,41 @@
  END PROGRAM VL-CORE-RAID.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. VL-RAID-EVENT.
+*> USING row: the server step of a villager (19 section 22.11, 44 part 3 section 3.2): on 1 tick in 100 (a draw of the villager's hash below 0.01) entity event 42 is broadcast to the viewers while a
+*> raid at its position is active and not over (RAID-AT).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-SALT                 BINARY-LONG VALUE 4242.
+ 01 WS-R                    FLOAT-LONG.
+ 01 WS-PX                   BINARY-LONG.
+ 01 WS-PY                   BINARY-LONG.
+ 01 WS-PZ                   BINARY-LONG.
+ 01 WS-RAID                 BINARY-LONG.
+ 01 WS-EVENT                BINARY-LONG VALUE 42.
+ 01 WS-CAPACITY             BINARY-LONG VALUE 64.
+ LINKAGE SECTION.
+ 01 L-ROW                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "AQUA-RAND" USING L-ROW WS-SALT WS-R
+     IF WS-R < 0.01
+         COMPUTE WS-PX = FUNCTION INTEGER(EN-X(L-ROW))
+         COMPUTE WS-PY = FUNCTION INTEGER(EN-Y(L-ROW))
+         COMPUTE WS-PZ = FUNCTION INTEGER(EN-Z(L-ROW))
+         CALL "RAID-AT" USING EN-DIM(L-ROW) WS-PX WS-PY WS-PZ WS-RAID
+         IF WS-RAID > 0
+             CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+             CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-ROW) WS-EVENT PB-BUFFER
+             CALL "HEALTH-VIEWERS-SEND" USING L-ROW PB-BUFFER
+             CALL "PB-FREE" USING PB-BUFFER
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM VL-RAID-EVENT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. VL-CORE-PANIC.
 *> USING row, slot, baby: VillagerPanicTrigger and VillagerCalmDown (44 section 2.14). The hostile of nearest_hostile is looked up by its row and entity id; it scares within 6 blocks.
  DATA DIVISION.
@@ -323,6 +358,7 @@
          END-IF
      END-IF
      CALL "VL-CORE-RAID" USING L-ROW L-SLOT L-BABY
+     CALL "VL-RAID-EVENT" USING L-ROW
      EVALUATE VM-ACT(L-SLOT)
          WHEN VA-HIDE
              CALL "VL-CORE-HIDDEN" USING L-ROW L-SLOT L-BABY

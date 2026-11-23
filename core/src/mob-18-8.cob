@@ -181,7 +181,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. M188-TICK.
 *> USING age, in love, locked, forced, grown out: one tick of AgeableMob.aiStep (a baby's age counts up and the mob grows up at 0 (grown 1); a positive age is the breeding
-*> cooldown and counts down unless the age is locked) and Animal.aiStep (a mob whose age is not 0 is not in love; love counts down), and the forced-age timer.
+*> cooldown and counts down; a locked age (the golden dandelion, 19 section 1.2) neither counts up nor down) and Animal.aiStep (a mob whose age is not 0 is not in love; love counts down), and the forced-age timer.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  LINKAGE SECTION.
@@ -193,7 +193,7 @@
  PROCEDURE DIVISION USING L-AGE L-LOVE L-LOCKED L-FORCED L-GROWN.
      MOVE 0 TO L-GROWN
      EVALUATE TRUE
-         WHEN L-AGE < 0
+         WHEN L-AGE < 0 AND L-LOCKED = 0
              ADD 1 TO L-AGE
              IF L-AGE = 0
                  MOVE 1 TO L-GROWN
@@ -835,7 +835,7 @@
      MOVE EN-Z(L-A) TO WS-Z
      MOVE EN-ID(L-A) TO WS-ID
      CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-BABY
-     MOVE -24000 TO EN-MOBAGE(WS-BABY)
+     CALL "M19-BABY-START-AGE" USING WS-KEY EN-MOBAGE(WS-BABY)
      MOVE 1 TO EN-VARIANT(WS-BABY)
      CALL "XP-RANDOM" USING WS-SALT-COIN WS-BOUND-2 WS-COIN
      CALL "XP-RANDOM" USING WS-SALT-DRAW WS-BOUND-1024 WS-DRAW
@@ -890,7 +890,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-BREED-DONE.
 *> USING row a, row b: the end of a breeding (8.1): both parents get age 6000 and lose love and partner, Entity Event 18 (hearts) goes to the viewers of the first parent and one
-*> experience orb of 1 + nextInt(7) points appears at it.
+*> experience orb of 1 + nextInt(7) points appears at it while the game rule mob_drops is on.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -900,6 +900,8 @@
  01 WS-SALT-XP             BINARY-LONG VALUE 26.
  01 WS-BOUND-7             BINARY-LONG VALUE 7.
  01 WS-POINTS              BINARY-LONG.
+ 01 WS-RULE-NAME           PIC X(40) VALUE "mob_drops".
+ 01 WS-RULE                BINARY-DOUBLE.
  01 WS-DIM                 BINARY-LONG.
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
@@ -918,9 +920,12 @@
      CALL "ENTITY-EVENT-BUILD" USING EN-ID(L-A) WS-EVENT PB-BUFFER
      CALL "HEALTH-VIEWERS-SEND" USING L-A PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
-     CALL "XP-RANDOM" USING WS-SALT-XP WS-BOUND-7 WS-POINTS
-     ADD 1 TO WS-POINTS
-     CALL "XP-AWARD" USING WS-DIM WS-X WS-Y WS-Z WS-POINTS
+     CALL "BR-RULE-GET" USING WS-RULE-NAME WS-RULE
+     IF WS-RULE = 1
+         CALL "XP-RANDOM" USING WS-SALT-XP WS-BOUND-7 WS-POINTS
+         ADD 1 TO WS-POINTS
+         CALL "XP-AWARD" USING WS-DIM WS-X WS-Y WS-Z WS-POINTS
+     END-IF
      GOBACK.
  END PROGRAM MOB-BREED-DONE.
 
@@ -1655,6 +1660,13 @@
      IF WS-USED = 1
          CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
          GOBACK
+     END-IF
+     IF WS-HELD = "golden_dandelion"
+         CALL "M19-AGE-LOCK-USE" USING WS-ROW WS-ENTITY WS-USED
+         IF WS-USED = 1
+             CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
+             GOBACK
+         END-IF
      END-IF
      CALL "NAUTILUS-USE" USING WS-ROW WS-ENTITY WS-HELD WS-USED
      IF WS-USED = 1
