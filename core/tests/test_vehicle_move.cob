@@ -212,6 +212,21 @@
      COMPUTE WS-OBSERVE = EN-X(WS-NAU) * 1000
      PERFORM CHECK
 
+*>   Step 4, the speed test: a report 20 blocks away (moved2 - v2 = 400) is not applied and gets a corrective Move Vehicle.
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     COMPUTE WS-MV-X = EN-X(WS-NAU) + 20
+     COMPUTE WS-EXPECT = EN-X(WS-NAU) * 1000
+     PERFORM FEED-VEHICLE
+     MOVE "implementation 44-7 10.4.1 step 4: a report 20 blocks away is not applied" TO WS-CASE
+     COMPUTE WS-OBSERVE = EN-X(WS-NAU) * 1000
+     PERFORM CHECK
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     PERFORM COUNT-CORRECTIONS
+     MOVE "implementation 44-7 10.4.1 step 4: and the player gets a corrective Move Vehicle" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-HITS TO WS-OBSERVE
+     PERFORM CHECK
+
 *>   Step 1 (units): NaN and infinite values of each field disconnect the player; the vehicle does not move and the disconnect is the one translation key.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
          MOVE EN-X(WS-NAU) TO PSB-X
