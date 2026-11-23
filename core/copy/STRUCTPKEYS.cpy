@@ -4,7 +4,7 @@
 *> V VerticalPlacement (the serialized name: on_land_surface, partly_buried, on_ocean_floor, in_mountain, underground, in_nether), D EntryDoor (OPENING, WOOD_DOOR, GRATES, IRON_DOOR), and the members of
 *> the ruined portal's `Properties` compound: p a boolean that is the bit of the mask in the slot (air_pocket 1, overgrown 2, vines 4, cold 8, replace_with_blackstone 16), f the mossiness, a float held in tenths.
 *> The rows of one type are written in this order, the Properties compound after the plain keys.
- 78 PKT-COUNT            VALUE 71.
+ 78 PKT-COUNT            VALUE 75.
  01 PKT-ROWS.
     05 FILLER PIC X(30) VALUE "371I00Width                   ".
     05 FILLER PIC X(30) VALUE "372I00Height                  ".
@@ -77,8 +77,12 @@
     05 FILLER PIC X(30) VALUE "302B00Left                    ".
     05 FILLER PIC X(30) VALUE "303B00Right                   ".
     05 FILLER PIC X(30) VALUE "311D00EntryDoor               ".
+    05 FILLER PIC X(30) VALUE "051I00Seed                    ".
+    05 FILLER PIC X(30) VALUE "111B00Chest                   ".
+    05 FILLER PIC X(30) VALUE "131B00Chest                   ".
+    05 FILLER PIC X(30) VALUE "151B00Mob                     ".
  01 PKT-TABLE REDEFINES PKT-ROWS.
-    05 PKT-ROW OCCURS 71 TIMES.
+    05 PKT-ROW OCCURS 75 TIMES.
        10 PKT-TYPE         PIC 99.
        10 PKT-SLOT         PIC 9.
        10 PKT-KIND         PIC X.

@@ -377,6 +377,9 @@
  01 WS-ZD2                 FLOAT-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
+ 01 WS-PAS-REG             BINARY-LONG VALUE 1.
+ 01 WS-PAS-NOW             BINARY-LONG.
+ 01 WS-PASSIVE             BINARY-LONG.
  01 WS-RX                  BINARY-LONG.
  01 WS-RY                  BINARY-LONG.
  01 WS-RZ                  BINARY-LONG.
@@ -444,7 +447,16 @@
              MOVE 2 TO WS-KIND
          END-IF
          CALL "PGB-REPEL" USING L-ROW WS-KIND WS-FOUND WS-RX WS-RY WS-RZ
-         IF WS-KIND = 2 AND WS-FOUND = 1
+         MOVE 0 TO WS-PASSIVE
+         IF WS-KIND = 2
+*>           The behaviour needs ATTACK_TARGET registered (a hoglin always has it), PACIFIED absent and the repellent present (X1-PASSIVE-TEST, 44-x1 section 8.4).
+             MOVE 0 TO WS-PAS-NOW
+             IF PG-PACIFIED(WS-SLOT) > 0
+                 MOVE 1 TO WS-PAS-NOW
+             END-IF
+             CALL "X1-PASSIVE-TEST" USING WS-PAS-REG WS-PAS-NOW WS-FOUND WS-PASSIVE
+         END-IF
+         IF WS-PASSIVE = 1
 *>           BecomePassiveIfMemoryPresent(NEAREST_REPELLENT, 200): PACIFIED for 200 ticks and no attack target (44-6 section 6.2).
              MOVE 200 TO PG-PACIFIED(WS-SLOT)
              MOVE 0 TO EN-TARGET(L-ROW) EN-TARGET-ID(L-ROW) EN-FOE(L-ROW) EN-FOE-ID(L-ROW)

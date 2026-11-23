@@ -574,6 +574,7 @@
  01 WS-ANCIENT-CITY        PIC X(80) VALUE "minecraft:ancient_city".
  01 WS-TRIAL-CHAMBERS      PIC X(80) VALUE "minecraft:trial_chambers".
  01 WS-TRAIL-RUINS         PIC X(80) VALUE "minecraft:trail_ruins".
+ 01 WS-NETHER-FOSSIL       PIC X(80) VALUE "minecraft:nether_fossil".
  LINKAGE SECTION.
  01 L-TYPE                 PIC X(10).
  01 L-DIR                  PIC X(1024).
@@ -631,6 +632,8 @@
 *>       the end city (36-8 section 8), placed by the End's own chunk generator (struct-endcity-place.cob)
          CALL "STRUCT-GATE-ON" USING WS-END-CITY
          CALL "STRUCT-GATE-ON" USING WS-BASTION
+*>       the nether fossil (struct-fossil.cob, NETHER-GEN-FOSSIL of nether-struct.cob), placed by the Nether's own chunk generator after the fortress and the bastion
+         CALL "STRUCT-GATE-ON" USING WS-NETHER-FOSSIL
 *>       the ocean monument (36-6, struct-monument.cob, struct-mon-build.cob) and the three jigsaw structures of 36-10: the ancient city, the trial chambers and the trail ruins (struct-jig.cob engine)
          CALL "STRUCT-GATE-ON" USING WS-MONUMENT
          CALL "STRUCT-GATE-ON" USING WS-ANCIENT-CITY

@@ -827,6 +827,9 @@
  01 WS-SALT-GK             BINARY-LONG VALUE 57.
  01 WS-BOUND-GK            BINARY-LONG VALUE 50.
  01 WS-DRAW-K              BINARY-LONG.
+ 01 WS-GOAT-DRAW           FLOAT-LONG.
+ 01 WS-PARENT-SCREAMS      BINARY-LONG.
+ 01 WS-KID-SCREAMS         BINARY-LONG.
  01 WS-POINTS              BINARY-LONG.
  01 WS-COLOR-A             BINARY-LONG.
  01 WS-COLOR-B             BINARY-LONG.
@@ -881,16 +884,17 @@
          WHEN "goat"
 *>           The kid has both horns; it screams when the parent chosen by the coin screams or by the 2 percent roll (19 section 10).
              CALL "XP-RANDOM" USING WS-SALT-GK WS-BOUND-GK WS-DRAW-K
-             MOVE 0 TO EN-WOOL(WS-BABY)
+             COMPUTE WS-GOAT-DRAW = WS-DRAW-K / 50
+             MOVE 0 TO WS-PARENT-SCREAMS
              IF FUNCTION MOD(WS-COLOR-A, 2) = 1 AND WS-COIN = 0
-                 MOVE 1 TO EN-WOOL(WS-BABY)
+                 MOVE 1 TO WS-PARENT-SCREAMS
              END-IF
              IF FUNCTION MOD(WS-COLOR-B, 2) = 1 AND WS-COIN = 1
-                 MOVE 1 TO EN-WOOL(WS-BABY)
+                 MOVE 1 TO WS-PARENT-SCREAMS
              END-IF
-             IF WS-DRAW-K = 0
-                 MOVE 1 TO EN-WOOL(WS-BABY)
-             END-IF
+*>           X1-GOAT-BREED (44-x1 section 8.10): screaming when the chosen parent is, else when the draw (nextDouble) is below 0.02; no horn is inherited.
+             CALL "X1-GOAT-BREED" USING WS-PARENT-SCREAMS WS-GOAT-DRAW WS-KID-SCREAMS
+             MOVE WS-KID-SCREAMS TO EN-WOOL(WS-BABY)
          WHEN "mooshroom"
              CALL "M19-MOOSHROOM-BREED" USING WS-COLOR-A WS-COLOR-B WS-DRAW WS-COIN WS-CHILD-COLOR
              MOVE WS-CHILD-COLOR TO EN-WOOL(WS-BABY)

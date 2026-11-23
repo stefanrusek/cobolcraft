@@ -1547,6 +1547,7 @@
      END-IF
 *>   The drowned's trident throw (20 section 4.5, mob-20-4-5.cob).
      IF SM-KEY(WS-M) = "drowned"
+         CALL "DROWNED-TRIDENT-STAND" USING WS-ROW WS-STOP
          CALL "DROWNED-TRIDENT-TICK" USING WS-ROW
      END-IF
      IF SM-RANGED(WS-M) = 3

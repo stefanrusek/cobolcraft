@@ -303,6 +303,12 @@
              MOVE SP-F3(L-B) TO SPC-K(L-P, 3)
              MOVE SP-F4(L-B) TO SPC-K(L-P, 4)
              MOVE SP-MST(L-B) TO SPC-K(L-P, 5)
+         WHEN SPC-TYPE(L-P) = 5 OR SPC-TYPE(L-P) = 15
+*>           the fortress's bridge end filler keeps its Seed and the monster throne its spawner flag in the builder's F1
+             MOVE SP-F1(L-B) TO SPC-K(L-P, 1)
+         WHEN SPC-TYPE(L-P) = 11 OR SPC-TYPE(L-P) = 13
+*>           a turn piece's F1 is its roll, F2 the pending chest flag that is the saved Chest
+             MOVE SP-F2(L-B) TO SPC-K(L-P, 1)
          WHEN OTHER
              CONTINUE
      END-EVALUATE
