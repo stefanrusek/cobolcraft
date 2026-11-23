@@ -188,8 +188,8 @@
  PROGRAM-ID. PROJ-HIT.
 *> USING projectile row, entity row, player row (one of them 0), x, y, z (FLOAT-LONG, the last free point): the hit of a player or a standard mob, by kind. The damage is
 *> 6 (large fireball), 5 (small fireball), 4 (shulker bullet, which also gives a player Levitation for 200 ticks), 0 (snowball, 3 on a blaze); a player is hurt through HEALTH-HURT with CAUSE-MOB (the owner's name for the death message), a mob
-*> in whole points through HEALTH-MOB-DAMAGE; a small fireball sets a mob burning for 100 ticks; a large fireball explodes at the point (EXPLODE-RUN, blocks only with
-*> mob_griefing). The projectile is removed.
+*> in whole points through HEALTH-MOB-DAMAGE; a small fireball sets a mob burning for 100 ticks; a large fireball explodes at the point (EXPLODE-RUN, blocks and the fire flag only with
+*> mob_griefing, 33 section 8.4). The projectile is removed.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -213,6 +213,7 @@
  01 WS-RESULT              BINARY-LONG.
  01 WS-POWER               FLOAT-LONG.
  01 WS-DESTROY             BINARY-LONG.
+ 01 WS-BLAST-FIRE          BINARY-LONG.
  01 WS-GRIEF-RULE          PIC X(40) VALUE "mob_griefing".
  01 WS-GRIEF               BINARY-DOUBLE.
  01 WS-SOURCE              BINARY-LONG VALUE 0.
@@ -329,8 +330,8 @@
      CALL "ENTITY-REMOVE" USING L-ROW
      IF WS-KIND = 1
          CALL "BR-RULE-GET" USING WS-GRIEF-RULE WS-GRIEF
-         MOVE WS-GRIEF TO WS-DESTROY
-         CALL "EXPLODE-RUN" USING WS-DIM L-X L-Y L-Z WS-POWER WS-DESTROY WS-SOURCE
+         MOVE WS-GRIEF TO WS-DESTROY WS-BLAST-FIRE
+         CALL "EXPLODE-RUN" USING WS-DIM L-X L-Y L-Z WS-POWER WS-DESTROY WS-SOURCE WS-BLAST-FIRE
      END-IF
 *>   A wind charge bursts where it hit (16.3).
      IF WS-KIND = 6
@@ -351,6 +352,7 @@
  01 WS-M                   BINARY-LONG.
  01 WS-POWER               FLOAT-LONG.
  01 WS-DESTROY             BINARY-LONG.
+ 01 WS-BLAST-FIRE          BINARY-LONG.
  01 WS-GRIEF-RULE          PIC X(40) VALUE "mob_griefing".
  01 WS-GRIEF               BINARY-DOUBLE.
  01 WS-SOURCE              BINARY-LONG VALUE 0.
@@ -387,7 +389,7 @@
          CALL "STDMOB-INDEX" USING EN-TYPE(WS-OWNER-ROW) WS-M
      END-IF
      CALL "BR-RULE-GET" USING WS-GRIEF-RULE WS-GRIEF
-     MOVE WS-GRIEF TO WS-DESTROY
+     MOVE WS-GRIEF TO WS-DESTROY WS-BLAST-FIRE
 *>   Projectile.onHit for a block: projectile_land at the centre of the block hit with its state, the projectile as the source (30-8 14.2.2), then a shulker bullet's destroy posts entity_damage (14.2.4).
      CALL "WORLD-GET-BLOCK" USING WS-DIM L-HX L-HY L-HZ WS-HIT-STATE
      CALL "GAME-EVENT-CELL" USING WS-DIM L-HX L-HY L-HZ WS-EV-LAND L-ROW WS-HIT-STATE
@@ -398,7 +400,7 @@
      MOVE EN-ID(L-ROW) TO WS-CHARGE-ID
      CALL "ENTITY-REMOVE" USING L-ROW
      IF WS-KIND = 1
-         CALL "EXPLODE-RUN" USING WS-DIM L-X L-Y L-Z WS-POWER WS-DESTROY WS-SOURCE
+         CALL "EXPLODE-RUN" USING WS-DIM L-X L-Y L-Z WS-POWER WS-DESTROY WS-SOURCE WS-BLAST-FIRE
      END-IF
 *>   A wind charge bursts in front of the block it hit (16.3).
      IF WS-KIND = 6

@@ -501,6 +501,7 @@
 *> with an invulnerable crystal (the old crystals of its box are discarded).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-NO-FIRE             BINARY-LONG VALUE 0.
  COPY CORESTATE.
  COPY PROJSTATE.
  COPY ENDSPIKE.
@@ -554,7 +555,7 @@
      COMPUTE WS-EX = WS-X + 0.5
      MOVE WS-Y TO WS-EY
      COMPUTE WS-EZ = WS-Z + 0.5
-     CALL "EXPLODE-RUN" USING L-DIM WS-EX WS-EY WS-EZ WS-POWER WS-DESTROY WS-NONE
+     CALL "EXPLODE-RUN" USING L-DIM WS-EX WS-EY WS-EZ WS-POWER WS-DESTROY WS-NONE WS-NO-FIRE
 *>   The old crystals of the pillar's top box go, the pillar is rebuilt.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PJ-MAX
          IF PJ-ENT(WS-I) > 0 AND PJ-KIND(WS-I) = 16
@@ -660,6 +661,7 @@
 *> USING dim: one tick of the respawn sequence (stages 1 to 4 of EF-STAGE); a vanished respawn crystal aborts it (portal active again, spike crystals vulnerable).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-NO-FIRE             BINARY-LONG VALUE 0.
  COPY CORESTATE.
  COPY PROJSTATE.
  COPY ENDFIGHT.
@@ -732,7 +734,7 @@
                              MOVE EN-Y(WS-E) TO WS-EY
                              MOVE EN-Z(WS-E) TO WS-EZ
                              CALL "PJ-DROP" USING WS-E
-                             CALL "EXPLODE-RUN" USING L-DIM WS-EX WS-EY WS-EZ WS-POWER WS-DESTROY WS-NONE
+                             CALL "EXPLODE-RUN" USING L-DIM WS-EX WS-EY WS-EZ WS-POWER WS-DESTROY WS-NONE WS-NO-FIRE
                          END-IF
                      END-PERFORM
                  END-PERFORM

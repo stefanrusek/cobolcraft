@@ -10,7 +10,7 @@
 *> the holder (PathfinderMob.closeRangeLeashBehaviour), the home set by whenLeashedTo, the angular momentum and the holder-motion term of the spring, the entity_drops game rule, the
 *> exact list of leashable species (doc 18 gives only the rule and fish/squid/dolphin in 21 section 4), the creative-mode lead refund, and the Set Entity Link detach value:
 *> 05b says "presumably 0 or -1", this server sends 0.
-*>   MOB-LEASHABLE USING row, ok            1 for a passive creature or a squid, glow squid or dolphin (canBeLeashed)
+*>   MOB-LEASHABLE USING row, ok            1 for a passive creature or a squid, glow squid or dolphin (canBeLeashed); a calm camel husk, nautilus and zombie nautilus
 *>   MOB-LEASH-DIST USING row, holder row, distance out   between the centres of the two bounding boxes (leashDistanceTo)
 *>   MOB-LEASH-LINK USING row, destination id             Set Entity Link to the viewers of the mob
 *>   MOB-LEASH-ATTACH USING player row, mob row, ok       canHaveALeashAttachedTo then setLeashedTo
@@ -38,6 +38,13 @@
          END-IF
 *>       A camel husk can be leashed only while it is not mob-controlled, that is while its first passenger is no mob (20 section 4.4, 44-4 section 2.3).
          IF SM-KEY(WS-M) = "camel_husk" AND EN-PASS(L-ROW) = 0
+             MOVE 1 TO L-OK
+         END-IF
+*>       A nautilus unless it is aggravated (an ANGRY_AT memory: EN-ANGER, or an ATTACK_TARGET: EN-FOE); a zombie nautilus also not while mob-controlled (44-7 section 10.1).
+         IF SM-KEY(WS-M) = "nautilus" AND EN-ANGER(L-ROW) = 0 AND EN-FOE(L-ROW) = 0
+             MOVE 1 TO L-OK
+         END-IF
+         IF SM-KEY(WS-M) = "zombie_nautilus" AND EN-ANGER(L-ROW) = 0 AND EN-FOE(L-ROW) = 0 AND EN-PASS(L-ROW) = 0
              MOVE 1 TO L-OK
          END-IF
      END-IF

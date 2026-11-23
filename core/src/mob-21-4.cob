@@ -248,6 +248,7 @@
  01 WS-AVOID-Z             FLOAT-LONG.
  01 WS-AVOID-MOD           FLOAT-LONG.
  01 WS-FOLLOW              BINARY-LONG.
+ 01 WS-HOME-OK             BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-M                    BINARY-LONG.
@@ -298,6 +299,13 @@
                  COMPUTE WS-Q = WS-Q / 21
                  COMPUTE EN-DEST-Y(L-ROW) = FUNCTION INTEGER(EN-Y(L-ROW)) + FUNCTION MOD(WS-Q, 15) - 7
                  CALL "MS6-BLOCK-KIND" USING EN-DIM(L-ROW) EN-DEST-X(L-ROW) EN-DEST-Y(L-ROW) EN-DEST-Z(L-ROW) WS-KIND
+*>               A tame nautilus keeps to its home: a candidate outside it is rejected while the mob is restricted (NAUTILUS-HOME-CELL, 44-7 section 10.4).
+                 IF WS-KIND = 2 AND (SM-KIND(L-M) = 7 OR SM-KIND(L-M) = 8)
+                     CALL "NAUTILUS-HOME-CELL" USING L-ROW EN-DEST-X(L-ROW) EN-DEST-Y(L-ROW) EN-DEST-Z(L-ROW) WS-HOME-OK
+                     IF WS-HOME-OK = 0
+                         MOVE 0 TO WS-KIND
+                     END-IF
+                 END-IF
                  IF WS-KIND = 2
                      MOVE SM-STROLL-TICKS TO EN-COOLDOWN(L-ROW)
                  END-IF

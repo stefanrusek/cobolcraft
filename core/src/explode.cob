@@ -3,11 +3,13 @@
 *> 0.6 r), reduced by (blast resistance + 0.3) x 0.3 in every block it crosses and by 0.225 per 0.3 step), damage and knockback of the players and
 *> mobs within twice the power (EXPLODE-SEEN: the share of sample points of the entity's box that see the centre), the Explode packet to the players
 *> within 64 blocks, and, with block destruction, the blocks replaced by air with their drops (each stack survives with probability 1 / power).
+*> The drops of the exploded blocks go through the drop collector of 26 section 11.2 (DROP-COLLECT-ADD merges stacks of one item up to 16, DROP-COLLECT-FLUSH spawns the entries after the last block),
+*> and with the fire flag about one exploded position in three that is air now above an opaque block takes fire (20 section 6.2).
 *> Approximations (open): the random draws are the
-*> deterministic hash of xp.cob, not the level's random source; mobs are hurt in whole points and pushed through EN-VX, EN-VY and EN-VZ (spent by STDMOB-STEP); item entities and fire are left out.
+*> deterministic hash of xp.cob, not the level's random source (so the positions are not shuffled either); mobs are hurt in whole points and pushed through EN-VX, EN-VY and EN-VZ (spent by STDMOB-STEP).
 *>
 *> Entry points:
-*>   EXPLODE-RUN USING dim, x, y, z, power (FLOAT-LONG), destroy blocks (BINARY-LONG 0/1), source tracker row (BINARY-LONG, 0 none)
+*>   EXPLODE-RUN USING dim, x, y, z, power (FLOAT-LONG), destroy blocks (BINARY-LONG 0/1), source tracker row (BINARY-LONG, 0 none), fire flag (BINARY-LONG 0/1)
 *>   EXPLODE-SEEN USING dim, x, y, z (the centre), minx, miny, minz, maxx, maxy, maxz (the box), seen out (FLOAT-LONG, 0 to 1)
 *>   EXPLODE-RESIST USING block id (0 based), resistance in thousandths out (-1 for air)
 *>   EXPLODE-BLOCKS USING dim, x, y, z, power, table of positions, count out
@@ -401,6 +403,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CBLOCKS.
  COPY CITEMS.
  COPY RULES.
  COPY BRWORLD.
@@ -462,6 +465,14 @@
  01 WS-IS-TNT              BINARY-LONG.
  01 WS-EVENT-EXPLODE       PIC X(32) VALUE "explode".
  01 WS-NO-STATE            BINARY-LONG VALUE -1.
+ COPY DROPCOLL.
+ 01 WS-FIRE-SALT           BINARY-LONG VALUE 6.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-BELOW-Y             BINARY-LONG.
+ 01 WS-BELOW-STATE         BINARY-LONG.
+ 01 WS-FIRE-STATE          BINARY-LONG.
+ 01 WS-FIRE-SURVIVES       BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -470,10 +481,11 @@
  01 L-POWER                FLOAT-LONG.
  01 L-DESTROY              BINARY-LONG.
  01 L-SOURCE               BINARY-LONG.
+ 01 L-FIRE                 BINARY-LONG.
 *> USING dim, x, y, z (FLOAT-LONG), power (FLOAT-LONG), destroy blocks (0/1), source tracker row (0 none): one explosion; the damage of an entity
 *> is ((s x s + s) / 2 x 7 x 2 power + 1) with s = (1 - distance / 2 power) x seen (a player in thousandths of a point, a mob in whole points),
 *> and a hit survival player's knockback is s x the direction from the centre to its eyes (sent in the Explode packet).
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-POWER L-DESTROY L-SOURCE.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-POWER L-DESTROY L-SOURCE L-FIRE.
 *>   The game event explode is emitted first (20 section 6.2), at the centre with the source entity.
      CALL "GAME-EVENT" USING L-DIM L-X L-Y L-Z WS-EVENT-EXPLODE L-SOURCE WS-NO-STATE
      INITIALIZE WS-KNOCK
@@ -593,6 +605,8 @@
          CALL "BR-RULE-GET" USING WS-TNT-DECAY-RULE WS-DECAY
          MOVE WS-DECAY TO WS-DROP-SET
      END-IF
+*>   The stacks of all the blocks are collected, merged (26 section 11.2) and spawned after the last block.
+     MOVE 0 TO DC-COUNT DC-IMMEDIATE
      IF L-DESTROY = 1
          MOVE WS-COUNT TO WS-BLOCKS-SENT
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
@@ -602,8 +616,22 @@
              IF WS-IS-TNT = 1
                  CALL "TNT-WAS-EXPLODED" USING L-DIM WS-POS-X(WS-I) WS-POS-Y(WS-I) WS-POS-Z(WS-I)
              ELSE
-                 CALL "BLOCK-DROPS-SPAWN" USING L-DIM WS-POS-X(WS-I) WS-POS-Y(WS-I) WS-POS-Z(WS-I) WS-STATE WS-DROP-TOOL
-                     WS-NONE WS-NONE2 WS-DROP-SET L-POWER WS-FOUND
+                 CALL "BLOCK-DROPS-COLLECT" USING L-DIM WS-POS-X(WS-I) WS-POS-Y(WS-I) WS-POS-Z(WS-I) WS-STATE WS-DROP-TOOL
+                     WS-NONE WS-NONE2 WS-DROP-SET L-POWER WS-FOUND DROP-COLLECTOR
+             END-IF
+         END-PERFORM
+         CALL "DROP-COLLECT-FLUSH" USING L-DIM DROP-COLLECTOR
+     END-IF
+*>   The fire flag: about one position in three (nextInt(3) = 0) that is air now above a solid-render block (CB-OPAQUE) becomes fire (20 section 6.2), the state of BaseFireBlock.getState.
+     IF L-FIRE = 1
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+             CALL "XP-RANDOM" USING WS-FIRE-SALT WS-THREE WS-DRAW
+             CALL "WORLD-GET-BLOCK" USING L-DIM WS-POS-X(WS-I) WS-POS-Y(WS-I) WS-POS-Z(WS-I) WS-STATE
+             COMPUTE WS-BELOW-Y = WS-POS-Y(WS-I) - 1
+             CALL "WORLD-GET-BLOCK" USING L-DIM WS-POS-X(WS-I) WS-BELOW-Y WS-POS-Z(WS-I) WS-BELOW-STATE
+             IF WS-DRAW = 0 AND WS-STATE = 0 AND CB-OPAQUE(CB-S-BLOCK(WS-BELOW-STATE + 1) + 1) = 1
+                 CALL "FIRE-STATE-AT" USING L-DIM WS-POS-X(WS-I) WS-POS-Y(WS-I) WS-POS-Z(WS-I) WS-FIRE-STATE WS-FIRE-SURVIVES
+                 CALL "BLOCK-CHANGE" USING L-DIM WS-POS-X(WS-I) WS-POS-Y(WS-I) WS-POS-Z(WS-I) WS-FIRE-STATE
              END-IF
          END-PERFORM
      END-IF

@@ -72,6 +72,7 @@
  01 WS-CHTYPE              BINARY-LONG.
  01 WS-STONE2              BINARY-LONG.
  01 WS-TNT                 BINARY-LONG.
+ 01 WS-GRASS               BINARY-LONG.
  01 WS-STARTED             BINARY-LONG.
  01 WS-MOUNTED             BINARY-LONG.
  01 WS-BOLT                BINARY-LONG.
@@ -154,6 +155,10 @@
      CALL "MS-TEST-STATE" USING WS-KEY WS-STONE2
      MOVE "minecraft:tnt" TO WS-KEY
      CALL "MS-TEST-STATE" USING WS-KEY WS-TNT
+     MOVE "minecraft:short_grass" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-GRASS
+     MOVE "minecraft:tnt" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TNTTYPE WS-ENTITY-ROW WS-STATUS
      MOVE "minecraft:apple" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-APPLE WS-APPLE-ROW WS-STATUS
      MOVE "minecraft:chest" TO WS-KEY
@@ -256,8 +261,8 @@
      COMPUTE WS-LOG = FUNCTION MOD(WS-BEFORE, 128) + 1
      MOVE "N" TO TL-MODE
      MOVE "the land is at the block centre z" TO TL-CASE
-     COMPUTE TL-EXPECTED-N = (WS-BZ + 1.5) * 1000
-     COMPUTE TL-OBSERVED-N = GE-L-Z(WS-LOG) * 1000 + 0.5
+     MOVE 1500 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = (GE-L-Z(WS-LOG) - WS-BZ) * 1000 + 0.5
      PERFORM CASE-LINE
      MOVE "and carries the state of the block" TO TL-CASE
      MOVE WS-STONE2 TO TL-EXPECTED-N
@@ -462,9 +467,44 @@
      PERFORM CHECK-LIST
      PERFORM END-SCENE
 
+*>   8b. A hand with nothing in it places nothing: a click on the floor posts no block_place and leaves the cell above alone, short grass there (a replaceable block) stays too.
+     PERFORM NEW-SCENE
+     COMPUTE WS-CX = WS-BX + 6
+     MOVE 200 TO WS-CY
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-BZ WS-STONE2
+     MOVE 201 TO WS-CY
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-BZ WS-AIR
+     MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     MOVE 0 TO PL-HELD(WS-PLAYER)
+     MOVE 1 TO WS-FACE
+     MOVE 200 TO WS-CY
+     PERFORM SNAP
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-CONN WS-CX WS-CY WS-BZ WS-FACE WS-SEQ
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS2
+     PERFORM LIST
+     MOVE SPACES TO WS-EXPECT
+     MOVE "an empty hand on the floor posts no event" TO WS-WHY
+     PERFORM CHECK-LIST
+     MOVE 201 TO WS-CY
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-BZ WS-GRASS
+     MOVE 200 TO WS-CY
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-CONN WS-CX WS-CY WS-BZ WS-FACE WS-SEQ
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS2
+     MOVE 201 TO WS-CY
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-CX WS-CY WS-BZ WS-N2
+     MOVE "N" TO TL-MODE
+     MOVE "an empty hand leaves the short grass above the floor" TO TL-CASE
+     MOVE WS-GRASS TO TL-EXPECTED-N
+     MOVE WS-N2 TO TL-OBSERVED-N
+     PERFORM CASE-LINE
+     MOVE "T" TO TL-MODE
+     MOVE 201 TO WS-CY
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-BZ WS-AIR
+     PERFORM END-SCENE
+
 *>   9. A spawn egg, flint and steel and shears: entity_place at the target cell, block_place at the fire cell, prime_fuse with the player as the igniter, shear at the sheep (the player as the source).
-     MOVE "minecraft:tnt" TO WS-KEY
-     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TNTTYPE WS-ENTITY-ROW WS-STATUS
      MOVE "minecraft:sheep" TO WS-KEY
      CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-SHTYPE WS-ENTITY-ROW WS-STATUS
      MOVE "minecraft:sheep_spawn_egg" TO WS-KEY
@@ -655,6 +695,12 @@
          END-IF
          MOVE 0 TO WS-THING
      END-IF
+*>   A primed TNT left standing (scene 5 lights two) would block the placements of the scenes after it (a primed TNT blocks building).
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-PLAYER(WS-I) = 0 AND EN-TYPE(WS-I) = WS-TNTTYPE
+             CALL "ENTITY-REMOVE" USING WS-I
+         END-IF
+     END-PERFORM
      .
  END PROGRAM ACC-US15-EMITTERS.
  COPY CORETEST.
@@ -696,6 +742,7 @@
      MOVE 2 TO CS-VIEW-DISTANCE
      MOVE 1 TO CS-HOSTILE-MOBS
      MOVE 0 TO CS-WEATHER-CHANGES
+     MOVE "12345" TO CS-SEED-TEXT
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
      GOBACK.
  END PROGRAM WBD-OPEN.

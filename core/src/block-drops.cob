@@ -10,6 +10,8 @@
 *>   BLOCK-DROPS-SPAWN USING dimension row, x, y, z, state (the state that was broken), tool item, tool count, tool handle
 *>     (a tool of count 0 is the empty hand), radius set (1 when the explosion decays its drops), radius (FLOAT-LONG), found out
 *>     (1 when the block has a table: its stacks were spawned; 0 when it has none: nothing happened)
+*>   BLOCK-DROPS-COLLECT USING the arguments of BLOCK-DROPS-SPAWN and a drop collector (DROPCOLL.cpy): the stacks go to DROP-COLLECT-ADD (an explosion merges them, 26 section 11.2)
+*>   DROP-COLLECT-ADD USING dimension row, collector, x, y, z, item, amount; DROP-COLLECT-FLUSH USING dimension row, collector
 *>   BLOCK-DROPS USING dimension row, x, y, z, state, block id (0 based), player row: a survival player's break (BREAK-FINISH): the
 *>     drops of the table of the block when the held tool is the correct tool for drops (11.1 step 3: a block that requires a
 *>     tool gives nothing to another tool), or, for a block that has no table, the stand-in yield (GI-BLOCK-YIELD)
@@ -49,7 +51,8 @@
  END PROGRAM BLOCK-DROPS-KEY.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. BLOCK-DROPS-SPAWN.
+ PROGRAM-ID. BLOCK-DROPS-COLLECT.
+*> USING the arguments of BLOCK-DROPS-SPAWN, then the drop collector (DROPCOLL.cpy): rolls the table of the block and hands each stack to DROP-COLLECT-ADD at the block's cell.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -59,8 +62,6 @@
  01 WS-KEY                 PIC X(112).
  01 WS-SLOT                BINARY-LONG.
  01 WS-I                   BINARY-LONG.
- 01 WS-NONE                BINARY-LONG VALUE 0.
- 01 WS-ROW                 BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -73,8 +74,9 @@
  01 L-RADIUS-SET           BINARY-LONG.
  01 L-RADIUS               FLOAT-LONG.
  01 L-FOUND                BINARY-LONG.
+ COPY DROPCOLL.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE L-TOOL L-TOOL-COUNT L-TOOL-HANDLE L-RADIUS-SET L-RADIUS
-         L-FOUND.
+         L-FOUND DROP-COLLECTOR.
      MOVE 0 TO L-FOUND
      CALL "BLOCK-DROPS-KEY" USING L-STATE WS-KEY
      CALL "LOOT-DOC-GET" USING WS-REGISTRY WS-KEY WS-SLOT
@@ -96,10 +98,110 @@
      MOVE CW-SEED TO LC-WORLD-SEED
      CALL "LOOT-ROLL" USING WS-KEY LOOT-CONTEXT LOOT-RESULT
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > LR-COUNT
-         CALL "GI-POP-RESOURCE" USING L-DIM L-X L-Y L-Z LR-ITEM(WS-I) LR-AMOUNT(WS-I) WS-NONE WS-ROW
+         CALL "DROP-COLLECT-ADD" USING L-DIM DROP-COLLECTOR L-X L-Y L-Z LR-ITEM(WS-I) LR-AMOUNT(WS-I)
      END-PERFORM
      GOBACK.
+ END PROGRAM BLOCK-DROPS-COLLECT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BLOCK-DROPS-SPAWN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY DROPCOLL.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-TOOL                 BINARY-LONG.
+ 01 L-TOOL-COUNT           BINARY-LONG.
+ 01 L-TOOL-HANDLE          BINARY-LONG.
+ 01 L-RADIUS-SET           BINARY-LONG.
+ 01 L-RADIUS               FLOAT-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE L-TOOL L-TOOL-COUNT L-TOOL-HANDLE L-RADIUS-SET L-RADIUS
+         L-FOUND.
+*>   A single block's drops spawn as they are rolled: the collector is in immediate mode.
+     MOVE 0 TO DC-COUNT
+     MOVE 1 TO DC-IMMEDIATE
+     CALL "BLOCK-DROPS-COLLECT" USING L-DIM L-X L-Y L-Z L-STATE L-TOOL L-TOOL-COUNT L-TOOL-HANDLE L-RADIUS-SET L-RADIUS
+         L-FOUND DROP-COLLECTOR
+     GOBACK.
  END PROGRAM BLOCK-DROPS-SPAWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DROP-COLLECT-ADD.
+*> USING dimension row, the drop collector (DROPCOLL.cpy), block x, y, z, item, amount: addOrAppendStack (26 section 11.2). In immediate mode the stack spawns at once. Otherwise it merges into the
+*> existing entries of its item in order while an entry's count stays at most 16 (and the item's stack size); what is left starts a new entry at the block that produced it (a full table spawns it at once).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CITEMS.
+ 01 WS-LIMIT               BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-ROOM                BINARY-LONG.
+ 01 WS-STEP                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ COPY DROPCOLL.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-AMOUNT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM DROP-COLLECTOR L-X L-Y L-Z L-ITEM L-AMOUNT.
+     IF DC-IMMEDIATE = 1
+         CALL "GI-POP-RESOURCE" USING L-DIM L-X L-Y L-Z L-ITEM L-AMOUNT WS-NONE WS-ROW
+         GOBACK
+     END-IF
+     MOVE L-AMOUNT TO WS-LEFT
+     COMPUTE WS-LIMIT = FUNCTION MIN(16, IT-MAX-STACK(L-ITEM + 1))
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > DC-COUNT OR WS-LEFT = 0
+         IF DC-ITEM(WS-I) = L-ITEM
+             COMPUTE WS-ROOM = WS-LIMIT - DC-AMOUNT(WS-I)
+             IF WS-ROOM > 0
+                 COMPUTE WS-STEP = FUNCTION MIN(WS-ROOM, WS-LEFT)
+                 ADD WS-STEP TO DC-AMOUNT(WS-I)
+                 SUBTRACT WS-STEP FROM WS-LEFT
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-LEFT > 0
+         IF DC-COUNT < DC-MAX
+             ADD 1 TO DC-COUNT
+             MOVE L-X TO DC-X(DC-COUNT)
+             MOVE L-Y TO DC-Y(DC-COUNT)
+             MOVE L-Z TO DC-Z(DC-COUNT)
+             MOVE L-ITEM TO DC-ITEM(DC-COUNT)
+             MOVE WS-LEFT TO DC-AMOUNT(DC-COUNT)
+         ELSE
+             CALL "GI-POP-RESOURCE" USING L-DIM L-X L-Y L-Z L-ITEM WS-LEFT WS-NONE WS-ROW
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM DROP-COLLECT-ADD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DROP-COLLECT-FLUSH.
+*> USING dimension row, the drop collector (DROPCOLL.cpy): spawns every entry as Block.popResource at its block cell, in the order they were made, and empties the collector.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-ROW                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ COPY DROPCOLL.
+ PROCEDURE DIVISION USING L-DIM DROP-COLLECTOR.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > DC-COUNT
+         CALL "GI-POP-RESOURCE" USING L-DIM DC-X(WS-I) DC-Y(WS-I) DC-Z(WS-I) DC-ITEM(WS-I) DC-AMOUNT(WS-I) WS-NONE WS-ROW
+     END-PERFORM
+     MOVE 0 TO DC-COUNT
+     GOBACK.
+ END PROGRAM DROP-COLLECT-FLUSH.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCK-DROPS.
