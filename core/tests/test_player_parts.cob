@@ -146,8 +146,13 @@
      MOVE PL-LEFT-HAND(WS-BOB-ROW) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   Dora comes into view later: Bob's left hand is in his entry data.
-     CALL "TEST-JOIN-PARTS-UNDRAINED" USING WS-DORA-NAME WS-4 WS-PARTS WS-DORA
+     CALL "TEST-JOIN-PARTS-HAND" USING WS-DORA-NAME WS-4 WS-PARTS WS-LEFT WS-DORA
      CALL "TEST-DRAIN-DATA" USING WS-DORA WS-TEXT
+     MOVE "N" TO TL-MODE
+     MOVE "test player parts Dora's configuration Client Information with the left hand is kept in PL-LEFT-HAND" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE PL-LEFT-HAND(CN-PLAYER(WS-DORA)) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "T" TO TL-MODE
      MOVE "test player parts a player coming into view later gets the left hand of Bob as entry 15" TO TL-CASE
      MOVE EN-ID(PL-ENTITY-ROW(WS-ALICE-ROW)) TO WS-EDIT-2
@@ -158,6 +163,7 @@
      MOVE WS-WANT TO TL-EXPECTED
      MOVE WS-TEXT(1:120) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
      CALL "TEST-CLIENT-INFO-HAND" USING WS-BOB WS-PLAY WS-PARTS WS-RIGHT
      CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
      MOVE "test player parts the right main hand again is entry 15 = 1" TO TL-CASE
@@ -174,6 +180,7 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Player Info UPDATE_HAT (47 section 5.3): the hat bit 0x40 turning on and off is sent to every player; another part changing sends none.
+     CALL "TEST-DRAIN-DATA" USING WS-BOB WS-TEXT
      MOVE 64 TO WS-PARTS
      CALL "TEST-CLIENT-INFO" USING WS-BOB WS-PLAY WS-PARTS
      CALL "TEST-DRAIN-DATA" USING WS-ALICE WS-TEXT
@@ -253,8 +260,8 @@
  END PROGRAM TEST-CLIENT-INFO.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. TEST-JOIN-PARTS-UNDRAINED.
-*> USING name (PIC X(16)), name length, model customisation byte, connection id out: TEST-JOIN-KIND with a Client Information of that byte.
+ PROGRAM-ID. TEST-JOIN-PARTS-HAND.
+*> USING name (PIC X(16)), name length, model customisation byte, main hand (0 left, 1 right), connection id out: TEST-JOIN-KIND with a Client Information of that byte and hand.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY PROTO.
@@ -269,8 +276,9 @@
  01 L-NAME                 PIC X(16).
  01 L-NAME-LENGTH          BINARY-LONG.
  01 L-PARTS                BINARY-LONG.
+ 01 L-HAND                 BINARY-LONG.
  01 L-ID                   BINARY-LONG.
- PROCEDURE DIVISION USING L-NAME L-NAME-LENGTH L-PARTS L-ID.
+ PROCEDURE DIVISION USING L-NAME L-NAME-LENGTH L-PARTS L-HAND L-ID.
      MOVE CORE-CONN-MEMORY TO WS-KIND
      CALL "CORE-CONN-OPEN" USING WS-KIND L-ID
      MOVE "contract/fixtures/wire/handshake-c2s-00-intention-login.hex" TO WS-PATH
@@ -284,7 +292,7 @@
      CALL "TEST-FEED" USING L-ID WS-PATH
      MOVE "contract/fixtures/wire/config-c2s-02-custom-payload-brand.hex" TO WS-PATH
      CALL "TEST-FEED" USING L-ID WS-PATH
-     CALL "TEST-CLIENT-INFO" USING L-ID WS-ZERO L-PARTS
+     CALL "TEST-CLIENT-INFO-HAND" USING L-ID WS-ZERO L-PARTS L-HAND
      MOVE "contract/fixtures/wire/config-c2s-07-select-known-packs.hex" TO WS-PATH
      CALL "TEST-FEED" USING L-ID WS-PATH
      MOVE "contract/fixtures/wire/config-c2s-03-finish-configuration.hex" TO WS-PATH
@@ -295,6 +303,22 @@
      MOVE "contract/fixtures/wire/play-c2s-2c-player-loaded.hex" TO WS-PATH
      CALL "TEST-FEED" USING L-ID WS-PATH
      CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-JOIN-PARTS-HAND.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-JOIN-PARTS-UNDRAINED.
+*> USING name (PIC X(16)), name length, model customisation byte, connection id out: TEST-JOIN-PARTS-HAND with the right main hand.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-RIGHT               BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(16).
+ 01 L-NAME-LENGTH          BINARY-LONG.
+ 01 L-PARTS                BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-NAME L-NAME-LENGTH L-PARTS L-ID.
+     CALL "TEST-JOIN-PARTS-HAND" USING L-NAME L-NAME-LENGTH L-PARTS WS-RIGHT L-ID
      GOBACK.
  END PROGRAM TEST-JOIN-PARTS-UNDRAINED.
 
