@@ -142,37 +142,14 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STACK-FOIL.
-*> USING PB-ITEMSTACK-X, foil out (1 when the stack has the glint): enchantment_glint_override 21 when present (its Boolean), else enchantments 13 non-empty (54 section 19.2).
+*> USING PB-ITEMSTACK-X, foil out (1 when the stack has the glint): enchantment_glint_override 21 when present (its Boolean), else enchantments 13 non-empty (54 section 19.2),
+*> decided by PB-ITEM-STACK-FOIL of the proto package (the Set Entity Data decode keeps the same answer for a dropped or framed item, PB-MX-IS-FOIL).
  DATA DIVISION.
- WORKING-STORAGE SECTION.
- 01 WS-K                   BINARY-LONG.
- 01 WS-OVERRIDE            BINARY-LONG.
- 01 WS-ENCHANTED           BINARY-LONG.
- 01 WS-B                   BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-FOIL                 BINARY-LONG.
  PROCEDURE DIVISION USING PB-ITEMSTACK-X L-FOIL.
-     MOVE -1 TO WS-OVERRIDE
-     MOVE 0 TO WS-ENCHANTED L-FOIL
-     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > PB-ISX-ADDED-COUNT
-         IF PB-ISX-VALUE-LENGTH(WS-K) > 0
-             COMPUTE WS-B = FUNCTION ORD(PB-ISX-VALUE(WS-K)(1:1)) - 1
-             IF PB-ISX-TYPE(WS-K) = 21
-                 MOVE WS-B TO WS-OVERRIDE
-             END-IF
-             IF PB-ISX-TYPE(WS-K) = 13 AND WS-B > 0
-                 MOVE 1 TO WS-ENCHANTED
-             END-IF
-         END-IF
-     END-PERFORM
-     IF WS-OVERRIDE >= 0
-         IF WS-OVERRIDE > 0
-             MOVE 1 TO L-FOIL
-         END-IF
-     ELSE
-         MOVE WS-ENCHANTED TO L-FOIL
-     END-IF
+     CALL "PB-ITEM-STACK-FOIL" USING PB-ITEMSTACK-X L-FOIL
      GOBACK.
  END PROGRAM STACK-FOIL.
 

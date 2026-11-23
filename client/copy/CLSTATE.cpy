@@ -758,6 +758,8 @@
           15 EN-VZ           FLOAT-LONG.
           15 EN-STACK-COUNT  BINARY-LONG.
           15 EN-STACK-ITEM   BINARY-LONG.
+*>        1 when the stack has the enchantment glint (PB-MX-IS-FOIL of the entry: the dropped item and the item frame draw the glint layer).
+          15 EN-STACK-FOIL   BINARY-LONG.
 *>        The registry key of EN-TYPE in a world of the standard set (EN-VANILLA 1; spaces when the id is outside the
 *>        registry) and the row of CL-MODELS (CLMODELS.cpy) that draws it (0 = no model). In a cobolcraft world EN-TYPE is the
 *>        stand-in type of standin-content §3 and EN-VANILLA is 0.

@@ -314,6 +314,43 @@
  END PROGRAM PB-GET-ITEM-STACK.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. PB-ITEM-STACK-FOIL.
+*> USING PB-ITEMSTACK-X, foil out (1 when the stack has the enchantment glint): enchantment_glint_override 21 when present (its Boolean), else enchantments 13 non-empty
+*> (54 section 19.2; the value of both starts with one byte: the Boolean, the VarInt count of the enchantments). Used by the Set Entity Data decode (PB-MX-IS-FOIL) and the client.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-OVERRIDE            BINARY-LONG.
+ 01 WS-ENCHANTED           BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-FOIL                 BINARY-LONG.
+ PROCEDURE DIVISION USING PB-ITEMSTACK-X L-FOIL.
+     MOVE -1 TO WS-OVERRIDE
+     MOVE 0 TO WS-ENCHANTED L-FOIL
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > PB-ISX-ADDED-COUNT
+         IF PB-ISX-VALUE-LENGTH(WS-K) > 0
+             COMPUTE WS-B = FUNCTION ORD(PB-ISX-VALUE(WS-K)(1:1)) - 1
+             IF PB-ISX-TYPE(WS-K) = 21
+                 MOVE WS-B TO WS-OVERRIDE
+             END-IF
+             IF PB-ISX-TYPE(WS-K) = 13 AND WS-B > 0
+                 MOVE 1 TO WS-ENCHANTED
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-OVERRIDE >= 0
+         IF WS-OVERRIDE > 0
+             MOVE 1 TO L-FOIL
+         END-IF
+     ELSE
+         MOVE WS-ENCHANTED TO L-FOIL
+     END-IF
+     GOBACK.
+ END PROGRAM PB-ITEM-STACK-FOIL.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. PB-GET-ISX-EXPLOSION.
 *> USING buffer: reads one firework explosion (25 section 9.1): a VarInt shape, the colours and the fade colours as a VarInt count of 0 to 64 and that many Ints,
 *> then the Booleans trail and twinkle. A count outside 0 to 64 sets PB-ERROR.

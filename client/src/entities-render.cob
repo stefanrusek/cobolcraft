@@ -1021,6 +1021,7 @@
 *> The twelve vertices of a copy: the front triangles 1 2 3, 1 3 4 and the back triangles 1 3 2, 1 4 3.
  01 WS-CUBE                BINARY-LONG.
  01 WS-FS                  BINARY-LONG.
+ 01 WS-FLAT                BINARY-LONG.
  01 WS-F                   BINARY-LONG.
  01 WS-A                   BINARY-LONG.
  01 WS-DIRECTION           BINARY-LONG.
@@ -1159,6 +1160,11 @@
                              MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
                              MOVE 1 TO RL-GI-R(RL-GI-COUNT) RL-GI-G(RL-GI-COUNT) RL-GI-BLUE(RL-GI-COUNT)
                          END-PERFORM
+*>                       The glint layer of a stack with the enchantment glint (54 section 19.3, T9903): the same quad, over its opaque texels.
+                         IF EN-STACK-FOIL(WS-R) = 1
+                             MOVE 1 TO WS-FLAT
+                             CALL "GROUND-GLINT" USING CLIENT-STATE WS-CORNERS WS-SPRITE WS-FLAT
+                         END-IF
                      END-PERFORM
                  END-IF
              END-IF
@@ -1228,6 +1234,11 @@
                      MOVE 0 TO RL-GI-SKY(RL-GI-COUNT)
                      MOVE 1 TO RL-GI-R(RL-GI-COUNT) RL-GI-G(RL-GI-COUNT) RL-GI-BLUE(RL-GI-COUNT)
                  END-PERFORM
+*>               The glint layer of a stack with the enchantment glint: the same face (54 section 19.3, T9903).
+                 IF EN-STACK-FOIL(WS-R) = 1
+                     MOVE 0 TO WS-FLAT
+                     CALL "GROUND-GLINT" USING CLIENT-STATE WS-CORNERS WS-FS WS-FLAT
+                 END-IF
              END-IF
          END-PERFORM
      END-PERFORM.

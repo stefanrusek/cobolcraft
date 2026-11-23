@@ -8,6 +8,8 @@
 *> PAINTING_VARIANT and RESOLVABLE_PROFILE are kept as their wire bytes in PB-MX-DATA (at most 512).
 *> For the two optional forms PB-MX-PRESENT holds the Boolean and PB-MX-DATA only the value behind
 *> it (empty when absent). Both directions check that the bytes are exactly one well-formed value.
+*> An ITEM_STACK is read with PB-GET-ITEM-STACK, so its data components are decoded: the entry keeps the count, the item and PB-MX-IS-FOIL (the glint of the stack, PB-ITEM-STACK-FOIL);
+*> the writer appends count and item with an empty patch (PB-MX-IS-FOIL is not written).
 *> Limits of the record: a STRING value holds at most 256 bytes; a PAINTING_VARIANT holds only the
 *> registry reference (the inline form, whose layout the documents do not give, is an error).
 
@@ -293,7 +295,7 @@
 *> USING PB-BUFFER, PB-METADATA-ENTRY-X out: one entry; PB-MX-INDEX = PB-MD-END for the terminator
 *> (nothing else read). Fields the serializer does not use are 0. A serializer outside 0 to 43, a
 *> negative id, a short read, a value that is not well formed or longer than the 512 bytes of
-*> PB-MX-DATA, a STRING of more than 256 bytes, or a stack with data components sets PB-ERROR,
+*> PB-MX-DATA, a STRING of more than 256 bytes, or an ITEM_STACK that PB-GET-ITEM-STACK rejects sets PB-ERROR,
 *> leaves PB-POS where it was and yields an all-zero entry.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -357,9 +359,10 @@
                      END-IF
                  END-IF
              WHEN 7
-                 CALL "PB-GET-ITEMSTACK" USING PB-BUFFER WS-ITEMSTACK
-                 MOVE WS-IS-COUNT TO PB-MX-IS-COUNT
-                 MOVE WS-IS-ITEM TO PB-MX-IS-ITEM
+                 CALL "PB-GET-ITEM-STACK" USING PB-BUFFER WS-ITEMSTACK-X
+                 MOVE WS-ISX-COUNT TO PB-MX-IS-COUNT
+                 MOVE WS-ISX-ITEM TO PB-MX-IS-ITEM
+                 CALL "PB-ITEM-STACK-FOIL" USING WS-ITEMSTACK-X PB-MX-IS-FOIL
              WHEN 8
                  CALL "PB-GET-BOOL" USING PB-BUFFER PB-MX-INT
              WHEN 9

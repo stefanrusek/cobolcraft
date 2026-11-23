@@ -202,7 +202,8 @@
 *>   BYTE, INT, DIRECTION, BLOCK_STATE, OPTIONAL_BLOCK_STATE, POSE, every RegistryId variant,
 *>   the IdEnum states, DYE_COLOR, HUMANOID_ARM, OPTIONAL_UNSIGNED_INT (the raw VarInt),
 *>   BOOLEAN: PB-MX-INT; LONG: PB-MX-LONG; FLOAT, ROTATIONS (3), VECTOR3 (3), QUATERNION (4):
-*>   PB-MX-FLOAT(1..n); STRING: PB-MX-TEXT; ITEM_STACK: PB-MX-STACK;
+*>   PB-MX-FLOAT(1..n); STRING: PB-MX-TEXT; ITEM_STACK: PB-MX-STACK (a read keeps the count, the item and the foil of the
+*>   whole stack, its data components decoded by PB-GET-ITEM-STACK; a write has no components);
 *>   BLOCK_POS and OPTIONAL_BLOCK_POS: PB-MX-POS and PB-MX-PRESENT (optional ones);
 *>   OPTIONAL_LIVING_ENTITY_REFERENCE: PB-MX-UUID and PB-MX-PRESENT; VILLAGER_DATA: PB-MX-INT,
 *>   PB-MX-INT-2, PB-MX-INT-3; COMPONENT, OPTIONAL_COMPONENT, PARTICLE, PARTICLES, OPTIONAL_GLOBAL_POS,
@@ -227,6 +228,7 @@
     05 PB-MX-STACK.
        10 PB-MX-IS-COUNT  BINARY-LONG.
        10 PB-MX-IS-ITEM   BINARY-LONG.
+       10 PB-MX-IS-FOIL   BINARY-LONG.   *> 1 when the stack has the glint (PB-ITEM-STACK-FOIL); the reader's, the writer ignores it
     05 PB-MX-DATA-LENGTH  BINARY-LONG.
     05 PB-MX-DATA         PIC X(512).
 
