@@ -3,6 +3,8 @@
 *> item in that slot; with none, the item is dropped as by the default behaviour. The item table carries no components, so the slot of an item comes from its key (MENU-EQUIP-KIND: boots, leggings, chestplate,
 *> elytra, helmet; the carved pumpkin and the wither skeleton skull go on the head). Entities that can wear it: an armor stand whose slot is not disabled (its box: 0.5 wide and 1.975 high, half of that
 *> when small, none when a marker) and a player who is not a spectator (0.6 wide, 1.8 high, 1.5 crouching). Rows of the entity table are asked before the players.
+*> Shulker boxes (4.15): the box is placed in the front cell when it is air or replaceable and meets no entity (BLOCK-OVERLAPS-BODY); its facing is the clicked face of the placement context, the dispenser's
+*> facing when the cell under the front cell is air, else up; the contents of the item and the box's colour data are not carried (the slots carry no components); a failure keeps the item (click 1001), never drops it.
 *> Wither skeleton skull (4.7) and carved pumpkin (4.8): an air cell in front where the wither pattern (WITHER-CAN-SPAWN) or a golem pattern (GOLEM-CAN-BUILD) is complete takes the block (the skull with the
 *> rotation segment of the facing: south 0, west 4, north 8, east 12, 0 up or down) and the build runs (WITHER-BUILD, GOLEM-BUILD); otherwise the item is worn as equipment and, when nobody can wear it, it stays
 *> in the dispenser with the failure click, never dropped.
@@ -14,6 +16,7 @@
 *>   RL-BOX-IN-CELL USING feet x, y, z, half width, height (FLOAT-LONG), cell x, y, z, hit out    1 when the box has a volume in common with the cell (a point inside counts)
 *>   RL-DISP-EQUIP USING dim, front x, y, z, item, ok out                     1 when one entity took one item
 *>   RL-DISP-HEAD USING dim, front x, y, z, facing, item bare key (PIC X(48)), item, handled out, consumed out
+*>   RL-DISP-SHULKER USING dim, front x, y, z, facing, item bare key (PIC X(48)), handled out, consumed out
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RL-EQUIP-SLOT.
@@ -240,3 +243,79 @@
      END-IF
      GOBACK.
  END PROGRAM RL-DISP-HEAD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. RL-DISP-SHULKER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ 01 WS-NAME                PIC X(24) VALUE "facing".
+ 01 WS-MODE-SET            BINARY-LONG VALUE 2.
+ 01 WS-REGISTRY            PIC X(48) VALUE "block".
+ 01 WS-TAG                 PIC X(112) VALUE "minecraft:replaceable".
+ 01 WS-DIRECTIONS.
+    05 FILLER              PIC X(5) VALUE "down ".
+    05 FILLER              PIC X(5) VALUE "up   ".
+    05 FILLER              PIC X(5) VALUE "north".
+    05 FILLER              PIC X(5) VALUE "south".
+    05 FILLER              PIC X(5) VALUE "west ".
+    05 FILLER              PIC X(5) VALUE "east ".
+ 01 WS-DIRECTION REDEFINES WS-DIRECTIONS.
+    05 WS-DIR              PIC X(5) OCCURS 6 TIMES.
+ LOCAL-STORAGE SECTION.
+ 01 LS-STATE               BINARY-LONG.
+ 01 LS-BLOCK               BINARY-LONG.
+ 01 LS-REPLACEABLE         BINARY-LONG.
+ 01 LS-BELOW-Y             BINARY-LONG.
+ 01 LS-BELOW               BINARY-LONG.
+ 01 LS-UP                  BINARY-LONG.
+ 01 LS-KEY                 PIC X(48).
+ 01 LS-NEW                 BINARY-LONG.
+ 01 LS-TEXT                PIC X(32).
+ 01 LS-RESULT              BINARY-LONG.
+ 01 LS-HIT                 BINARY-LONG.
+ 01 LS-FLAGS               BINARY-LONG VALUE 3.
+ 01 LS-BUDGET              BINARY-LONG VALUE 512.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-FACING               BINARY-LONG.
+ 01 L-BARE                 PIC X(48).
+ 01 L-HANDLED              BINARY-LONG.
+ 01 L-CONSUMED             BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-FACING L-BARE L-HANDLED L-CONSUMED.
+     MOVE 1 TO L-HANDLED
+     MOVE 0 TO L-CONSUMED
+*>   the front cell must be air or replaceable (DirectionalPlaceContext.canPlace: the state canBeReplaced)
+     CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z LS-STATE
+     MOVE 0 TO LS-REPLACEABLE
+     IF LS-STATE > 0
+         MOVE CB-S-BLOCK(LS-STATE + 1) TO LS-BLOCK
+         CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG LS-BLOCK LS-REPLACEABLE
+     END-IF
+     IF LS-STATE = 0 OR LS-REPLACEABLE = 1
+*>       placementUp: the dispenser's facing when the cell under the front cell is air, else up; the box's facing is that clicked face (24 part 6 section 6.12)
+         COMPUTE LS-BELOW-Y = L-Y - 1
+         CALL "WORLD-GET-BLOCK" USING L-DIM L-X LS-BELOW-Y L-Z LS-BELOW
+         MOVE L-FACING TO LS-UP
+         IF LS-BELOW NOT = 0
+             MOVE 1 TO LS-UP
+         END-IF
+         MOVE SPACES TO LS-KEY
+         STRING "minecraft:" FUNCTION TRIM(L-BARE) DELIMITED BY SIZE INTO LS-KEY
+         CALL "WORLDSIM-FIND-BLOCK" USING LS-KEY LS-NEW
+         MOVE SPACES TO LS-TEXT
+         MOVE WS-DIR(LS-UP + 1) TO LS-TEXT
+         CALL "BLOCK-STATE-PROP" USING WS-MODE-SET LS-NEW WS-NAME LS-TEXT LS-RESULT
+         MOVE LS-RESULT TO LS-NEW
+*>       the box must meet no entity (a creature, a boat, an armor stand: 29 section 9.6)
+         CALL "BLOCK-OVERLAPS-BODY" USING L-DIM L-X L-Y L-Z LS-NEW LS-HIT
+         IF LS-HIT = 0
+             CALL "LEVEL-SET-BLOCK" USING L-DIM L-X L-Y L-Z LS-NEW LS-FLAGS LS-BUDGET LS-RESULT
+             MOVE 1 TO L-CONSUMED
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM RL-DISP-SHULKER.

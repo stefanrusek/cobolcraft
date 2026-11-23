@@ -66,10 +66,7 @@
  01 WS-FIRST-COUNTS        PIC X(20).
  01 WS-WINDOW-OPEN         BINARY-LONG VALUE 0.
  01 WS-DUMMY               PIC X.
- 01 WS-SAVE-DIR            PIC X(1100).
- 01 WS-TEMP-DIR            PIC X(1100) VALUE "core/tests/fixtures/jigpool".
- 01 WS-BIOME               PIC X(40).
- 01 WS-T                   FLOAT-LONG.
+ 01 WS-Y0                  BINARY-LONG VALUE 70.
  01 WS-COLD-N              BINARY-LONG.
  01 WS-WARM-N              BINARY-LONG.
  01 WS-COLD                BINARY-LONG.
@@ -242,46 +239,59 @@
      END-IF
      PERFORM CHECK.
 
-*> 33 4.5: the base temperature of a biome from its file (the fixtures), and the cold test over the real biomes
+*> 33 4.5: the cold test over the real biomes and over chosen ones (TJ-SURFACE 4: the biome of the seam is TJ-BIOME): the temperature of FR-TEMPERATURE (the base temperature of the
+*> registry biome, the frozen modifier of the frozen biomes, the noise term above sea level + 17) is below 0.15
  TEMP-CASES.
-     MOVE FD-DIR TO WS-SAVE-DIR
-     MOVE WS-TEMP-DIR TO FD-DIR
-     MOVE "t_warm" TO WS-BIOME
-     CALL "STRUCT-PORTAL-TEMP" USING WS-BIOME WS-T WS-OK
-     MOVE "test struct portal given a biome file with temperature 0.8 when it is read then the temperature is 0.8" TO TL-CASE
+     CALL "BLOCKS-OPEN"
+     MOVE 70 TO WS-Y0
+     MOVE 4 TO TJ-SURFACE
+     MOVE "minecraft:snowy_plains" TO TJ-BIOME
+     PERFORM COUNT-COLD
+     MOVE "test struct portal given snowy_plains (temperature 0) when the cold test is made over 100 columns at y 70 then every one is cold" TO TL-CASE
      MOVE 0 TO WS-FLAG
-     IF WS-OK = 1 AND WS-T > 0.79 AND WS-T < 0.81
+     IF WS-COLD-N = 100
          MOVE 1 TO WS-FLAG
      END-IF
      PERFORM CHECK
-     MOVE "t_frozen" TO WS-BIOME
-     CALL "STRUCT-PORTAL-TEMP" USING WS-BIOME WS-T WS-OK
-     MOVE "test struct portal given a biome file with temperature 0 when it is read then the temperature is 0" TO TL-CASE
+     MOVE "minecraft:plains" TO TJ-BIOME
+     PERFORM COUNT-COLD
+     MOVE "test struct portal given plains (temperature 0.8) when the cold test is made over 100 columns at y 70 then none is cold" TO TL-CASE
      MOVE 0 TO WS-FLAG
-     IF WS-OK = 1 AND WS-T = 0
+     IF WS-COLD-N = 0
          MOVE 1 TO WS-FLAG
      END-IF
      PERFORM CHECK
+*>   33 4.5 height term: taiga is 0.25 at y 70 (no adjustment below sea level + 17 = 80) and 0.25 - (8 N + 250 - 80) * 0.05 / 40 near 0.04 at y 250 (N is within 1 in size)
+     MOVE "minecraft:taiga" TO TJ-BIOME
+     MOVE 250 TO WS-Y0
+     PERFORM COUNT-COLD
+     MOVE "test struct portal given taiga when the cold test is made over 100 columns at y 250 then every one is cold (the height adjustment of 33 4.5)" TO TL-CASE
      MOVE 0 TO WS-FLAG
-     MOVE 0 TO WS-I
-     MOVE "t_badjson" TO WS-BIOME
-     CALL "STRUCT-PORTAL-TEMP" USING WS-BIOME WS-T WS-OK
-     ADD WS-OK TO WS-I
-     MOVE "t_notemp" TO WS-BIOME
-     CALL "STRUCT-PORTAL-TEMP" USING WS-BIOME WS-T WS-OK
-     ADD WS-OK TO WS-I
-     MOVE "t_missing" TO WS-BIOME
-     CALL "STRUCT-PORTAL-TEMP" USING WS-BIOME WS-T WS-OK
-     ADD WS-OK TO WS-I
-     MOVE "minecraft:t_missing" TO WS-BIOME
-     CALL "STRUCT-PORTAL-TEMP" USING WS-BIOME WS-T WS-OK
-     ADD WS-OK TO WS-I
-     MOVE "test struct portal given a biome file that is not JSON, has no temperature or is absent when it is read then there is no temperature" TO TL-CASE
-     IF WS-I = 0
+     IF WS-COLD-N = 100
          MOVE 1 TO WS-FLAG
      END-IF
      PERFORM CHECK
-     MOVE WS-SAVE-DIR TO FD-DIR
+     MOVE 70 TO WS-Y0
+     PERFORM COUNT-COLD
+     MOVE "test struct portal given taiga when the cold test is made over 100 columns at y 70 then none is cold" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF WS-COLD-N = 0
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK
+*>   the frozen modifier (33 4.5): frozen_ocean has the base temperature 0 and the modifier frozen, which makes the temperature 0.2 (not cold) where the frozen noise and the biome info noise
+*>   say so and leaves 0 (cold) elsewhere: both occur over the 100 columns (a base temperature alone would make every column cold)
+     MOVE "minecraft:frozen_ocean" TO TJ-BIOME
+     MOVE 62 TO WS-Y0
+     PERFORM COUNT-COLD
+     MOVE "test struct portal given frozen_ocean (base 0, frozen) when the cold test is made over 100 columns at y 62 then some are cold and some are not (the frozen modifier)" TO TL-CASE
+     MOVE 0 TO WS-FLAG
+     IF WS-COLD-N > 0 AND WS-COLD-N < 100
+         MOVE 1 TO WS-FLAG
+     END-IF
+     PERFORM CHECK
+     MOVE 70 TO WS-Y0
+     MOVE 0 TO TJ-SURFACE
      MOVE 0 TO WS-COLD-N WS-WARM-N
      PERFORM VARYING WS-I FROM -6 BY 1 UNTIL WS-I > 6
          PERFORM VARYING WS-J FROM -6 BY 1 UNTIL WS-J > 6
@@ -314,6 +324,19 @@
      END-IF
      PERFORM CHECK
      MOVE 0 TO TJ-SURFACE.
+
+*> WS-COLD-N: how many of the 100 columns (x = i * 37, z = j * 53 for i, j 0 to 9) at y WS-Y0 are cold for the biome TJ-BIOME of the seam
+ COUNT-COLD.
+     MOVE 0 TO WS-COLD-N
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 9
+         PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 9
+             COMPUTE WS-X = WS-I * 37 + 11
+             COMPUTE WS-Z = WS-J * 53 + 5
+             MOVE WS-Y0 TO WS-Y
+             CALL "STRUCT-PORTAL-COLD" USING WS-X WS-Y WS-Z WS-COLD
+             ADD WS-COLD TO WS-COLD-N
+         END-PERFORM
+     END-PERFORM.
 
 *> 8.2 and 8.3: the starts of the model
  START-CASES.

@@ -203,7 +203,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCK-ENTITY-KIND.
 *> USING entity type (BINARY-LONG), kind out: the UI-BLOCKS-BUILDING kind (29 section 9.6) of an entity type that is not a mob: 2 a boat or raft (every wood, with or without a chest), 3 a minecart of any
-*> kind, 4 an end crystal, 5 a primed TNT (the entity type tnt), 6 a falling block, 7 an armor stand (a marker is not told from an armor stand: the flag is not modelled), 0 any other.
+*> kind, 4 an end crystal, 5 a primed TNT (the entity type tnt), 6 a falling block, 7 an armor stand, 0 any other (BLOCK-OVERLAPS-BODY reads the marker and small flags of a stand itself).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CITEMS.
@@ -250,12 +250,17 @@
  COPY CITEMS.
  COPY CBLOCKS.
  COPY CONTENT.
+ COPY PROJSTATE.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-M                   BINARY-LONG.
  01 WS-STD                 BINARY-LONG.
  01 WS-KIND                BINARY-LONG.
  01 WS-MARKER              BINARY-LONG VALUE 0.
+ 01 WS-SMALL               BINARY-LONG VALUE 0.
+ 01 WS-PJ                  BINARY-LONG.
+ 01 WS-BIT-SMALL           BINARY-LONG VALUE 0.
+ 01 WS-BIT-MARKER          BINARY-LONG VALUE 4.
  01 WS-BUILDS              BINARY-LONG.
  01 WS-BLK                 BINARY-LONG.
  01 WS-SHAPE               BINARY-LONG.
@@ -306,6 +311,7 @@
          MOVE 0 TO WS-M
          MOVE 0 TO WS-STD
          MOVE 0 TO WS-BUILDS
+         MOVE 0 TO WS-MARKER WS-SMALL
          IF EN-USED(WS-E) = 1 AND EN-DIM(WS-E) = L-DIM AND EN-TYPE(WS-E) NOT = CR-LOOSE-ITEM
              CALL "MOB-INDEX" USING EN-TYPE(WS-E) WS-M
              CALL "STDMOB-INDEX" USING EN-TYPE(WS-E) WS-STD
@@ -313,12 +319,24 @@
                  MOVE 1 TO WS-BUILDS
              ELSE
                  CALL "BLOCK-ENTITY-KIND" USING EN-TYPE(WS-E) WS-KIND
+*>               an armor stand's flags (decor-44.cob PJ-I1: bit 0 small, bit 4 marker): a marker does not block building (ArmorStand.blocksBuilding = not marker), a small stand has half the box
+                 IF WS-KIND = 7
+                     CALL "PJ-FIND" USING EN-ID(WS-E) WS-PJ
+                     IF WS-PJ > 0
+                         CALL "DECOR-BIT" USING PJ-I1(WS-PJ) WS-BIT-MARKER WS-MARKER
+                         CALL "DECOR-BIT" USING PJ-I1(WS-PJ) WS-BIT-SMALL WS-SMALL
+                     END-IF
+                 END-IF
                  CALL "UI-BLOCKS-BUILDING" USING WS-KIND WS-MARKER WS-BUILDS
              END-IF
          END-IF
          IF WS-BUILDS = 1
              COMPUTE WS-HALF = ET-WIDTH-MILLI(EN-TYPE(WS-E) + 1) / 2000
              COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(EN-TYPE(WS-E) + 1) / 1000
+             IF WS-SMALL = 1
+                 COMPUTE WS-HALF = WS-HALF / 2
+                 COMPUTE WS-HEIGHT = WS-HEIGHT / 2
+             END-IF
              COMPUTE WS-B(1) = EN-X(WS-E) - WS-HALF
              MOVE EN-Y(WS-E) TO WS-B(2)
              COMPUTE WS-B(3) = EN-Z(WS-E) - WS-HALF

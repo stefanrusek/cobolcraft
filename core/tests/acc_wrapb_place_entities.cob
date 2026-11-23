@@ -12,6 +12,7 @@
  COPY DIMENSIONS.
  COPY CBLOCKS.
  COPY CITEMS.
+ COPY PROJSTATE.
  01 WS-SKIP                BINARY-LONG.
  01 WS-WORLD-FOLDER        PIC X(64) VALUE "build/wrapb-place-entities-world".
  01 WS-NAME                PIC X(16) VALUE "Alice".
@@ -33,6 +34,11 @@
  01 WS-EXP-N               BINARY-DOUBLE SIGNED.
  01 WS-OBS-N               BINARY-DOUBLE SIGNED.
  01 WS-EX                  FLOAT-LONG.
+ 01 WS-SY                  FLOAT-LONG VALUE 101.0.
+ 01 WS-SZ                  FLOAT-LONG VALUE 5.5.
+ 01 WS-YAW                 FLOAT-LONG VALUE 0.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
      CALL "PT-OPEN-IN" USING WS-SKIP WS-WORLD-FOLDER
@@ -67,7 +73,35 @@
 *>   a boat in the next cell does not meet the cell (its box is 1.375 wide: x 6.0 to 7.375 at x 6.6875 is outside the cell 5)
      MOVE 8.5 TO WS-EX
      MOVE "oak_boat" TO WS-K PERFORM CHECK-KEY-AT
+*>   armor stands (29 section 9.6: ArmorStand.blocksBuilding is not marker; a small stand has half the box): a regular stand at x 6.2 (box 5.95 to 6.45) meets cell 5, a small one (6.075 to 6.325) does not,
+*>   a marker stand inside the cell does not block
+     MOVE 6.2 TO WS-EX MOVE 0 TO WS-FLAG MOVE 1 TO WS-EXP-N
+     MOVE "a regular stand 0.2 into the cell" TO WS-K PERFORM CHECK-STAND
+     MOVE 6.2 TO WS-EX MOVE 1 TO WS-FLAG MOVE 0 TO WS-EXP-N
+     MOVE "a small stand 0.2 into the cell" TO WS-K PERFORM CHECK-STAND
+     MOVE 5.5 TO WS-EX MOVE 1 TO WS-FLAG MOVE 1 TO WS-EXP-N
+     MOVE "a small stand in the cell" TO WS-K PERFORM CHECK-STAND
+     MOVE 5.5 TO WS-EX MOVE 16 TO WS-FLAG MOVE 0 TO WS-EXP-N
+     MOVE "a marker stand in the cell" TO WS-K PERFORM CHECK-STAND
      STOP RUN.
+
+ CHECK-STAND.
+*>   an armor stand at x WS-EX, y 101, z 5.5 with the client flags WS-FLAG (1 small, 16 marker): does BLOCK-OVERLAPS-BODY say stone in cell (5, 101, 5) is obstructed (WS-EXP-N)? WS-K is the description
+     MOVE "stone" TO WS-BARE
+     MOVE 0 TO WS-ROW
+     CALL "ARMOR-STAND-SPAWN" USING WS-DIM WS-EX WS-SY WS-SZ WS-YAW WS-ROW
+     CALL "PJ-FIND" USING EN-ID(WS-ROW) WS-SLOT
+     MOVE WS-FLAG TO PJ-I1(WS-SLOT)
+     CALL "BLOCK-OVERLAPS-BODY" USING WS-DIM WS-X WS-Y WS-Z WS-ST WS-HIT
+     MOVE 0 TO EN-USED(WS-ROW)
+     MOVE WS-HIT TO WS-OBS-N
+     MOVE WS-EXP-N TO TL-EXPECTED-N
+     MOVE "N" TO TL-MODE
+     MOVE SPACES TO WS-CASE
+     STRING "acceptance wrapb place 29 9.6 " FUNCTION TRIM(WS-K) ": stone placed in the cell is obstructed or not" DELIMITED BY SIZE INTO WS-CASE
+     MOVE WS-CASE TO TL-CASE
+     MOVE WS-OBS-N TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
  CHECK-KEY.
      MOVE 5.5 TO WS-EX
