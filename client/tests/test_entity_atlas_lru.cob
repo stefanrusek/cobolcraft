@@ -153,7 +153,8 @@
          END-IF
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
              MOVE 0 TO WS-SEEN
-             IF EN-MODEL(WS-I) > 0 AND CL-MD-ANIM(EN-MODEL(WS-I)) NOT = "F"
+*>           A painting (code L) holds no slot while the registry has no variant for it (test_entity_painting), an item frame draws no model.
+             IF EN-MODEL(WS-I) > 0 AND CL-MD-ANIM(EN-MODEL(WS-I)) NOT = "F" AND CL-MD-ANIM(EN-MODEL(WS-I)) NOT = "L"
 *>               The slot is of the row drawn: the slim model for a player of a slim skin (ENTITY-MODEL-ROW).
                  CALL "ENTITY-MODEL-ROW" USING CLIENT-STATE WS-I WS-DRAWN
                  PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
