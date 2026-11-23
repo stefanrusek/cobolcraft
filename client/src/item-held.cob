@@ -24,6 +24,8 @@
  01 WS-BRIGHT              BINARY-LONG VALUE 0.
  01 WS-BDYE                BINARY-LONG.
  01 WS-SHIELD              BINARY-LONG.
+ 01 WS-HSLOT               BINARY-LONG.
+ 01 WS-HFOIL               BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ROW                  BINARY-LONG.
@@ -72,7 +74,13 @@
          CALL "ENTITY-SHIELD-HELD" USING CLIENT-STATE WS-M L-ROW L-HAND L-EYE-TABLE
          GOBACK
      END-IF
-     CALL "ITEM-POSED-DRAW" USING CLIENT-STATE WS-M L-ITEM L-HAND L-ROW L-EYE-TABLE WS-BRIGHT
+*>   The stack's glint (54 section 19.3): the main hand is the right arm's, a left-handed mob (mob flags bit 2) holds it in the left.
+     MOVE L-HAND TO WS-HSLOT
+     IF FUNCTION MOD(FUNCTION INTEGER(EN-MOB-FLAGS(L-ROW) / 2), 2) = 1
+         COMPUTE WS-HSLOT = 3 - L-HAND
+     END-IF
+     MOVE EN-EQ-FOIL(L-ROW, WS-HSLOT) TO WS-HFOIL
+     CALL "ITEM-POSED-DRAW" USING CLIENT-STATE WS-M L-ITEM L-HAND L-ROW L-EYE-TABLE WS-BRIGHT WS-HFOIL
      GOBACK.
  END PROGRAM ENTITY-HELD-POSED.
 
@@ -153,7 +161,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ITEM-POSED-DRAW.
 *> USING CLIENT-STATE, placement (12 FLOAT-LONG: the columns of the 3 x 3 matrix, then the translation, relative to the eye), item registry id, display context (1 thirdperson_righthand,
-*> 2 thirdperson_lefthand, 3 fixed), replica row whose cell gives the light, eye (3 FLOAT-LONG), bright (BINARY-LONG, 1 for full bright): draws the item at the placement with its display
+*> 2 thirdperson_lefthand, 3 fixed), replica row whose cell gives the light, eye (3 FLOAT-LONG), bright (BINARY-LONG, 1 for full bright), foil (BINARY-LONG, 1 when the stack has the
+*> glint: the same quads are added to the glint mesh RL-WG-VERTEX, a cube's six faces, a flat icon one quad of each opaque texel on the front and the back: 54 section 19.3, T9903): draws the item at the placement with its display
 *> transform of the context (as above for the hands; the fixed context of an item frame without an entry: item/generated rotates (0, 180, 0), block/block scales 0.5, 12 section 8.2).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -207,6 +216,14 @@
  01 WS-SKY                 BINARY-LONG.
  01 WS-BLK                 BINARY-LONG.
  01 WS-MODE                BINARY-LONG VALUE 4.
+ 01 WS-GMODE               BINARY-LONG VALUE 6.
+ 01 WS-GN                  BINARY-LONG.
+ 01 WS-PX                  BINARY-LONG.
+ 01 WS-PY                  BINARY-LONG.
+ 01 WS-OFF                 BINARY-LONG.
+ 01 WS-OPAQUE              PIC 9 OCCURS 1024 TIMES.
+ 01 WS-CELL                FLOAT-LONG.
+ 01 B-ATLAS                PIC X(1073741824) BASED.
  01 WS-CORNERS.
     05 WS-CP               FLOAT-LONG OCCURS 12 TIMES.
  01 WS-UV.
@@ -229,7 +246,8 @@
  01 L-EYE-TABLE.
     05 L-EYE               FLOAT-LONG OCCURS 3 TIMES.
  01 L-BRIGHT               BINARY-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-M L-ITEM L-HAND L-ROW L-EYE-TABLE L-BRIGHT.
+ 01 L-FOIL                 BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-M L-ITEM L-HAND L-ROW L-EYE-TABLE L-BRIGHT L-FOIL.
      MOVE L-M TO WS-M
      CALL "ITEM-SPRITE-OF" USING CLIENT-STATE L-ITEM WS-SPRITE
      MOVE FUNCTION MAX(WS-SPRITE, 1) TO WS-SPRITE
@@ -344,6 +362,9 @@
              MOVE WS-NRM-V(WS-F, 2) TO WS-NV(2)
              MOVE WS-NRM-V(WS-F, 3) TO WS-NV(3)
              CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-MODE WS-NOQ
+             IF L-FOIL = 1
+                 CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-GMODE WS-NOQ
+             END-IF
          END-PERFORM
          GOBACK
      END-IF
@@ -367,6 +388,44 @@
          MOVE WS-NRM-V(WS-F, 3) TO WS-NV(3)
          CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-MODE WS-NOQ
      END-PERFORM
+*>   The glint of a foil icon covers the opaque texels only (the sprite's alpha above 0): one quad of each on the front and the back, its coordinates those of its texel corners.
+     IF L-FOIL = 1
+         MOVE AT-SW(WS-SPRITE) TO WS-GN
+         IF WS-GN > 32
+             MOVE 32 TO WS-GN
+         END-IF
+         SET ADDRESS OF B-ATLAS TO AT-ADDR
+         COMPUTE WS-CELL = 1 / WS-GN
+         PERFORM VARYING WS-PY FROM 0 BY 1 UNTIL WS-PY >= WS-GN
+             PERFORM VARYING WS-PX FROM 0 BY 1 UNTIL WS-PX >= WS-GN
+                 COMPUTE WS-OFF = ((AT-Y(WS-SPRITE) + WS-PY) * AT-W + AT-X(WS-SPRITE) + WS-PX) * 4 + 4
+                 MOVE 0 TO WS-OPAQUE(WS-PY * WS-GN + WS-PX + 1)
+                 IF FUNCTION ORD(B-ATLAS(WS-OFF:1)) > 1
+                     MOVE 1 TO WS-OPAQUE(WS-PY * WS-GN + WS-PX + 1)
+                 END-IF
+             END-PERFORM
+         END-PERFORM
+         PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 2
+             MOVE WS-NRM-V(WS-F, 1) TO WS-NV(1)
+             MOVE WS-NRM-V(WS-F, 2) TO WS-NV(2)
+             MOVE WS-NRM-V(WS-F, 3) TO WS-NV(3)
+             PERFORM VARYING WS-PY FROM 0 BY 1 UNTIL WS-PY >= WS-GN
+                 PERFORM VARYING WS-PX FROM 0 BY 1 UNTIL WS-PX >= WS-GN
+                     IF WS-OPAQUE(WS-PY * WS-GN + WS-PX + 1) = 1
+                         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                             COMPUTE WS-CP((WS-K - 1) * 3 + 1) = (WS-PX + WS-PICK(WS-F, (WS-K - 1) * 3 + 1)) * WS-CELL
+                             COMPUTE WS-CP((WS-K - 1) * 3 + 2) = 1 - (WS-PY + 1 - WS-PICK(WS-F, (WS-K - 1) * 3 + 2)) * WS-CELL
+                             COMPUTE WS-CP((WS-K - 1) * 3 + 3) = (19 - 2 * WS-F) / 32
+                             COMPUTE WS-U16(WS-K) = (WS-PX + FUNCTION MOD(FUNCTION INTEGER(WS-K / 2), 2)) * 16 / WS-GN
+                             COMPUTE WS-V16(WS-K) = (WS-PY + FUNCTION INTEGER(WS-K / 3)) * 16 / WS-GN
+                             CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE WS-U16(WS-K) WS-V16(WS-K) WS-TU(WS-K) WS-TV(WS-K)
+                         END-PERFORM
+                         CALL "HAND-QUAD" USING CLIENT-STATE WS-M WS-CORNERS WS-TEXEL WS-N3 WS-LIGHT WS-GMODE WS-NOQ
+                     END-IF
+                 END-PERFORM
+             END-PERFORM
+         END-PERFORM
+     END-IF
      GOBACK.
  END PROGRAM ITEM-POSED-DRAW.
 
@@ -387,6 +446,7 @@
  01 WS-DEG                 FLOAT-LONG.
  01 WS-STEP                FLOAT-LONG.
  01 WS-BRIGHT              BINARY-LONG.
+ 01 WS-FFOIL               BINARY-LONG.
  01 WS-CONTEXT             BINARY-LONG VALUE 3.
  LINKAGE SECTION.
  COPY CLSTATE.
@@ -456,6 +516,7 @@
      IF EN-KEY(L-ROW) = "glow_item_frame"
          MOVE 1 TO WS-BRIGHT
      END-IF
-     CALL "ITEM-POSED-DRAW" USING CLIENT-STATE WS-M EN-STACK-ITEM(L-ROW) WS-CONTEXT L-ROW L-EYE-TABLE WS-BRIGHT
+     MOVE 0 TO WS-FFOIL
+     CALL "ITEM-POSED-DRAW" USING CLIENT-STATE WS-M EN-STACK-ITEM(L-ROW) WS-CONTEXT L-ROW L-EYE-TABLE WS-BRIGHT WS-FFOIL
      GOBACK.
  END PROGRAM ENTITY-FRAME-EMIT.

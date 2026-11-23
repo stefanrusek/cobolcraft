@@ -284,7 +284,7 @@
 *> light, at least 0.1. The arm (3) keeps the two-light formula in view space and no culling; in the world (4 and 5) the faces are shaded by their world direction as the entity models
 *> are (up 1, down 0.5, east and west 0.6, north and south 0.8). A full mesh (2048 hand vertices) takes no more. With glint 5 the six vertices go to RL-EN-VERTEX (a banner held by a mob:
 *> the entity atlas and mesh). With glint 3 they go to RL-HA-VERTEX and nowhere else; with glint 4 to RL-GI-VERTEX (the pose chain in entity-relative world coordinates; the caller sees to
-*> the room). With glint 1 or 2 the same six vertices go to RL-HG-VERTEX as well (2: only there) with the glint coordinates of the atlas coordinates through the item scale 8 (GLINT-UV)
+*> the room). With glint 6 the six vertices go to RL-WG-VERTEX only (the glint layer of an item a mob holds, entity-relative world coordinates, the glint coordinates of the item scale 8 and the glint strength, no culling). With glint 1 or 2 the same six vertices go to RL-HG-VERTEX as well (2: only there) with the glint coordinates of the atlas coordinates through the item scale 8 (GLINT-UV)
 *> and the glint strength as brightness.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -327,7 +327,10 @@
  01 L-Q.
     05 L-QV                FLOAT-LONG OCCURS 9 TIMES.
  PROCEDURE DIVISION USING CLIENT-STATE L-M L-CORNERS L-UV L-NORMAL L-LIGHT L-GLINT L-Q.
-     IF L-GLINT NOT = 2 AND L-GLINT NOT = 3 AND L-GLINT NOT = 4 AND L-GLINT NOT = 5 AND RL-HAND-COUNT + 6 > 2048
+     IF L-GLINT NOT = 2 AND L-GLINT NOT = 3 AND L-GLINT NOT = 4 AND L-GLINT NOT = 5 AND L-GLINT NOT = 6 AND RL-HAND-COUNT + 6 > 2048
+         GOBACK
+     END-IF
+     IF L-GLINT = 6 AND RL-WG-COUNT + 6 > 8192
          GOBACK
      END-IF
      IF L-GLINT = 5 AND RL-EN-COUNT + 6 > CL-MAX-ENTITY-VERTICES
@@ -434,7 +437,23 @@
              MOVE 0 TO RL-EN-SKY(RL-EN-COUNT)
              MOVE 1 TO RL-EN-R(RL-EN-COUNT) RL-EN-G(RL-EN-COUNT) RL-EN-BLUE(RL-EN-COUNT)
          END-IF
-         IF L-GLINT NOT = 2 AND L-GLINT NOT = 3 AND L-GLINT NOT = 4 AND L-GLINT NOT = 5
+         IF L-GLINT = 6
+             ADD 1 TO RL-WG-COUNT
+             MOVE WS-P(WS-C + 1) TO RL-WG-X(RL-WG-COUNT)
+             MOVE WS-P(WS-C + 2) TO RL-WG-Y(RL-WG-COUNT)
+             MOVE WS-P(WS-C + 3) TO RL-WG-Z(RL-WG-COUNT)
+             MOVE L-U(WS-K) TO WS-GU
+             MOVE L-V(WS-K) TO WS-GV
+             CALL "GLINT-UV" USING WS-GU WS-GV WS-GSCALE
+             MOVE WS-GU TO RL-WG-U(RL-WG-COUNT)
+             MOVE WS-GV TO RL-WG-V(RL-WG-COUNT)
+             CALL "GLINT-STRENGTH" USING CLIENT-STATE WS-GSTRENGTH
+             MOVE WS-GSTRENGTH TO RL-WG-B(RL-WG-COUNT)
+             MOVE 1 TO RL-WG-A(RL-WG-COUNT)
+             MOVE 0 TO RL-WG-SKY(RL-WG-COUNT)
+             MOVE 1 TO RL-WG-R(RL-WG-COUNT) RL-WG-G(RL-WG-COUNT) RL-WG-BLUE(RL-WG-COUNT)
+         END-IF
+         IF L-GLINT = 0 OR L-GLINT = 1
              ADD 1 TO RL-HAND-COUNT
              MOVE WS-P(WS-C + 1) TO RL-HAND-X(RL-HAND-COUNT)
              MOVE WS-P(WS-C + 2) TO RL-HAND-Y(RL-HAND-COUNT)
