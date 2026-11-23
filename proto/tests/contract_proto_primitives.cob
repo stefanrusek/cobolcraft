@@ -1639,6 +1639,92 @@
      MOVE "contract proto COMMAND-NODE put brigadier:integer with only a minimum 5" TO TL-CASE
      MOVE "0200016e030100000005" TO WS-HEX
      PERFORM CHECK-BUFFER
+*>   05a, bytes worked out from the CommandNode layout (flags, child VarInts, redirect, name, parser,
+*>   parser properties, suggestions type): a root with three children, a double with both bounds
+*>   (-30000000.0 and 30000000.0 are the Doubles 0xC17C9C3800000000 and 0x417C9C3800000000), an integer
+*>   range with both bounds, a single-word string with suggestions and an argument with a child.
+     MOVE "00 03 01 02 03" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "contract proto COMMAND-NODE get root with the children 1 2 3" TO TL-CASE
+     MOVE "0 3 1 2 3 0 - 0 0 0 0 0 0 0 - 5" TO TL-EXPECTED
+     PERFORM START-TEXT
+     PERFORM ADD-COMMAND-NODE
+     MOVE PB-POS TO WS-NUM
+     PERFORM ADD-NUMBER
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "contract proto COMMAND-NODE put root with the children 1 2 3 is 00 03 01 02 03" TO TL-CASE
+     MOVE "0003010203" TO WS-HEX
+     PERFORM CHECK-BUFFER
+     MOVE "02 01 22 01 78 02 03 c1 7c 9c 38 00 00 00 00 41 7c 9c 38 00 00 00 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "contract proto COMMAND-NODE get argument x brigadier:double -30000000 to 30000000, child 34" TO TL-CASE
+     MOVE "2 1 34 0 x 2 0 3 0 0 -30000000 30000000 - 23" TO TL-EXPECTED
+     PERFORM START-TEXT
+     PERFORM ADD-COMMAND-NODE
+     MOVE PB-POS TO WS-NUM
+     PERFORM ADD-NUMBER
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "contract proto COMMAND-NODE put argument x brigadier:double -30000000 to 30000000, child 34"
+         TO TL-CASE
+     MOVE "02012201780203c17c9c3800000000417c9c3800000000" TO WS-HEX
+     PERFORM CHECK-BUFFER
+     MOVE "06 00 05 63 6f 75 6e 74 03 03 00 00 00 01 00 00 09 00" TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "contract proto COMMAND-NODE get executable argument count brigadier:integer 1 to 2304" TO TL-CASE
+     MOVE "6 0 0 count 3 0 3 1 2304 0 0 - 18" TO TL-EXPECTED
+     PERFORM START-TEXT
+     PERFORM ADD-COMMAND-NODE
+     MOVE PB-POS TO WS-NUM
+     PERFORM ADD-NUMBER
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "contract proto COMMAND-NODE put executable argument count brigadier:integer 1 to 2304"
+         TO TL-CASE
+     MOVE "060005636f756e7403030000000100000900" TO WS-HEX
+     PERFORM CHECK-BUFFER
+     MOVE "16 00 09 64 69 6d 65 6e 73 69 6f 6e 05 00 14 6d 69 6e 65 63 72 61 66 74 3a 61 73 6b 5f 73 65 72 76 65 72"
+         TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "contract proto COMMAND-NODE get argument dimension brigadier:string single word with ask_server"
+         TO TL-CASE
+     MOVE "22 0 0 dimension 5 0 0 0 0 0 0 minecraft:ask_server 35" TO TL-EXPECTED
+     PERFORM START-TEXT
+     PERFORM ADD-COMMAND-NODE
+     MOVE PB-POS TO WS-NUM
+     PERFORM ADD-NUMBER
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "contract proto COMMAND-NODE put argument dimension brigadier:string single word with ask_server"
+         TO TL-CASE
+     MOVE "16000964696d656e73696f6e0500146d696e6563726166743a61736b5f736572766572" TO WS-HEX
+     PERFORM CHECK-BUFFER
+     MOVE "12 01 05 06 70 6c 61 79 65 72 07 14 6d 69 6e 65 63 72 61 66 74 3a 61 73 6b 5f 73 65 72 76 65 72"
+         TO WS-HEX
+     PERFORM FILL
+     CALL "PB-GET-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "contract proto COMMAND-NODE get argument player game_profile with child 5 and ask_server" TO TL-CASE
+     MOVE "18 1 5 0 player 7 0 0 0 0 0 0 minecraft:ask_server 32" TO TL-EXPECTED
+     PERFORM START-TEXT
+     PERFORM ADD-COMMAND-NODE
+     MOVE PB-POS TO WS-NUM
+     PERFORM ADD-NUMBER
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-COMMAND-NODE" USING PB-BUFFER PB-COMMAND-NODE
+     MOVE "contract proto COMMAND-NODE put argument player game_profile with child 5 and ask_server"
+         TO TL-CASE
+     MOVE "12010506706c6179657207146d696e6563726166743a61736b5f736572766572" TO WS-HEX
+     PERFORM CHECK-BUFFER
 *>   05a parser 6 entity is not one CobolCraft uses: malformed.
      MOVE "02 00 01 61 06 01" TO WS-HEX
      PERFORM FILL
