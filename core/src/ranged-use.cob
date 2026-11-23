@@ -16,6 +16,7 @@
 *>   RANGED-ITEM-USE USING connection id, PLAY-SERVERBOUND, done out    Use Item with a bow, crossbow or trident in the main hand
 *>   RANGED-RELEASE USING player row                                    Player Action 6
 *>   RANGED-BOW-SHOOT USING player row, ticks used
+*>   RANGED-USE-EVENT USING player row, which (1 item_interact_start, 2 item_interact_finish): LivingEntity.startUsingItem / stopUsingItem (30 part 8 section 14.3.8) at the player
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. RANGED-IS-AMMO.
@@ -361,6 +362,25 @@
  END PROGRAM RANGED-BOW-SHOOT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. RANGED-USE-EVENT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-EV-START            PIC X(32) VALUE "item_interact_start".
+ 01 WS-EV-FINISH           PIC X(32) VALUE "item_interact_finish".
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-WHICH                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-WHICH.
+     IF L-WHICH = 1
+         CALL "GAME-EVENT-AT" USING WS-EV-START PL-ENTITY-ROW(L-ROW)
+     ELSE
+         CALL "GAME-EVENT-AT" USING WS-EV-FINISH PL-ENTITY-ROW(L-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM RANGED-USE-EVENT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. RANGED-RELEASE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -370,6 +390,7 @@
  01 WS-KEY                 PIC X(48).
  01 WS-USED                BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
+ 01 WS-FINISH              BINARY-LONG VALUE 2.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -383,6 +404,7 @@
      COMPUTE WS-SLOT = PL-HELD(L-ROW) + 1
 *>   Changing the held slot ends a use: the item in the hand must be the one that was used.
      IF PL-SLOT-COUNT(L-ROW, WS-SLOT) = 0 OR PL-SLOT-ITEM(L-ROW, WS-SLOT) NOT = WS-ITEM
+         CALL "RANGED-USE-EVENT" USING L-ROW WS-FINISH
          GOBACK
      END-IF
      CALL "TOOLUSE-KEY" USING WS-ITEM WS-KEY
@@ -392,6 +414,8 @@
          WHEN "trident"
              CALL "RANGED-TRIDENT-THROW" USING L-ROW WS-USED
      END-EVALUATE
+*>   stopUsingItem follows releaseUsing (the shot): item_interact_finish.
+     CALL "RANGED-USE-EVENT" USING L-ROW WS-FINISH
      GOBACK.
  END PROGRAM RANGED-RELEASE.
 
@@ -409,6 +433,8 @@
  01 WS-AMMO-SLOT           BINARY-LONG.
  01 WS-AMMO                BINARY-LONG.
  01 WS-CROSSBOW            BINARY-LONG VALUE 0.
+ 01 WS-WAS                 BINARY-LONG.
+ 01 WS-START               BINARY-LONG VALUE 1.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -425,6 +451,7 @@
      END-IF
      CALL "TOOLUSE-KEY" USING PL-SLOT-ITEM(WS-ROW, WS-SLOT) WS-KEY
      CALL "COMBAT-TS-CHECK" USING WS-ROW
+     MOVE TS-USE-START(WS-ROW) TO WS-WAS
      EVALUATE WS-KEY
          WHEN "bow"
              CALL "RANGED-AMMO" USING WS-ROW WS-CROSSBOW WS-WHERE WS-AMMO-SLOT WS-AMMO
@@ -440,5 +467,9 @@
          WHEN "firework_rocket"
              CALL "RANGED-ROCKET-USE" USING WS-ROW L-DONE
      END-EVALUATE
+*>   startUsingItem (drawing a bow, charging a crossbow, raising a trident): item_interact_start once, when a use begins.
+     IF WS-WAS = 0 AND TS-USE-START(WS-ROW) > 0
+         CALL "RANGED-USE-EVENT" USING WS-ROW WS-START
+     END-IF
      GOBACK.
  END PROGRAM RANGED-ITEM-USE.

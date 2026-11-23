@@ -149,6 +149,7 @@
  01 WS-AMMO-SLOT           BINARY-LONG.
  01 WS-AMMO                BINARY-LONG.
  01 WS-CROSSBOW            BINARY-LONG VALUE 1.
+ 01 WS-FINISH              BINARY-LONG VALUE 2.
  01 WS-N                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-VALUE               PIC X(64).
@@ -173,8 +174,9 @@
      IF WS-USED < WS-CHARGE
          GOBACK
      END-IF
-*>   The charge is complete: tryLoadProjectiles. Either way the use is over (a crossbow without ammunition any more is simply not loaded).
+*>   The charge is complete: tryLoadProjectiles. Either way the use is over (a crossbow without ammunition any more is simply not loaded): stopUsingItem posts item_interact_finish.
      MOVE 0 TO TS-USE-START(L-ROW) TS-USE-ITEM(L-ROW)
+     CALL "RANGED-USE-EVENT" USING L-ROW WS-FINISH
      CALL "RANGED-AMMO" USING L-ROW WS-CROSSBOW WS-WHERE WS-AMMO-SLOT WS-AMMO
      IF WS-WHERE = 0
          GOBACK
@@ -331,6 +333,7 @@
  01 WS-ROW                 BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
  01 WS-KEY                 PIC X(48).
+ 01 WS-FINISH              BINARY-LONG VALUE 2.
  PROCEDURE DIVISION.
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > CORE-MAX-PLAYERS
          IF PL-USED(WS-ROW) = 1 AND PL-ENTITY-ROW(WS-ROW) > 0 AND PL-STATE(WS-ROW) = PS-ALIVE
@@ -343,8 +346,9 @@
                          CALL "RANGED-CROSSBOW-LOAD" USING WS-ROW
                      END-IF
                  ELSE
-*>                   The held slot changed: the use is over.
+*>                   The held slot changed: the use is over (stopUsingItem: item_interact_finish).
                      MOVE 0 TO TS-USE-START(WS-ROW) TS-USE-ITEM(WS-ROW)
+                     CALL "RANGED-USE-EVENT" USING WS-ROW WS-FINISH
                  END-IF
              END-IF
              IF TS-SPIN-TICKS(WS-ROW) > 0

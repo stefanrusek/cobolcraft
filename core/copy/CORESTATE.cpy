@@ -541,6 +541,12 @@
        10 EN-CAMEL-POSE-T     BINARY-LONG.        *> camel: game tick of the last pose change
        10 EN-FROG-CD          BINARY-LONG.        *> frog: ticks until the next long jump
        10 EN-SNIF-CD          BINARY-LONG.        *> sniffer: ticks of the sniff cooldown left (9600 after a dig)
+*>     --- wrap C: the sniffer's dig position (core/src/mob-44-h.cob; 44 part 4 section 13) ---
+       10 EN-SNIF-TON         BINARY-LONG.        *> sniffer: 1 while a sniffing target (and the walk target to it) is set
+       10 EN-SNIF-TX          BINARY-LONG.        *> sniffer: the sniffing target block
+       10 EN-SNIF-TY          BINARY-LONG.
+       10 EN-SNIF-TZ          BINARY-LONG.
+       10 EN-SNIF-AGE         BINARY-LONG.        *> sniffer: ticks searching has run (time-out 600)
        10 EN-SENT-X           FLOAT-LONG.         *> the position last sent to the viewers (18 section 9.2)
        10 EN-SENT-Y           FLOAT-LONG.
        10 EN-SENT-Z           FLOAT-LONG.
