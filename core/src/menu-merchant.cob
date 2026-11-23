@@ -176,6 +176,7 @@
          GOBACK
      END-IF
      IF VL-KIND(WS-SLOT) = 1 AND EN-VARIANT(L-ENTITY) = 1
+         CALL "VL-UNHAPPY-SHAKE" USING L-ENTITY
          MOVE 1 TO L-USED
          GOBACK
      END-IF
@@ -191,7 +192,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MERCHANT-OPEN-IF.
-*> USING player row, entity row, state slot, used out: opens the window when the merchant has offers.
+*> USING player row, entity row, state slot, used out: opens the window when the merchant has offers; a villager without offers shakes its head.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -208,6 +209,11 @@
      IF VL-O-N(L-SLOT) > 0
          CALL "MENU-STATION-OPEN" USING PL-CONN(L-ROW) EN-ID(L-ENTITY) WS-ZERO WS-ZERO2 WS-KIND
          CALL "MERCHANT-OFFERS-SEND" USING L-ROW
+         MOVE 1 TO L-USED
+     END-IF
+*>   19 section 22.4: an adult villager with no offers shakes its head (unhappy counter 40) and the action is consumed.
+     IF VL-O-N(L-SLOT) = 0 AND VL-KIND(L-SLOT) = 1
+         CALL "VL-UNHAPPY-SHAKE" USING L-ENTITY
          MOVE 1 TO L-USED
      END-IF
      GOBACK.
