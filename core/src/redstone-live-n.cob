@@ -4,7 +4,7 @@
 *> viewers get Set Entity Data as for a player's chest, mob-19-3c.cob), the item is spent; with none, the default drop.
 *> Not done: the respawn anchor's charge sound (the document names `RespawnAnchorBlock.charge` and no sound), the llama's chest flag is not saved or sent (mob-19-3c.cob handles the donkey and the mule), the 27 slots of the new inventory.
 *> The shulker boxes (4.15), the wither skeleton skull and the carved pumpkin (4.7, 4.8) and every item that can be worn (4.9) go to redstone-live-o.cob; the fire charge, the wind charge, the firework rocket and
-*> the splash and lingering potions (4.1) to redstone-live-p.cob.
+*> the splash and lingering potions (4.1) to redstone-live-p.cob; the swallowing of an item by a sulfur cube (4.12) to redstone-live-q.cob.
 *> Entry points:
 *>   RL-DISP-MORE USING dim, front x, y, z, facing, item key (PIC X(48), bare), handled out, consumed out, item, slot variant    handled 1 when a rule ran (consumed: 1 the item is spent, 0 the dry click 1001); 0 for the default
 
@@ -46,6 +46,7 @@
  01 LS-CZ1                 FLOAT-LONG.
  01 LS-OVERLAP             BINARY-LONG.
  01 LS-LEN                 BINARY-LONG.
+ 01 LS-MASK                BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -126,6 +127,13 @@
          WHEN OTHER
 *>           4.9, the default rule of an item with the equippable component: worn by an armor stand or a player in front, else the default drop
              CALL "RL-DISP-EQUIP" USING L-DIM L-X L-Y L-Z L-ITEM L-CONSUMED
+*>           4.12 (3.1 rule 2): an item nobody wears that is in the tag sulfur_cube_swallowable goes to a sulfur cube in front (redstone-live-q.cob)
+             IF L-CONSUMED = 0
+                 CALL "SULFUR-ARCH-MASK" USING L-ITEM LS-MASK
+                 IF LS-MASK > 0
+                     CALL "RL-DISP-SWALLOW" USING L-DIM L-X L-Y L-Z L-ITEM L-CONSUMED
+                 END-IF
+             END-IF
              MOVE L-CONSUMED TO L-HANDLED
      END-EVALUATE
      GOBACK.
