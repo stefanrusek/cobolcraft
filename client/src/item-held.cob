@@ -26,6 +26,11 @@
  01 WS-SHIELD              BINARY-LONG.
  01 WS-HSLOT               BINARY-LONG.
  01 WS-HFOIL               BINARY-LONG.
+ 01 WS-FLAVOUR             BINARY-LONG.
+ 01 WS-OPI.
+    05 WS-OPIV             FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-OPO.
+    05 WS-OPOV             FLOAT-LONG OCCURS 64 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ROW                  BINARY-LONG.
@@ -46,6 +51,18 @@
      MOVE 1 TO WS-SIDE
      IF L-HAND = 2
          MOVE -1 TO WS-SIDE
+     END-IF
+*>   A copper golem's translateToHand (34-3 9.3): after the arm part, the state IDLE turns the arm's frame by -90 (right) or +90 (left) about Y and moves it (0, 0, 0.125); any other
+*>   state scales it by 0.55 and moves it (-0.125, 0.3125, -0.1875).
+     IF EN-KEY(L-ROW) = "copper_golem"
+         MOVE WS-SIDE TO WS-OPIV(1)
+         MOVE 0 TO WS-OPIV(2)
+         IF EN-X1(L-ROW) = 0
+             MOVE 1 TO WS-OPIV(2)
+         END-IF
+         CALL "EM3-COPPER-HAND-OPS" USING WS-OPI WS-OPO
+         MOVE 0 TO WS-FLAVOUR
+         CALL "ENTITY-OPS-MATRIX" USING WS-M WS-OPO WS-FLAVOUR
      END-IF
 *>   rotate X by -90, Y by 180, then translate: an adult (+-1, 2, -10) / 16, a baby (0, 1, -4.5) / 16.
      MOVE 1 TO WS-AXIS
