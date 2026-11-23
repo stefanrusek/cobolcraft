@@ -4,8 +4,11 @@
 *> the world top 319 + 30 bursts where it is. The burst (WIND-EXPLODE): radius 1.2 and knockback multiplier 1.22 for the charge of a player, 3.0 and none for the breeze's; no entity damage, no block
 *> destruction; a player or standard mob within 2 x radius is pushed by (1 - dist) x seen x multiplier (dist = distance of its feet to the centre / (2 x radius), seen = EXPLODE-SEEN) along the direction from
 *> the centre to its eyes; a flying player has multiplier 0; the players within 64 blocks get the Explode packet (particle gust_emitter_small 34 below radius 2, gust_emitter_large 33 else; no blocks).
+*> Redirect by attack (WIND-REDIRECT, called by PROJ-REDIRECT; wrap C round 6, T24214): a player's attack on a charge is AIM_DEFLECT (44-8 6.3): the velocity becomes the player's look direction, the player
+*> the owner and the acceleration power 0.1 (PJ-ROU, 6.4 onDeflection by an attack: each tick adds 0.1 along the velocity before the flight); the charge of a player refuses any deflection for its first
+*> 5 ticks (PJ-I2 the noDeflectTicks, counted down by WIND-STEP), the breeze's charge has no window; the attack never damages a charge. Not done: the pick radius 1.0 of a redirectable charge, a charge flying into another one.
 *> Not done: triggering the blocks in the burst (levers, buttons, doors, trapdoors, gates, candles: the per-block rules of 24 are given but the exploded-position walk with the immune set
-*> blocks_wind_charge_explosions is not built), redirecting a charge by attack, the no-deflect window, the box 0.15 below the position (the flight uses the thrown entities' 0.25 box), pushes of
+*> blocks_wind_charge_explosions is not built), the box 0.15 below the position (the flight uses the thrown entities' 0.25 box), pushes of
 *> non-mob entities (items, arrows, boats), the burst sounds are the registered holders of 21 section 8.18 (lane p49t),
 *> the dispenser launch (30-4 4.1 gives it: position, 6.6666665 uncertainty, power 1.0), the breeze that shoots it (20 section 8).
 *>
@@ -45,6 +48,10 @@
      IF L-ROW > 0
          CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
          MOVE L-BREEZE TO PJ-I1(WS-SLOT)
+*>       noDeflectTicks = 5 for the charge of a player (the breeze's has none).
+         IF L-BREEZE = 0
+             MOVE 5 TO PJ-I2(WS-SLOT)
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM WIND-SPAWN.
@@ -276,6 +283,7 @@
  01 WS-NONE2               BINARY-LONG VALUE 0.
  01 WS-RESULT              BINARY-LONG.
  01 WS-BURST               BINARY-LONG.
+ 01 WS-SPEED               FLOAT-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
@@ -291,6 +299,16 @@
          MOVE 1220 TO WS-MULT
      END-IF
      MOVE 0 TO WS-BURST
+*>   The no-deflect window counts down; a redirected charge (power 0.1) adds the power along its velocity before it flies (applyInertia).
+     IF PJ-I2(WS-SLOT) > 0
+         SUBTRACT 1 FROM PJ-I2(WS-SLOT)
+     END-IF
+     COMPUTE WS-SPEED = FUNCTION SQRT(EN-VX(L-ROW) * EN-VX(L-ROW) + EN-VY(L-ROW) * EN-VY(L-ROW) + EN-VZ(L-ROW) * EN-VZ(L-ROW))
+     IF PJ-ROU(WS-SLOT) > 0 AND WS-SPEED > 0
+         COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) + EN-VX(L-ROW) / WS-SPEED * PJ-ROU(WS-SLOT)
+         COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) + EN-VY(L-ROW) / WS-SPEED * PJ-ROU(WS-SLOT)
+         COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) + EN-VZ(L-ROW) / WS-SPEED * PJ-ROU(WS-SLOT)
+     END-IF
      IF EN-Y(L-ROW) > WS-TOP
          MOVE EN-X(L-ROW) TO WS-X
          MOVE EN-Y(L-ROW) TO WS-Y
@@ -325,3 +343,37 @@
      END-IF
      GOBACK.
  END PROGRAM WIND-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. WIND-REDIRECT.
+*> USING player row, tracker row, done out: a player's attack on a wind charge (44-8 section 8 Redirection, 6.3 AIM_DEFLECT, 6.4 onDeflection). done is 1 for a wind charge (the attack never damages it).
+*> Outside the no-deflect window the velocity becomes the player's look direction (speed 1), the player is the owner and the acceleration power is 0.1 (PJ-ROU); inside it nothing changes.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-YAW                 FLOAT-LONG.
+ 01 WS-PITCH               FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DONE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-ROW L-DONE.
+     MOVE 0 TO L-DONE
+     CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
+     IF WS-SLOT > 0 AND PJ-KIND(WS-SLOT) = 42
+         MOVE 1 TO L-DONE
+         IF PJ-I2(WS-SLOT) = 0
+             COMPUTE WS-YAW = PL-YAW(L-PLAYER) * FUNCTION PI / 180
+             COMPUTE WS-PITCH = PL-PITCH(L-PLAYER) * FUNCTION PI / 180
+             COMPUTE EN-VX(L-ROW) = 0 - FUNCTION SIN(WS-YAW) * FUNCTION COS(WS-PITCH)
+             COMPUTE EN-VY(L-ROW) = 0 - FUNCTION SIN(WS-PITCH)
+             COMPUTE EN-VZ(L-ROW) = FUNCTION COS(WS-YAW) * FUNCTION COS(WS-PITCH)
+             MOVE PL-ENTITY-ID(L-PLAYER) TO EN-TARGET-ID(L-ROW) PJ-OWNER(WS-SLOT)
+             MOVE 0.1 TO PJ-ROU(WS-SLOT)
+             CALL "PROJ-ROTATE" USING L-ROW
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM WIND-REDIRECT.

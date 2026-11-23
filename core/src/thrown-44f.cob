@@ -4,7 +4,7 @@
 *> REVERSE: velocity x (-0.5, -0.5, -0.5), yaw + 170 to 190 degrees (a breeze's deflection tag is not an entity here, so nothing calls it yet).
 *> Gaps: the sound, the entity's deflection tag (breeze) and lastDeflectedBy, the pickable radius 1.0, game event PROJECTILE_LAND, a deflected fireball killing a ghast (the advancement).
 *>
-*>   PROJ-REDIRECT USING player row, tracker row, done out (1 when the row was a large fireball and was redirected)
+*>   PROJ-REDIRECT USING player row, tracker row, done out (1 when the row was a large fireball or a wind charge and was redirected or refused)
 *>   PROJ-REVERSE USING tracker row
 
  IDENTIFICATION DIVISION.
@@ -36,6 +36,10 @@
      IF WS-KIND = 4
          CALL "ENTITY-REMOVE" USING L-ROW
          MOVE 1 TO L-DONE
+     END-IF
+*>   A wind charge is redirected onto the aim of the attacker (44 part 8 sections 6.3 and 8) unless it is in its no-deflect window; the attack does not hurt it either way.
+     IF WS-KIND = 0 OR WS-KIND = 6
+         CALL "WIND-REDIRECT" USING L-PLAYER L-ROW L-DONE
      END-IF
      GOBACK.
  END PROGRAM PROJ-REDIRECT.
