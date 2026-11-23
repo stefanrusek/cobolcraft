@@ -116,6 +116,27 @@
      MOVE WS-DUMMY TO TL-EXPECTED-N
      MOVE EN-TARGET-ID(WS-ROW) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The pick radius (44-8 section 6.1: getPickRadius is 1.0 for a redirectable projectile): the charge's box is inflated by 1.0 for the reach of an attack (4.0). A charge whose box is 4.84 blocks from
+*>   the eye (z + 5.0 less its half width 0.156) is within reach through the radius (3.84), one at z + 5.3 (4.14) is not.
+     CALL "ENTITY-REMOVE" USING WS-ROW
+     COMPUTE WS-Z = PL-Z(WS-PLAYER) + 5.3
+     CALL "WIND-SPAWN" USING WS-BREEZE WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-OWNER WS-ROW
+     MOVE EN-ID(WS-ROW) TO WS-ID
+     CALL "TEST-ATTACK" USING WS-CONN WS-ID
+     MOVE "implementation 44-8 6.1 a charge 4.14 blocks from the eye (box inflated by the pick radius 1.0) is out of reach: not redirected" TO TL-CASE
+     MOVE WS-OWNER TO TL-EXPECTED-N
+     MOVE EN-TARGET-ID(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-ROW
+     COMPUTE WS-Z = PL-Z(WS-PLAYER) + 5.0
+     CALL "WIND-SPAWN" USING WS-BREEZE WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-OWNER WS-ROW
+     MOVE EN-ID(WS-ROW) TO WS-ID
+     CALL "TEST-ATTACK" USING WS-CONN WS-ID
+     MOVE "implementation 44-8 6.1 a charge 3.84 blocks from the eye through the pick radius is within the reach 4.0: redirected" TO TL-CASE
+     MOVE WS-DUMMY TO TL-EXPECTED-N
+     MOVE EN-TARGET-ID(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-WIND-REDIRECT.
  COPY CORETEST.

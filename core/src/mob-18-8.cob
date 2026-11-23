@@ -408,6 +408,10 @@
              END-IF
          END-IF
      END-IF
+*>   The nautilus family (44-7 section 10.2): tame, dash and the zombie nautilus variant are entity data too.
+     IF WS-M > 0
+         CALL "NAUTILUS-NEEDED" USING L-ROW L-NEEDED
+     END-IF
 *>   The tadpole is a water animal (kind 2): its lock is sent too (19 section 11.2).
      IF WS-M > 0
          IF SM-KEY(WS-M) = "villager"
@@ -521,6 +525,7 @@
      CALL "MOB-CARE-DATA" USING L-ROW PB-BUFFER
      CALL "MOB-RABBIT-DATA" USING L-ROW PB-BUFFER
      CALL "MOB-EQUINE-DATA" USING L-ROW PB-BUFFER
+     CALL "NAUTILUS-DATA" USING L-ROW PB-BUFFER
      CALL "MOB-POLAR-DATA" USING L-ROW PB-BUFFER
      CALL "VILLOOK-DATA" USING L-ROW PB-BUFFER
      CALL "VL-SLEEP-DATA" USING L-ROW PB-BUFFER
@@ -1647,6 +1652,11 @@
      END-IF
 *>   Mob.interact posts entity_interact (the mob's position, the player as the source) after the common interactions (the leash) or mobInteract consumed the action (30-8 14.3.7)
      CALL "MOB-LEASH-USE" USING WS-ROW WS-ENTITY WS-HELD WS-USED
+     IF WS-USED = 1
+         CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
+         GOBACK
+     END-IF
+     CALL "NAUTILUS-USE" USING WS-ROW WS-ENTITY WS-HELD WS-USED
      IF WS-USED = 1
          CALL "GAME-EVENT-INTERACT" USING WS-ENTITY WS-ROW
          GOBACK

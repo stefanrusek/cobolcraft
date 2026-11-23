@@ -1,7 +1,7 @@
 *> Aquatic mobs of document 21 section 4 (lane 002-lane-mobsfull-h10; with doc 44 part 7): the water animals cod, salmon, pufferfish, tropical fish (4.1 to 4.4), squid
 *> and glow squid (4.5) and dolphin (4.6). Their rows are core/copy/MOB21ROWS.cpy.
 *> Entry points:
-*>   MS6-ROW-CAT USING row, category out: the spawn category of a table row (18 section 1.2): kind 0 creature 2, 1 monster 1, 2 water creature 6, 3 water ambient 7, 4 underground 5, 5 axolotls 4, 6 aquatic monster 1.
+*>   MS6-ROW-CAT USING row, category out: the spawn category of a table row (18 section 1.2): kind 0 creature 2, 1 monster 1, 2 water creature 6, 3 water ambient 7, 4 underground 5, 5 axolotls 4, 6 aquatic monster 1, 7 nautilus 6, 8 zombie nautilus 1.
 *>   STDMOB-AQUATIC-STEP USING tracker row, table row: one tick of a water animal that is alive and in a ready chunk (STDMOB-STEP calls it for SM-KIND 2 to 4).
 *>   STDMOB-AQUATIC-FINALIZE USING xoro state, tracker row, table row: the spawn variant of a salmon (4.2: small 30, medium 50, large 15) and of a tropical fish (4.4).
 *>   AQUA-STATE-SEND USING tracker row, value: Set Entity Data index 17 VarInt value to the viewers (the pufferfish's puff state).
@@ -32,6 +32,10 @@
          WHEN 5
              MOVE 4 TO L-CAT
          WHEN 6
+             MOVE 1 TO L-CAT
+         WHEN 7
+             MOVE 6 TO L-CAT
+         WHEN 8
              MOVE 1 TO L-CAT
          WHEN OTHER
              MOVE 5 TO L-CAT
@@ -327,6 +331,10 @@
      IF SM-KIND(L-M) = 6
          MOVE 0.1 TO WS-FACTOR
      END-IF
+*>   The nautilus family: SmoothSwimmingMoveControl(85, 10, 0.011, 0, true), the in-water speed modifier 0.011 (44-7 section 10.1).
+     IF SM-KIND(L-M) = 7 OR SM-KIND(L-M) = 8
+         MOVE 0.011 TO WS-FACTOR
+     END-IF
      COMPUTE WS-RADIANS = WS-YAW * FUNCTION PI / 180
      COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) - FUNCTION SIN(WS-RADIANS) * EN-SWIM-SPEED(L-ROW) * WS-FACTOR
      COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) + FUNCTION COS(WS-RADIANS) * EN-SWIM-SPEED(L-ROW) * WS-FACTOR
@@ -569,7 +577,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. STDMOB-AQUATIC-STEP.
-*> USING tracker row, table row: one tick of a water animal (a row of SM-KIND 2 to 4) that is alive in a ready chunk. Air (44 part 7 section 2.6): a fish or squid out of water counts
+*> USING tracker row, table row: one tick of a water animal (a row of SM-KIND 2 to 8) that is alive in a ready chunk. Air (44 part 7 section 2.6): a fish or squid out of water counts
 *> EN-DRY; at 320 (air 300, then -20) the air is reset to 0 (EN-DRY 300) and it takes 2 drown damage; in water EN-DRY is 0. A dolphin dries out instead (moistness 2400): at 2400
 *> dry ticks it takes 1 damage a tick, and on the ground and dry it hops (velocity + (nextFloat x 2 - 1) x 0.2, 0.5, ...; 4.2). A fish on the ground out of water flops on every tick
 *> (velocity + ((nextFloat x 2 - 1) x 0.05, 0.4, ...); 44-7 section 4.1). Then the behaviour (AQUA-SQUID, AQUA-SWIM, AQUA-PUFFER), gravity out of water (0.08), the move (AQUA-MOVE)
@@ -602,7 +610,7 @@
      CALL "FLUID-TOUCHES-WATER" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-WET
      CALL "AQUA-GROW" USING L-ROW
      MOVE EN-YAW(L-ROW) TO WS-YAW
-*>   Air: a fish or squid 300 and 20 more (drown), the axolotl 6000 and 20 (dry out, 44 part 7 section 8.4), the guardian none (it breathes under water and flops on land, 21 section 4.8).
+*>   Air: a fish or squid 300 and 20 more (drown), the axolotl 6000 and 20 (dry out, 44 part 7 section 8.4), the guardian none (it breathes under water and flops on land, 21 section 4.8), the zombie nautilus none (it breathes water as an undead, 44-7 section 10.1).
 *>   A dolphin's moistness refills in water or in rain (isInWaterOrRain, 44 part 7 section 4.2): rain wets it only for the moistness, not for swimming and gravity.
      MOVE WS-WET TO WS-MOIST
      IF WS-WET = 0 AND SM-KEY(L-M) = "dolphin"
@@ -617,7 +625,7 @@
          MOVE 6020 TO WS-LIMIT
          MOVE 6000 TO WS-RESET
      END-IF
-     IF SM-KIND(L-M) = 6
+     IF SM-KIND(L-M) = 6 OR SM-KIND(L-M) = 8
          MOVE 0 TO WS-LIMIT
      END-IF
      IF WS-MOIST = 1
@@ -687,6 +695,8 @@
                  CALL "GUARDIAN-TICK" USING L-ROW L-M WS-WET
              WHEN SM-KEY(L-M) = "dolphin"
                  CALL "DOLPHIN-TICK" USING L-ROW L-M WS-WET
+             WHEN SM-KIND(L-M) = 7 OR SM-KIND(L-M) = 8
+                 CALL "NAUTILUS-TICK" USING L-ROW L-M WS-WET
              WHEN WS-WET = 1
                  CALL "AQUA-SWIM" USING L-ROW L-M
          END-EVALUATE
