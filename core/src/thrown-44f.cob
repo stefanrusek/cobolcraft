@@ -62,3 +62,26 @@
      COMPUTE EN-YAW(L-ROW) = EN-YAW(L-ROW) + 170 + WS-R
      GOBACK.
  END PROGRAM PROJ-REVERSE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PROJ-PICK-RADIUS.
+*> USING tracker row, radius out (BINARY-LONG, blocks): getPickRadius of the entity (44 part 8 section 6.1): 1 for a redirectable projectile (tag redirectable_projectile: a large fireball, a wind charge
+*> of a player or of a breeze), else 0. The attack reach of HEALTH-ATTACK inflates the entity's box by it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-RADIUS               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-RADIUS.
+     MOVE 0 TO L-RADIUS
+     CALL "PROJ-KIND" USING EN-TYPE(L-ROW) WS-KIND
+     CALL "PJ-FIND" USING EN-ID(L-ROW) WS-SLOT
+     IF WS-KIND = 1 OR (WS-SLOT > 0 AND PJ-KIND(WS-SLOT) = 42)
+         MOVE 1 TO L-RADIUS
+     END-IF
+     GOBACK.
+ END PROGRAM PROJ-PICK-RADIUS.

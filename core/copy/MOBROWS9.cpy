@@ -69,13 +69,13 @@
        10 FILLER BINARY-LONG VALUE 0.  *> ranged
        10 FILLER BINARY-LONG VALUE 14.  *> natural spawn rule (SM-SPAWN)
        10 FILLER BINARY-LONG VALUE 0.  *> hit effect
-*> Nautilus (21 section 4.10; only its spawn predicate 4.11 is built: Animal base + MAX_HEALTH 15, MOVEMENT_SPEED 1.0, ATTACK_DAMAGE 3; the speed modifier of its idle swim is Open question 10 of 21, 1.0 here; no brain, no taming or riding). Kind 2: water creature; SM-SPAWN 15: the depth band of AQUA-SPAWN-RULE / MS6-WATER-RULE.
+*> Nautilus (21 section 4.10 with 44-7 section 10: Animal base + MAX_HEALTH 15, MOVEMENT_SPEED 1.0, ATTACK_DAMAGE 3; the idle swim modifier is 1.0 (RandomStroll.swim(1.0)), the panic modifier 1.6 (AnimalPanic(1.6))). Kind 7: the nautilus family (category 6 water creature; NAUTILUS-TICK in mob-21-4-nautilus.cob); SM-SPAWN 15: the depth band of AQUA-SPAWN-RULE / MS6-WATER-RULE.
     05 FILLER.
        10 FILLER PIC X(24) VALUE "nautilus".
        10 FILLER BINARY-LONG VALUE 15.  *> max health
        10 FILLER BINARY-LONG VALUE 1000.  *> walk x 1000
-       10 FILLER BINARY-LONG VALUE 0.  *> panic x 1000
-       10 FILLER BINARY-LONG VALUE 2.  *> kind
+       10 FILLER BINARY-LONG VALUE 1600.  *> panic x 1000
+       10 FILLER BINARY-LONG VALUE 7.  *> kind
        10 FILLER BINARY-LONG VALUE 3.  *> attack damage
        10 FILLER BINARY-LONG VALUE 16.  *> follow range
        10 FILLER BINARY-LONG VALUE 0.  *> burns in daylight

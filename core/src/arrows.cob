@@ -231,6 +231,8 @@
  01 WS-AFTER               BINARY-LONG.
  01 WS-EV-LAND             PIC X(32) VALUE "projectile_land".
  01 WS-NO-STATE            BINARY-LONG VALUE -1.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-BLOCKED             BINARY-LONG.
  LINKAGE SECTION.
  01 L-ARROW                BINARY-LONG.
  01 L-ENTITY               BINARY-LONG.
@@ -249,6 +251,16 @@
          COMPUTE WS-BOUND = WS-DAMAGE / 2 + 2
          CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-ROLL
          ADD WS-ROLL TO WS-DAMAGE
+     END-IF
+*>   A raised shield blocks an arrow from in front that does not pierce (17 section 3.6): no damage, the shield wears, and the arrow is deflected (44 section 7.3 step 9, ARROW-BOUNCE).
+     IF L-PLAYER > 0 AND EN-ARR-PIERCE(L-ARROW) = 0
+         COMPUTE WS-LEFT = WS-DAMAGE * 1000
+         CALL "COMBAT-SHIELD-POS" USING L-PLAYER EN-X(L-ARROW) EN-Z(L-ARROW) WS-LEFT WS-BLOCKED
+         IF WS-BLOCKED = 1
+             CALL "ARROW-BOUNCE" USING L-ARROW
+             CALL "GAME-EVENT" USING EN-DIM(L-ARROW) EN-X(L-ARROW) EN-Y(L-ARROW) EN-Z(L-ARROW) WS-EV-LAND L-ARROW WS-NO-STATE
+             GOBACK
+         END-IF
      END-IF
      MOVE EN-TARGET-ID(L-ARROW) TO WS-OWNER-ID
      MOVE 0 TO WS-OWNER-ROW WS-OWNER-PLAYER
@@ -319,6 +331,48 @@
      END-IF
      GOBACK.
  END PROGRAM ARROW-HIT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ARROW-BOUNCE.
+*> USING arrow row: the arrow's hurt failed against a shield (44 section 7.3 step 9): REVERSE with s = 0.2 (the velocity times -0.1, the yaw turned by 170 to 190 degrees); an arrow whose squared
+*> speed is then below 1e-7 drops its pickup item (pickup mode 1) 0.1 above its position and is removed, any other keeps flying.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-SPEED2              FLOAT-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-DELAY               BINARY-LONG VALUE 10.
+ 01 WS-ZERO-X              FLOAT-LONG VALUE 0.
+ 01 WS-ZERO-Y              FLOAT-LONG VALUE 0.
+ 01 WS-ZERO-Z              FLOAT-LONG VALUE 0.
+ 01 WS-DROP-Y              FLOAT-LONG.
+ 01 WS-DROPPED             BINARY-LONG.
+ 01 WS-ARROW-KEY           PIC X(112) VALUE "minecraft:arrow".
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "PROJ-REVERSE" USING L-ROW
+     COMPUTE EN-VX(L-ROW) = EN-VX(L-ROW) * 0.2
+     COMPUTE EN-VY(L-ROW) = EN-VY(L-ROW) * 0.2
+     COMPUTE EN-VZ(L-ROW) = EN-VZ(L-ROW) * 0.2
+     COMPUTE WS-SPEED2 = EN-VX(L-ROW) * EN-VX(L-ROW) + EN-VY(L-ROW) * EN-VY(L-ROW) + EN-VZ(L-ROW) * EN-VZ(L-ROW)
+     IF WS-SPEED2 < 0.0000001
+         IF EN-ARR-PICKUP(L-ROW) = 1
+             MOVE EN-ARR-ITEM(L-ROW) TO WS-ITEM
+             IF WS-ITEM = 0
+                 CALL "CONTENT-ITEM-BY-KEY" USING WS-ARROW-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+             END-IF
+             COMPUTE WS-DROP-Y = EN-Y(L-ROW) + 0.1
+             CALL "GI-SPAWN" USING EN-DIM(L-ROW) EN-X(L-ROW) WS-DROP-Y EN-Z(L-ROW) WS-ZERO-X WS-ZERO-Y WS-ZERO-Z
+                 WS-ITEM WS-ONE WS-DELAY WS-DROPPED
+         END-IF
+         CALL "ENTITY-REMOVE" USING L-ROW
+     END-IF
+     GOBACK.
+ END PROGRAM ARROW-BOUNCE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ARROW-PUNCH.

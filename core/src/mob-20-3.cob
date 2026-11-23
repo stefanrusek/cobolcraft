@@ -847,6 +847,8 @@
              CALL "STDMOB-AQUATIC-FINALIZE" USING L-STATE L-ROW WS-M
          WHEN "axolotl"
              CALL "AXOLOTL-FINALIZE" USING L-STATE L-ROW
+         WHEN "zombie_nautilus"
+             CALL "NAUTILUS-FINALIZE" USING L-ROW
          WHEN "spider"
          WHEN "cave_spider"
              IF SM-KEY(WS-M) = "spider"

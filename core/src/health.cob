@@ -902,6 +902,8 @@
      END-IF
 *>   A squid hurt by an attacker squirts ink (42-7 section 1.4.1).
      CALL "AQUA-INK" USING WS-ROW L-ATTACKER
+*>   A nautilus or zombie nautilus hurt by a player is angry at it for 400 ticks (NautilusAi.setAngerTarget, 44-7 section 10.5).
+     CALL "NAUTILUS-HURT" USING WS-ROW L-ATTACKER
      MOVE WS-DMG TO EN-LAST-HURT(WS-ROW)
      MOVE RULE-HURT-WINDOW TO EN-HURT(WS-ROW)
      CALL "VL-HURT-BY" USING WS-ROW L-ATTACKER
@@ -975,6 +977,7 @@
  01 WS-REACH               FLOAT-LONG.
  01 WS-EXHAUST             FLOAT-LONG.
  01 WS-REDIRECTED          BINARY-LONG.
+ 01 WS-PICK-KIND           BINARY-LONG.
  01 WS-PIERCING            BINARY-LONG.
  01 WS-IGNORED             BINARY-LONG.
  01 WS-KEY                 PIC X(48).
@@ -1025,12 +1028,17 @@
      COMPUTE WS-TYPE = EN-TYPE(WS-ENTITY) + 1
      COMPUTE WS-HALF = ET-WIDTH-MILLI(WS-TYPE) / 2000
      COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(WS-TYPE) / 1000
+*>   A redirectable projectile (a wind charge, a breeze's charge or a fireball: tag redirectable_projectile) has the pick radius 1.0: its box is inflated by it (44 part 8 section 6.1).
+     CALL "PROJ-PICK-RADIUS" USING WS-ENTITY WS-PICK-KIND
+     COMPUTE WS-HALF = WS-HALF + WS-PICK-KIND
+     COMPUTE WS-HEIGHT = WS-HEIGHT + 2 * WS-PICK-KIND
      MOVE PL-X(WS-ROW) TO WS-EX
      COMPUTE WS-EY = PL-Y(WS-ROW) + RULE-ATTACK-EYE-MILLI / 1000
      MOVE PL-Z(WS-ROW) TO WS-EZ
      MOVE EN-X(WS-ENTITY) TO WS-TX
      MOVE EN-Y(WS-ENTITY) TO WS-TY
      MOVE EN-Z(WS-ENTITY) TO WS-TZ
+     COMPUTE WS-TY = WS-TY - WS-PICK-KIND
      COMPUTE WS-DX = WS-EX - FUNCTION MAX(WS-TX - WS-HALF, FUNCTION MIN(WS-EX, WS-TX + WS-HALF))
      COMPUTE WS-DY = WS-EY - FUNCTION MAX(WS-TY, FUNCTION MIN(WS-EY, WS-TY + WS-HEIGHT))
      COMPUTE WS-DZ = WS-EZ - FUNCTION MAX(WS-TZ - WS-HALF, FUNCTION MIN(WS-EZ, WS-TZ + WS-HALF))
