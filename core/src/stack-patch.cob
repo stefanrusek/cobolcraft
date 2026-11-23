@@ -94,6 +94,8 @@
                  MOVE WC-INV-VAR(WS-I, WS-J) TO WS-V
                  CALL "SP-MARK" USING WS-MARKS WS-V
              END-PERFORM
+             MOVE WC-BODY-VAR(WS-I) TO WS-V
+             CALL "SP-MARK" USING WS-MARKS WS-V
          END-IF
      END-PERFORM
 *>   The stack of a thrown trident (ranged-trident.cob).

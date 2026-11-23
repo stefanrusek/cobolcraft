@@ -242,6 +242,7 @@
          WHEN L-SLOT = 1 AND WC-BODY(WS-E) > 0
              MOVE WC-BODY(WS-E) TO L-ITEM
              MOVE 1 TO L-COUNT
+             MOVE WC-BODY-VAR(WS-E) TO L-VAR
          WHEN L-SLOT >= 2 AND L-SLOT <= 16
              COMPUTE WS-I = L-SLOT - 1
              MOVE WC-INV-ITEM(WS-E, WS-I) TO L-ITEM
@@ -312,6 +313,11 @@
                      MOVE 0 TO WC-BODY(WS-E)
                      CALL "MNT-EQUIP-SEND" USING WS-E WS-SLOT-BODY WS-ZERO WS-ZERO2
                  END-IF
+             END-IF
+*>           The worn stack keeps its data components (40-6 section 2.3: prevent_armor_change).
+             MOVE 0 TO WC-BODY-VAR(WS-E)
+             IF L-COUNT > 0
+                 MOVE L-VAR TO WC-BODY-VAR(WS-E)
              END-IF
          WHEN L-SLOT >= 2 AND L-SLOT <= 16
              COMPUTE WS-I = L-SLOT - 1
@@ -519,9 +525,10 @@
          END-IF
      END-PERFORM
      IF WC-BODY(L-ROW) > 0
+         MOVE WC-BODY-VAR(L-ROW) TO WS-PATCH
          CALL "IP-AT-LOCATION" USING EN-DIM(L-ROW) EN-X(L-ROW) EN-Y(L-ROW) EN-Z(L-ROW) WS-OFFSET WC-BODY(L-ROW) WS-ONE
              WS-PATCH WS-ITEM-ENTITY
-         MOVE 0 TO WC-BODY(L-ROW)
+         MOVE 0 TO WC-BODY(L-ROW) WC-BODY-VAR(L-ROW) WS-PATCH
      END-IF
      IF EN-SADDLE(L-ROW) = 1
          MOVE "saddle" TO WS-KEY
@@ -638,6 +645,7 @@
      CALL "MN6-EQUIPPABLE" USING WS-IKIND WS-ISLOT WS-SHEAR WS-STACK
      IF WS-IKIND > 1 AND WS-ISLOT = 1 AND WS-CONTAINS = 1 AND WC-BODY(L-ENTITY) = 0
          MOVE WS-ITEM TO WC-BODY(L-ENTITY)
+         MOVE PL-SLOT-VAR(L-PLAYER, PL-HELD(L-PLAYER) + 1) TO WC-BODY-VAR(L-ENTITY)
          MOVE 1 TO EN-PERSISTENT(L-ENTITY)
          CALL "MNT-EQUIP-SEND" USING L-ENTITY WS-SLOT-BODY WS-ITEM WS-ONE
          CALL "MOB-TAKE" USING L-PLAYER
@@ -665,6 +673,50 @@
      END-IF
      GOBACK.
  END PROGRAM MNT-RIDER-OPEN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MNT-MAYPICKUP.
+*> USING player row, menu slot (0 based, of the open mount screen), ok out: ArmorSlot.mayPickup (40-6 section 2.3) of the saddle and body slots: false when the slot is non-empty, the player is not in
+*> creative mode and the stack has prevent_armor_change (the binding curse's effect component 29, 28 section 4). Every other slot may be picked up.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
+ 01 WS-NONEMPTY            BINARY-LONG.
+ 01 WS-CREATIVE            BINARY-LONG.
+ 01 WS-PREVENT             BINARY-LONG.
+ 01 WS-CURSE-KEY           PIC X(112) VALUE "minecraft:binding_curse".
+ 01 WS-CURSE               BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PLAYER               BINARY-LONG.
+ 01 L-SLOT                 BINARY-LONG.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-PLAYER L-SLOT L-OK.
+     MOVE 1 TO L-OK
+     IF L-SLOT > 1
+         GOBACK
+     END-IF
+     CALL "MNT-GET" USING L-PLAYER L-SLOT WS-ITEM WS-COUNT WS-VAR
+     MOVE 0 TO WS-NONEMPTY WS-CREATIVE WS-PREVENT
+     IF WS-COUNT > 0
+         MOVE 1 TO WS-NONEMPTY
+     END-IF
+     IF PL-MODE(L-PLAYER) = 1
+         MOVE 1 TO WS-CREATIVE
+     END-IF
+     IF WS-VAR > 0
+         CALL "TOOL-ENCHANT-ID" USING WS-CURSE-KEY WS-CURSE
+         CALL "SP-ENCHANT-LEVEL" USING WS-VAR WS-CURSE WS-LEVEL
+         IF WS-LEVEL > 0
+             MOVE 1 TO WS-PREVENT
+         END-IF
+     END-IF
+     CALL "MN6-MAYPICKUP" USING WS-NONEMPTY WS-CREATIVE WS-PREVENT L-OK
+     GOBACK.
+ END PROGRAM MNT-MAYPICKUP.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MNT-INV-WRITE.
@@ -737,12 +789,25 @@
  01 WS-ICOUNT              BINARY-LONG.
  01 WS-KP                  BINARY-LONG.
  01 WS-S                   BINARY-LONG.
+ 01 WS-BPATH               PIC X(24) VALUE "equipment.body".
+ 01 WS-BPATH-LENGTH        BINARY-LONG VALUE 14.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-START                BINARY-LONG.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING PB-BUFFER L-START L-ROW.
      MOVE PB-POS TO WS-HOME
+*>   The components of the body item (equipment.body, a whole stack): they belong to WC-BODY, which MOB-NBT-APPLY has set from the same compound.
+     MOVE L-START TO PB-POS
+     CALL "NBT-READ-FIND" USING PB-BUFFER WS-CONTAINER WS-BPATH WS-BPATH-LENGTH WS-FOUND
+     IF WS-FOUND = 10
+         CALL "PNBT-STACK-READ" USING PB-BUFFER WS-SLOT WS-ITEM WS-ICOUNT WS-KP
+         CALL "WC-ROW-OPEN" USING L-ROW
+         IF WS-ITEM = WC-BODY(L-ROW) AND WS-ITEM > 0
+             CALL "KX-PATCH-TAKE" USING WS-KP WC-BODY-VAR(L-ROW)
+         END-IF
+         CALL "KX-PATCH-FREE" USING WS-KP
+     END-IF
      MOVE L-START TO PB-POS
      MOVE "Items" TO WS-PATH
      MOVE 5 TO WS-PATH-LENGTH

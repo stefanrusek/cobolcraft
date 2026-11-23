@@ -77,6 +77,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY WCSTATE.
  01 WS-VKEY                PIC X(24).
  01 WS-RKEY                PIC X(24).
  01 WS-Y                   FLOAT-LONG.
@@ -92,6 +93,13 @@
      CALL "MOB-SPECIES-KEY" USING WS-V WS-VKEY
      CALL "MOB-SPECIES-KEY" USING L-ROW WS-RKEY
      CALL "MOB-MOUNT-SEAT" USING WS-VKEY WS-RKEY WS-Y WS-Z WS-SEAT
+*>   The rear seat of a camel husk (44-8 section 12.8): z -0.7.
+     IF WS-VKEY = "camel_husk"
+         CALL "WC-ROW-OPEN" USING WS-V
+         IF WC-PASS2(WS-V) = L-ROW
+             MOVE -0.7 TO WS-Z
+         END-IF
+     END-IF
      COMPUTE WS-RADIANS = EN-YAW(WS-V) * FUNCTION PI / 180
      COMPUTE EN-X(L-ROW) = EN-X(WS-V) - WS-Z * FUNCTION SIN(WS-RADIANS)
      COMPUTE EN-Y(L-ROW) = EN-Y(WS-V) + WS-Y
@@ -109,11 +117,13 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY WCSTATE.
  01 WS-VKEY                PIC X(24).
  01 WS-RKEY                PIC X(24).
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
  01 WS-SEAT                BINARY-LONG.
+ 01 WS-SECOND              BINARY-LONG.
  01 WS-EV-MOUNT            PIC X(32) VALUE "entity_mount".
  LINKAGE SECTION.
  01 L-RIDER                BINARY-LONG.
@@ -124,10 +134,18 @@
      IF L-RIDER = L-VEHICLE OR EN-USED(L-RIDER) = 0 OR EN-USED(L-VEHICLE) = 0
          GOBACK
      END-IF
-     IF EN-MOUNT(L-RIDER) > 0 OR EN-PASS(L-VEHICLE) > 0 OR EN-RIDER(L-VEHICLE) > 0 OR EN-MOUNT(L-VEHICLE) = L-RIDER
+     CALL "MOB-SPECIES-KEY" USING L-VEHICLE WS-VKEY
+*>   A camel husk with one mob rider takes a second one at its rear seat (WC-PASS2; 19 section 3.8, the parched jockey); any other vehicle carries one.
+     MOVE 0 TO WS-SECOND
+     IF EN-PASS(L-VEHICLE) > 0 AND WS-VKEY = "camel_husk"
+         CALL "WC-ROW-OPEN" USING L-VEHICLE
+         IF WC-PASS2(L-VEHICLE) = 0
+             MOVE 1 TO WS-SECOND
+         END-IF
+     END-IF
+     IF EN-MOUNT(L-RIDER) > 0 OR (EN-PASS(L-VEHICLE) > 0 AND WS-SECOND = 0) OR EN-RIDER(L-VEHICLE) > 0 OR EN-MOUNT(L-VEHICLE) = L-RIDER
          GOBACK
      END-IF
-     CALL "MOB-SPECIES-KEY" USING L-VEHICLE WS-VKEY
      CALL "MOB-SPECIES-KEY" USING L-RIDER WS-RKEY
      CALL "MOB-MOUNT-SEAT" USING WS-VKEY WS-RKEY WS-Y WS-Z WS-SEAT
      IF WS-SEAT = 0 OR WS-RKEY = SPACES
@@ -135,7 +153,11 @@
      END-IF
      MOVE L-VEHICLE TO EN-MOUNT(L-RIDER)
      MOVE EN-ID(L-VEHICLE) TO EN-MOUNT-ID(L-RIDER)
-     MOVE L-RIDER TO EN-PASS(L-VEHICLE)
+     IF WS-SECOND = 1
+         MOVE L-RIDER TO WC-PASS2(L-VEHICLE)
+     ELSE
+         MOVE L-RIDER TO EN-PASS(L-VEHICLE)
+     END-IF
      CALL "MOB-MOUNT-PLACE" USING L-RIDER
      CALL "MOB-RIDE-SEND" USING L-VEHICLE
 *>   entity_mount at the vehicle's position, the rider as the source (30-8 14.1.9)
@@ -150,6 +172,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY WCSTATE.
  01 WS-V                   BINARY-LONG.
  01 WS-EV-DISMOUNT         PIC X(32) VALUE "entity_dismount".
  LINKAGE SECTION.
@@ -158,11 +181,19 @@
      MOVE EN-MOUNT(L-ROW) TO WS-V
      MOVE 0 TO EN-MOUNT(L-ROW) EN-MOUNT-ID(L-ROW)
      IF WS-V > 0
-         IF EN-PASS(WS-V) = L-ROW
-             MOVE 0 TO EN-PASS(WS-V)
-             CALL "MOB-RIDE-SEND" USING WS-V
-             CALL "GAME-EVENT-BY" USING WS-EV-DISMOUNT WS-V L-ROW
-         END-IF
+         CALL "WC-ROW-OPEN" USING WS-V
+         EVALUATE TRUE
+*>           The first passenger leaves: the second becomes the first (the passenger list keeps its order).
+             WHEN EN-PASS(WS-V) = L-ROW
+                 MOVE WC-PASS2(WS-V) TO EN-PASS(WS-V)
+                 MOVE 0 TO WC-PASS2(WS-V)
+                 CALL "MOB-RIDE-SEND" USING WS-V
+                 CALL "GAME-EVENT-BY" USING WS-EV-DISMOUNT WS-V L-ROW
+             WHEN WC-PASS2(WS-V) = L-ROW
+                 MOVE 0 TO WC-PASS2(WS-V)
+                 CALL "MOB-RIDE-SEND" USING WS-V
+                 CALL "GAME-EVENT-BY" USING WS-EV-DISMOUNT WS-V L-ROW
+         END-EVALUATE
      END-IF
      GOBACK.
  END PROGRAM MOB-MOUNT-DROP.
@@ -175,6 +206,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY WCSTATE.
  01 WS-EV-DISMOUNT         PIC X(32) VALUE "entity_dismount".
  01 WS-RIDER               BINARY-LONG.
  LINKAGE SECTION.
@@ -184,6 +216,13 @@
          MOVE EN-PASS(L-ROW) TO WS-RIDER
          MOVE 0 TO EN-MOUNT(WS-RIDER) EN-MOUNT-ID(WS-RIDER)
          CALL "GAME-EVENT-BY" USING WS-EV-DISMOUNT L-ROW WS-RIDER
+*>       The second mob passenger of a camel husk gets off too.
+         CALL "WC-ROW-OPEN" USING L-ROW
+         IF WC-PASS2(L-ROW) > 0
+             MOVE WC-PASS2(L-ROW) TO WS-RIDER
+             MOVE 0 TO EN-MOUNT(WS-RIDER) EN-MOUNT-ID(WS-RIDER) WC-PASS2(L-ROW)
+             CALL "GAME-EVENT-BY" USING WS-EV-DISMOUNT L-ROW WS-RIDER
+         END-IF
      END-IF
 *>   Players riding the vehicle (EN-RIDER, a camel's EN-RIDER2): they get off the vehicle that goes.
      IF EN-RIDER(L-ROW) > 0
@@ -197,12 +236,20 @@
          CALL "GAME-EVENT-BY" USING WS-EV-DISMOUNT L-ROW WS-RIDER
      END-IF
      IF EN-MOUNT(L-ROW) > 0
-         IF EN-PASS(EN-MOUNT(L-ROW)) = L-ROW
-             MOVE 0 TO EN-PASS(EN-MOUNT(L-ROW))
-             IF EN-PLAYER(L-ROW) = 0
-                 CALL "GAME-EVENT-BY" USING WS-EV-DISMOUNT EN-MOUNT(L-ROW) L-ROW
-             END-IF
-         END-IF
+         CALL "WC-ROW-OPEN" USING EN-MOUNT(L-ROW)
+         EVALUATE TRUE
+             WHEN EN-PASS(EN-MOUNT(L-ROW)) = L-ROW
+                 MOVE WC-PASS2(EN-MOUNT(L-ROW)) TO EN-PASS(EN-MOUNT(L-ROW))
+                 MOVE 0 TO WC-PASS2(EN-MOUNT(L-ROW))
+                 IF EN-PLAYER(L-ROW) = 0
+                     CALL "GAME-EVENT-BY" USING WS-EV-DISMOUNT EN-MOUNT(L-ROW) L-ROW
+                 END-IF
+             WHEN WC-PASS2(EN-MOUNT(L-ROW)) = L-ROW
+                 MOVE 0 TO WC-PASS2(EN-MOUNT(L-ROW))
+                 IF EN-PLAYER(L-ROW) = 0
+                     CALL "GAME-EVENT-BY" USING WS-EV-DISMOUNT EN-MOUNT(L-ROW) L-ROW
+                 END-IF
+         END-EVALUATE
      END-IF
      GOBACK.
  END PROGRAM MOB-MOUNT-GONE.
@@ -282,7 +329,11 @@
  01 WS-HX                  FLOAT-LONG.
  01 WS-HZ                  FLOAT-LONG.
  01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
  01 WS-DZ                  FLOAT-LONG.
+ 01 WS-HAND-KEY            PIC X(40).
+ 01 WS-SPEAR               BINARY-LONG.
+ 01 WS-CHARGE              BINARY-LONG.
  01 WS-GX                  BINARY-LONG.
  01 WS-GY                  BINARY-LONG.
  01 WS-GZ                  BINARY-LONG.
@@ -316,6 +367,16 @@
          COMPUTE WS-GY = FUNCTION INTEGER(PL-Y(WS-P))
          COMPUTE WS-GZ = FUNCTION INTEGER(PL-Z(WS-P))
          CALL "STDMOB-HEAD" USING L-ROW WS-M WS-GX WS-GY WS-GZ WS-HX WS-HZ WS-ARRIVED
+*>       The spear goal's approach (20 section 3): a rider that holds a spear and is farther than 10 blocks from its target walks the vehicle at the vehicle's chargeSpeedModifier (4.0 for a camel husk).
+         CALL "STDMOB-HAND-KEY" USING EN-HAND(WS-R) WS-HAND-KEY
+         MOVE 0 TO WS-SPEAR
+         INSPECT WS-HAND-KEY TALLYING WS-SPEAR FOR ALL "spear"
+         COMPUTE WS-DY = PL-Y(WS-P) - EN-Y(L-ROW)
+         IF WS-SPEAR > 0 AND WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ > 100
+             CALL "MOB-CHARGE-MODIFIER" USING L-ROW WS-CHARGE
+             COMPUTE WS-HX = WS-HX * WS-CHARGE / 1000
+             COMPUTE WS-HZ = WS-HZ * WS-CHARGE / 1000
+         END-IF
      END-IF
      CALL "MOB-PHYSICS" USING L-ROW WS-HX WS-HZ WS-YAW
      GOBACK.
