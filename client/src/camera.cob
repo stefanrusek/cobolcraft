@@ -1,5 +1,5 @@
 *> The F5 camera (US18; 12 §7.1, §7.2; 13 §6; FR-019). CAMERA-INPUT: the key of the togglePerspective binding (F5) pressed on the world screen cycles
-*> CL-CAMERA first person (0), behind (1), in front (2), first person. CAMERA-PLACE: the view of a frame: the eye (the player's feet + 1.6)
+*> CL-CAMERA first person (0), behind (1), in front (2), first person. CAMERA-PLACE: the view of a frame: the eye (the player's feet + the smoothed eye height: PHYS-EYE of the pose, 1.6 or 1.62 with a standard content set)
 *> with the look yaw and pitch; in front (mirrored) yaw + 180 and pitch negated; in the two third-person modes the eye goes back along the
 *> look direction by the distance of CAMERA-DISTANCE. CAMERA-DISTANCE: 4 blocks, shortened by blocks in the way: for each of the 8 corners
 *> (+-0.1 on every axis) of the eye a ray against the replica along the camera's back direction for 4 blocks (sampled every 0.05); the

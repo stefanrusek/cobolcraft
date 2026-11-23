@@ -67,3 +67,23 @@
      END-PERFORM
      GOBACK.
  END PROGRAM STACK-LOOK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STACK-TINT.
+*> USING PB-ITEMSTACK-X, dye out, potion out: the dye colour (dyed_color 47, the RGB) and the potion (potion_contents 53, the potion id) of STACK-LOOK, each plus 1 so that 0 means the stack has
+*> none: the form the player slots keep them in (PL-STACK-DYE and PL-STACK-POTION of CLSTATE; the icon's tint sources of 43 section 7).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DYE                 BINARY-LONG.
+ 01 WS-GLINT               BINARY-LONG.
+ 01 WS-POTION              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-DYE                  BINARY-LONG.
+ 01 L-POTION               BINARY-LONG.
+ PROCEDURE DIVISION USING PB-ITEMSTACK-X L-DYE L-POTION.
+     CALL "STACK-LOOK" USING PB-ITEMSTACK-X WS-DYE WS-GLINT WS-POTION
+     COMPUTE L-DYE = WS-DYE + 1
+     COMPUTE L-POTION = WS-POTION + 1
+     GOBACK.
+ END PROGRAM STACK-TINT.

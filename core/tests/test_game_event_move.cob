@@ -429,6 +429,8 @@
      MOVE WS-BAT TO WS-TYPE
      PERFORM NEW-MOB
      MOVE 210 TO EN-Y(WS-ROWT)
+*>   A new bat hangs (resting); this one is awake and flies, the only kind that flaps (T56403).
+     MOVE 0 TO EN-PH-PHASE(WS-ROWT)
      MOVE 0.1 TO WS-LEN
      MOVE 0 TO WS-GROUND
      MOVE 0 TO WS-DY
@@ -440,6 +442,26 @@
      END-PERFORM
      MOVE " 10:flap 20:flap" TO WS-EXPECT
      MOVE "example 10: a bat flaps at tickCount 10 and 20 over air, at none of the other ticks of 1 to 22" TO WS-WHY
+     PERFORM CHECK-LIST
+     MOVE 1000 TO CW-TICKS
+     PERFORM FREE-MOB
+
+*>  11b. The same bat hanging from the ceiling (resting, EN-PH-PHASE 1) flaps at none of the ticks (T56403).
+     MOVE WS-BAT TO WS-TYPE
+     PERFORM NEW-MOB
+     MOVE 210 TO EN-Y(WS-ROWT)
+     MOVE 1 TO EN-PH-PHASE(WS-ROWT)
+     MOVE 0.1 TO WS-LEN
+     MOVE 0 TO WS-GROUND
+     MOVE 0 TO WS-DY
+     MOVE SPACES TO WS-LIST
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 22
+         COMPUTE CW-TICKS = 1000 + WS-I
+         PERFORM WALK-ONCE
+     END-PERFORM
+     MOVE SPACES TO WS-EXPECT
+     MOVE "a resting bat never flaps (ticks 1 to 22, multiples of 10 included)" TO WS-WHY
      PERFORM CHECK-LIST
      MOVE 1000 TO CW-TICKS
      PERFORM FREE-MOB

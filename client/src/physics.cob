@@ -700,6 +700,38 @@
  END PROGRAM PHYS-STAND-BOX.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. PHYS-EYE.
+*> USING pose (BINARY-LONG: 5 crouching, 3 swimming or crawling, 1 fall flying, any other standing), eye height out (FLOAT-LONG, above the feet): the Player's eye height of the pose
+*> (docs/protocol/53 section 2.1): with a standard (or debug) content set 1.62 standing and 1.27 crouching; 1.6 and 1.25 for the cobolcraft stand-in set and while no set is open
+*> (the operator's box of PHYS-STAND-BOX); 0.4 swimming, crawling or fall flying whatever the set.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ 01 WS-STANDARD            BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-POSE                 BINARY-LONG.
+ 01 L-EYE                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-POSE L-EYE.
+     MOVE 0 TO WS-STANDARD
+     IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+         MOVE 1 TO WS-STANDARD
+     END-IF
+     EVALUATE TRUE
+         WHEN L-POSE = 5 AND WS-STANDARD = 1
+             MOVE 1.27 TO L-EYE
+         WHEN L-POSE = 5
+             MOVE 1.25 TO L-EYE
+         WHEN L-POSE = 3 OR L-POSE = 1
+             MOVE 0.4 TO L-EYE
+         WHEN WS-STANDARD = 1
+             MOVE 1.62 TO L-EYE
+         WHEN OTHER
+             MOVE 1.6 TO L-EYE
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM PHYS-EYE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. PHYS-COLLIDES.
 *> USING CLIENT-STATE, feet x, y, z (FLOAT-LONG), hit out (1 = the box of the Player's pose overlaps a collision box of a cell).
  DATA DIVISION.
@@ -952,17 +984,8 @@
      ELSE
          COMPUTE PL-SWIM-AMOUNT = FUNCTION MAX(0, PL-SWIM-AMOUNT - 0.09)
      END-IF
-*>   The camera eye: half the gap to the pose's eye height each tick; the first tick takes it.
-     EVALUATE PL-POSE
-         WHEN 5
-             MOVE 1.25 TO WS-TARGET
-         WHEN 3
-             MOVE 0.4 TO WS-TARGET
-         WHEN 1
-             MOVE 0.4 TO WS-TARGET
-         WHEN OTHER
-             MOVE 1.6 TO WS-TARGET
-     END-EVALUATE
+*>   The camera eye: half the gap to the pose's eye height (PHYS-EYE) each tick; the first tick takes it.
+     CALL "PHYS-EYE" USING PL-POSE WS-TARGET
      IF PL-EYE = 0
          MOVE WS-TARGET TO PL-EYE
      ELSE

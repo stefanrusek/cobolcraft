@@ -27,6 +27,7 @@
  01 WS-TQS.
     05 WS-TQ OCCURS 48 TIMES.
        10 WS-TQ-SPRITE     BINARY-LONG.
+       10 WS-TQ-TINT       BINARY-LONG.
        10 WS-TQ-BRIGHT     FLOAT-SHORT.
        10 WS-TQ-CORNER OCCURS 4 TIMES.
           15 WS-TQ-X       FLOAT-SHORT.
@@ -93,6 +94,7 @@
                  IF WS-C(3) < 0
                      ADD 1 TO WS-N
                      MOVE WS-SPRITE TO WS-TQ-SPRITE(WS-N)
+                     MOVE MF-TINT(WS-E, WS-F) TO WS-TQ-TINT(WS-N)
                      MOVE 1 TO WS-SHADE
                      IF MR-GUI-LIGHT NOT = 1
 *>                       The outward normal in view space is minus that cross product; the ITEMS_3D lights (12 section 1.9) in view space with y up are (0.43256, 0.642451,
@@ -136,9 +138,9 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ITEM-GUI-ICON.
-*> USING CLIENT-STATE, item id, x, y (the icon cell's corner in GUI pixels), drawn out: draws the pooled quads of the item (ITEM-GUI-BAKE, filled by ITEM-SPRITE-OF, which the caller has
+*> USING CLIENT-STATE, item id, x, y (the icon cell's corner in GUI pixels), dye and potion (the stack's dyed_color RGB and potion id, -1 none: STACK-TINT), drawn out: draws the pooled quads of the item (ITEM-GUI-BAKE, filled by ITEM-SPRITE-OF, which the caller has
 *> called) into the icon layer, a corner at ((x + cell x) times the GUI scale, (y + cell y) times it), in the sprite of the quad, the brightness of its lighting, far to near. Drawn out 1 when
-*> the quads are drawn; 0 and nothing added for an item with none (a flat item, a stand-in set, a set of the cobolcraft type) or when they do not all fit the icon layer: the caller draws
+*> the quads are drawn, a quad with a tintindex in the colour of that layer of the item's tint list (43 section 7; ITEM-ICON-TINT: the grass block's top, leaves, a vine); 0 and nothing added for an item with none (a flat item, a stand-in set, a set of the cobolcraft type) or when they do not all fit the icon layer: the caller draws
 *> the flat icon.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -152,6 +154,8 @@
  01 WS-B                   FLOAT-SHORT.
  01 WS-TINT.
     05 WS-T                FLOAT-SHORT OCCURS 3 TIMES.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-TINTED              BINARY-LONG.
  01 WS-Q                   BINARY-LONG.
  01 WS-QI                  BINARY-LONG.
  01 WS-K                   BINARY-LONG.
@@ -164,8 +168,10 @@
  01 L-ITEM                 BINARY-LONG.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
+ 01 L-DYE                  BINARY-LONG.
+ 01 L-POTION               BINARY-LONG.
  01 L-DRAWN                BINARY-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-ITEM L-X L-Y L-DRAWN.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ITEM L-X L-Y L-DYE L-POTION L-DRAWN.
      MOVE 0 TO L-DRAWN
      IF L-ITEM < 0 OR L-ITEM >= 2048
          GOBACK
@@ -180,8 +186,17 @@
      END-IF
      MOVE 1 TO L-DRAWN
      MOVE 1 TO WS-T(1) WS-T(2) WS-T(3)
+     MOVE -1 TO WS-LAST
      PERFORM VARYING WS-QI FROM 1 BY 1 UNTIL WS-QI > WS-COUNT
          COMPUTE WS-Q = IS-GUI-FIRST(L-ITEM + 1) + WS-QI - 1
+*>       The colour of the quad's layer (white without a tintindex), asked again only when the layer changes from the quad before.
+         IF IG-TINT(WS-Q) NOT = WS-LAST
+             MOVE IG-TINT(WS-Q) TO WS-LAST
+             MOVE 1 TO WS-T(1) WS-T(2) WS-T(3)
+             IF WS-LAST >= 0
+                 CALL "ITEM-ICON-TINT" USING CLIENT-STATE L-ITEM WS-LAST L-DYE L-POTION WS-TINT WS-TINTED
+             END-IF
+         END-IF
          MOVE IG-SPRITE(WS-Q) TO WS-SPRITE
          MOVE IG-BRIGHT(WS-Q) TO WS-B
          PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
