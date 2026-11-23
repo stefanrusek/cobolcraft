@@ -322,10 +322,18 @@
      END-PERFORM
      CALL "FL-OPEN" USING WS-PTR WS-CX WS-CZ WS-MIN-Y WS-HEIGHT WS-SEA
      CALL "MSP-OPEN"
+     MOVE "acceptance US12 36-4§10 Saved piece data: a new hut piece has no height position yet (HPos -1)" TO TL-CASE
+     MOVE -1 TO TL-EXPECTED-N
+     MOVE SP-T-AUX(1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "SCP-POST" USING WS-ROW1
      MOVE "acceptance US12 36-4§5.2 Swamp hut: SCP-POST moves the box to the average ground height" TO TL-CASE
      MOVE WS-WANT TO TL-EXPECTED-N
      MOVE SP-Y0(1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 36-4§10 Saved piece data: SCP-POST saves the height position (HPos) the box was moved to" TO TL-CASE
+     MOVE WS-WANT TO TL-EXPECTED-N
+     MOVE SP-T-AUX(1) TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      EVALUATE SP-ORIENT(1)
          WHEN 2
