@@ -3,7 +3,7 @@
 *> 0.6 r), reduced by (blast resistance + 0.3) x 0.3 in every block it crosses and by 0.225 per 0.3 step), damage and knockback of the players and
 *> mobs within twice the power (EXPLODE-SEEN: the share of sample points of the entity's box that see the centre), the Explode packet to the players
 *> within 64 blocks, and, with block destruction, the blocks replaced by air with their drops (each stack survives with probability 1 / power).
-*> Approximations (open): the sight test of EXPLODE-SEEN steps along the ray by 0.1 block instead of an exact voxel walk; the random draws are the
+*> Approximations (open): the random draws are the
 *> deterministic hash of xp.cob, not the level's random source; mobs are hurt in whole points and pushed through EN-VX, EN-VY and EN-VZ (spent by STDMOB-STEP); item entities and fire are left out.
 *>
 *> Entry points:
@@ -171,10 +171,116 @@
  END PROGRAM EXPLODE-BLOCKS.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. EXPLODE-RAY-HIT.
+*> USING dim, start x y z, end x y z (FLOAT-LONG each), hit out (BINARY-LONG): the ray of getSeenPercent (20 section 6.2) from a sample point to the explosion centre with the collider block context: 1 when the
+*> segment passes through a solid cell (GI-SOLID-CELL; every cell it enters, the first and the last included, by an exact voxel walk: the axis whose next cell wall is nearest is crossed next), else 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CY                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-EX                  BINARY-LONG.
+ 01 WS-EY                  BINARY-LONG.
+ 01 WS-EZ                  BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DY                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-TX                  FLOAT-LONG.
+ 01 WS-TY                  FLOAT-LONG.
+ 01 WS-TZ                  FLOAT-LONG.
+ 01 WS-DTX                 FLOAT-LONG.
+ 01 WS-DTY                 FLOAT-LONG.
+ 01 WS-DTZ                 FLOAT-LONG.
+ 01 WS-SX                  BINARY-LONG.
+ 01 WS-SY                  BINARY-LONG.
+ 01 WS-SZ                  BINARY-LONG.
+ 01 WS-BIG                 FLOAT-LONG VALUE 1000000000.
+ 01 WS-GUARD               BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-SOLID               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X1                   FLOAT-LONG.
+ 01 L-Y1                   FLOAT-LONG.
+ 01 L-Z1                   FLOAT-LONG.
+ 01 L-X2                   FLOAT-LONG.
+ 01 L-Y2                   FLOAT-LONG.
+ 01 L-Z2                   FLOAT-LONG.
+ 01 L-HIT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-X1 L-Y1 L-Z1 L-X2 L-Y2 L-Z2 L-HIT.
+     MOVE 0 TO L-HIT WS-DONE WS-GUARD
+     COMPUTE WS-CX = FUNCTION INTEGER(L-X1)
+     COMPUTE WS-CY = FUNCTION INTEGER(L-Y1)
+     COMPUTE WS-CZ = FUNCTION INTEGER(L-Z1)
+     COMPUTE WS-EX = FUNCTION INTEGER(L-X2)
+     COMPUTE WS-EY = FUNCTION INTEGER(L-Y2)
+     COMPUTE WS-EZ = FUNCTION INTEGER(L-Z2)
+     COMPUTE WS-DX = L-X2 - L-X1
+     COMPUTE WS-DY = L-Y2 - L-Y1
+     COMPUTE WS-DZ = L-Z2 - L-Z1
+     MOVE WS-BIG TO WS-TX WS-TY WS-TZ WS-DTX WS-DTY WS-DTZ
+     MOVE 0 TO WS-SX WS-SY WS-SZ
+     IF WS-DX > 0
+         MOVE 1 TO WS-SX
+         COMPUTE WS-DTX = 1 / WS-DX
+         COMPUTE WS-TX = (WS-CX + 1 - L-X1) / WS-DX
+     END-IF
+     IF WS-DX < 0
+         MOVE -1 TO WS-SX
+         COMPUTE WS-DTX = -1 / WS-DX
+         COMPUTE WS-TX = (L-X1 - WS-CX) / (0 - WS-DX)
+     END-IF
+     IF WS-DY > 0
+         MOVE 1 TO WS-SY
+         COMPUTE WS-DTY = 1 / WS-DY
+         COMPUTE WS-TY = (WS-CY + 1 - L-Y1) / WS-DY
+     END-IF
+     IF WS-DY < 0
+         MOVE -1 TO WS-SY
+         COMPUTE WS-DTY = -1 / WS-DY
+         COMPUTE WS-TY = (L-Y1 - WS-CY) / (0 - WS-DY)
+     END-IF
+     IF WS-DZ > 0
+         MOVE 1 TO WS-SZ
+         COMPUTE WS-DTZ = 1 / WS-DZ
+         COMPUTE WS-TZ = (WS-CZ + 1 - L-Z1) / WS-DZ
+     END-IF
+     IF WS-DZ < 0
+         MOVE -1 TO WS-SZ
+         COMPUTE WS-DTZ = -1 / WS-DZ
+         COMPUTE WS-TZ = (L-Z1 - WS-CZ) / (0 - WS-DZ)
+     END-IF
+     PERFORM UNTIL WS-DONE = 1
+         CALL "GI-SOLID-CELL" USING L-DIM WS-CX WS-CY WS-CZ WS-SOLID
+         IF WS-SOLID = 1
+             MOVE 1 TO L-HIT WS-DONE
+         END-IF
+         IF WS-DONE = 0 AND ((WS-CX = WS-EX AND WS-CY = WS-EY AND WS-CZ = WS-EZ) OR WS-GUARD > 4096)
+             MOVE 1 TO WS-DONE
+         END-IF
+         IF WS-DONE = 0
+             ADD 1 TO WS-GUARD
+             EVALUATE TRUE
+                 WHEN WS-TX <= WS-TY AND WS-TX <= WS-TZ
+                     ADD WS-SX TO WS-CX
+                     ADD WS-DTX TO WS-TX
+                 WHEN WS-TY <= WS-TZ
+                     ADD WS-SY TO WS-CY
+                     ADD WS-DTY TO WS-TY
+                 WHEN OTHER
+                     ADD WS-SZ TO WS-CZ
+                     ADD WS-DTZ TO WS-TZ
+             END-EVALUATE
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM EXPLODE-RAY-HIT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. EXPLODE-SEEN.
 *> USING dim, centre x, y, z, box minx, miny, minz, maxx, maxy, maxz (FLOAT-LONG each), seen out (FLOAT-LONG): getSeenPercent (20 section 6.2): the
 *> steps 1 / (2 extent + 1) per axis, the horizontal offsets (1 - floor(1 / step) x step) / 2, sample parameters from 0 to 1 inclusive; a sample is
-*> unobstructed when the segment to the centre meets no solid cell (stepped by 0.1 block).
+*> unobstructed when the segment to the centre meets no solid cell (EXPLODE-RAY-HIT, an exact voxel walk).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-SX                  FLOAT-LONG.
@@ -191,16 +297,6 @@
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
- 01 WS-DX                  FLOAT-LONG.
- 01 WS-DY                  FLOAT-LONG.
- 01 WS-DZ                  FLOAT-LONG.
- 01 WS-LEN                 FLOAT-LONG.
- 01 WS-STEPS               BINARY-LONG.
- 01 WS-S                   BINARY-LONG.
- 01 WS-CX                  BINARY-LONG.
- 01 WS-CY                  BINARY-LONG.
- 01 WS-CZ                  BINARY-LONG.
- 01 WS-SOLID               BINARY-LONG.
  01 WS-HIT                 BINARY-LONG.
  01 WS-FREE                BINARY-LONG.
  01 WS-TOTAL               BINARY-LONG.
@@ -233,21 +329,7 @@
                  COMPUTE WS-X = L-MINX + WS-A * WS-SX * (L-MAXX - L-MINX) + WS-OX
                  COMPUTE WS-Y = L-MINY + WS-B * WS-SY * (L-MAXY - L-MINY)
                  COMPUTE WS-Z = L-MINZ + WS-C * WS-SZ * (L-MAXZ - L-MINZ) + WS-OZ
-                 COMPUTE WS-DX = L-CX - WS-X
-                 COMPUTE WS-DY = L-CY - WS-Y
-                 COMPUTE WS-DZ = L-CZ - WS-Z
-                 COMPUTE WS-LEN = FUNCTION SQRT(WS-DX * WS-DX + WS-DY * WS-DY + WS-DZ * WS-DZ)
-                 COMPUTE WS-STEPS = FUNCTION INTEGER(WS-LEN / 0.1) + 1
-                 MOVE 0 TO WS-HIT
-                 PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S > WS-STEPS OR WS-HIT = 1
-                     COMPUTE WS-CX = FUNCTION INTEGER(WS-X + WS-DX * WS-S / WS-STEPS)
-                     COMPUTE WS-CY = FUNCTION INTEGER(WS-Y + WS-DY * WS-S / WS-STEPS)
-                     COMPUTE WS-CZ = FUNCTION INTEGER(WS-Z + WS-DZ * WS-S / WS-STEPS)
-                     CALL "GI-SOLID-CELL" USING L-DIM WS-CX WS-CY WS-CZ WS-SOLID
-                     IF WS-SOLID = 1
-                         MOVE 1 TO WS-HIT
-                     END-IF
-                 END-PERFORM
+                 CALL "EXPLODE-RAY-HIT" USING L-DIM WS-X WS-Y WS-Z L-CX L-CY L-CZ WS-HIT
                  IF WS-HIT = 0
                      ADD 1 TO WS-FREE
                  END-IF

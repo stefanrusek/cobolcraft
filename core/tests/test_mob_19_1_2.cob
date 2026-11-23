@@ -1,0 +1,273 @@
+*> Implementation test (wrap I3, T2312/T2313; docs/protocol/19 section 1.2): the baby start age (-24000, the sniffer -48000), the breeding experience orb gated by the game rule mob_drops, and the
+*> golden dandelion on a baby (the age locked flag, metadata 17, toggles; locking sets the baby start age, makes the mob persistent and consumes the item; zombie_horse, skeleton_horse, villager and
+*> an adult refuse it).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MOB-19-1-2.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY CONTENT.
+ COPY CITEMS.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MQ-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-FX                  BINARY-LONG.
+ 01 WS-FY                  BINARY-LONG.
+ 01 WS-FZ                  BINARY-LONG.
+ 01 WS-FSIZE               BINARY-LONG VALUE 20.
+ 01 WS-FKIND               BINARY-LONG VALUE 2.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-KEY24               PIC X(24).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-DANDELION           BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-SNIFFER             BINARY-LONG.
+ 01 WS-SN-A                BINARY-LONG.
+ 01 WS-SN-B                BINARY-LONG.
+ 01 WS-CA                  BINARY-LONG.
+ 01 WS-CB                  BINARY-LONG.
+ 01 WS-COW                 BINARY-LONG.
+ 01 WS-ZHORSE              BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-HAND0               BINARY-LONG VALUE 0.
+ 01 WS-SNEAK0              BINARY-LONG VALUE 0.
+ 01 WS-MDI                 BINARY-LONG.
+ 01 WS-MDV                 BINARY-LONG.
+ 01 WS-PK                  BINARY-LONG.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-AGE                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ORB-TYPE            BINARY-LONG.
+ 01 WS-ORBS-BEFORE         BINARY-LONG.
+ 01 WS-ORBS-AFTER          BINARY-LONG.
+ 01 WS-BABY                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-TICKED              BINARY-LONG.
+ 01 WS-RULE-NAME           PIC X(40) VALUE "mob_drops".
+ 01 WS-RULE-INDEX          BINARY-LONG.
+ 01 WS-RULE-VALUE          BINARY-DOUBLE.
+ 01 WS-IDS                 PIC X(1024).
+ 01 WS-PADDED              PIC X(1030).
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "N" TO TL-MODE
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE PL-CONN(WS-PLAYER) TO WS-CONN
+     MOVE 0 TO PL-YAW(WS-PLAYER)
+     COMPUTE WS-FX = FUNCTION INTEGER(PL-X(WS-PLAYER)) - 10
+     COMPUTE WS-FZ = FUNCTION INTEGER(PL-Z(WS-PLAYER)) - 10
+     COMPUTE WS-FY = FUNCTION INTEGER(PL-Y(WS-PLAYER)) - 1
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX WS-FZ WS-FSIZE WS-FY WS-FKIND
+     CALL "PB-INIT" USING MQ-BUFFER WS-CAPACITY
+     MOVE "minecraft:golden_dandelion" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-DANDELION WS-ITEM-ROW WS-STATUS
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:sniffer" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-SNIFFER WS-ENTITY-ROW WS-STATUS
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:cow" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-COW WS-ENTITY-ROW WS-STATUS
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:zombie_horse" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZHORSE WS-ENTITY-ROW WS-STATUS
+     CALL "XP-ORB-TYPE" USING WS-ORB-TYPE
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     COMPUTE WS-Y = WS-FY + 1
+     COMPUTE WS-Z = PL-Z(WS-PLAYER) + 2
+
+*>   Baby start age (1.2): -24000, the sniffer -48000.
+     MOVE "sniffer" TO WS-KEY24
+     CALL "M19-BABY-START-AGE" USING WS-KEY24 WS-AGE
+     MOVE "implementation 19 1.2 the sniffer's baby start age is -48000" TO TL-CASE
+     MOVE -48000 TO TL-EXPECTED-N
+     MOVE WS-AGE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "cow" TO WS-KEY24
+     CALL "M19-BABY-START-AGE" USING WS-KEY24 WS-AGE
+     MOVE "implementation 19 1.2 the baby start age of any other animal is -24000" TO TL-CASE
+     MOVE -24000 TO TL-EXPECTED-N
+     MOVE WS-AGE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Breeding two sniffers gives a baby of age -48000 (the baby of the breeding path of 8.1), two cows one of -24000.
+     CALL "MOB-SPAWN" USING WS-DIM WS-SNIFFER WS-X WS-Y WS-Z WS-YAW WS-SN-A
+     COMPUTE WS-X = PL-X(WS-PLAYER) + 1
+     CALL "MOB-SPAWN" USING WS-DIM WS-SNIFFER WS-X WS-Y WS-Z WS-YAW WS-SN-B
+     CALL "MOB-BREED" USING WS-SN-A WS-SN-B
+     PERFORM FIND-BABY
+     MOVE "implementation 19 1.2 a sniffer bred by two sniffers has the start age -48000" TO TL-CASE
+     MOVE -48000 TO TL-EXPECTED-N
+     MOVE EN-MOBAGE(WS-BABY) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "implementation 19 1.2 both sniffer parents are on the breeding cooldown of 6000" TO TL-CASE
+     MOVE 12000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = EN-MOBAGE(WS-SN-A) + EN-MOBAGE(WS-SN-B)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW WS-X WS-Y WS-Z WS-YAW WS-CA
+     CALL "MOB-SPAWN" USING WS-DIM WS-COW WS-X WS-Y WS-Z WS-YAW WS-CB
+     CALL "MOB-BREED" USING WS-CA WS-CB
+     PERFORM FIND-COW-BABY
+     MOVE "implementation 19 1.2 a calf bred by two cows has the start age -24000" TO TL-CASE
+     MOVE -24000 TO TL-EXPECTED-N
+     MOVE EN-MOBAGE(WS-BABY) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   The breeding experience orb is gated by the game rule mob_drops: on gives one orb, off none.
+     CALL "BR-RULE-FIND" USING WS-RULE-NAME WS-RULE-INDEX
+     MOVE 0 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+     PERFORM COUNT-ORBS
+     MOVE WS-ORBS-AFTER TO WS-ORBS-BEFORE
+     CALL "MOB-BREED-DONE" USING WS-CA WS-CB
+     PERFORM COUNT-ORBS
+     MOVE "implementation 19 1.2 with mob_drops off breeding drops no experience orb" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-ORBS-AFTER - WS-ORBS-BEFORE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+     PERFORM COUNT-ORBS
+     MOVE WS-ORBS-AFTER TO WS-ORBS-BEFORE
+     CALL "MOB-BREED-DONE" USING WS-CA WS-CB
+     PERFORM COUNT-ORBS
+     MOVE "implementation 19 1.2 with mob_drops on breeding drops one experience orb" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-ORBS-AFTER - WS-ORBS-BEFORE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   Golden dandelion on a baby calf: locks (flag 1, age -24000, persistent, one item used, metadata 17 sent), a second use unlocks and keeps the item.
+     MOVE WS-BABY TO WS-ROW
+     MOVE -5000 TO EN-MOBAGE(WS-ROW)
+     MOVE EN-ID(WS-ROW) TO WS-ID
+     MOVE WS-DANDELION TO PL-SLOT-ITEM(WS-PLAYER, 1)
+     MOVE 3 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     MOVE 0 TO PL-SLOT-VAR(WS-PLAYER, 1)
+     MOVE 0 TO PL-HELD(WS-PLAYER)
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID WS-HAND0 WS-SNEAK0
+     MOVE "implementation 19 1.2 a golden dandelion on a baby locks its age: flag, start age, persistent, one item used" TO TL-CASE
+     MOVE 1100002 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = EN-LOCKED(WS-ROW) * 1000000 + EN-PERSISTENT(WS-ROW) * 100000 + PL-SLOT-COUNT(WS-PLAYER, 1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "implementation 19 1.2 locking sets the age to the baby start age" TO TL-CASE
+     MOVE -24000 TO TL-EXPECTED-N
+     MOVE EN-MOBAGE(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 17 TO WS-MDI
+     PERFORM FIND-DATA
+     MOVE "implementation 19 1.2 metadata 17 (age locked) of the calf is true" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-MDV TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     MOVE EN-MOBAGE(WS-ROW) TO WS-AGE
+     MOVE "implementation 19 1.2 the age of a locked baby does not count up" TO TL-CASE
+     ADD 1 TO CW-TIME
+     CALL "MOB-STEP" USING WS-ROW
+     MOVE WS-AGE TO TL-EXPECTED-N
+     MOVE EN-MOBAGE(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID WS-HAND0 WS-SNEAK0
+     MOVE "implementation 19 1.2 a second golden dandelion unlocks the age and is kept (2 of the 3 left)" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = EN-LOCKED(WS-ROW) * 100 + PL-SLOT-COUNT(WS-PLAYER, 1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   An adult, a zombie horse baby and a creative player: refused, or the item is kept.
+     MOVE 0 TO EN-MOBAGE(WS-ROW)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID WS-HAND0 WS-SNEAK0
+     MOVE "implementation 19 1.2 an adult takes no age lock" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-LOCKED(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "MOB-SPAWN" USING WS-DIM WS-ZHORSE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     MOVE -1000 TO EN-MOBAGE(WS-ROW)
+     MOVE EN-ID(WS-ROW) TO WS-ID
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID WS-HAND0 WS-SNEAK0
+     MOVE "implementation 19 1.2 a baby zombie horse (tag cannot_be_age_locked) refuses the golden dandelion" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-LOCKED(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A baby zombie has an age but is no ageable mob: the golden dandelion does nothing. A baby axolotl locks, and its viewers are sent index 17.
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:zombie" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     MOVE -1000 TO EN-MOBAGE(WS-ROW)
+     CALL "M19-AGE-LOCK-USE" USING WS-PLAYER WS-ROW WS-TICKED
+     MOVE "implementation 19 1.2 a baby zombie (no ageable mob) takes no age lock and the use is not taken" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = EN-LOCKED(WS-ROW) + WS-TICKED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO WS-KEY
+     MOVE "minecraft:axolotl" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ROW
+     MOVE -1000 TO EN-MOBAGE(WS-ROW)
+     MOVE EN-ID(WS-ROW) TO WS-ID
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID WS-HAND0 WS-SNEAK0
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     MOVE 0 TO WS-TICKED
+     MOVE SPACES TO WS-PADDED
+     STRING " " FUNCTION TRIM(WS-IDS) " " DELIMITED BY SIZE INTO WS-PADDED
+     INSPECT WS-PADDED TALLYING WS-TICKED FOR ALL " 101 " ALL " 101x"
+     MOVE "implementation 19 1.2 a baby axolotl locks its age (flag, start age) and its viewers are sent metadata 17" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-LOCKED(WS-ROW) = 1 AND EN-MOBAGE(WS-ROW) = -24000 AND WS-TICKED > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ FIND-BABY.
+     MOVE 0 TO WS-BABY
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-SNIFFER AND EN-VARIANT(WS-I) = 1 AND EN-MOBAGE(WS-I) < 0
+             MOVE WS-I TO WS-BABY
+         END-IF
+     END-PERFORM.
+ FIND-COW-BABY.
+     MOVE 0 TO WS-BABY
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-COW AND EN-VARIANT(WS-I) = 1 AND EN-MOBAGE(WS-I) < 0
+             MOVE WS-I TO WS-BABY
+         END-IF
+     END-PERFORM.
+ COUNT-ORBS.
+     MOVE 0 TO WS-ORBS-AFTER
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-ORB-TYPE
+             ADD 1 TO WS-ORBS-AFTER
+         END-IF
+     END-PERFORM.
+ FIND-DATA.
+     CALL "PB-RESET" USING MQ-BUFFER
+     CALL "MOB-DATA-BUILD" USING WS-ROW MQ-BUFFER
+     CALL "PB-GET-VARINT" USING MQ-BUFFER WS-PK
+     CALL "PB-GET-VARINT" USING MQ-BUFFER WS-PK
+     MOVE -1 TO WS-MDV
+     MOVE 0 TO WS-DONE
+     PERFORM UNTIL WS-DONE = 1
+         INITIALIZE MQ-METADATA-ENTRY-X
+         CALL "PB-GET-METADATA-ENTRY-X" USING MQ-BUFFER MQ-METADATA-ENTRY-X
+         IF MQ-MX-INDEX = MQ-MD-END OR MQ-ERROR = 1
+             MOVE 1 TO WS-DONE
+         ELSE
+             IF MQ-MX-INDEX = WS-MDI
+                 MOVE MQ-MX-INT TO WS-MDV
+             END-IF
+         END-IF
+     END-PERFORM.
+ END PROGRAM TEST-MOB-19-1-2.
+ COPY CORETEST.
+ COPY MOBSPTEST.

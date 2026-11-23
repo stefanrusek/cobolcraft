@@ -1537,6 +1537,10 @@
      IF SM-KEY(WS-M) = "pillager"
          CALL "PILLAGER-PICKUP-TICK" USING WS-ROW
      END-IF
+*>   The drowned's trident throw (20 section 4.5, mob-20-4-5.cob).
+     IF SM-KEY(WS-M) = "drowned"
+         CALL "DROWNED-TRIDENT-TICK" USING WS-ROW
+     END-IF
      IF SM-RANGED(WS-M) = 3
          CALL "STDMOB-WITCH-TICK" USING WS-ROW WS-M WS-STOP
          IF EN-HAND(WS-ROW) < 5 OR EN-HAND(WS-ROW) > 8
