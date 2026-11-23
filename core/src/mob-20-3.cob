@@ -789,7 +789,7 @@
 *> USING xoro state, tracker row: finalizeSpawn of a freshly spawned standard mob (4.1, 3.6). A zombie, zombie villager or husk is a baby with probability
 *> 0.05 (EN-VARIANT 1), rolls its armour (STDMOB-EQUIP-ROLL with the special multiplier of the effective difficulty; EN-EQUIP), gets the reinforcement
 *> chance nextDouble x 0.1 (EN-REINF, ten-thousandths) and with probability 0.05 x special is a leader: +0.5 + nextDouble x 0.25 chance and the maximum
-*> health times (1 + nextDouble x 3 + 1), the health full; then the weapon draw of 4.1 (EN-HAND). A slime takes its size (STDMOB-SLIME-INIT). The viewers get the variant and equipment packets.
+*> health times (1 + nextDouble x 3 + 1), the health full; then the weapon draw of 4.1 (EN-HAND). A goat rolls its screaming flag and horns (WHEN "goat", 44-x1 section 8.10). A slime takes its size (STDMOB-SLIME-INIT). The viewers get the variant and equipment packets.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -807,6 +807,12 @@
  01 WS-SLOTS               BINARY-LONG.
  01 WS-SIX                 BINARY-LONG VALUE 6.
  01 WS-PICK                BINARY-LONG.
+ 01 WS-BABY                BINARY-LONG.
+ 01 WS-F                   FLOAT-LONG.
+ 01 WS-BOOL                BINARY-LONG.
+ 01 WS-SCREAM              BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-RIGHT               BINARY-LONG.
  LINKAGE SECTION.
  COPY XORO REPLACING LEADING ==XR-== BY ==L-==.
  01 L-ROW                  BINARY-LONG.
@@ -909,6 +915,27 @@
              IF WS-D < 0.2
                  MOVE -24000 TO EN-MOBAGE(L-ROW)
              END-IF
+         WHEN "goat"
+*>           Goat.finalizeSpawn (44-x1 section 8.10, rule X1-GOAT-FINALIZE): nextDouble for the screaming flag, for an adult nextFloat for the horn test (a 24-bit float, so the edge 0.1f is exact),
+*>           and only when a horn goes, nextBoolean (true: the left horn, false: the right). EN-WOOL 1 screaming, 2 no left horn, 4 no right horn. A negative EN-MOBAGE is the baby flag.
+             CALL "XORO-NEXT-DOUBLE" USING L-STATE WS-D
+             MOVE 0 TO WS-BABY
+             IF EN-MOBAGE(L-ROW) < 0
+                 MOVE 1 TO WS-BABY
+             END-IF
+             MOVE 1 TO WS-F
+             IF WS-BABY = 0
+                 CALL "XORO-NEXT-FLOAT" USING L-STATE WS-F
+             END-IF
+             MOVE 0 TO WS-BOOL
+             CALL "X1-GOAT-FINALIZE" USING WS-D WS-BABY WS-F WS-BOOL WS-SCREAM WS-LEFT WS-RIGHT
+             IF WS-LEFT = 0 OR WS-RIGHT = 0
+                 CALL "XORO-NEXT-BOOLEAN" USING L-STATE WS-BOOL
+                 CALL "X1-GOAT-FINALIZE" USING WS-D WS-BABY WS-F WS-BOOL WS-SCREAM WS-LEFT WS-RIGHT
+             END-IF
+             COMPUTE EN-WOOL(L-ROW) = WS-SCREAM + 2 * (1 - WS-LEFT) + 4 * (1 - WS-RIGHT)
+*>           The viewers that already have the goat get its entity data (18 screaming, 19 left horn, 20 right horn).
+             CALL "MOB-DATA-SEND" USING L-ROW
          WHEN "strider"
              CALL "STRIDER-JOCKEY" USING L-STATE L-ROW
          WHEN "piglin"
