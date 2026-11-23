@@ -393,6 +393,10 @@
      IF WS-VEHICLE = 0
          GOBACK
      END-IF
+*>   Only the first passenger steers (getControllingPassenger): the report of a second rider (a boat's, a camel's) moves nothing.
+     IF EN-RIDER2(WS-VEHICLE) = WS-ROW
+         GOBACK
+     END-IF
      COMPUTE WS-MOVED2 = (PSB-X - EN-X(WS-VEHICLE)) ** 2 + (PSB-Y - EN-Y(WS-VEHICLE)) ** 2 + (PSB-Z - EN-Z(WS-VEHICLE)) ** 2
      COMPUTE WS-V2 = EN-VX(WS-VEHICLE) ** 2 + EN-VY(WS-VEHICLE) ** 2 + EN-VZ(WS-VEHICLE) ** 2
      IF EN-SADDLE(WS-VEHICLE) = 0 OR WS-MOVED2 - WS-V2 > 100
