@@ -6,7 +6,8 @@
 *>   AQUATIC7-NBT-APPLY USING row, species key, A7-DATA   puts them into the new mob (EN-VARIANT of a salmon and a tropical fish is 1 + the saved value)
 *> A tropical fish's Variant is the key llamas and parrots use: MOB-NBT-KEY reads it (MQ-VARIANT-INT) and ENTITY-NBT-ONE hands it to A7-TROP.
 *> No state in the core, written at the default: FromBucket 0, GotFish 0. The tadpole has no Age block of the chain (it is not an AgeableMob): its own Age and AgeLocked replace it.
-*> Not modelled (no row): axolotl, nautilus, zombie nautilus variant; the squid and the strider keep the Age keys of MOB-NBT-WRITE.
+*> Not modelled here: the axolotl; the nautilus and zombie nautilus keys (Age keys of the nautilus, InLove, Owner, Sitting, the zombie variant) are written by MOB-NBT-WRITE (entity-mobdata.cob);
+*> the squid and the strider keep the Age keys of MOB-NBT-WRITE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. AQUATIC7-NBT-WRITE.

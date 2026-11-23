@@ -73,14 +73,18 @@
      END-IF
      CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
      MOVE SM-KIND(WS-M) TO WS-KIND
-*>   AgeableMob and Animal: every passive species but the allay and the golems.
-     IF WS-KIND = 0 AND NOT (WS-KEY = "allay" OR "iron_golem" OR "snow_golem" OR "tadpole" OR "cod" OR "salmon" OR "pufferfish" OR "tropical_fish")
+*>   AgeableMob and Animal: every passive species but the allay and the golems, and the nautilus (a water animal of kind 7 that can be a baby: 45-7 section 7).
+     IF (WS-KIND = 0 AND NOT (WS-KEY = "allay" OR "iron_golem" OR "snow_golem" OR "tadpole" OR "cod" OR "salmon" OR "pufferfish" OR "tropical_fish"))
+             OR WS-KEY = "nautilus"
          MOVE "Age" TO WN MOVE 3 TO WL
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-MOBAGE(L-ROW)
          MOVE "ForcedAge" TO WN MOVE 9 TO WL
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-FORCED(L-ROW)
          MOVE "AgeLocked" TO WN MOVE 9 TO WL
          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-LOCKED(L-ROW)
+     END-IF
+     IF (WS-KIND = 0 AND NOT (WS-KEY = "allay" OR "iron_golem" OR "snow_golem" OR "tadpole" OR "cod" OR "salmon" OR "pufferfish" OR "tropical_fish"))
+             OR WS-KEY = "nautilus" OR "zombie_nautilus"
          MOVE "InLove" TO WN MOVE 6 TO WL
          CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL EN-LOVE(L-ROW)
      END-IF
@@ -113,14 +117,14 @@
          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-TAMED(L-ROW)
      END-IF
 *>   The owner of a pet or an equine (the UUID as four Ints), then the sitting order of a pet.
-     IF WS-KEY = "horse" OR "donkey" OR "mule" OR "llama" OR "trader_llama" OR "camel" OR "wolf" OR "cat" OR "parrot"
+     IF WS-KEY = "horse" OR "donkey" OR "mule" OR "llama" OR "trader_llama" OR "camel" OR "wolf" OR "cat" OR "parrot" OR "nautilus" OR "zombie_nautilus"
          IF EN-OWNER-UUID(L-ROW) NOT = SPACES
              MOVE "Owner" TO WN MOVE 5 TO WL
              CALL "PERSIST-UUID-INTS" USING WS-DIRECTION EN-OWNER-UUID(L-ROW) WS-INTS
              CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-FOUR WS-INTS
          END-IF
      END-IF
-     IF WS-KEY = "wolf" OR "cat" OR "parrot"
+     IF WS-KEY = "wolf" OR "cat" OR "parrot" OR "nautilus" OR "zombie_nautilus"
          MOVE "Sitting" TO WN MOVE 7 TO WL
          CALL "NBT-WRITE-BYTE" USING PB-BUFFER WN WL EN-SIT(L-ROW)
      END-IF
@@ -159,6 +163,16 @@
          CALL "M44-VARIANT-KEY" USING WS-KEY EN-WOOL(L-ROW) WS-CATKEY
          MOVE SPACES TO WS-TEXT
          STRING "minecraft:" FUNCTION TRIM(WS-CATKEY) DELIMITED BY SIZE INTO WS-TEXT
+         COMPUTE WS-TEXT-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(WS-TEXT))
+         CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-TEXT WS-TEXT-LENGTH
+     END-IF
+*>   The variant of a zombie nautilus (45-7 section 7; EN-VARIANT is the registry id, 0 temperate, 1 warm).
+     IF WS-KEY = "zombie_nautilus"
+         MOVE "variant" TO WN MOVE 7 TO WL
+         MOVE "minecraft:temperate" TO WS-TEXT
+         IF EN-VARIANT(L-ROW) = 1
+             MOVE "minecraft:warm" TO WS-TEXT
+         END-IF
          COMPUTE WS-TEXT-LENGTH = FUNCTION LENGTH(FUNCTION TRIM(WS-TEXT))
          CALL "NBT-WRITE-STRING" USING PB-BUFFER WN WL WS-TEXT WS-TEXT-LENGTH
      END-IF
@@ -411,6 +425,14 @@
      END-IF
      CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
      MOVE SM-KIND(WS-M) TO WS-KIND
+     IF WS-KEY = "nautilus"
+         MOVE MQ-AGE TO EN-MOBAGE(L-ROW)
+         MOVE MQ-FORCED TO EN-FORCED(L-ROW)
+         MOVE MQ-LOCKED TO EN-LOCKED(L-ROW)
+     END-IF
+     IF WS-KEY = "nautilus" OR "zombie_nautilus"
+         MOVE MQ-LOVE TO EN-LOVE(L-ROW)
+     END-IF
      IF WS-KIND = 0 AND NOT (WS-KEY = "allay" OR "iron_golem" OR "snow_golem" OR "tadpole" OR "cod" OR "salmon" OR "pufferfish" OR "tropical_fish")
          MOVE MQ-AGE TO EN-MOBAGE(L-ROW)
          MOVE MQ-FORCED TO EN-FORCED(L-ROW)
@@ -422,7 +444,7 @@
          END-IF
      END-IF
 *>   An owner makes a pet tame; an equine is tame by its own key.
-     IF WS-KEY = "wolf" OR "cat" OR "parrot"
+     IF WS-KEY = "wolf" OR "cat" OR "parrot" OR "nautilus" OR "zombie_nautilus"
          MOVE MQ-SIT TO EN-SIT(L-ROW)
          IF MQ-OWNER NOT = SPACES
              MOVE 1 TO EN-TAMED(L-ROW)
@@ -472,6 +494,14 @@
          MOVE 0 TO EN-WOOL(L-ROW)
          IF MQ-TYPE-NAME = "brown" OR "snow"
              MOVE 1 TO EN-WOOL(L-ROW)
+         END-IF
+     END-IF
+     IF WS-KEY = "zombie_nautilus" AND MQ-VARIANT-NAME NOT = SPACES
+         MOVE MQ-VARIANT-NAME TO WS-LOCAL
+         CALL "KEY-BARE" USING WS-LOCAL WS-BARE
+         MOVE 0 TO EN-VARIANT(L-ROW)
+         IF WS-BARE = "warm"
+             MOVE 1 TO EN-VARIANT(L-ROW)
          END-IF
      END-IF
      IF (WS-KEY = "pig" OR "cow" OR "chicken") AND MQ-VARIANT-NAME NOT = SPACES
