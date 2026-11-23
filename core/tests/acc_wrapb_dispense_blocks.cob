@@ -63,7 +63,6 @@
  01 WS-OFF-X               FLOAT-LONG.
  01 WS-OFF-Y               FLOAT-LONG.
  01 WS-OFF-Z               FLOAT-LONG.
- 01 WS-SHOW-DROP           BINARY-LONG VALUE 1.
  PROCEDURE DIVISION.
      MOVE "T" TO TL-MODE
      CALL "PT-OPEN-IN" USING WS-SKIP WS-WORLD-FOLDER
@@ -180,11 +179,9 @@
      MOVE "0 1 1" TO WS-EXP
      PERFORM ASSERT-OBS
      MOVE 18 TO WS-Z MOVE 1 TO WS-TAMED MOVE 0 TO WS-HAS-CHEST MOVE 0 TO WS-OFF-X MOVE 3 TO WS-OFF-Y MOVE 0 TO WS-OFF-Z
-     MOVE 0 TO WS-SHOW-DROP
      PERFORM CHEST-CASE
-*>   (the dropped chest under the stone ceiling of this case is not looked for in the row: the flag and the chests left are the observation)
-     MOVE "acceptance wrapb dispense 30-4 4.3 a tamed donkey 3 blocks above the front cell is not in the front box: no flag, one chest left" TO WS-CASE
-     MOVE "0 1" TO WS-EXP
+     MOVE "acceptance wrapb dispense 30-4 4.3 a tamed donkey 3 blocks above the front cell (on a stone block) is not in the front box: no flag, one chest left, the chest dropped" TO WS-CASE
+     MOVE "0 1 1" TO WS-EXP
      PERFORM ASSERT-OBS
      STOP RUN.
 
@@ -220,11 +217,9 @@
      MOVE WC-CHEST(WS-DROW) TO WS-A-ED
      MOVE BE-SLOT-COUNT(WS-BE, 1) TO WS-B-ED
      MOVE SPACES TO WS-OBS
-     IF WS-SHOW-DROP = 1
-         STRING FUNCTION TRIM(WS-A-ED) " " FUNCTION TRIM(WS-B-ED) " " FUNCTION TRIM(WS-SUM-ED) DELIMITED BY SIZE INTO WS-OBS
-     ELSE
-         STRING FUNCTION TRIM(WS-A-ED) " " FUNCTION TRIM(WS-B-ED) DELIMITED BY SIZE INTO WS-OBS
-     END-IF.
+     STRING FUNCTION TRIM(WS-A-ED) " " FUNCTION TRIM(WS-B-ED) " " FUNCTION TRIM(WS-SUM-ED) DELIMITED BY SIZE INTO WS-OBS
+*>   the donkey goes away: one that stays (a donkey 3 blocks south reaches into the next row's front cell) takes the chest of a later case
+     CALL "ENTITY-REMOVE" USING WS-DROW.
 
  POWER-ON.
      MOVE 2 TO WS-X MOVE 101 TO WS-Y MOVE "redstone_block" TO WS-K MOVE SPACES TO WS-PR PERFORM PUT-BLOCK.
