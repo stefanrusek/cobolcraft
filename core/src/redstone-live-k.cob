@@ -165,7 +165,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HOPPER-WORLDLY.
-*> USING block entity type, kind out: 1 for a furnace, smoker or blast furnace, 2 for a brewing stand (the containers with slots by face, 31-2 3.1 and 4.1), 0 for the others (their slots are the flat list 0 to size - 1, 5.4).
+*> USING block entity type, kind out: 1 for a furnace, smoker or blast furnace, 2 for a brewing stand (the containers with slots by face, 31-2 3.1 and 4.1), 3 for a crafter (the flat list of 9 slots
+*> with the canPlaceItem fairness rule of 31-2 7.2), 0 for the others (their slots are the flat list 0 to size - 1, 5.4).
  DATA DIVISION.
  LINKAGE SECTION.
  01 L-TYPE                 BINARY-LONG.
@@ -177,6 +178,8 @@
              MOVE 1 TO L-KIND
          WHEN 12
              MOVE 2 TO L-KIND
+         WHEN 42
+             MOVE 3 TO L-KIND
      END-EVALUATE
      GOBACK.
  END PROGRAM HOPPER-WORLDLY.
@@ -269,6 +272,8 @@
  01 WS-SLOT0               BINARY-LONG.
  01 WS-LEVEL               BINARY-LONG VALUE 1.
  01 WS-BUCKET-KEY          PIC X(16) VALUE "bucket".
+ 01 WS-CLIMIT              BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -307,6 +312,14 @@
              END-IF
              COMPUTE WS-SLOT0 = L-SLOT - 1
              CALL "BE2-BREW-PLACE" USING WS-SLOT0 WS-BREW-FUEL WS-LEVEL WS-REAGENT WS-INPUT WS-EMPTY L-OK
+         WHEN 3
+*>           a crafter: a disabled slot refuses, a full stack refuses, and a slot that has a later enabled slot with less of the same stack (or an empty one) refuses (31-2 7.2)
+             MOVE 64 TO WS-CLIMIT
+             IF BE-SLOT-COUNT(L-INDEX, L-SLOT) > 0
+                 MOVE IT-MAX-STACK(BE-SLOT-ITEM(L-INDEX, L-SLOT) + 1) TO WS-CLIMIT
+             END-IF
+             COMPUTE WS-SLOT0 = L-SLOT - 1
+             CALL "BE2-CRAFTER-CAN-PLACE" USING L-INDEX WS-SLOT0 L-ITEM WS-ZERO WS-CLIMIT L-OK
      END-EVALUATE
      GOBACK.
  END PROGRAM HOPPER-CAN-PLACE.
@@ -354,6 +367,63 @@
  END PROGRAM HOPPER-CAN-TAKE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. HOPPER-PARTNER.
+*> USING block entity index, first out, second out: the container of a chest half as the hopper sees it (ChestBlock.getContainer with ignoreBlocked true, 31-1 10.2): the two halves of a double chest in
+*> container order (the RIGHT half is the first, slots 0 to 26, the LEFT half the second, slots 27 to 53), or the index itself and 0 when the chest is single, has no real partner (the neighbour in the
+*> connected direction must be the same block, a half of the other type with the same facing, with a block entity) or the entity is not a chest.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ COPY CBLOCKS.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-NSTATE              BINARY-LONG.
+ 01 WS-FAM                 BINARY-LONG.
+ 01 WS-DIR                 BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-FLAG                BINARY-LONG.
+ 01 WS-NFAM                BINARY-LONG.
+ 01 WS-NDIR                BINARY-LONG.
+ 01 WS-NTYPE               BINARY-LONG.
+ 01 WS-NFLAG               BINARY-LONG.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-PX                  BINARY-LONG.
+ 01 WS-PZ                  BINARY-LONG.
+ 01 WS-PART                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-FIRST                BINARY-LONG.
+ 01 L-SECOND               BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-FIRST L-SECOND.
+     MOVE L-INDEX TO L-FIRST
+     MOVE 0 TO L-SECOND
+     IF BE-TYPE(L-INDEX) = 1 OR BE-TYPE(L-INDEX) = 2
+         CALL "WORLD-GET-BLOCK" USING BE-DIM(L-INDEX) BE-X(L-INDEX) BE-Y(L-INDEX) BE-Z(L-INDEX) WS-STATE
+         CALL "BE-STATE-FIELDS" USING WS-STATE WS-FAM WS-DIR WS-TYPE WS-FLAG
+         IF WS-FAM = 1 AND WS-TYPE NOT = 0
+             CALL "BE-CHEST-CONNECTED" USING WS-DIR WS-TYPE WS-DX WS-DZ
+             COMPUTE WS-PX = BE-X(L-INDEX) + WS-DX
+             COMPUTE WS-PZ = BE-Z(L-INDEX) + WS-DZ
+             CALL "WORLD-GET-BLOCK" USING BE-DIM(L-INDEX) WS-PX BE-Y(L-INDEX) WS-PZ WS-NSTATE
+             CALL "BE-STATE-FIELDS" USING WS-NSTATE WS-NFAM WS-NDIR WS-NTYPE WS-NFLAG
+             IF CB-S-BLOCK(WS-NSTATE + 1) = CB-S-BLOCK(WS-STATE + 1) AND WS-NTYPE NOT = 0 AND WS-NTYPE NOT = WS-TYPE
+                     AND WS-NDIR = WS-DIR
+                 CALL "BE-FIND" USING BE-DIM(L-INDEX) WS-PX BE-Y(L-INDEX) WS-PZ WS-PART
+                 IF WS-PART > 0
+                     IF WS-TYPE = 2
+                         MOVE WS-PART TO L-SECOND
+                     ELSE
+                         MOVE WS-PART TO L-FIRST
+                         MOVE L-INDEX TO L-SECOND
+                     END-IF
+                 END-IF
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM HOPPER-PARTNER.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. HOPPER-ADD-ONE.
 *> USING block entity index, item, variant, face, left out (0 when one item went in): addItem(source, dest, stack, direction) of a single item (31-2 5.6): for each slot of getSlots(dest, face) in
 *> order, the item goes into the slot that is empty or already holds the same stack with room (canMergeItems), when canPlaceItem allows it. The containers without face rules take the flat
@@ -367,6 +437,8 @@
  01 WS-SLOT                BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-LIMIT               BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-SECOND              BINARY-LONG.
  LINKAGE SECTION.
  01 L-INDEX                BINARY-LONG.
  01 L-ITEM                 BINARY-LONG.
@@ -376,12 +448,17 @@
  PROCEDURE DIVISION USING L-INDEX L-ITEM L-VAR L-FACE L-LEFT.
      CALL "HOPPER-WORLDLY" USING BE-TYPE(L-INDEX) WS-KIND
      IF WS-KIND = 0
-         CALL "RL-INSERT-ONE" USING L-INDEX L-ITEM L-VAR L-LEFT
+*>       a double chest is one container: the first half's slots, then the second half's (31-1 10.2)
+         CALL "HOPPER-PARTNER" USING L-INDEX WS-FIRST WS-SECOND
+         CALL "RL-INSERT-ONE" USING WS-FIRST L-ITEM L-VAR L-LEFT
+         IF L-LEFT = 1 AND WS-SECOND > 0
+             CALL "RL-INSERT-ONE" USING WS-SECOND L-ITEM L-VAR L-LEFT
+         END-IF
          GOBACK
      END-IF
      MOVE 1 TO L-LEFT
      CALL "BE-MAX-STACK" USING IT-MAX-STACK(L-ITEM + 1) WS-LIMIT
-     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > 5 OR L-LEFT = 0
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > 9 OR L-LEFT = 0
          CALL "HOPPER-FACE-SLOT" USING L-INDEX L-FACE WS-N WS-SLOT
          IF WS-SLOT > 0
              CALL "HOPPER-CAN-PLACE" USING L-INDEX WS-SLOT L-ITEM WS-OK
@@ -407,7 +484,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HOPPER-CONTAINER.
 *> USING dim, x, y, z, block entity index out, size out: the container at the position that a hopper can move items into and out of (0 and 0 when there is none): a chest, trapped chest, barrel, shulker
-*> box, dispenser, dropper or hopper block entity (31-2 5.7 step 1), or a furnace, smoker, blast furnace or brewing stand (slots by face, HOPPER-FACE-SLOT).
+*> box, dispenser, dropper or hopper block entity (31-2 5.7 step 1), or a furnace, smoker, blast furnace or brewing stand (slots by face, HOPPER-FACE-SLOT), or a crafter (nine slots, the fairness rule of 31-2 7.2). A double chest is reported through either half (HOPPER-PARTNER).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BESTATE.
@@ -426,7 +503,12 @@
          CALL "HOPPER-WORLDLY" USING BE-TYPE(L-INDEX) WS-KIND
          IF WS-KIND > 0 OR BE-TYPE(L-INDEX) = 1 OR BE-TYPE(L-INDEX) = 2 OR BE-TYPE(L-INDEX) = 5 OR BE-TYPE(L-INDEX) = 6
                  OR BE-TYPE(L-INDEX) = 18 OR BE-TYPE(L-INDEX) = 24 OR BE-TYPE(L-INDEX) = 26
+                 OR BE-TYPE(L-INDEX) = 42
              CALL "BE-CONTAINER-SIZE" USING BE-TYPE(L-INDEX) L-SIZE
+         END-IF
+*>       a block entity that is no container (a beehive, a sign) is no container: the hopper looks for item entities instead (5.5)
+         IF L-SIZE = 0
+             MOVE 0 TO L-INDEX
          END-IF
      END-IF
      GOBACK.
@@ -509,8 +591,156 @@
  END PROGRAM HOPPER-EJECT.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. RL-INSERT-STACK.
+*> USING block entity index, item, variant, count (in: the stack, out: what is left): HopperBlockEntity.addItem(null, hopper, stack, null) of a whole stack into the flat slots (31-2 5.6): for each slot in
+*> order, an empty slot takes the stack and a slot holding the same stack takes as much as its stack size leaves room for.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ COPY CITEMS.
+ 01 WS-SIZE                BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-ROOM                BINARY-LONG.
+ 01 WS-MOVE                BINARY-LONG.
+ 01 WS-CHANGED             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-ITEM                 BINARY-LONG.
+ 01 L-VAR                  BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-ITEM L-VAR L-COUNT.
+     CALL "BE-CONTAINER-SIZE" USING BE-TYPE(L-INDEX) WS-SIZE
+     MOVE 0 TO WS-CHANGED
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > WS-SIZE OR L-COUNT = 0
+         IF BE-SLOT-COUNT(L-INDEX, WS-S) = 0
+             MOVE L-ITEM TO BE-SLOT-ITEM(L-INDEX, WS-S)
+             MOVE L-VAR TO BE-SLOT-VAR(L-INDEX, WS-S)
+             MOVE L-COUNT TO BE-SLOT-COUNT(L-INDEX, WS-S)
+             MOVE 0 TO L-COUNT
+             MOVE 1 TO WS-CHANGED
+         ELSE
+             IF BE-SLOT-ITEM(L-INDEX, WS-S) = L-ITEM AND BE-SLOT-VAR(L-INDEX, WS-S) = L-VAR
+                 COMPUTE WS-ROOM = IT-MAX-STACK(L-ITEM + 1) - BE-SLOT-COUNT(L-INDEX, WS-S)
+                 IF WS-ROOM > 0
+                     MOVE L-COUNT TO WS-MOVE
+                     IF WS-ROOM < WS-MOVE
+                         MOVE WS-ROOM TO WS-MOVE
+                     END-IF
+                     ADD WS-MOVE TO BE-SLOT-COUNT(L-INDEX, WS-S)
+                     SUBTRACT WS-MOVE FROM L-COUNT
+                     MOVE 1 TO WS-CHANGED
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-CHANGED = 1
+         CALL "BE-MARK-CHUNK" USING L-INDEX
+     END-IF
+     GOBACK.
+ END PROGRAM RL-INSERT-STACK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HOPPER-SUCK-ITEMS.
+*> USING hopper block entity index, moved out: the item entity half of suckInItems (31-2 5.5 step 4, 5.6) for a hopper with no container above it: unless the block above is a full block other than a
+*> beehive or bee nest (does_not_block_hoppers), the first item entity whose box overlaps the pickup column (x and z of the block, y from 0.6875 above its floor to two blocks up) is put into the hopper
+*> as a whole stack (RL-INSERT-STACK). All of it going in discards the entity and counts as a move; part of it leaves the rest on the entity (its viewers get Set Entity Data) and is no move.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CBLOCKS.
+ COPY CONTENT.
+ COPY CITEMS.
+ COPY CITEMPHYS.
+ COPY PROTO.
+ COPY BESTATE.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-SHAPE               BINARY-LONG.
+ 01 WS-LONG                PIC X(48).
+ 01 WS-BARE                PIC X(48).
+ 01 WS-QY                  BINARY-LONG.
+ 01 WS-BLOCKED             BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-BEFORE              BINARY-LONG.
+ 01 WS-BOX.
+    05 WS-B                FLOAT-LONG OCCURS 6 TIMES.
+ 01 WS-X1                  FLOAT-LONG.
+ 01 WS-Y0                  FLOAT-LONG.
+ 01 WS-Y1                  FLOAT-LONG.
+ 01 WS-Z1                  FLOAT-LONG.
+ 01 WS-X0                  FLOAT-LONG.
+ 01 WS-Z0                  FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-MOVED                BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-MOVED.
+     MOVE 0 TO L-MOVED WS-BLOCKED
+     COMPUTE WS-QY = BE-Y(L-INDEX) + 1
+     CALL "WORLD-GET-BLOCK" USING BE-DIM(L-INDEX) BE-X(L-INDEX) WS-QY BE-Z(L-INDEX) WS-STATE
+     IF WS-STATE NOT = 0
+         COMPUTE WS-BLOCK = CB-S-BLOCK(WS-STATE + 1) + 1
+         IF CB-SOLID(WS-BLOCK) = 1
+             MOVE 1 TO WS-SHAPE
+             IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+                 CALL "BSH-COLL-ID" USING WS-STATE WS-SHAPE
+             END-IF
+             IF WS-SHAPE = 1
+                 MOVE 1 TO WS-BLOCKED
+                 MOVE CB-KEY(WS-BLOCK) TO WS-LONG
+                 CALL "KEY-BARE" USING WS-LONG WS-BARE
+                 IF WS-BARE = "beehive" OR WS-BARE = "bee_nest"
+                     MOVE 0 TO WS-BLOCKED
+                 END-IF
+             END-IF
+         END-IF
+     END-IF
+     IF WS-BLOCKED = 1
+         GOBACK
+     END-IF
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     COMPUTE WS-X0 = BE-X(L-INDEX)
+     COMPUTE WS-X1 = BE-X(L-INDEX) + 1
+     COMPUTE WS-Z0 = BE-Z(L-INDEX)
+     COMPUTE WS-Z1 = BE-Z(L-INDEX) + 1
+     COMPUTE WS-Y0 = BE-Y(L-INDEX) + 0.6875
+     COMPUTE WS-Y1 = BE-Y(L-INDEX) + 2
+     PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT OR L-MOVED = 1
+         IF EN-USED(WS-ROW) = 1 AND EN-TYPE(WS-ROW) = CR-LOOSE-ITEM AND EN-DIM(WS-ROW) = BE-DIM(L-INDEX)
+                 AND EN-ITEM-COUNT(WS-ROW) > 0
+             CALL "PST-PUSH-BOX" USING WS-ROW WS-BOX
+             IF WS-B(1) < WS-X1 AND WS-B(4) > WS-X0 AND WS-B(2) < WS-Y1 AND WS-B(5) > WS-Y0
+                     AND WS-B(3) < WS-Z1 AND WS-B(6) > WS-Z0
+                 CALL "IP-ENSURE" USING WS-ROW
+                 MOVE EN-ITEM-COUNT(WS-ROW) TO WS-BEFORE
+                 MOVE WS-BEFORE TO WS-LEFT
+                 CALL "RL-INSERT-STACK" USING L-INDEX EN-ITEM(WS-ROW) IP-I-VAR(WS-ROW) WS-LEFT
+                 EVALUATE TRUE
+                     WHEN WS-LEFT = 0
+                         MOVE 0 TO EN-ITEM-COUNT(WS-ROW)
+                         CALL "ENTITY-REMOVE" USING WS-ROW
+                         MOVE 1 TO L-MOVED
+                     WHEN WS-LEFT < WS-BEFORE
+                         MOVE WS-LEFT TO EN-ITEM-COUNT(WS-ROW)
+                         CALL "PB-RESET" USING PB-BUFFER
+                         CALL "SET-ENTITY-DATA-ITEM-BUILD" USING EN-ID(WS-ROW) EN-ITEM(WS-ROW) EN-ITEM-COUNT(WS-ROW) PB-BUFFER
+                         CALL "GI-VIEWERS-SEND" USING WS-ROW PB-BUFFER
+                 END-EVALUATE
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM HOPPER-SUCK-ITEMS.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. HOPPER-SUCK.
-*> USING hopper block entity index, moved out: suckInItems (5.5): one item from the first slot of getSlots(source, DOWN) of the container above that the hopper accepts and the source lets go
+*> USING hopper block entity index, moved out: suckInItems (5.5): one item from the first slot of getSlots(source, DOWN) of the container above that the hopper accepts and the source lets go (a double
+*> chest above is one container: the slots of its first half, then of its second); with no container above, the item entities of the pickup column (HOPPER-SUCK-ITEMS)
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY BESTATE.
@@ -518,6 +748,10 @@
  01 WS-QY                  BINARY-LONG.
  01 WS-SOURCE              BINARY-LONG.
  01 WS-SSIZE               BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-SECOND              BINARY-LONG.
+ 01 WS-HALF                BINARY-LONG.
+ 01 WS-SRC                 BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-VAR                 BINARY-LONG.
  01 WS-LEFT                BINARY-LONG.
@@ -531,31 +765,45 @@
  PROCEDURE DIVISION USING L-INDEX L-MOVED.
      COMPUTE WS-QY = BE-Y(L-INDEX) + 1
      CALL "HOPPER-CONTAINER" USING BE-DIM(L-INDEX) BE-X(L-INDEX) WS-QY BE-Z(L-INDEX) WS-SOURCE WS-SSIZE
-     IF WS-SOURCE > 0
-         MOVE 0 TO WS-DONE
-         PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > WS-SSIZE OR WS-DONE = 1
-             CALL "HOPPER-FACE-SLOT" USING WS-SOURCE WS-DOWN WS-N WS-S
-             MOVE 0 TO WS-OK
-             IF WS-S > 0 AND BE-SLOT-COUNT(WS-SOURCE, WS-S) > 0
-                 CALL "HOPPER-CAN-TAKE" USING WS-SOURCE WS-S BE-SLOT-ITEM(WS-SOURCE, WS-S) WS-DOWN WS-OK
-             END-IF
-             IF WS-OK = 1
-                 MOVE BE-SLOT-ITEM(WS-SOURCE, WS-S) TO WS-ITEM
-                 MOVE BE-SLOT-VAR(WS-SOURCE, WS-S) TO WS-VAR
-                 CALL "RL-INSERT-ONE" USING L-INDEX WS-ITEM WS-VAR WS-LEFT
-                 IF WS-LEFT = 0
-                     SUBTRACT 1 FROM BE-SLOT-COUNT(WS-SOURCE, WS-S)
-                     IF BE-SLOT-COUNT(WS-SOURCE, WS-S) = 0
-                         MOVE 0 TO BE-SLOT-ITEM(WS-SOURCE, WS-S)
-                         MOVE 0 TO BE-SLOT-VAR(WS-SOURCE, WS-S)
-                     END-IF
-                     CALL "BE-MARK-CHUNK" USING WS-SOURCE
-                     MOVE 1 TO L-MOVED
-                     MOVE 1 TO WS-DONE
-                 END-IF
-             END-IF
-         END-PERFORM
+     IF WS-SOURCE = 0
+         CALL "HOPPER-SUCK-ITEMS" USING L-INDEX WS-LEFT
+         IF WS-LEFT = 1
+             MOVE 1 TO L-MOVED
+         END-IF
+         GOBACK
      END-IF
+     CALL "HOPPER-PARTNER" USING WS-SOURCE WS-FIRST WS-SECOND
+     MOVE 0 TO WS-DONE
+     PERFORM VARYING WS-HALF FROM 1 BY 1 UNTIL WS-HALF > 2 OR WS-DONE = 1
+         MOVE WS-FIRST TO WS-SRC
+         IF WS-HALF = 2
+             MOVE WS-SECOND TO WS-SRC
+         END-IF
+         IF WS-SRC > 0
+             PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > WS-SSIZE OR WS-DONE = 1
+                 CALL "HOPPER-FACE-SLOT" USING WS-SRC WS-DOWN WS-N WS-S
+                 MOVE 0 TO WS-OK
+                 IF WS-S > 0 AND BE-SLOT-COUNT(WS-SRC, WS-S) > 0
+                     CALL "HOPPER-CAN-TAKE" USING WS-SRC WS-S BE-SLOT-ITEM(WS-SRC, WS-S) WS-DOWN WS-OK
+                 END-IF
+                 IF WS-OK = 1
+                     MOVE BE-SLOT-ITEM(WS-SRC, WS-S) TO WS-ITEM
+                     MOVE BE-SLOT-VAR(WS-SRC, WS-S) TO WS-VAR
+                     CALL "RL-INSERT-ONE" USING L-INDEX WS-ITEM WS-VAR WS-LEFT
+                     IF WS-LEFT = 0
+                         SUBTRACT 1 FROM BE-SLOT-COUNT(WS-SRC, WS-S)
+                         IF BE-SLOT-COUNT(WS-SRC, WS-S) = 0
+                             MOVE 0 TO BE-SLOT-ITEM(WS-SRC, WS-S)
+                             MOVE 0 TO BE-SLOT-VAR(WS-SRC, WS-S)
+                         END-IF
+                         CALL "BE-MARK-CHUNK" USING WS-SRC
+                         MOVE 1 TO L-MOVED
+                         MOVE 1 TO WS-DONE
+                     END-IF
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-PERFORM
      GOBACK.
  END PROGRAM HOPPER-SUCK.
 
