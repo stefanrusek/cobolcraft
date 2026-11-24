@@ -1,7 +1,7 @@
 *> Implementation test (coverage lane A; docs/protocol/35-worldgen-features-1, 4, 5, 7; core/src/feat-data.cob, feat-bonus.cob, feat-ice.cob, feat-magma.cob, feat-blob.cob, feat-fossil.cob,
 *> feat-template.cob): the data of a feature that cannot be compiled whole makes it unsupported (feature type -1, FD-BAD for the node): a bonus chest or blue ice or magma feature while its
 *> block is absent from the block table (the row is hidden by a zero key length), an exhausted work-area table, missing members, an inline template list with a missing id, a negative weight
-*> and a bad rotation list, a uniform entry with min above max, fixed placement positions that are absent or no triples, and the nether features given no members.
+*> and a bad rotation list, a uniform entry with min above max, fixed placement positions that are absent or no triples, and the nether features given no members, and a feature of an unknown type or without a type.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-COVA-FEAT-NODES.
  DATA DIVISION.
@@ -85,6 +85,27 @@
      MOVE "test cova feat nodes a forest rock whose state names no block is unsupported" TO WS-CASE
      MOVE -1 TO WS-E
      MOVE FT-TYPE(WS-IDX) TO WS-O
+     CALL "CA-N" USING WS-CASE WS-E WS-O
+*>   A feature whose type is not in the registry (an unknown name, or no type at all) is unsupported and marks the node bad.
+     MOVE '{"type": "minecraft:no_such_feature_type"}' TO WS-TEXT
+     PERFORM COMPILE-FEATURE
+     MOVE "test cova feat nodes a feature of an unknown type has type -1" TO WS-CASE
+     MOVE -1 TO WS-E
+     MOVE FT-TYPE(WS-IDX) TO WS-O
+     CALL "CA-N" USING WS-CASE WS-E WS-O
+     MOVE "test cova feat nodes a feature of an unknown type marks the node bad" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE FD-BAD TO WS-O
+     CALL "CA-N" USING WS-CASE WS-E WS-O
+     MOVE '{"config": {}}' TO WS-TEXT
+     PERFORM COMPILE-FEATURE
+     MOVE "test cova feat nodes a feature without a type has type -1" TO WS-CASE
+     MOVE -1 TO WS-E
+     MOVE FT-TYPE(WS-IDX) TO WS-O
+     CALL "CA-N" USING WS-CASE WS-E WS-O
+     MOVE "test cova feat nodes a feature without a type marks the node bad" TO WS-CASE
+     MOVE 1 TO WS-E
+     MOVE FD-BAD TO WS-O
      CALL "CA-N" USING WS-CASE WS-E WS-O
 *>   A bonus chest while chest is absent, then torch, then with the work-area table full.
      MOVE "minecraft:chest" TO WS-KEY

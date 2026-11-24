@@ -1,7 +1,7 @@
 *> Acceptance test (T29040..T29060, US12-4; docs/protocol/30-redstone-2 sections 4.2 and 5, 29 section 3.4): a comparator reads the analog output of the cell it faces. A barrel's fullness
 *> (5.2: 14 full stacks of 27 slots read 8, 27 read 15), a double chest's merged 54 slots, a composter, a layered cauldron, a lava cauldron, a cake, a respawn anchor, an end portal frame, a
 *> beehive, a lit copper bulb (5.3), and an item frame behind one conductor block (4.2 step 4). A container whose stacks changed tells the comparator at its side, a block whose state changed
-*> does (29 3.4). Needs the generated packs (a pass without them).
+*> does (29 3.4), and a container behind one conductor block tells the comparator behind that block. Needs the generated packs (a pass without them).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-F2US12-REDSTONE-ANALOG.
  DATA DIVISION.
@@ -276,6 +276,31 @@
      PERFORM READ-WIRE
      MOVE "acceptance US12-4 live redstone 30-2 4.2 step 4 an item frame with rotation 3 behind one conductor block gives the comparator 4" TO WS-CASE
      MOVE "4" TO WS-EXP
+     PERFORM ASSERT-POWER
+
+*>   E. a barrel behind a conductor (z 36): the comparator at x 3 reads through the stone at x 4 (4.2 step 3); the barrel at x 5 is no comparator's neighbour, so only the notice
+*>   of the cell behind the conductor (29 3.4: updateNeighbourForOutputSignal, the comparator one block further) tells the comparator that the stacks changed
+     MOVE 36 TO WS-Z
+     PERFORM BUILD-ROW
+     MOVE 4 TO WS-X MOVE 101 TO WS-Y MOVE "stone" TO WS-K PERFORM PUT-DEF
+     MOVE 5 TO WS-X MOVE "barrel" TO WS-K PERFORM PUT-DEF
+     CALL "BE-FIND" USING WS-DIM WS-X WS-Y WS-Z WS-BE
+     MOVE 3 TO WS-TICKS PERFORM RUN-TICKS
+     MOVE 2 TO WS-X
+     PERFORM READ-WIRE
+     MOVE "acceptance US12-4 live redstone 29 3.4 a comparator behind one conductor block reads an empty barrel as 0" TO WS-CASE
+     MOVE "0" TO WS-EXP
+     PERFORM ASSERT-POWER
+     MOVE "stone" TO WS-K
+     PERFORM FIND-ITEM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 14
+         MOVE WS-ITEM TO BE-SLOT-ITEM(WS-BE, WS-I)
+         MOVE 64 TO BE-SLOT-COUNT(WS-BE, WS-I)
+     END-PERFORM
+     MOVE 3 TO WS-TICKS PERFORM RUN-TICKS
+     PERFORM READ-WIRE
+     MOVE "acceptance US12-4 live redstone 29 3.4 a barrel of 14 full stacks behind one conductor block tells the comparator, which outputs 8" TO WS-CASE
+     MOVE "8" TO WS-EXP
      PERFORM ASSERT-POWER
      STOP RUN.
 

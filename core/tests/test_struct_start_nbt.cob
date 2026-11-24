@@ -52,6 +52,7 @@
  01 WS-ONE                 BINARY-LONG VALUE 1.
  01 WS-TWO                 BINARY-LONG VALUE 2.
  01 WS-VALUE               BINARY-LONG.
+ 01 WS-STAMP               BINARY-DOUBLE VALUE 4000000000.
  01 WS-LIST-TYPE           BINARY-LONG VALUE 10.
  01 WS-TEN                 BINARY-LONG VALUE 10.
  01 WS-STR                 PIC X(40).
@@ -375,9 +376,11 @@
          MOVE 1 TO WS-BB-N(4) WS-BB-N(5) WS-BB-N(6)
          CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WN WL WS-SIX WS-BB
      END-IF
-*>   an unknown key of a piece tag is skipped
+*>   an unknown key of a piece tag is skipped: an int is read as a scalar key and left unused by the piece's type, a long is of a tag type the reader keeps no table for
      MOVE "Extra" TO WN MOVE 5 TO WL
      CALL "NBT-WRITE-INT" USING PB-BUFFER WN WL WS-VALUE
+     MOVE "Stamp" TO WN MOVE 5 TO WL
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WN WL WS-STAMP
      CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER.
 
 *> a long array named WS-KEY of four packed positions: (9, 0), (8, -8), (-8, 8), (0, 9)
