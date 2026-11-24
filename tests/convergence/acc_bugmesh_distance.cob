@@ -128,7 +128,9 @@
      MOVE CT-TYPE-STANDARD TO SP-CREATE-TYPE
      CALL "CV-HOST-OPEN" USING CONVH WS-ALICE WS-FOLDER WS-FOLDER-LENGTH WS-MODE
      MOVE 0 TO WS-JOINED
-     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 20 OR WS-JOINED = 1
+*>   The join of a view 8 world takes about 5600 frames on a quiet machine (the chunk steps are limited by the wall clock of each tick, the generation workers need wall time): sixty tries of 400
+*>   frames with a second's pause each, so that the full convergence run (eight programs at a time, instrumented) joins too; the loop ends at the join.
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 60 OR WS-JOINED = 1
          CALL "CV-UNTIL-PLAY" USING CONVH WS-ALICE WS-JOINED
          IF WS-JOINED = 0
              CALL "C$SLEEP" USING 1
