@@ -12,6 +12,7 @@
  COPY CORESTATE.
  COPY COREAPI.
  COPY LOCATEQ.
+ COPY GENQUEUE.
  COPY STRUCTDATA.
  01 WS-SEED                BINARY-DOUBLE.
  01 WS-S                   BINARY-LONG.
@@ -87,6 +88,23 @@
      COMPUTE WS-SX = FUNCTION INTEGER(PL-X(WS-ROW))
      COMPUTE WS-SZ = FUNCTION INTEGER(PL-Z(WS-ROW))
      MOVE 10000 TO LQ-SLICE
+*>   the first tick after the join queues the chunks of the view: the ticks that generate them are not the search's, and the first fill step of a chunk prepares the beardifier from cold structure
+*>   data (more than 0.6 s of CPU in one step, 36-1 9), so they are run before the searches are timed: what the bound below measures is the search's own work in a tick. The generation takes
+*>   more ticks than the keep-alive allows an unanswered player, so the check is put far away like the other long-running tests do.
+     MOVE 999999999 TO CN-KA-DEADLINE(WS-ID-OPAL)
+     MOVE 0 TO WS-TICKS
+     PERFORM WITH TEST AFTER UNTIL (GQ-COUNT = 0 AND GJ-ACTIVE = 0) OR WS-TICKS > 20000
+         CALL "CORE-TICK"
+         ADD 1 TO WS-TICKS
+     END-PERFORM
+     MOVE "acceptance US13 /locate the generation of the chunks of the view is finished before the searches are timed" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF GQ-COUNT = 0 AND GJ-ACTIVE = 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 *>   the want: a desert pyramid (a rare single structure), the village tag, a mansion
      MOVE 1 TO WS-KIND
      MOVE "minecraft:desert_pyramid" TO WS-WANT-ID
