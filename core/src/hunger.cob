@@ -1,30 +1,32 @@
-*> Hunger and eating (US8; standin-content §11, §10.3 starvation; data-model §6;
-*> docs/protocol/09-cobolcraft-profile.md §3.3 Hunger rows; 05a 0x22, 05c 0x29, 0x43).
+*> Hunger, saturation and eating (17 section 4.9, the shared rules of both world types; docs/protocol/09
+*> section 3.3 Hunger rows; 05a 0x22, 05c 0x29, 0x43).
 *>
-*> Hunger applies only to alive survival players (US8-6): a creative player's food and exhaustion
+*> Hunger applies only to alive survival players: a creative player's food, saturation and exhaustion
 *> do not change, it does not starve and Use Item does not start eating.
 *>
-*> Exhaustion (HUNGER-EXHAUST, §11.2, §11.3): an activity adds its amount; whenever exhaustion is
-*> at least 5.0, 5.0 is taken off and, if food is above 0, food falls by 1 and the player is sent
-*> Set Health (repeated while it is still at least 5.0). The activities call it: time (HUNGER-TICK),
-*> walking, running and jumping (MOVE-PLAYER, core/src/movement.cob), hits (HEALTH-ATTACK) and
-*> recovery (HEALTH-TICK, core/src/health.cob), survival breaks (BLOCK-ACTION, core/src/blocks.cob).
-*> The comparison with 5.0 allows 1e-9 so that 1000 ticks of 0.005 reach it.
+*> Exhaustion (HUNGER-EXHAUST): an activity adds its amount (capped at 40). The activities call it:
+*> sprinting and jumping (MOVE-PLAYER, core/src/movement.cob), hits (HEALTH-ATTACK), damage taken
+*> (HEALTH-DAMAGE, the damage type's exhaustion), regeneration (below), survival breaks
+*> (BLOCK-ACTION, core/src/blocks.cob).
 *>
-*> Eating (§11.6): Use Item from an alive survival player whose held hotbar slot holds a food item
-*> (ITEMS.cpy IT-FOOD > 0) and whose food is below 24 starts eating that item (HUNGER-USE-ITEM);
-*> food at 24, creative mode or no food item held does nothing. When 30 ticks have passed since the
-*> start (HUNGER-TICK) and the held slot still holds that item, one item leaves the slot, food rises
-*> by the item's value up to 24, and the player is sent Set Health and Container Set Slot of the
-*> slot, then Entity Event 9 (eating finished), which every player that has the player's entity is
-*> sent too. Player Action 6 RELEASE_USE_ITEM, a change of held slot (INV-HELD), a change of the
-*> slot's item, death (HEALTH-DIE) or creative mode before then cancel it (HUNGER-CANCEL): nothing
-*> is eaten.
+*> FoodData tick (HUNGER-TICK, from HEALTH-TICK, after the hurt window): when exhaustion is at least
+*> 4.0, 4.0 is taken off and saturation falls by 1 (to at least 0) or, with none left, food by 1.
+*> Natural regeneration: while saturation is above 0, food is 20 and health is below 20, every 10th
+*> tick heals min(saturation, 6) / 6 and adds min(saturation, 6) exhaustion; else while food is at
+*> least 18 and health below 20, every 80th tick heals 1 and adds 6.0 exhaustion; else at food 0
+*> every 80th tick the player takes 1 starvation damage (HEALTH-DAMAGE) while its health is above 1
+*> (Normal difficulty); otherwise the timer (PL-RECOVER-TICKS) is 0. The player is sent Set Health
+*> (with the saturation) in a tick in which health, food or saturation changed.
 *>
-*> Per tick (HUNGER-TICK, from HEALTH-TICK, step 4 of §9.5, after the hurt cooldown): eating
-*> completion, exhaustion from time (0.005), then starvation: while food is 0 a counter counts the
-*> consecutive ticks and at 60 the player takes 1 starvation damage (HEALTH-DAMAGE, which can kill)
-*> and the counter returns to 0; it returns to 0 whenever food is above 0.
+*> Eating (17 section 4.9; the foods' saturation is 0.0, standard core CORE-21): Use Item from an
+*> alive survival player whose held hotbar slot holds a food item (CITEMS.cpy IT-FOOD > 0) and whose
+*> food is below 20 starts eating that item (HUNGER-USE-ITEM); food at 20, creative mode or no food
+*> item held does nothing. When 30 ticks have passed since the start (HUNGER-TICK) and the held slot
+*> still holds that item, one item leaves the slot, food rises by the item's value up to 20,
+*> saturation stays within the food level, and the player is sent Set Health and Container Set Slot
+*> of the slot, then Entity Event 9 (eating finished), which every player that has the player's
+*> entity is sent too. Player Action 6 RELEASE_USE_ITEM, a change of held slot (INV-HELD), a change
+*> of the slot's item, death (HEALTH-DIE) or creative mode before then cancel it (HUNGER-CANCEL).
 *>
 *> Entry points:
 *>   HUNGER-EXHAUST USING player row (BINARY-LONG), amount (FLOAT-LONG)
@@ -55,7 +57,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HUNGER-EXHAUST.
 *> USING player row (BINARY-LONG), amount (FLOAT-LONG): adds the exhaustion of an activity to an
-*> alive survival player and removes food points (see above).
+*> alive survival player (see above).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -70,15 +72,8 @@
      IF PL-MODE(WS-ROW) NOT = 0 OR PL-STATE(WS-ROW) NOT = PS-ALIVE
          GOBACK
      END-IF
-     COMPUTE PL-EXHAUSTION(WS-ROW) = PL-EXHAUSTION(WS-ROW) + L-AMOUNT
-     COMPUTE WS-LIMIT = RULE-EXHAUST-FOOD-MILLI / 1000
-     PERFORM UNTIL PL-EXHAUSTION(WS-ROW) < WS-LIMIT - 0.000000001
-         COMPUTE PL-EXHAUSTION(WS-ROW) = FUNCTION MAX(0, PL-EXHAUSTION(WS-ROW) - WS-LIMIT)
-         IF PL-FOOD(WS-ROW) > 0
-             SUBTRACT 1 FROM PL-FOOD(WS-ROW)
-             CALL "HEALTH-SEND" USING WS-ROW
-         END-IF
-     END-PERFORM
+     COMPUTE WS-LIMIT = RULE-EXHAUST-CAP-MILLI / 1000
+     COMPUTE PL-EXHAUSTION(WS-ROW) = FUNCTION MIN(WS-LIMIT, PL-EXHAUSTION(WS-ROW) + L-AMOUNT)
      GOBACK.
  END PROGRAM HUNGER-EXHAUST.
 
@@ -89,9 +84,13 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY RULES.
- COPY ITEMS.
+ COPY CITEMS.
  01 WS-ROW                 BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-ALWAYS              BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-EV-START            PIC X(32) VALUE "item_interact_start".
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -99,41 +98,57 @@
      MOVE CN-PLAYER(L-ID) TO WS-ROW
      COMPUTE WS-SLOT = PL-HELD(WS-ROW) + 1
      IF PL-MODE(WS-ROW) NOT = 0 OR PL-STATE(WS-ROW) NOT = PS-ALIVE
-             OR PL-FOOD(WS-ROW) >= RULE-MAX-FOOD
              OR PL-SLOT-COUNT(WS-ROW, WS-SLOT) = 0
          GOBACK
      END-IF
-     IF IT-FOOD(PL-SLOT-ITEM(WS-ROW, WS-SLOT) + 1) = 0
+     COMPUTE WS-ITEM = PL-SLOT-ITEM(WS-ROW, WS-SLOT) + 1
+     IF IT-FOOD(WS-ITEM) = 0
+         GOBACK
+     END-IF
+*>   A full player eats only an item that can always be eaten (golden apple, honey bottle, chorus fruit: 25 part 5 section 4.3).
+     CALL "TOOLUSE-KEY" USING PL-SLOT-ITEM(WS-ROW, WS-SLOT) WS-KEY
+     CALL "FOOD-ALWAYS" USING WS-KEY WS-ALWAYS
+     IF IT-FOOD-ALWAYS(WS-ITEM) NOT = 0
+         MOVE 1 TO WS-ALWAYS
+     END-IF
+     IF PL-FOOD(WS-ROW) >= RULE-MAX-FOOD AND WS-ALWAYS = 0
          GOBACK
      END-IF
      MOVE PL-SLOT-ITEM(WS-ROW, WS-SLOT) TO PL-EATING-ITEM(WS-ROW)
      MOVE PL-HELD(WS-ROW) TO PL-EATING-SLOT(WS-ROW)
      MOVE CW-TICKS TO PL-EATING-START(WS-ROW)
+*>   LivingEntity.startUsingItem: item_interact_start at the player (an item whose use_effects allow interact vibrations: every food, 30-8 14.3.8)
+     CALL "GAME-EVENT-AT" USING WS-EV-START PL-ENTITY-ROW(WS-ROW)
      GOBACK.
  END PROGRAM HUNGER-USE-ITEM.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HUNGER-CANCEL.
-*> USING player row (BINARY-LONG): the player stops eating; nothing is eaten.
+*> USING player row (BINARY-LONG): the player stops eating; nothing is eaten. A release while eating is LivingEntity.stopUsingItem: item_interact_finish at the player (30-8 14.3.8).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ 01 WS-EV-FINISH           PIC X(32) VALUE "item_interact_finish".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
+     IF PL-EATING-ITEM(L-ROW) > 0
+         CALL "GAME-EVENT-AT" USING WS-EV-FINISH PL-ENTITY-ROW(L-ROW)
+     END-IF
      MOVE 0 TO PL-EATING-ITEM(L-ROW)
+     CALL "POTION-DRINK-CANCEL" USING L-ROW
      GOBACK.
  END PROGRAM HUNGER-CANCEL.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HUNGER-TICK.
-*> USING player row (BINARY-LONG) of an alive player: eating completion, exhaustion from time and
-*> starvation (see above).
+*> USING player row (BINARY-LONG) of an alive player: eating completion and the FoodData tick (see
+*> above).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY RULES.
- COPY ITEMS.
+ COPY CITEMS.
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 16.
  01 WS-ROW                 BINARY-LONG.
@@ -144,27 +159,52 @@
  01 WS-EVENT               BINARY-LONG.
  01 WS-AMOUNT              FLOAT-LONG.
  01 WS-CAUSE               BINARY-LONG.
+ 01 WS-CHANGED             BINARY-LONG.
+ 01 WS-LIMIT               FLOAT-LONG.
+ 01 WS-HEAL                FLOAT-LONG.
+ 01 WS-ENOUGH              FLOAT-LONG.
+ 01 WS-EATEN-VAR           BINARY-LONG.
+ 01 WS-EATEN-KEY           PIC X(48).
  01 WS-NO-ENTITY           BINARY-LONG VALUE 0.
  01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
+ 01 WS-USE-TICKS           BINARY-LONG.
+ 01 WS-EV-EAT              PIC X(32) VALUE "eat".
+ 01 WS-EV-FINISH           PIC X(32) VALUE "item_interact_finish".
+ 01 WS-REGEN-RULE          PIC X(40) VALUE "natural_health_regeneration".
+ 01 WS-REGEN               BINARY-DOUBLE.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      MOVE L-ROW TO WS-ROW
+     CALL "POTION-DRINK-TICK" USING WS-ROW
      IF PL-MODE(WS-ROW) NOT = 0
-         MOVE 0 TO PL-EATING-ITEM(WS-ROW) PL-STARVE-TICKS(WS-ROW)
+         MOVE 0 TO PL-EATING-ITEM(WS-ROW)
          GOBACK
      END-IF
 *>   Eating completion (§11.6).
+     MOVE RULE-EAT-TICKS TO WS-USE-TICKS
+     IF PL-EATING-ITEM(WS-ROW) > 0 AND IT-FOOD-TICKS(PL-EATING-ITEM(WS-ROW) + 1) > 0
+         MOVE IT-FOOD-TICKS(PL-EATING-ITEM(WS-ROW) + 1) TO WS-USE-TICKS
+     END-IF
      IF PL-EATING-ITEM(WS-ROW) > 0
-             AND CW-TICKS - PL-EATING-START(WS-ROW) >= RULE-EAT-TICKS
+             AND CW-TICKS - PL-EATING-START(WS-ROW) >= WS-USE-TICKS
          MOVE PL-EATING-SLOT(WS-ROW) TO WS-SLOT
          IF PL-HELD(WS-ROW) = WS-SLOT
                  AND PL-SLOT-ITEM(WS-ROW, WS-SLOT + 1) = PL-EATING-ITEM(WS-ROW)
                  AND PL-SLOT-COUNT(WS-ROW, WS-SLOT + 1) > 0
+             MOVE PL-SLOT-VAR(WS-ROW, WS-SLOT + 1) TO WS-EATEN-VAR
+             CALL "TOOLUSE-KEY" USING PL-SLOT-ITEM(WS-ROW, WS-SLOT + 1) WS-EATEN-KEY
              CALL "INV-REMOVE" USING WS-ROW WS-SLOT WS-ONE
+             CALL "FOOD-EFFECTS" USING WS-ROW WS-EATEN-KEY WS-EATEN-VAR
+*>           Consumable.onConsume posts eat, then stopUsingItem item_interact_finish, both at the player (30-8 14.3.8)
+             CALL "GAME-EVENT-AT" USING WS-EV-EAT PL-ENTITY-ROW(WS-ROW)
+             CALL "GAME-EVENT-AT" USING WS-EV-FINISH PL-ENTITY-ROW(WS-ROW)
              COMPUTE WS-ITEM = PL-EATING-ITEM(WS-ROW) + 1
              COMPUTE WS-FOOD = PL-FOOD(WS-ROW) + IT-FOOD(WS-ITEM)
              COMPUTE PL-FOOD(WS-ROW) = FUNCTION MIN(RULE-MAX-FOOD, WS-FOOD)
+*>           The saturation of the food (nutrition x modifier x 2, 25 part 1 section 8.2) adds up to the food level (17 section 4.9).
+             COMPUTE PL-SATURATION(WS-ROW) = FUNCTION MIN(PL-FOOD(WS-ROW),
+                 PL-SATURATION(WS-ROW) + IT-FOOD-SAT(WS-ITEM) / 1000)
              CALL "HEALTH-SEND" USING WS-ROW
              COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
              CALL "INV-SLOT-SEND" USING PL-CONN(WS-ROW) WS-SLOT
@@ -177,20 +217,64 @@
          END-IF
          MOVE 0 TO PL-EATING-ITEM(WS-ROW)
      END-IF
-*>   Exhaustion from time (§11.2) and food point removal (§11.3).
-     COMPUTE WS-AMOUNT = RULE-EXHAUST-TICK-MILLI / 1000
-     CALL "HUNGER-EXHAUST" USING WS-ROW WS-AMOUNT
-*>   Starvation (§10.3).
-     IF PL-FOOD(WS-ROW) > 0
-         MOVE 0 TO PL-STARVE-TICKS(WS-ROW)
-         GOBACK
+*>   Exhaustion spent (17 section 4.9).
+     MOVE 0 TO WS-CHANGED
+     COMPUTE WS-LIMIT = RULE-EXHAUST-DROP-MILLI / 1000
+     IF PL-EXHAUSTION(WS-ROW) >= WS-LIMIT - 0.000000001
+         COMPUTE PL-EXHAUSTION(WS-ROW) = FUNCTION MAX(0, PL-EXHAUSTION(WS-ROW) - WS-LIMIT)
+         IF PL-SATURATION(WS-ROW) > 0
+             COMPUTE PL-SATURATION(WS-ROW) = FUNCTION MAX(PL-SATURATION(WS-ROW) - 1, 0)
+             MOVE 1 TO WS-CHANGED
+         ELSE
+             IF PL-FOOD(WS-ROW) > 0
+                 SUBTRACT 1 FROM PL-FOOD(WS-ROW)
+                 MOVE 1 TO WS-CHANGED
+             END-IF
+         END-IF
      END-IF
-     ADD 1 TO PL-STARVE-TICKS(WS-ROW)
-     IF PL-STARVE-TICKS(WS-ROW) >= RULE-STARVE-TICKS
-         MOVE 0 TO PL-STARVE-TICKS(WS-ROW)
-         MOVE CAUSE-STARVATION TO WS-CAUSE
-         CALL "HEALTH-DAMAGE" USING WS-ROW RULE-CAUSE-AMOUNT(WS-CAUSE) WS-CAUSE WS-NO-ENTITY
-             WS-NO-ATTACKER
+*>   Natural regeneration and starvation.
+*>   The rule natural_health_regeneration (33 section 6) gates both regeneration branches only.
+     CALL "BR-RULE-GET" USING WS-REGEN-RULE WS-REGEN
+     COMPUTE WS-ENOUGH = RULE-REGEN-SATURATION-CAP
+     EVALUATE TRUE
+         WHEN WS-REGEN NOT = 0 AND PL-SATURATION(WS-ROW) > 0 AND PL-HEALTH(WS-ROW) < RULE-MAX-HEALTH
+                 AND PL-FOOD(WS-ROW) >= RULE-MAX-FOOD
+             ADD 1 TO PL-RECOVER-TICKS(WS-ROW)
+             IF PL-RECOVER-TICKS(WS-ROW) >= RULE-REGEN-FAST-TICKS
+                 COMPUTE WS-AMOUNT = FUNCTION MIN(PL-SATURATION(WS-ROW), WS-ENOUGH)
+                 COMPUTE WS-HEAL = WS-AMOUNT / RULE-REGEN-SATURATION-CAP
+                 COMPUTE PL-HEALTH(WS-ROW) = FUNCTION MIN(RULE-MAX-HEALTH,
+                     PL-HEALTH(WS-ROW) + WS-HEAL)
+                 CALL "HUNGER-EXHAUST" USING WS-ROW WS-AMOUNT
+                 MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)
+                 MOVE 1 TO WS-CHANGED
+             END-IF
+         WHEN WS-REGEN NOT = 0 AND PL-FOOD(WS-ROW) >= RULE-HEAL-FOOD
+                 AND PL-HEALTH(WS-ROW) < RULE-MAX-HEALTH
+             ADD 1 TO PL-RECOVER-TICKS(WS-ROW)
+             IF PL-RECOVER-TICKS(WS-ROW) >= RULE-REGEN-TICKS
+                 COMPUTE PL-HEALTH(WS-ROW) = FUNCTION MIN(RULE-MAX-HEALTH,
+                     PL-HEALTH(WS-ROW) + 1)
+                 MOVE RULE-REGEN-SLOW-EXHAUST TO WS-AMOUNT
+                 CALL "HUNGER-EXHAUST" USING WS-ROW WS-AMOUNT
+                 MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)
+                 MOVE 1 TO WS-CHANGED
+             END-IF
+         WHEN PL-FOOD(WS-ROW) <= 0
+             ADD 1 TO PL-RECOVER-TICKS(WS-ROW)
+             IF PL-RECOVER-TICKS(WS-ROW) >= RULE-REGEN-TICKS
+                 MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)
+                 IF PL-HEALTH(WS-ROW) > 1
+                     MOVE CAUSE-STARVATION TO WS-CAUSE
+                     CALL "HEALTH-DAMAGE" USING WS-ROW RULE-CAUSE-AMOUNT(WS-CAUSE) WS-CAUSE
+                         WS-NO-ENTITY WS-NO-ATTACKER
+                 END-IF
+             END-IF
+         WHEN OTHER
+             MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)
+     END-EVALUATE
+     IF WS-CHANGED = 1
+         CALL "HEALTH-SEND" USING WS-ROW
      END-IF
      GOBACK.
  END PROGRAM HUNGER-TICK.

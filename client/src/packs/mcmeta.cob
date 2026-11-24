@@ -839,3 +839,151 @@
      END-IF
      GOBACK.
  END PROGRAM MCMETA-REPORT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ANIM-PARSE.
+*> USING text area (the .png.mcmeta file), length, image width, image height, ANIM-META out, result out
+*> (BINARY-LONG: 1 an animation, 2 no animation section (a static texture), 0 malformed: not JSON, an
+*> animation section that is no object, a frametime that is not a positive integer, a frame size that
+*> does not divide the image or is narrower than it (frames side by side are not supported), or no
+*> usable frame). 08 section 7: the frame size is width and height when both are given, else the image's
+*> own for the missing one, else the square of the shorter side; frames default to every picture in order
+*> for frametime ticks (default 1); a frame is an index or {index, time}; a frame with an index outside
+*> the image or a time that is not positive is skipped; at most 32 entries are kept.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY JSONDOC.
+ 01 WS-ROOT                BINARY-LONG VALUE 1.
+ 01 WS-SECTION             BINARY-LONG.
+ 01 WS-FIELD               BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-MEMBER              BINARY-LONG.
+ 01 WS-NAME                PIC X(16).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-FRAMETIME           BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-TIME                BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-BAD                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X.
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-W                    BINARY-LONG.
+ 01 L-H                    BINARY-LONG.
+ COPY CLMCMETA.
+ 01 L-RESULT               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TEXT L-LENGTH L-W L-H ANIM-META L-RESULT.
+     MOVE 0 TO L-RESULT AM-COUNT AM-TOTAL AM-INTERPOLATE
+     CALL "JSON-PARSE" USING JSON-DOC L-TEXT L-LENGTH
+     IF JD-ERROR = 1
+         GOBACK
+     END-IF
+     MOVE "animation" TO WS-NAME
+     MOVE 9 TO WS-NAME-LENGTH
+     CALL "JSON-MEMBER" USING JSON-DOC WS-ROOT WS-NAME WS-NAME-LENGTH WS-SECTION
+     IF WS-SECTION = 0
+         MOVE 2 TO L-RESULT
+         GOBACK
+     END-IF
+     IF JN-TYPE(WS-SECTION) NOT = JT-OBJECT
+         GOBACK
+     END-IF
+*>   The frame time.
+     MOVE 1 TO WS-FRAMETIME
+     MOVE "frametime" TO WS-NAME
+     CALL "JSON-MEMBER" USING JSON-DOC WS-SECTION WS-NAME WS-NAME-LENGTH WS-FIELD
+     IF WS-FIELD > 0
+         CALL "MCMETA-INT" USING JSON-DOC WS-FIELD WS-FRAMETIME WS-OK
+         IF WS-OK = 0 OR WS-FRAMETIME < 1
+             GOBACK
+         END-IF
+     END-IF
+*>   The frame size.
+     COMPUTE AM-FRAME-W = FUNCTION MIN(L-W, L-H)
+     MOVE AM-FRAME-W TO AM-FRAME-H
+     MOVE "width" TO WS-NAME
+     MOVE 5 TO WS-NAME-LENGTH
+     CALL "JSON-MEMBER" USING JSON-DOC WS-SECTION WS-NAME WS-NAME-LENGTH WS-FIELD
+     MOVE WS-FIELD TO WS-NODE
+     MOVE "height" TO WS-NAME
+     MOVE 6 TO WS-NAME-LENGTH
+     CALL "JSON-MEMBER" USING JSON-DOC WS-SECTION WS-NAME WS-NAME-LENGTH WS-FIELD
+     IF WS-NODE > 0
+         CALL "MCMETA-INT" USING JSON-DOC WS-NODE AM-FRAME-W WS-OK
+         IF WS-OK = 0 OR AM-FRAME-W < 1
+             GOBACK
+         END-IF
+         MOVE L-H TO AM-FRAME-H
+     END-IF
+     IF WS-FIELD > 0
+         CALL "MCMETA-INT" USING JSON-DOC WS-FIELD AM-FRAME-H WS-OK
+         IF WS-OK = 0 OR AM-FRAME-H < 1
+             GOBACK
+         END-IF
+         IF WS-NODE = 0
+             MOVE L-W TO AM-FRAME-W
+         END-IF
+     END-IF
+     IF AM-FRAME-W NOT = L-W OR FUNCTION MOD(L-H, AM-FRAME-H) NOT = 0
+         GOBACK
+     END-IF
+     COMPUTE AM-PICTURES = L-H / AM-FRAME-H
+*>   Interpolation.
+     MOVE "interpolate" TO WS-NAME
+     MOVE 11 TO WS-NAME-LENGTH
+     CALL "JSON-MEMBER" USING JSON-DOC WS-SECTION WS-NAME WS-NAME-LENGTH WS-FIELD
+     IF WS-FIELD > 0 AND JN-TYPE(WS-FIELD) = JT-TRUE
+         MOVE 1 TO AM-INTERPOLATE
+     END-IF
+*>   The sequence.
+     MOVE "frames" TO WS-NAME
+     MOVE 6 TO WS-NAME-LENGTH
+     CALL "JSON-MEMBER" USING JSON-DOC WS-SECTION WS-NAME WS-NAME-LENGTH WS-FIELD
+     IF WS-FIELD = 0
+         PERFORM VARYING WS-INDEX FROM 0 BY 1 UNTIL WS-INDEX >= AM-PICTURES OR AM-COUNT >= 32
+             ADD 1 TO AM-COUNT
+             MOVE WS-INDEX TO AM-INDEX(AM-COUNT)
+             MOVE WS-FRAMETIME TO AM-TIME(AM-COUNT)
+         END-PERFORM
+     ELSE
+         MOVE JN-FIRST(WS-FIELD) TO WS-NODE
+         PERFORM UNTIL WS-NODE = 0 OR AM-COUNT >= 32
+             MOVE 0 TO WS-BAD
+             MOVE WS-FRAMETIME TO WS-TIME
+             MOVE WS-NODE TO WS-MEMBER
+             IF JN-TYPE(WS-NODE) = JT-OBJECT
+                 MOVE "index" TO WS-NAME
+                 MOVE 5 TO WS-NAME-LENGTH
+                 CALL "JSON-MEMBER" USING JSON-DOC WS-NODE WS-NAME WS-NAME-LENGTH WS-MEMBER
+                 MOVE "time" TO WS-NAME
+                 MOVE 4 TO WS-NAME-LENGTH
+                 CALL "JSON-MEMBER" USING JSON-DOC WS-NODE WS-NAME WS-NAME-LENGTH WS-FIELD
+                 IF WS-FIELD > 0
+                     CALL "MCMETA-INT" USING JSON-DOC WS-FIELD WS-TIME WS-OK
+                     IF WS-OK = 0 OR WS-TIME < 1
+                         MOVE 1 TO WS-BAD
+                     END-IF
+                 END-IF
+             END-IF
+             CALL "MCMETA-INT" USING JSON-DOC WS-MEMBER WS-VALUE WS-OK
+             IF WS-OK = 0 OR WS-VALUE >= AM-PICTURES
+                 MOVE 1 TO WS-BAD
+             END-IF
+             IF WS-BAD = 0
+                 ADD 1 TO AM-COUNT
+                 MOVE WS-VALUE TO AM-INDEX(AM-COUNT)
+                 MOVE WS-TIME TO AM-TIME(AM-COUNT)
+             END-IF
+             MOVE JN-NEXT(WS-NODE) TO WS-NODE
+         END-PERFORM
+     END-IF
+     IF AM-COUNT = 0
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-INDEX FROM 1 BY 1 UNTIL WS-INDEX > AM-COUNT
+         ADD AM-TIME(WS-INDEX) TO AM-TOTAL
+     END-PERFORM
+     MOVE 1 TO L-RESULT
+     GOBACK.
+ END PROGRAM ANIM-PARSE.

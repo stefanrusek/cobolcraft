@@ -1,0 +1,21 @@
+{
+ "type": "minecraft:chest",
+ "random_sequence": "cobolcraft:chests/one",
+ "pools": [
+  {
+   "rolls": 1,
+   "entries": [
+    {
+     "type": "minecraft:item",
+     "name": "cobolcraft:lucite",
+     "modifier": [
+      {
+       "type": "minecraft:set_count",
+       "count": 5
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

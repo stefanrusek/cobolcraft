@@ -1,0 +1,10 @@
+{
+ "type": "minecraft:filtered",
+ "item_filter": {
+  "items": "cobolcraft:trowel"
+ },
+ "on_fail": {
+  "type": "minecraft:set_count",
+  "count": 1
+ }
+}

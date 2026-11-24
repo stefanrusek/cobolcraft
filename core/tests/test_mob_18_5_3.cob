@@ -1,0 +1,1125 @@
+*> Implementation test (002-lane-mobsfull-h2, T2240; docs/protocol/18 section 5.3 Node evaluators): the walk, swim, fly, amphibious and climber node evaluators: start nodes, neighbours, accepted nodes and costs.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MOB-18-5-3.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY MOBPATH.
+ 01 WS-A                 BINARY-LONG.
+ 01 WS-B                 BINARY-LONG.
+ 01 WS-C                 BINARY-LONG.
+ 01 WS-D                 BINARY-LONG.
+ 01 WS-E                 BINARY-LONG.
+ 01 WS-F                 BINARY-LONG.
+ 01 WS-G                 BINARY-LONG.
+ 01 WS-H                 BINARY-LONG.
+ 01 WS-I                 BINARY-LONG.
+ 01 WS-J                 BINARY-LONG.
+ 01 WS-K                 BINARY-LONG.
+ 01 WS-L                 BINARY-LONG.
+ 01 WS-M                 BINARY-LONG.
+ 01 WS-N                 BINARY-LONG.
+ 01 WS-O                 BINARY-LONG.
+ 01 WS-P                 BINARY-LONG.
+ 01 WS-O1                BINARY-LONG.
+ 01 WS-O2                BINARY-LONG.
+ 01 WS-O3                BINARY-LONG.
+ 01 WS-O4                BINARY-LONG.
+ 01 WS-O5                BINARY-LONG.
+ 01 WS-O6                BINARY-LONG.
+ 01 WS-O7                BINARY-LONG.
+ 01 WS-O8                BINARY-LONG.
+ 01 WS-F1                FLOAT-LONG.
+ 01 WS-F2                FLOAT-LONG.
+ 01 WS-F3                FLOAT-LONG.
+ 01 WS-F4                FLOAT-LONG.
+ 01 WS-F5                FLOAT-LONG.
+ 01 WS-F6                FLOAT-LONG.
+ 01 WS-F7                FLOAT-LONG.
+ 01 WS-F8                FLOAT-LONG.
+ 01 WS-G1                FLOAT-LONG.
+ 01 WS-G2                FLOAT-LONG.
+ 01 WS-G3                FLOAT-LONG.
+ 01 WS-G4                FLOAT-LONG.
+ 01 WS-T                 PIC X(80).
+ 01 WS-U                 PIC X(80).
+ PROCEDURE DIVISION.
+     MOVE "N" TO TL-MODE
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: a node on flat ground has 4 cardinal and 4 diagonal neighbours" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 8 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PNB-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 6 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 0 TO WS-D
+     PERFORM SET-CELL
+     MOVE 6 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 0 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: a wall two high removes the cardinal and its two diagonals" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 5 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PNB-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 6 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 0 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 6 TO WS-I
+     MOVE 2 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: one block high step is climbed" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 6 TO WS-I
+     MOVE 1 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: the step is not entered at the lower level" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 6 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 0 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 0 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 6 TO WS-I
+     MOVE 2 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: a ceiling over the origin blocks the step up" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-PLATFORM
+     PERFORM INIT-SEARCH
+     MOVE 5 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 6 TO WS-I
+     MOVE 1 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: a drop of 2 is allowed (platform)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-PLATFORM
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PS-MAX-FALL
+     MOVE 5 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 6 TO WS-I
+     MOVE 1 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: a drop beyond the maximum fall distance is refused" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-PLATFORM
+     MOVE 6 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 9 TO WS-D
+     PERFORM SET-CELL
+     PERFORM INIT-SEARCH
+     MOVE 5 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 6 TO WS-I
+     MOVE 1 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: landing in water is accepted with malus 8" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 6 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM FIND-NODE
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: the water landing node costs its malus (8)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 8 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PN-COST(WS-O1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-PLATFORM
+     MOVE 6 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 9 TO WS-D
+     PERFORM SET-CELL
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PF-MALUS-SET(10)
+     MOVE -1 TO PF-MALUS-VAL(10)
+     MOVE 5 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 6 TO WS-I
+     MOVE 1 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: landing in water is rejected when the mob's WATER malus is negative" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 6 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 7 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 6 TO WS-I
+     MOVE 1 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: a fence is not entered" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 6 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 8 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 6 TO WS-I
+     MOVE 1 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: lava under the next cell is not entered" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 6 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 6 TO WS-C
+     MOVE 14 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 5 TO WS-I
+     MOVE 1 TO WS-J
+     MOVE 6 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: a tile next to a fire block is a legal but costly node" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 5 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE "acceptance US15 18§5.3 Node evaluators climber: the wall climber uses the walk neighbours" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 8 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PNB-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 6 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 6 TO WS-C
+     MOVE 16 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 5 TO WS-I
+     MOVE 1 TO WS-J
+     MOVE 6 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: a tile next to a cactus is DAMAGING_IN_NEIGHBOR and still enterable" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 6 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 6 TO WS-C
+     MOVE 24 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 5 TO WS-I
+     MOVE 1 TO WS-J
+     MOVE 6 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: a tile next to a wither rose is DAMAGE_CAUTIOUS and still enterable" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 6 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 1 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 6 TO WS-I
+     MOVE 1 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators walk: a hole in the floor deeper than the world is not a landing" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO PS-SX
+     MOVE 1 TO PS-SY
+     MOVE 5 TO PS-SZ
+     CALL "EVAL-START" USING PF-WORLD PF-MALUS-TABLE PF-SEARCH PF-NODES WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators walk start on the ground keeps the feet block" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PN-Y(WS-O1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 4 TO PS-SY
+     CALL "EVAL-START" USING PF-WORLD PF-MALUS-TABLE PF-SEARCH PF-NODES WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators walk start in the air scans down to the ground" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PN-Y(WS-O1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO PS-SX
+     MOVE 3 TO PS-SY
+     MOVE 5 TO PS-SZ
+     CALL "EVAL-START" USING PF-WORLD PF-MALUS-TABLE PF-SEARCH PF-NODES WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators walk start in water scans down to the first standing level" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PN-Y(WS-O1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO PS-SX
+     MOVE 0 TO PS-SY
+     MOVE 5 TO PS-SZ
+     CALL "EVAL-START" USING PF-WORLD PF-MALUS-TABLE PF-SEARCH PF-NODES WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators walk start inside rock is no start" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 1 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO PS-SX
+     MOVE 1 TO PS-SY
+     MOVE 5 TO PS-SZ
+     CALL "EVAL-START" USING PF-WORLD PF-MALUS-TABLE PF-SEARCH PF-NODES WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators the start node cost is the malus of its type" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PN-COST(WS-O1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 2 TO PS-KIND
+     MOVE 1 TO PS-HEIGHT
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO PS-SX
+     MOVE 2 TO PS-SY
+     MOVE 5 TO PS-SZ
+     CALL "EVAL-START" USING PF-WORLD PF-MALUS-TABLE PF-SEARCH PF-NODES WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators swim start is the block itself" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 2 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PN-Y(WS-O1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 3 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO PS-SX
+     MOVE 2 TO PS-SY
+     MOVE 5 TO PS-SZ
+     CALL "EVAL-START" USING PF-WORLD PF-MALUS-TABLE PF-SEARCH PF-NODES WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators fly start in water scans up to the first air block" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 4 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PN-Y(WS-O1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 2 TO PS-KIND
+     MOVE 1 TO PS-HEIGHT
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE "acceptance US15 18§5.3 Node evaluators swim: a node in open water has 6 face and 4 horizontal diagonal neighbours" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 10 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PNB-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 2 TO PS-KIND
+     MOVE 1 TO PS-HEIGHT
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 6 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 0 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE "acceptance US15 18§5.3 Node evaluators swim: a solid face removes it and its two diagonals" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 7 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PNB-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 2 TO PS-KIND
+     MOVE 1 TO PS-HEIGHT
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 6 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM FIND-NODE
+     MOVE "acceptance US15 18§5.3 Node evaluators swim: the water neighbour costs the mob's WATER malus (8)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 8 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PN-COST(WS-O1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 2 TO PS-KIND
+     MOVE 1 TO PS-HEIGHT
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 1 TO PF-MALUS-SET(10)
+     MOVE 0 TO PF-MALUS-VAL(10)
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 6 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM FIND-NODE
+     MOVE "acceptance US15 18§5.3 Node evaluators swim: fish that set WATER to 0 swim for free" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PN-COST(WS-O1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 2 TO PS-KIND
+     MOVE 1 TO PS-HEIGHT
+     MOVE 5 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE "acceptance US15 18§5.3 Node evaluators swim: at the surface without breaching the air above is refused" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 9 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PNB-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 2 TO PS-KIND
+     MOVE 1 TO PS-HEIGHT
+     MOVE 5 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 1 TO PS-BREACH
+     MOVE 5 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE "acceptance US15 18§5.3 Node evaluators swim: with breaching the surface neighbour is added" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 10 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PNB-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 5 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM FIND-NODE
+     MOVE "acceptance US15 18§5.3 Node evaluators swim: a breach node costs malus 4 + 8 for having no fluid" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 12 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PN-COST(WS-O1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 2 TO PS-KIND
+     MOVE 1 TO PS-HEIGHT
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 5 TO WS-I
+     MOVE 0 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators swim: the sea floor below is not a neighbour" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 2 TO PS-KIND
+     MOVE 1 TO PS-HEIGHT
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 6 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 8 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 6 TO WS-I
+     MOVE 2 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators swim: a lava block is not a neighbour" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 3 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE "acceptance US15 18§5.3 Node evaluators fly: a node in open air has 26 neighbours" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 26 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PNB-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 3 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 6 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 0 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE "acceptance US15 18§5.3 Node evaluators fly: a solid face removes the face, 4 edges and 4 corners" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 17 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PNB-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 3 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE "acceptance US15 18§5.3 Node evaluators fly: next to the ground the lower neighbours are solid (17 left)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 17 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PNB-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 3 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM FIND-NODE
+     MOVE "acceptance US15 18§5.3 Node evaluators fly: a node above solid ground is WALKABLE and costs an extra 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PN-COST(WS-O1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 5 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM FIND-NODE
+     MOVE "acceptance US15 18§5.3 Node evaluators fly: open air nodes cost nothing" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PN-COST(WS-O1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 3 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 6 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 8 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 6 TO WS-I
+     MOVE 4 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators fly: lava is not a neighbour" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 3 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 5 TO WS-I
+     MOVE 3 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators fly: water counts as open air" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM INIT-SEARCH
+     MOVE 3 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 6 TO WS-C
+     MOVE 0 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 4 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE "acceptance US15 18§5.3 Node evaluators fly: a solid south face removes it too (17 left)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 17 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PNB-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 4 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE "acceptance US15 18§5.3 Node evaluators amphibious: in open water 8 horizontal neighbours plus up; the down node is shore water (WATER_BORDER) and refused" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 9 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PNB-COUNT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 5 TO WS-I
+     MOVE 3 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators amphibious: the up neighbour is a water node" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 5 TO WS-I
+     MOVE 1 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators amphibious: the down neighbour above the sea floor is refused" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 4 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 0 TO WS-D
+     PERFORM SET-CELL
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 5 TO WS-I
+     MOVE 3 TO WS-J
+     MOVE 5 TO WS-K
+     PERFORM HAS-NEIGHBOR
+     MOVE "acceptance US15 18§5.3 Node evaluators amphibious: a solid block above removes the up neighbour" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O3
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM INIT-SEARCH
+     CALL "AMPHIBIOUS-PREPARE" USING PF-MALUS-TABLE
+     MOVE "acceptance US15 18§5.3 Node evaluators amphibious prepare sets WATER to 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PF-MALUS-VAL(10)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 18§5.3 Node evaluators amphibious prepare sets WALKABLE to 6" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 6 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PF-MALUS-VAL(3)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 18§5.3 Node evaluators amphibious prepare sets WATER_BORDER to 4" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 4 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PF-MALUS-VAL(11)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "AMPHIBIOUS-DONE" USING PF-MALUS-TABLE
+     MOVE "acceptance US15 18§5.3 Node evaluators amphibious done restores WALKABLE to the default (no override)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PF-MALUS-SET(3)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 18§5.3 Node evaluators amphibious done restores the WATER override flag" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PF-MALUS-SET(10)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 4 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM PREPARE-AMPHIBIOUS
+     MOVE 1 TO PS-SHALLOW
+     MOVE 13 TO PS-SEA-LEVEL
+     MOVE 5 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM FIND-NODE
+     MOVE "acceptance US15 18§5.3 Node evaluators amphibious with shallow preference: a node below sea level - 10 costs +1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PN-COST(WS-O1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM BUILD-FLAT
+     PERFORM BUILD-POOL
+     PERFORM INIT-SEARCH
+     MOVE 4 TO PS-KIND
+     MOVE 5 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM PREPARE-AMPHIBIOUS
+     MOVE 5 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM MAKE-START
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-C
+     PERFORM FIND-NODE
+     MOVE "acceptance US15 18§5.3 Node evaluators amphibious without the preference the same node is free" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PN-COST(WS-O1)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-A
+     MOVE 20 TO WS-F1
+     MOVE 20 TO WS-F2
+     MOVE 2 TO WS-B
+     CALL "MAX-FALL-DISTANCE" USING WS-A WS-F1 WS-F2 WS-B WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators max fall distance without a target is 3" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 3 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-A
+     CALL "MAX-FALL-DISTANCE" USING WS-A WS-F1 WS-F2 WS-B WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators max fall distance with a target: Normal, full health is 12" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 12 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO WS-B
+     CALL "MAX-FALL-DISTANCE" USING WS-A WS-F1 WS-F2 WS-B WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators max fall distance with a target: Hard is 16" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 16 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-B
+     CALL "MAX-FALL-DISTANCE" USING WS-A WS-F1 WS-F2 WS-B WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators max fall distance with a target: Peaceful is 4" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 4 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO WS-B
+     MOVE 5 TO WS-F1
+     CALL "MAX-FALL-DISTANCE" USING WS-A WS-F1 WS-F2 WS-B WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators max fall distance never drops below 3" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 3 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0.6 TO WS-F1
+     CALL "JUMP-HEIGHT" USING WS-F1 WS-G1 WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators jump height is max(1.125, step_height)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1125 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-G1 * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1.5 TO WS-F1
+     CALL "JUMP-HEIGHT" USING WS-F1 WS-G1 WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators a step height of 1.5 gives jump height 1.5" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1500 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-G1 * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 18§5.3 Node evaluators the step-up count is floor(max(1, step_height)) (1 for 0.6)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2.5 TO WS-F1
+     CALL "JUMP-HEIGHT" USING WS-F1 WS-G1 WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators the step-up count of step height 2.5 is 2" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 2 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 13 TO WS-A
+     CALL "CAN-CUT-CORNER" USING WS-A WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators canCutCorner of path type 13 is 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 15 TO WS-A
+     CALL "CAN-CUT-CORNER" USING WS-A WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators canCutCorner of path type 15 is 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO WS-A
+     CALL "CAN-CUT-CORNER" USING WS-A WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators canCutCorner of path type 3 is 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2 TO WS-A
+     CALL "CAN-CUT-CORNER" USING WS-A WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators canCutCorner of path type 2 is 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-A
+     CALL "CAN-CUT-CORNER" USING WS-A WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators canCutCorner of path type 1 is 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 9 TO WS-A
+     CALL "CAN-CUT-CORNER" USING WS-A WS-O1
+     MOVE "acceptance US15 18§5.3 Node evaluators canCutCorner of path type 9 is 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-O1
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ BUILD-FLAT.
+     INITIALIZE PF-WORLD
+     INITIALIZE PF-NODES
+     MOVE 16 TO PW-DX
+     MOVE 8 TO PW-DY
+     MOVE 16 TO PW-DZ
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 2048
+         MOVE 1 TO PW-CELL(WS-P)
+     END-PERFORM
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > 256
+         MOVE 0 TO PW-CELL(WS-P)
+     END-PERFORM.
+ INIT-SEARCH.
+     INITIALIZE PF-SEARCH
+     INITIALIZE PF-MALUS-TABLE
+     MOVE 1 TO PS-KIND
+     MOVE 1 TO PS-TARGET-COUNT
+     MOVE 1 TO PS-WIDTH
+     MOVE 2 TO PS-HEIGHT
+     MOVE 3 TO PS-MAX-FALL
+     MOVE 1 TO PS-STEP
+     MOVE 100 TO PS-MAX-DIST
+     MOVE 1000 TO PS-BUDGET
+     MOVE 2 TO PS-SX
+     MOVE 1 TO PS-SY
+     MOVE 2 TO PS-SZ
+     MOVE 6 TO PS-TX(1)
+     MOVE 1 TO PS-TY(1)
+     MOVE 2 TO PS-TZ(1).
+ SET-CELL.
+     COMPUTE WS-P = (WS-B * PW-DZ + WS-C) * PW-DX + WS-A + 1
+     MOVE WS-D TO PW-CELL(WS-P).
+ FIND-NODE.
+     COMPUTE WS-P = (WS-B * PW-DZ + WS-C) * PW-DX + WS-A + 1
+     MOVE PN-INDEX(WS-P) TO WS-O1.
+ BUILD-WALL.
+     PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 6
+         MOVE 4 TO WS-A
+         MOVE 1 TO WS-B
+         MOVE 0 TO WS-D
+         PERFORM SET-CELL
+         MOVE 2 TO WS-B
+         PERFORM SET-CELL
+     END-PERFORM.
+ COUNT-NODE-AT.
+     MOVE 0 TO WS-O3
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > PS-PATH-COUNT
+         IF PS-PX(WS-P) = WS-A AND PS-PY(WS-P) = WS-B AND PS-PZ(WS-P) = WS-C
+             ADD 1 TO WS-O3
+         END-IF
+     END-PERFORM.
+ CHECK-WALL.
+     MOVE 0 TO WS-O3
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > PS-PATH-COUNT
+         IF PS-PX(WS-P) = 4 AND PS-PZ(WS-P) < 7
+             ADD 1 TO WS-O3
+         END-IF
+     END-PERFORM.
+ CHECK-COUNT.
+     MOVE 0 TO WS-O2
+     IF PS-PATH-COUNT NOT < WS-E
+         MOVE 1 TO WS-O2
+     END-IF.
+ PREPARE-AMPHIBIOUS.
+     CALL "AMPHIBIOUS-PREPARE" USING PF-MALUS-TABLE.
+ BUILD-POOL.
+     PERFORM VARYING WS-P FROM 257 BY 1 UNTIL WS-P > 1024
+         MOVE 9 TO PW-CELL(WS-P)
+     END-PERFORM.
+ BUILD-PLATFORM.
+     PERFORM VARYING WS-C FROM 0 BY 1 UNTIL WS-C > 15
+         PERFORM VARYING WS-A FROM 0 BY 1 UNTIL WS-A > 5
+             MOVE 0 TO WS-D
+             MOVE 1 TO WS-B
+             PERFORM SET-CELL
+             MOVE 2 TO WS-B
+             PERFORM SET-CELL
+         END-PERFORM
+     END-PERFORM.
+ MAKE-START.
+     CALL "NODE-GET" USING PF-WORLD PF-NODES WS-A WS-B WS-C WS-O4
+     CALL "NODE-NEIGHBORS" USING PF-WORLD PF-MALUS-TABLE PF-SEARCH PF-NODES WS-O4 PF-NEIGH.
+ HAS-NEIGHBOR.
+     MOVE 0 TO WS-O3
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > PNB-COUNT
+         IF PN-X(PNB-NODE(WS-P)) = WS-I AND PN-Y(PNB-NODE(WS-P)) = WS-J AND PN-Z(PNB-NODE(WS-P)) = WS-K
+             ADD 1 TO WS-O3
+         END-IF
+     END-PERFORM.
+ END PROGRAM TEST-MOB-18-5-3.

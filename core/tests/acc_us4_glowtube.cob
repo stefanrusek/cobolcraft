@@ -12,7 +12,7 @@
  COPY COREAPI.
  COPY PROTO.
  COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
- COPY CHUNKMEM.
+ COPY CELLS.
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
  01 WS-NAME                PIC X(16) VALUE "Alice".
  01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
@@ -37,6 +37,9 @@
  01 WS-PATH                PIC X(256).
  01 WS-TEXT                PIC X(1024).
  01 WS-EDIT                PIC -(9)9.
+ 01 WS-NUM                 BINARY-LONG.
+ 01 WS-CELLN               BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE 2 TO CS-VIEW-DISTANCE
@@ -51,7 +54,7 @@
      PERFORM USE-ON
      CALL "TEST-DRAIN-BLOCKS" USING WS-CONN WS-TEXT
      PERFORM ADD-STATE
-     MOVE "8(8,59,8=14) 49(0,-1) 49(-1,0) 49(0,0) 49(1,0) 49(0,1) 4(1) state 14"
+     MOVE "49(0,-1) 49(-1,0) 49(0,0) 49(1,0) 49(0,1) 8(8,59,8=14) 4(1) state 14"
          TO TL-EXPECTED
      PERFORM CHECK
 
@@ -59,9 +62,10 @@
          & "(the cell above it)" TO TL-CASE
      MOVE "N" TO TL-MODE
      CALL "WORLD-FIND" USING WS-DIM WS-CX WS-CZ WS-ROW
-     SET ADDRESS OF CM-CHUNK TO CK-ADDR(WS-ROW)
+     SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-ROW)
      MOVE 0 TO TL-EXPECTED-N
-     MOVE CM-BLOCK(60 * 256 + 8 * 16 + 8 + 1) TO TL-OBSERVED-N
+     PERFORM ABOVE-LIGHT
+     MOVE WS-NUM TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "acceptance US4-5 given no held block item when place is used on the unlit glowtube "
@@ -69,7 +73,8 @@
      PERFORM USE-ON
      CALL "TEST-DRAIN-BLOCKS" USING WS-CONN WS-TEXT
      CALL "TEST-BLOCK-AT" USING WS-X WS-Y WS-Z WS-STATE
-     COMPUTE TL-OBSERVED-N = WS-STATE * 100 + CM-BLOCK(60 * 256 + 8 * 16 + 8 + 1)
+     PERFORM ABOVE-LIGHT
+     COMPUTE TL-OBSERVED-N = WS-STATE * 100 + WS-NUM
      MOVE 1314 TO TL-EXPECTED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -107,6 +112,16 @@
      MOVE "state 13 state 0" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
+
+*> Block light of the cell above the glowtube (cell index y * 256 + z * 16 + x + 1, packed nibbles).
+ ABOVE-LIGHT.
+     COMPUTE WS-CELLN = 60 * 256 + 8 * 16 + 8 + 1
+     COMPUTE WS-BYTE = 2048 + (WS-CELLN - 1) / 2 + 1
+     IF FUNCTION MOD(WS-CELLN, 2) = 1
+         COMPUTE WS-NUM = FUNCTION MOD(CE-BLOCK-LIGHT(WS-BYTE), 16)
+     ELSE
+         COMPUTE WS-NUM = CE-BLOCK-LIGHT(WS-BYTE) / 16
+     END-IF.
 
 *> Use Item On the glowtube's north face (the cell north of it is void) with the next sequence.
  USE-ON.

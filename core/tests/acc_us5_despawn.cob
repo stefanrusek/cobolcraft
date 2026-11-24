@@ -1,7 +1,8 @@
 *> Acceptance test, US5-4 core half and the US5 despawn edge case (spec US5 scenario 4; tasks T473;
-*> standin-content §9.2 step 2): a ground item whose age reaches 4800 ticks disappears for every
-*> viewer (Remove Entities); its age advances only in ticks in which a player of its dimension is
-*> within 32.0 blocks. View distance 2, survival. Alice (entity 1, pry_bar held) breaks greystone at
+*> docs/protocol/41 section 5.1, replacing standin-content §9.2 step 2): a ground item whose age reaches 6000 ticks disappears
+*> for every viewer (Remove Entities); the age advances in every tick the item is processed, whoever is near, and an item whose
+*> chunk is not loaded (no player within the view distance keeps it) is not processed at all. View distance 2, survival. Alice
+*> (entity 1, pry_bar held) breaks greystone at
 *> (22, 101, 20) on greystone at (22, 100, 20) while she stands at (22.5, 101, 26.5) and Bob
 *> (entity 2) at (25.5, 101, 26.5): near the item but out of pickup range. Keep Alives are answered
 *> during the long runs (TEST-TICKS-ANSWERED).
@@ -32,7 +33,10 @@
  01 WS-FZ                  FLOAT-LONG VALUE 26.5.
  01 WS-YAW                 FLOAT-SHORT VALUE 0.
  01 WS-PITCH               FLOAT-SHORT VALUE 0.
- 01 WS-FLAGS               BINARY-LONG VALUE 0.
+ 01 WS-FLAGS               BINARY-LONG VALUE 1.
+ 01 WS-FLOOR-X             BINARY-LONG.
+ 01 WS-FLOOR-Z             BINARY-LONG VALUE 26.
+ 01 WS-FLOOR-Y             BINARY-LONG VALUE 100.
  01 WS-ENTITY              BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-TEXT                PIC X(1024).
@@ -55,25 +59,29 @@
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-BOB
      MOVE 100 TO WS-Y
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+*>   Greystone under the players: a break by a player in the air is five times slower (13 section 2.1).
+     PERFORM VARYING WS-FLOOR-X FROM 20 BY 1 UNTIL WS-FLOOR-X > 26
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FLOOR-X WS-FLOOR-Y WS-FLOOR-Z WS-STATE
+     END-PERFORM
      CALL "TEST-HELD" USING WS-ALICE WS-SLOT
      MOVE 22.5 TO WS-FX
      CALL "TEST-MOVE" USING WS-ALICE WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
      MOVE 25.5 TO WS-FX
      CALL "TEST-MOVE" USING WS-BOB WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
 
-     MOVE "acceptance US5-4 given a ground item with players near when 4799 ticks have passed "
-         & "then it is still there with age 4799" TO TL-CASE
+     MOVE "acceptance US5-4 given a ground item with players near when 5999 ticks have passed "
+         & "then it is still there with age 5999" TO TL-CASE
      PERFORM BREAK-BLOCK
      MOVE 3 TO WS-ENTITY
-     MOVE 4799 TO WS-TICKS
+     MOVE 5999 TO WS-TICKS
      CALL "TEST-TICKS-ANSWERED" USING WS-TICKS
      CALL "TEST-DRAIN-ENTITIES" USING WS-ALICE WS-TEXT
      CALL "TEST-DRAIN-ENTITIES" USING WS-BOB WS-TEXT
      PERFORM DESCRIBE-AGE
-     MOVE "row in use age 4799" TO TL-EXPECTED
+     MOVE "row in use age 5999" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US5-4 given a ground item when it has aged the despawn time (4800 ticks) "
+     MOVE "acceptance US5-4 given a ground item when it has aged the lifetime (6000 ticks) "
          & "then it disappears for everyone (Remove Entities to each viewer)" TO TL-CASE
      MOVE 1 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
@@ -89,8 +97,8 @@
      MOVE "Alice 78(3) Bob 78(3) row 0" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US5 edge given a ground item when no player is within 32 blocks of it "
-         & "then its age does not advance" TO TL-CASE
+     MOVE "acceptance US5 edge given a ground item whose chunk no player keeps loaded "
+         & "then it is not processed and its age does not advance" TO TL-CASE
      PERFORM BREAK-BLOCK
      MOVE 4 TO WS-ENTITY
      MOVE 80.5 TO WS-FX
@@ -103,7 +111,7 @@
      PERFORM CHECK
 
      MOVE "acceptance US5 edge given that ground item when a player comes near again then its "
-         & "age advances again, one per tick" TO TL-CASE
+         & "chunk is processed again and the age advances, one per tick" TO TL-CASE
      MOVE 22.5 TO WS-FX
      CALL "TEST-MOVE" USING WS-ALICE WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
      MOVE 10 TO WS-TICKS

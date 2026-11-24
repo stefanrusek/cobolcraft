@@ -29,7 +29,18 @@
          MOVE -1 TO CN-THRESHOLD(WS-I)
      END-PERFORM
      MOVE 1000 TO SK-U
-     MOVE -1 TO SK-MESHED-U
+     MOVE CL-MESH-BUDGET-US TO MB-BUDGET-US
+     MOVE 2 TO CL-GUI-SCALE
+     MOVE 20 TO PL-MAX-HEALTH
+     MOVE 300 TO PL-MAX-AIR PL-AIR
+     MOVE -1 TO PL-VEHICLE
+     MOVE -2000 TO HB-LAST-TIME
+     MOVE 1 TO CL-PARTIAL
+     CALL "OPTIONS-DEFAULTS" USING CLIENT-STATE
+     CALL "OPTIONS-APPLY" USING CLIENT-STATE
+     CALL "PARTICLES-CLEAR" USING CLIENT-STATE
+     MOVE "/usr/bin/open" TO CL-OPENER
+     MOVE 13 TO CL-OPENER-LENGTH
      CALL "SP-DEFAULTS" USING CLIENT-STATE
      GOBACK.
  END PROGRAM CL-INIT.
@@ -37,7 +48,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CL-START.
 *> USING CLIENT-STATE (name and game directory set): everything a run needs except the window
-*> (game directory, server list, the enabled packs of options.dat, the download cache trimmed,
+*> (game directory, the generated packs' status (PACKS-STATUS-CHECK), server list, the enabled packs of options.dat, the download cache trimmed,
 *> the local packs, the pack
 *> stack, language, font, block, entity and environment atlases,
 *> models).
@@ -49,16 +60,21 @@
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
      CALL "GAME-DIR-SETUP" USING CLIENT-STATE
+     CALL "PACKS-STATUS-CHECK" USING CLIENT-STATE
      CALL "SERVERS-LOAD" USING CLIENT-STATE
      CALL "OPTIONS-LOAD" USING CLIENT-STATE
+     CALL "OPTIONS-APPLY" USING CLIENT-STATE
      CALL "PACK-CACHE-VACUUM" USING CLIENT-STATE
      CALL "LOCAL-PACKS-SCAN" USING CLIENT-STATE
      CALL "PACK-STACK-BUILD" USING CLIENT-STATE
+     CALL "TINT-MAPS-LOAD" USING CLIENT-STATE
      CALL "LANG-LOAD" USING CLIENT-STATE
      CALL "FONT-LOAD" USING CLIENT-STATE
      CALL "ATLAS-BUILD" USING CLIENT-STATE
      CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
      CALL "ENVIRONMENT-ATLAS-BUILD" USING CLIENT-STATE
+     CALL "GLINT-TEXTURES-BUILD" USING CLIENT-STATE
+     CALL "PARTICLE-ATLAS-BUILD" USING CLIENT-STATE
      CALL "MODELS-BAKE" USING CLIENT-STATE
      CALL "ITEMDEFS-LOAD" USING CLIENT-STATE
      MOVE 854 TO IN-WIN-W
@@ -71,18 +87,22 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CL-CLOCK.
-*> USING milliseconds out (BINARY-DOUBLE): the wall clock (10 ms resolution of CURRENT-DATE), from
-*> day 1 of INTEGER-OF-DATE so midnight does not wrap.
+*> USING milliseconds out (BINARY-DOUBLE): the wall clock in whole milliseconds (gettimeofday: a struct timeval of seconds and microseconds; CURRENT-DATE
+*> counts hundredths only, and a frame time quantised to 10 ms makes the partial tick of an interpolated frame jitter by up to 0.2 of a tick).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-NOW                 PIC X(21).
+*> The timeval is cleared first: macOS writes 4 bytes of microseconds, Linux 8, and both read as one little-endian 8-byte field.
+ 01 WS-TIMEVAL.
+    05 WS-SEC              BINARY-DOUBLE.
+    05 WS-USEC             BINARY-DOUBLE.
+ 01 WS-NO-ZONE             BINARY-DOUBLE VALUE 0.
+ 01 WS-RC                  BINARY-LONG.
  LINKAGE SECTION.
  01 L-MS                   BINARY-DOUBLE.
  PROCEDURE DIVISION USING L-MS.
-     MOVE FUNCTION CURRENT-DATE TO WS-NOW
-     COMPUTE L-MS = (FUNCTION INTEGER-OF-DATE(FUNCTION NUMVAL(WS-NOW(1:8))) * 86400
-         + FUNCTION NUMVAL(WS-NOW(9:2)) * 3600 + FUNCTION NUMVAL(WS-NOW(11:2)) * 60
-         + FUNCTION NUMVAL(WS-NOW(13:2))) * 1000 + FUNCTION NUMVAL(WS-NOW(15:2)) * 10
+     MOVE 0 TO WS-SEC WS-USEC
+     CALL STATIC "gettimeofday" USING BY REFERENCE WS-TIMEVAL BY VALUE WS-NO-ZONE RETURNING WS-RC
+     COMPUTE L-MS = WS-SEC * 1000 + WS-USEC / 1000
      GOBACK.
  END PROGRAM CL-CLOCK.
 
@@ -107,6 +127,10 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
+     MOVE 1 TO MB-CREDIT-ON
+*>   Frames between client ticks show the interpolated state (smooth.cob).
+     MOVE 1 TO CL-INTERP
+     MOVE CL-MESH-CREDIT-US TO MB-CREDIT
      PERFORM UNTIL CL-QUIT = 1
          CALL STATIC "cc_win_poll" USING BY REFERENCE WS-EVENTS BY VALUE WS-CAPACITY
              BY REFERENCE WS-COUNT RETURNING WS-RC
@@ -156,6 +180,7 @@
      CALL "CL-INIT" USING CLIENT-STATE
      CALL "ARGS-PARSE" USING CLIENT-STATE CL-ARGS
      CALL "CL-START" USING CLIENT-STATE
+     CALL "WORLD-OPEN-ARG" USING CLIENT-STATE
      CALL STATIC "cc_win_open" USING BY VALUE WS-W BY VALUE WS-H BY REFERENCE WS-TITLE
          BY VALUE WS-VISIBLE RETURNING WS-RC
      CALL STATIC "cc_vk_init" RETURNING WS-RC
@@ -168,15 +193,22 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CL-STEP.
 *> USING CLIENT-STATE, events (24-byte records, shim-abi §8), event count, clock (BINARY-DOUBLE ms).
+*> The cc_stat_phase calls tell the shim's CC_GPU_STATS output which part of the frame runs (nothing otherwise).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CCSHIM.
  01 WS-I                   BINARY-LONG.
- 01 WS-R                   BINARY-LONG.
- 01 WS-S                   BINARY-LONG.
  01 WS-CONN                BINARY-LONG.
  01 WS-ID                  BINARY-LONG VALUE 13.
+ 01 WS-PX                  FLOAT-LONG.
+ 01 WS-PY                  FLOAT-LONG.
+ 01 WS-PZ                  FLOAT-LONG.
  01 WS-BUDGET              BINARY-LONG VALUE 64.
+ 01 WS-INSIDE              BINARY-LONG.
+ 01 WS-RANDOM              FLOAT-LONG.
+ 01 WS-SHOT-RC             BINARY-LONG.
+ 01 WS-SMOOTH-MODE         BINARY-LONG.
  01 B-EVENTS BASED.
     05 B-EVENT             PIC X(24) OCCURS 4096 TIMES.
  LINKAGE SECTION.
@@ -185,38 +217,74 @@
  01 L-COUNT                BINARY-LONG.
  01 L-NOW                  BINARY-DOUBLE.
  PROCEDURE DIVISION USING CLIENT-STATE L-EVENTS L-COUNT L-NOW.
+     CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-INPUT
      MOVE L-NOW TO CL-NOW-MS
      ADD 1 TO CL-FRAMES
      SET ADDRESS OF B-EVENTS TO ADDRESS OF L-EVENTS
      CALL "INPUT-BEGIN-FRAME" USING CLIENT-STATE
+     CALL STATIC "cc_vk_screenshot_result" RETURNING WS-SHOT-RC
+     CALL "SHOT-POLL" USING CLIENT-STATE WS-SHOT-RC
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-COUNT
          CALL "INPUT-EVENT" USING CLIENT-STATE B-EVENT(WS-I)
      END-PERFORM
      IF IN-CLOSE = 1
          MOVE 1 TO CL-QUIT
      END-IF
+     CALL "SHOT-INPUT" USING CLIENT-STATE
+     CALL "STARTUP-COMMANDS" USING CLIENT-STATE
      CALL "SCREEN-INPUT" USING CLIENT-STATE
+     CALL "DEBUG-OVERLAY-INPUT" USING CLIENT-STATE
+     CALL "CAMERA-INPUT" USING CLIENT-STATE
      IF SM-SCREEN = SCR-WORLD
          CALL "PHYS-INPUT" USING CLIENT-STATE
      END-IF
 *>   A hosted world (US16): its due core ticks, unless paused; its console lines.
      IF SP-ACTIVE = 1
+         CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-PUMP
          CALL "SP-PUMP" USING CLIENT-STATE
      END-IF
 *>   Sprinting starts or stops before the tick that moves at its speed.
+     CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-CLIENT-TICK
      IF CN-PHASE(CONN-GAME) = PH-PLAY
          CALL "CONTROLS-SPRINT" USING CLIENT-STATE
+         CALL "CONTROLS-SNEAK" USING CLIENT-STATE
      END-IF
 *>   A client tick every 50 ms in play: once loaded the player moves and the server hears of it,
 *>   then Client Tick End, and the day advances one tick.
      IF CN-PHASE(CONN-GAME) = PH-PLAY AND L-NOW >= CL-NEXT-TICK AND SP-PAUSED = 0
          MOVE CONN-GAME TO WS-CONN
+         CALL "LOAD-WAIT-TICK" USING CLIENT-STATE
          IF PL-LOADED = 1
+             MOVE PL-X TO WS-PX
+             MOVE PL-Y TO WS-PY
+             MOVE PL-Z TO WS-PZ
+             CALL "SMOOTH-STORE" USING CLIENT-STATE
              CALL "PHYS-TICK" USING CLIENT-STATE
+             CALL "SMOOTH-WALK" USING CLIENT-STATE
+             CALL "ENTITIES-SWIM-TICK" USING CLIENT-STATE
+             CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+             MOVE 2 TO WS-SMOOTH-MODE
+             CALL "SMOOTH-ENTITIES" USING CLIENT-STATE WS-SMOOTH-MODE
+             CALL "BELL-TICK" USING CLIENT-STATE
+             CALL "SHULKER-TICK" USING CLIENT-STATE
+             COMPUTE CL-SPEED = FUNCTION SQRT((PL-X - WS-PX) ** 2 + (PL-Y - WS-PY) ** 2 + (PL-Z - WS-PZ) ** 2)
              CALL "CLP-MOVE-SEND" USING CLIENT-STATE WS-CONN
          END-IF
          CALL "CLP-SEND-SIMPLE" USING CLIENT-STATE WS-CONN WS-ID
-         COMPUTE PL-TIME = FUNCTION MOD(PL-TIME + 1, 30000)
+         COMPUTE PL-TIME = FUNCTION MOD(PL-TIME + 1, 24000)
+         ADD 1 TO PL-DAY-TICKS
+         ADD 1 TO PL-GAME-TIME
+         CALL "HUD-TICK" USING CLIENT-STATE
+         CALL "CREATIVE-TICK" USING CLIENT-STATE
+         CALL "SMITH-CYCLE-TICK" USING CLIENT-STATE
+         CALL "PARTICLES-TICK" USING CLIENT-STATE
+         CALL "PORTAL-BE-TICK" USING CLIENT-STATE
+*>       The portal process, and the End's flash clock (39 section 9, 38 section 11).
+         CALL "DIMFX-PORTAL-INSIDE" USING CLIENT-STATE WS-INSIDE
+         COMPUTE WS-RANDOM = FUNCTION RANDOM
+         CALL "DIMFX-PORTAL-TICK" USING CLIENT-STATE WS-INSIDE WS-RANDOM
+         ADD 1 TO DX-CLOCK
+         CALL "DIMFX-FLASH-TICK" USING CLIENT-STATE
          ADD CL-TICK-MS TO CL-NEXT-TICK
          IF CL-NEXT-TICK <= L-NOW
              COMPUTE CL-NEXT-TICK = L-NOW + CL-TICK-MS
@@ -224,24 +292,33 @@
      END-IF
 *>   The target (world screen only) and, in play, the block controls (which abort a break once the
 *>   world is left), the hotbar (world and inventory screens) and the throw keys (world screen;
-*>   on the inventory screen INVENTORY-INPUT throws from a slot or the cursor).
+*>   on a container screen MENU-POINTER throws from a slot or the cursor).
+     CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-CONTROLS
+     CALL "SMOOTH-PARTIAL" USING CLIENT-STATE
      MOVE 0 TO TG-HIT TG-ENTITY-HIT
      IF SM-SCREEN = SCR-WORLD
          CALL "RAYCAST" USING CLIENT-STATE
      END-IF
      IF CN-PHASE(CONN-GAME) = PH-PLAY
          CALL "CONTROLS-INPUT" USING CLIENT-STATE
-         IF SM-SCREEN = SCR-WORLD OR SM-SCREEN = SCR-INVENTORY
+         CALL "HAND-INPUT" USING CLIENT-STATE
+         CALL "USE-ITEM-INPUT" USING CLIENT-STATE
+         IF SM-SCREEN = SCR-WORLD
              CALL "CONTROLS-HOTBAR" USING CLIENT-STATE
          END-IF
          IF SM-SCREEN = SCR-WORLD
              CALL "CONTROLS-THROW" USING CLIENT-STATE
+             CALL "CONTROLS-SWAP" USING CLIENT-STATE
          END-IF
-         IF SM-SCREEN = SCR-INVENTORY
-             CALL "INVENTORY-INPUT" USING CLIENT-STATE
+         IF SM-SCREEN = SCR-INVENTORY OR SM-SCREEN = SCR-BENCH OR SM-SCREEN = SCR-CONTAINER
+             CALL "MENU-POINTER" USING CLIENT-STATE
+         END-IF
+         IF SM-SCREEN = SCR-CONTAINER
+             CALL "MENU-EXTRA-INPUT" USING CLIENT-STATE
          END-IF
      END-IF
 *>   The connections, never waiting (what this frame queued goes out now).
+     CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-NET
      IF SM-SCREEN = SCR-SERVER-LIST
          CALL "SERVER-LIST-PING" USING CLIENT-STATE
      END-IF
@@ -251,19 +328,16 @@
          END-IF
      END-PERFORM
      CALL "PACKS-PUMP" USING CLIENT-STATE
-*>   Daylight changes the brightness baked into the meshes: every section is meshed again.
+*>   Daylight (SKY-UPDATE) is a draw-time uniform (SUBMIT-FRAME, cc_vk_daylight): no section is meshed again.
+     CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-WORLD
      CALL "SKY-UPDATE" USING CLIENT-STATE
-     IF SK-U NOT = SK-MESHED-U
-         MOVE SK-U TO SK-MESHED-U
-         PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WR-COUNT
-             PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 16
-                 MOVE WR-USED(WS-R) TO WR-DIRTY(WS-R, WS-S)
-             END-PERFORM
-         END-PERFORM
-     END-IF
+     CALL "DIMFX-ENV" USING CLIENT-STATE
+     CALL "ANIM-TICK" USING CLIENT-STATE CL-NOW-MS
      CALL "MESH-DIRTY" USING CLIENT-STATE WS-BUDGET
+     CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-UI
      CALL "SCREEN-BUILD" USING CLIENT-STATE
      CALL "UI-RENDER" USING CLIENT-STATE
+     CALL STATIC "cc_stat_phase" USING BY VALUE CC-PHASE-RENDER-LIST
      CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
      GOBACK.
  END PROGRAM CL-STEP.

@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:replace_single_block",
+  "targets": [
+    {
+      "target": {
+        "predicate_type": "minecraft:any_of",
+        "rules": [
+          {
+            "predicate_type": "minecraft:block_match",
+            "block": "minecraft:sand"
+          },
+          {
+            "predicate_type": "minecraft:random_block_match",
+            "block": "minecraft:stone",
+            "probability": 0.5
+          }
+        ]
+      },
+      "state": "minecraft:granite"
+    }
+  ]
+}

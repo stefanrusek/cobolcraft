@@ -11,14 +11,18 @@
  PROGRAM-ID. MODELS-BAKE.
 *> USING CLIENT-STATE: fills BM-STATE for the block states of standin-content §1.2 (void: none):
 *> each state's block state file selects its models (BLOCKSTATE-SELECT), STATE-BAKE bakes them.
+*> With the standard content set open (CT-OPEN, not the cobolcraft type) nothing is baked here: its
+*> ~30,000 states are baked on first use (MODEL-SLOT-OF, models-lazy.cob), so this only empties the
+*> table of baked rows (BM-MODE 2); otherwise BM-MODE becomes 1.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
+ COPY CONTENT.
  COPY JSONDOC.
  COPY CLMODEL.
  01 WS-S                   BINARY-LONG.
  01 WS-BLOCK               PIC X(32).
- 01 WS-PROPS               PIC X(62).
+ 01 WS-PROPS               PIC X(96).
  01 WS-PROPS-LENGTH        BINARY-LONG.
  01 WS-PATH                PIC X(256).
  01 WS-PATH-LENGTH         BINARY-LONG.
@@ -29,8 +33,22 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
+     IF CT-OPEN = 1 AND CT-STATE-COUNT > 0 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+         MOVE 2 TO BM-MODE
+         MOVE 1 TO BM-NEXT
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > CL-MAX-STATES
+             MOVE 0 TO BM-SLOT(WS-S)
+         END-PERFORM
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 2048
+             MOVE 0 TO IS-SPRITE(WS-S)
+             MOVE 0 TO IS-GUI-FIRST(WS-S) IS-GUI-COUNT(WS-S)
+         END-PERFORM
+         MOVE 0 TO IG-USED
+         GOBACK
+     END-IF
+     MOVE 1 TO BM-MODE
      MOVE 0 TO BM-QUAD-COUNT(1)
-     PERFORM VARYING WS-S FROM 2 BY 1 UNTIL WS-S > CL-MAX-STATES
+     PERFORM VARYING WS-S FROM 2 BY 1 UNTIL WS-S > CL-STAND-STATES
          MOVE SPACES TO WS-BLOCK WS-PROPS WS-PATH
          UNSTRING CL-BS-TEXT(WS-S) DELIMITED BY SPACE INTO WS-BLOCK WS-PROPS
          MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-PROPS)) TO WS-PROPS-LENGTH
@@ -68,6 +86,11 @@
  01 WS-SPRITE              BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
  01 WS-ID-LENGTH           BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-AX                  FLOAT-LONG OCCURS 4 TIMES.
+ 01 WS-LO                  FLOAT-LONG.
+ 01 WS-HI                  FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-S                    BINARY-LONG.
@@ -82,6 +105,7 @@
  PROCEDURE DIVISION USING CLIENT-STATE L-S STATE-MODELS.
      MOVE 0 TO BM-QUAD-COUNT(L-S)
      MOVE SX-COUNT TO WS-COUNT
+*>   SX-COUNT -1 (BLOCKSTATE-SELECT: a multipart state with no part that applies): no model at all, nothing to draw.
      IF WS-COUNT = 0
          MOVE 1 TO WS-COUNT
          MOVE SPACES TO SX-ID(1)
@@ -102,12 +126,81 @@
                      CALL "VARIANT-ROTATE" USING QUAD SX-X(WS-M) SX-Y(WS-M) SX-Z(WS-M)
                      ADD 1 TO BM-QUAD-COUNT(L-S)
                      MOVE QUAD TO BM-QUAD(L-S, BM-QUAD-COUNT(L-S))
+*>                   What the mesher reads without float arithmetic: the corners' place in sixteenths and
+*>                   atlas coordinates (BM-FAST).
+                     MOVE BM-QUAD-COUNT(L-S) TO WS-N
+*>                   12 section 1.3 step 2: the light of a quad is that of the neighbour cell in the direction of its face only when
+*>                   the quad is flat in its own axis and on the border of the block on that side; any other quad (a torch, a plant, the
+*>                   top of a slab) takes the light of its own cell. (The full-cube exception is the mesher's: it reads ST-OPAQUE.)
+                     EVALUATE QD-SHADE
+                         WHEN DIR-DOWN
+                         WHEN DIR-UP
+                             PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 4
+                                 MOVE QD-Y(WS-C) TO WS-AX(WS-C)
+                             END-PERFORM
+                         WHEN DIR-NORTH
+                         WHEN DIR-SOUTH
+                             PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 4
+                                 MOVE QD-Z(WS-C) TO WS-AX(WS-C)
+                             END-PERFORM
+                         WHEN OTHER
+                             PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 4
+                                 MOVE QD-X(WS-C) TO WS-AX(WS-C)
+                             END-PERFORM
+                     END-EVALUATE
+                     MOVE WS-AX(1) TO WS-LO
+                     MOVE WS-AX(1) TO WS-HI
+                     PERFORM VARYING WS-C FROM 2 BY 1 UNTIL WS-C > 4
+                         IF WS-AX(WS-C) < WS-LO
+                             MOVE WS-AX(WS-C) TO WS-LO
+                         END-IF
+                         IF WS-AX(WS-C) > WS-HI
+                             MOVE WS-AX(WS-C) TO WS-HI
+                         END-IF
+                     END-PERFORM
+                     MOVE 1 TO BM-OWNLIGHT(L-S, WS-N)
+                     IF WS-HI - WS-LO < 0.0001
+                         IF (QD-SHADE = DIR-DOWN OR QD-SHADE = DIR-NORTH OR QD-SHADE = DIR-WEST) AND WS-LO < 0.0001
+                             MOVE 0 TO BM-OWNLIGHT(L-S, WS-N)
+                         END-IF
+                         IF (QD-SHADE = DIR-UP OR QD-SHADE = DIR-SOUTH OR QD-SHADE = DIR-EAST) AND WS-HI > 0.9999
+                             MOVE 0 TO BM-OWNLIGHT(L-S, WS-N)
+                         END-IF
+                     END-IF
+                     PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > 4
+                         CALL "ATLAS-UV" USING CLIENT-STATE WS-SPRITE QD-U(WS-C) QD-V(WS-C)
+                             BM-AU(L-S, WS-N, WS-C) BM-AV(L-S, WS-N, WS-C)
+                         CALL "SIXTEENTHS" USING QD-X(WS-C) BM-IX(L-S, WS-N, WS-C)
+                         CALL "SIXTEENTHS" USING QD-Y(WS-C) BM-IY(L-S, WS-N, WS-C)
+                         CALL "SIXTEENTHS" USING QD-Z(WS-C) BM-IZ(L-S, WS-N, WS-C)
+                     END-PERFORM
                  END-IF
              END-PERFORM
          END-PERFORM
      END-PERFORM
      GOBACK.
  END PROGRAM STATE-BAKE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SIXTEENTHS.
+*> USING coordinate (FLOAT-SHORT, block units), sixteenths out (BINARY-LONG): the coordinate times 16 when
+*> that is a whole number from 0 to 16 (to 0.001), else -1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-R                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-COORD                FLOAT-SHORT.
+ 01 L-OUT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-COORD L-OUT.
+     COMPUTE WS-T = L-COORD * 16
+     COMPUTE WS-R = FUNCTION INTEGER(WS-T + 0.5)
+     MOVE -1 TO L-OUT
+     IF FUNCTION ABS(WS-T - WS-R) < 0.001 AND WS-R >= 0 AND WS-R <= 16
+         MOVE WS-R TO L-OUT
+     END-IF
+     GOBACK.
+ END PROGRAM SIXTEENTHS.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MODEL-MISSING.
@@ -128,6 +221,7 @@
      PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 6
          MOVE 1 TO MF-PRESENT(1, WS-F)
          MOVE WS-F TO MF-CULL(1, WS-F)
+         MOVE -1 TO MF-TINT(1, WS-F)
      END-PERFORM
      GOBACK.
  END PROGRAM MODEL-MISSING.
@@ -191,12 +285,14 @@
              MOVE 8 TO WS-NAME-LENGTH
              CALL "JSON-MEMBER" USING JSON-DOC WS-ROOT WS-NAME WS-NAME-LENGTH WS-NODE
              CALL "MODEL-TEXTURES-PARSE" USING JSON-DOC WS-NODE MODEL-RESOLVED
+             CALL "DISPLAY-PARSE" USING JSON-DOC MODEL-RESOLVED
+             CALL "DISPLAY-PARSE-GUI" USING JSON-DOC MODEL-RESOLVED
              MOVE "elements" TO WS-NAME
              CALL "JSON-MEMBER" USING JSON-DOC WS-ROOT WS-NAME WS-NAME-LENGTH WS-NODE
              IF WS-NODE > 0 AND MR-ELEMENT-COUNT < 0
                  MOVE 0 TO MR-ELEMENT-COUNT
                  MOVE JN-FIRST(WS-NODE) TO WS-ELEMENT
-                 PERFORM UNTIL WS-ELEMENT = 0 OR MR-ELEMENT-COUNT = 8
+                 PERFORM UNTIL WS-ELEMENT = 0 OR MR-ELEMENT-COUNT = 16
                      ADD 1 TO MR-ELEMENT-COUNT
                      CALL "MODEL-ELEMENT-PARSE" USING JSON-DOC WS-ELEMENT MODEL-RESOLVED
                          MR-ELEMENT-COUNT
@@ -385,6 +481,13 @@
          CALL "JSON-MEMBER" USING JSON-DOC WS-FACES WS-NAME WS-NAME-LENGTH WS-FACE
          IF WS-FACE > 0
              MOVE 1 TO MF-PRESENT(WS-E, WS-F)
+             MOVE -1 TO MF-TINT(WS-E, WS-F)
+             MOVE "tintindex" TO WS-NAME
+             MOVE 9 TO WS-NAME-LENGTH
+             CALL "JSON-MEMBER" USING JSON-DOC WS-FACE WS-NAME WS-NAME-LENGTH WS-FIELD
+             IF WS-FIELD > 0
+                 MOVE JN-NUM(WS-FIELD) TO MF-TINT(WS-E, WS-F)
+             END-IF
              MOVE "texture" TO WS-NAME
              MOVE 7 TO WS-NAME-LENGTH
              CALL "JSON-MEMBER" USING JSON-DOC WS-FACE WS-NAME WS-NAME-LENGTH WS-FIELD
@@ -474,6 +577,11 @@
 *> from outside the element: for the side faces top is +y; for up the top edge is north and the
 *> right edge east; for down the top edge is south and the right edge east. UVs: the face's uv or
 *> the default of 08 §5.5.1; a face rotation of r moves each corner's UV r / 90 corners clockwise.
+*> A flat element (no thickness along an axis) with a face on both sides of that axis is a decal (glow
+*> lichen, vines, sculk veins, the petal and leaf litter pads): its two quads lie in one plane, and a
+*> solid layer that passes equal depth lets the one that looks into the supporting block (dark) fight with
+*> the one that looks into the air. Each of the two is moved 0.002 of a block (0.032 pixels) out along its
+*> own normal, so the viewer's side is nearer (08 and 12 name no offset: this is the bake's own choice).
 *> Then the element rotation (§5.4.1, right-handed, about the origin; Euler x, then y, then z;
 *> single-axis rescale) and the division by 16.
  DATA DIVISION.
@@ -505,6 +613,8 @@
  01 WS-Z                   FLOAT-LONG.
  01 WS-T                   FLOAT-LONG.
  01 WS-SCALE               FLOAT-LONG.
+ 01 WS-OPPOSITE            BINARY-LONG.
+ 01 WS-DECAL-SHIFT         FLOAT-LONG.
  LINKAGE SECTION.
  COPY CLMODEL.
  01 L-E                    BINARY-LONG.
@@ -597,6 +707,36 @@
          MOVE WS-CU(WS-K) TO QD-U(WS-J)
          MOVE WS-CV(WS-K) TO QD-V(WS-J)
      END-PERFORM
+*>   Decal: the two faces of a flat element move apart along their normals (before the rotation).
+     COMPUTE WS-OPPOSITE = L-FACE - 1 + 2 * FUNCTION MOD(L-FACE, 2)
+     MOVE 0.032 TO WS-DECAL-SHIFT
+     IF FUNCTION MOD(L-FACE, 2) = 1
+         COMPUTE WS-DECAL-SHIFT = 0 - WS-DECAL-SHIFT
+     END-IF
+     IF MF-PRESENT(L-E, WS-OPPOSITE) = 1
+         EVALUATE L-FACE
+             WHEN DIR-DOWN
+             WHEN DIR-UP
+                 IF FY = TY
+                     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                         ADD WS-DECAL-SHIFT TO WS-PY(WS-K)
+                     END-PERFORM
+                 END-IF
+             WHEN DIR-NORTH
+             WHEN DIR-SOUTH
+                 IF FZ = TZ
+                     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                         ADD WS-DECAL-SHIFT TO WS-PZ(WS-K)
+                     END-PERFORM
+                 END-IF
+             WHEN OTHER
+                 IF FX = TX
+                     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
+                         ADD WS-DECAL-SHIFT TO WS-PX(WS-K)
+                     END-PERFORM
+                 END-IF
+         END-EVALUATE
+     END-IF
 *>   Element rotation about the origin (each step about a fixed model axis).
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
          COMPUTE WS-X = WS-PX(WS-K) - ME-ROT-ORIGIN(L-E, 1)
@@ -638,6 +778,7 @@
          COMPUTE QD-Z(WS-K) = (WS-Z + ME-ROT-ORIGIN(L-E, 3)) / 16
      END-PERFORM
      MOVE L-SPRITE TO QD-SPRITE
+     MOVE MF-TINT(L-E, L-FACE) TO QD-TINT
      MOVE MF-CULL(L-E, L-FACE) TO QD-CULL
      MOVE L-FACE TO QD-SHADE
      IF ME-SHADE(L-E) > 0
@@ -743,3 +884,188 @@
      END-IF
      GOBACK.
  END PROGRAM VARIANT-ROTATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DISPLAY-PARSE.
+*> USING JSON-DOC (a model file), MODEL-RESOLVED: the model's display entries (08 section 5.6) of the contexts the chain has none for yet: firstperson_righthand into MR-FP,
+*> thirdperson_righthand, thirdperson_lefthand and fixed into MR-DX (contexts 1 to 3 of it), each as rotation, translation and scale (defaults 0, 0, 1) with its present flag
+*> 1. The nearest model of the chain that names a context wins.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PATHS-DATA.
+    05 FILLER PIC X(32) VALUE "display.firstperson_righthand".
+    05 FILLER PIC X(32) VALUE "display.thirdperson_righthand".
+    05 FILLER PIC X(32) VALUE "display.thirdperson_lefthand".
+    05 FILLER PIC X(32) VALUE "display.fixed".
+ 01 WS-PATHS REDEFINES WS-PATHS-DATA.
+    05 WS-PATH             PIC X(32) OCCURS 4 TIMES.
+ 01 WS-PATH-LENGTHS.
+    05 FILLER PIC 99 VALUE 29.
+    05 FILLER PIC 99 VALUE 29.
+    05 FILLER PIC 99 VALUE 28.
+    05 FILLER PIC 99 VALUE 13.
+ 01 WS-LEN-TABLE REDEFINES WS-PATH-LENGTHS.
+    05 WS-PATH-LENGTH      PIC 99 OCCURS 4 TIMES.
+ 01 WS-KEYS.
+    05 FILLER PIC X(12) VALUE "rotation".
+    05 FILLER PIC X(12) VALUE "translation".
+    05 FILLER PIC X(12) VALUE "scale".
+ 01 WS-KEY-TABLE REDEFINES WS-KEYS.
+    05 WS-KEY              PIC X(12) OCCURS 3 TIMES.
+ 01 WS-KEY-LENGTHS.
+    05 FILLER PIC 99 VALUE 8.
+    05 FILLER PIC 99 VALUE 11.
+    05 FILLER PIC 99 VALUE 5.
+ 01 WS-LEN-TABLE2 REDEFINES WS-KEY-LENGTHS.
+    05 WS-KEY-LEN          PIC 99 OCCURS 3 TIMES.
+ 01 WS-NAME                PIC X(12).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-FIELD               BINARY-LONG.
+ 01 WS-NODE-OUT            BINARY-LONG.
+ 01 WS-ELEMENT             BINARY-LONG.
+ 01 WS-CTX                 BINARY-LONG.
+ 01 WS-TODO                BINARY-LONG.
+ 01 WS-G                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-BASE                BINARY-LONG.
+ 01 WS-PATH-NOW            PIC X(32).
+ 01 WS-LEN-NOW             BINARY-LONG.
+ LINKAGE SECTION.
+ COPY JSONDOC.
+ COPY CLMODEL.
+ PROCEDURE DIVISION USING JSON-DOC MODEL-RESOLVED.
+     PERFORM VARYING WS-CTX FROM 1 BY 1 UNTIL WS-CTX > 4
+         MOVE 0 TO WS-TODO
+         IF WS-CTX = 1 AND MR-FP-PRESENT = 0
+             MOVE 1 TO WS-TODO
+         END-IF
+         IF WS-CTX > 1 AND MR-DX-PRESENT(WS-CTX - 1) = 0
+             MOVE 1 TO WS-TODO
+         END-IF
+         IF WS-TODO = 1
+             MOVE WS-PATH(WS-CTX) TO WS-PATH-NOW
+             MOVE WS-PATH-LENGTH(WS-CTX) TO WS-LEN-NOW
+             CALL "JSON-FIND" USING JSON-DOC WS-PATH-NOW WS-LEN-NOW WS-NODE
+             IF WS-NODE > 0
+                 IF WS-CTX = 1
+                     MOVE 1 TO MR-FP-PRESENT
+                 ELSE
+                     MOVE 1 TO MR-DX-PRESENT(WS-CTX - 1)
+                 END-IF
+                 COMPUTE WS-BASE = (WS-CTX - 2) * 9
+                 PERFORM VARYING WS-G FROM 1 BY 1 UNTIL WS-G > 3
+                     MOVE WS-KEY(WS-G) TO WS-NAME
+                     MOVE WS-KEY-LEN(WS-G) TO WS-NAME-LENGTH
+                     CALL "JSON-MEMBER" USING JSON-DOC WS-NODE WS-NAME WS-NAME-LENGTH WS-FIELD
+                     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+                         COMPUTE WS-K = (WS-G - 1) * 3 + WS-A
+                         IF WS-CTX = 1
+                             MOVE 0 TO MR-FP(WS-K)
+                             IF WS-G = 3
+                                 MOVE 1 TO MR-FP(WS-K)
+                             END-IF
+                         ELSE
+                             MOVE 0 TO MR-DX(WS-BASE + WS-K)
+                             IF WS-G = 3
+                                 MOVE 1 TO MR-DX(WS-BASE + WS-K)
+                             END-IF
+                         END-IF
+                         IF WS-FIELD > 0
+                             COMPUTE WS-ELEMENT = WS-A - 1
+                             CALL "JSON-ELEMENT" USING JSON-DOC WS-FIELD WS-ELEMENT WS-NODE-OUT
+                             IF WS-NODE-OUT > 0
+                                 IF WS-CTX = 1
+                                     MOVE JN-NUM(WS-NODE-OUT) TO MR-FP(WS-K)
+                                 ELSE
+                                     MOVE JN-NUM(WS-NODE-OUT) TO MR-DX(WS-BASE + WS-K)
+                                 END-IF
+                             END-IF
+                         END-IF
+                     END-PERFORM
+                 END-PERFORM
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM DISPLAY-PARSE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. DISPLAY-PARSE-GUI.
+*> USING JSON-DOC (a model file), MODEL-RESOLVED: the model's display entry for gui (08 section 5.6) and its gui_light (08 section 5.1) when the chain so far has none: rotation,
+*> translation and scale (defaults 0, 0, 1) into MR-GUI, MR-GUI-PRESENT 1; "front" or "side" into MR-GUI-LIGHT (1 or 2). The nearest model of the chain that names each wins.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-PATH                PIC X(32) VALUE "display.gui".
+ 01 WS-PATH-LENGTH         BINARY-LONG VALUE 11.
+ 01 WS-KEYS.
+    05 FILLER PIC X(12) VALUE "rotation".
+    05 FILLER PIC X(12) VALUE "translation".
+    05 FILLER PIC X(12) VALUE "scale".
+ 01 WS-KEY-TABLE REDEFINES WS-KEYS.
+    05 WS-KEY              PIC X(12) OCCURS 3 TIMES.
+ 01 WS-KEY-LENGTHS.
+    05 FILLER PIC 99 VALUE 8.
+    05 FILLER PIC 99 VALUE 11.
+    05 FILLER PIC 99 VALUE 5.
+ 01 WS-LEN-TABLE REDEFINES WS-KEY-LENGTHS.
+    05 WS-KEY-LEN          PIC 99 OCCURS 3 TIMES.
+ 01 WS-NAME                PIC X(12).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-LIGHT-NAME          PIC X(12) VALUE "gui_light".
+ 01 WS-LIGHT-LENGTH        BINARY-LONG VALUE 9.
+ 01 WS-ROOT                BINARY-LONG VALUE 1.
+ 01 WS-TEXT                PIC X(12).
+ 01 WS-TEXT-CAP            BINARY-LONG VALUE 12.
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-FIELD               BINARY-LONG.
+ 01 WS-NODE-OUT            BINARY-LONG.
+ 01 WS-ELEMENT             BINARY-LONG.
+ 01 WS-G                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY JSONDOC.
+ COPY CLMODEL.
+ PROCEDURE DIVISION USING JSON-DOC MODEL-RESOLVED.
+     IF MR-GUI-PRESENT = 0
+         CALL "JSON-FIND" USING JSON-DOC WS-PATH WS-PATH-LENGTH WS-NODE
+         IF WS-NODE > 0
+             MOVE 1 TO MR-GUI-PRESENT
+             PERFORM VARYING WS-G FROM 1 BY 1 UNTIL WS-G > 3
+                 MOVE WS-KEY(WS-G) TO WS-NAME
+                 MOVE WS-KEY-LEN(WS-G) TO WS-NAME-LENGTH
+                 CALL "JSON-MEMBER" USING JSON-DOC WS-NODE WS-NAME WS-NAME-LENGTH WS-FIELD
+                 PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > 3
+                     COMPUTE WS-K = (WS-G - 1) * 3 + WS-A
+                     IF WS-G = 3
+                         MOVE 1 TO MR-GUI(WS-K)
+                     ELSE
+                         MOVE 0 TO MR-GUI(WS-K)
+                     END-IF
+                     IF WS-FIELD > 0
+                         COMPUTE WS-ELEMENT = WS-A - 1
+                         CALL "JSON-ELEMENT" USING JSON-DOC WS-FIELD WS-ELEMENT WS-NODE-OUT
+                         IF WS-NODE-OUT > 0
+                             MOVE JN-NUM(WS-NODE-OUT) TO MR-GUI(WS-K)
+                         END-IF
+                     END-IF
+                 END-PERFORM
+             END-PERFORM
+         END-IF
+     END-IF
+     IF MR-GUI-LIGHT = 0
+         CALL "JSON-MEMBER" USING JSON-DOC WS-ROOT WS-LIGHT-NAME WS-LIGHT-LENGTH WS-NODE
+         MOVE SPACES TO WS-TEXT
+         CALL "JSON-STRING" USING JSON-DOC WS-NODE WS-TEXT WS-TEXT-CAP WS-TEXT-LENGTH
+         IF WS-TEXT = "front"
+             MOVE 1 TO MR-GUI-LIGHT
+         END-IF
+         IF WS-TEXT = "side"
+             MOVE 2 TO MR-GUI-LIGHT
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM DISPLAY-PARSE-GUI.

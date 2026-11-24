@@ -46,3 +46,19 @@ stand-in values in `docs/design/standin-content.md` §4.8 change where they diff
   night. Which one does the game use?
 - `docs/design/standin-content.md` §4.9 says the `timeline` registry sends no packet. If the game keeps a 30000-tick
   day, it must send its own scaled timeline. Does it?
+
+## State at the end of the polish run (2026-11-23)
+
+- Lighting, sky, fog and clouds stayed out of scope of the second SDD run (operator decision, FR-043): no T0697 engine
+  switch and no light-reader work. Nothing in this ticket's stories was built by that run.
+- The 32 section engine exists as `core/src/light-32.cob` (its own 4 x 4 chunk window, programs L32-*); the stand-in
+  `core/src/light.cob` still serves every caller. T0697 (`specs/002-client-polish/tasks/core/phase-42c.md`) is ticked
+  with the note NOT DONE: the callers use the chunk cache of CELLS.cpy, so the engine cannot serve them without an
+  adapter, and T19506 (lanes/p46c.md) says the block is the engine itself.
+- Lane p46d, branch `002-lane-p46d` (tip 1a9f576d, eight commits not on origin by patch-id): fd9fde0d the light engine 32
+  with a persistent 6 x 6 window over the chunk cache, unwired; 27049faa locate and bit tables without MOD or division,
+  measured; 1a9f576d the finding that the engine stays unwired. Lane crashlight (f37ae4e7) holds an older incremental
+  block light (LIGHT-ADD, LIGHT-REMOVE).
+- Cut with the scope (task lines in lanes/): bugblack T33604 (sky light spreading), bugsky T30504 and T30505, bugcelestial
+  T32201, bugsunchest T62202, bugtorchblack T42004, bugstairlight T62504 (face-shape occlusion, sky spreading, soul sand
+  dampening, the emission floor; the block light of partial blocks is on origin).

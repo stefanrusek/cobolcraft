@@ -814,6 +814,9 @@ File `options.txt` in the game directory (`Options.optionsFile`), UTF-8, written
   the processing function (below). The last line may be `fullscreenResolution:<mode>` when a fullscreen video mode
   is chosen.
 - Saving happens when an options screen is closed, on `Options.save` calls after changes, and on exit.
+- **The saved `graphicsPreset` is applied at every launch** (read in the `Minecraft` constructor: right after the mouse and keyboard handlers are created and before the resource manager is created, with no
+  condition). So `fast`, `fancy` and `fabulous` overwrite the 17 preset options (7.6) with the preset's values **whatever `options.txt` holds for them**; only `custom` leaves the file values.
+  A missing `graphicsPreset` key (first run, or an older file) means the default `fancy`, which is applied the same way.
 
 ### 7.2 Option names, defaults and ranges
 
@@ -834,31 +837,31 @@ name inside JSON quotes. Out-of-range file values are rejected by the codec (the
 
 | Key | Default | Range / values / step |
 |---|---|---|
-| `graphicsPreset` | `fancy` | enum slider (the preset set; changing a quality option below sets it to `custom`) |
-| `preferredGraphicsBackend` | `default` | enum (graphics API choice; applies after restart) |
+| `graphicsPreset` | `fancy` | enum slider `fast`, `fancy`, `fabulous`, `custom` (stored as the quoted name, 7.4; changing a quality option below sets it to `custom`; **applied again at every launch**, which overwrites the 17 preset options unless the value is `custom`, 7.1 and 7.6) |
+| `preferredGraphicsBackend` | `default` | enum `default`, `opengl`, `vulkan` (graphics API choice; applies after restart) |
 | `renderDistance` | 12 | integer 2 to 32 if the JVM max heap is above 1,000,000,000 bytes, else 2 to 16 (read: a memory test selects 32 or 16) |
 | `simulationDistance` | 12 | integer 5 to 32 (2 to 32 in debug mode), same 32-or-16 cap |
 | `entityDistanceScaling` | 1.0 | stored double 0.5 to 5.0; slider integer 2 to 20 (steps of 0.25: value = slider / 4, inferred) |
 | `maxFps` | 120 | stored integer 10 to 260; slider integer 1 to 26 (value = slider x 10; the top step, 260, is shown as unlimited) |
 | `enableVsync` | true | boolean |
-| `inactivityFpsLimit` | `afk` | enum (frame-rate cap when the window is unfocused/idle) |
+| `inactivityFpsLimit` | `afk` | enum `minimized`, `afk` (frame-rate cap when the window is idle or minimized: afk limits to 30 fps after a minute without player input and to 10 after nine more minutes; minimized limits only a minimized window; read from the tooltip texts `options.inactivityFpsLimit.afk.tooltip` and `.minimized.tooltip`, the enforcing code was not traced) |
 | `fullscreen` | false | boolean; `exclusiveFullscreen` false; `macFullscreenMenuVisibility` false (macOS only) |
-| `guiScale` | 0 (Auto) | integer 0 to a window-dependent maximum (cap 2147483646), see below; `debugGuiScale` is a separate -1.. range used only in debug builds |
+| `guiScale` | 0 (Auto) | integer 0 to a window-dependent maximum (cap 2147483646), see below; `debugGuiScale` is a separate -1.. range used only in debug builds; formats and examples in 7.4 |
 | `gamma` (Brightness) | 0.5 | 0.0 to 1.0 |
-| `fov` | 70 | integer 30 to 110 (stored as a double, e.g. `70.0`) |
+| `fov` | 70 | integer 30 to 110; **stored as the double (fov - 70) / 40** (70 is `0.0`; 7.4) |
 | `ao` (smooth lighting) | true | boolean |
 | `biomeBlendRadius` | 2 | integer 0 to 7 (blend area (2 x r + 1)^2) |
-| `renderClouds` / `cloudStatus` | `fancy` | enum `off`, `fast`, `fancy` (accepts the legacy boolean form); `cloudRange` 128, integer 2 to 128 |
+| `renderClouds` | `fancy` | stored `"false"` (off), `"fast"`, `"true"` (fancy); a bare boolean is accepted (7.4); `cloudRange` 128, integer 2 to 128 |
 | `weatherRadius` | 10 | integer 3 to 10 |
 | `cutoutLeaves` | true | boolean; `vignette` true; `improvedTransparency` false |
-| `particles` | `all` | enum `all`, `decreased`, `minimal` (legacy numeric form accepted) |
+| `particles` | `all` | stored as the **integer** 0 `all`, 1 `decreased`, 2 `minimal` (7.4) |
 | `entityShadows` | true | boolean |
 | `chunkSectionFadeInTime` | 0.75 | stored double 0.0 to 2.0 seconds; slider integer 0 to 40 (value = slider / 20, inferred) |
-| `prioritizeChunkUpdates` | `none` | enum (chunk-update priority; legacy numeric form accepted) |
+| `prioritizeChunkUpdates` | `none` (0) | stored as the **integer** 0 none ("Threaded"), 1 player-affected ("Semi Blocking"), 2 nearby ("Fully Blocking") (7.4) |
 | `mipmapLevels` | 4 | integer 0 to 4 |
-| `textureFiltering` | `none` | enum (filtering method); `maxAnisotropyBit` default 2, integer 1 to 3 |
+| `textureFiltering` | `none` (0) | stored as the **integer** 0 none, 1 RGSS, 2 anisotropic; `maxAnisotropyBit` default 2, integer 1 to 3 (label `2^v`x) |
 | `bobView` | true | boolean (View Bobbing) |
-| `attackIndicator` | `crosshair` | enum `off`, `crosshair`, `hotbar` |
+| `attackIndicator` | `crosshair` (1) | stored as the **integer** 0 `off`, 1 `crosshair`, 2 `hotbar` (7.4) |
 | `glintSpeed` | 0.5 | 0.0 to 1.0; `glintStrength` 0.75, 0.0 to 1.0 |
 | `showAutosaveIndicator` | true | boolean |
 | `overrideWidth`, `overrideHeight` | 0, 0 | integers (window size override; 0 = none) |
@@ -876,7 +879,7 @@ and s is odd, 1 is added. Option value 0 means this automatic value; a non-zero 
 | `mouseSensitivity` | 0.5 | 0.0 to 1.0 (label "*yawn*" at 0, "HYPERSPEED!!!" at 1); camera turn = mouse delta x `(s x 0.6 + 0.2)^3 x 8` (`MouseHandler.turnPlayer`) |
 | `invertXMouse`, `invertYMouse` | false | boolean |
 | `discrete_mouse_scroll` | false | boolean |
-| `mouseWheelSensitivity` | 0 | slider integer -200 to 100 (a logarithmic scale; effective multiplier 10^(v/100), inferred) |
+| `mouseWheelSensitivity` | `1.0` (slider 0) | slider integer -200 to 100; **stored as the double 10^(v/100)**, 0.01 to 10.0 (read: `logMouse`, `unlogMouse`; 7.4) |
 | `allowCursorChanges` | true | boolean |
 | `quitShortcuts` | true | boolean |
 | `ctrlClickEmulatesRightClick` | false | boolean (macOS) |
@@ -886,7 +889,7 @@ and s is odd, 1 is added. Option value 0 means this automatic value; a non-zero 
 | `toggleCrouch`, `toggleSprint`, `toggleAttack`, `toggleUse` | false each | boolean: hold-to-toggle behaviour of the sneak, sprint, attack and use keys |
 | `sprintWindow` | 7 | integer 0 to 10 ticks (tooltip: "Time window in ticks where double-tapping the forward key activates sprint.") |
 | `key_<mapping name>` | see 7.3 | value = the key's name (`key.keyboard.w`, `key.mouse.left`, `key.keyboard.unknown` = unbound); the `key_` prefix is the literal in the constant pool |
-| `mainHand` | `right` | enum `left`, `right` |
+| `mainHand` | `right` | enum `"left"`, `"right"` |
 
 **Sound (Music & Sounds screen)**
 
@@ -896,8 +899,8 @@ and s is odd, 1 is added. Option value 0 means this automatic value; a non-zero 
 | `soundDevice` | "" (system default) | string (audio device name) |
 | `showSubtitles` | false | boolean |
 | `directionalAudio` | false | boolean |
-| `musicToast` | `never` | enum |
-| `musicFrequency` | the enum's default constant (`DEFAULT`) | enum (how often music plays) |
+| `musicToast` | `never` | enum `"never"`, `"pause"`, `"pause_and_toast"` |
+| `musicFrequency` | `DEFAULT` | enum `"DEFAULT"`, `"FREQUENT"`, `"CONSTANT"` (upper case) |
 
 Model parts: `modelPart_cape`, `modelPart_jacket`, `modelPart_left_sleeve`, `modelPart_right_sleeve`,
 `modelPart_left_pants_leg`, `modelPart_right_pants_leg`, `modelPart_hat` (literal prefix `modelPart_`), boolean,
@@ -907,7 +910,7 @@ default true (the set of all parts is enabled at construction). `mainHand` is ab
 
 | Key | Default | Range / values |
 |---|---|---|
-| `chatVisibility` | `full` | enum `full`, `system`, `hidden` |
+| `chatVisibility` | `full` (0) | stored as the **integer** 0 `full`, 1 `system`, 2 `hidden` (7.4) |
 | `chatColors`, `chatLinks`, `chatLinksPrompt` | true | boolean |
 | `chatOpacity` | 1.0 | 0.0 to 1.0 |
 | `chatLineSpacing` | 0.0 | 0.0 to 1.0 |
@@ -916,7 +919,7 @@ default true (the set of all parts is enabled at construction). `mainHand` is ab
 | `chatScale` | 1.0 | 0.0 to 1.0 slider (a scale factor) |
 | `chatWidth` | 1.0 | 0.0 to 1.0 |
 | `chatHeightFocused` | 1.0 | 0.0 to 1.0 |
-| `chatHeightUnfocused` | computed by `ChatComponent.defaultUnfocusedPct()` from constants 180 (max height px), 20 (min height px) and 70.0 (target px): (70 - 20) / (180 - 20) = 0.3125 (inferred arithmetic on the constants read) | 0.0 to 1.0 |
+| `chatHeightUnfocused` | `ChatComponent.defaultUnfocusedPct()` = 70 / (getHeight(1.0) - 20) = 70 / 160 = **0.4375** (read: constants 180, 20, 70.0; corrected in round OPT) | 0.0 to 1.0 |
 | `chatDelay` | 0.0 | stored double 0.0 to 6.0 seconds; slider integer 0 to 60 (value = slider / 10) |
 | `autoSuggestions` | true | boolean (command suggestions) |
 | `hideMatchedNames` | true | boolean |
@@ -930,13 +933,13 @@ default true (the set of all parts is enabled at construction). `mainHand` is ab
 
 | Key | Default | Range / values |
 |---|---|---|
-| `narrator` | `off` | enum (legacy numeric form accepted) |
+| `narrator` | `off` (0) | stored as the **integer** 0 off, 1 all, 2 chat, 3 system (7.4) |
 | `narratorHotkey` | true | boolean |
 | `highContrast` | false | boolean (also toggled by enabling the `high_contrast` pack) |
 | `highContrastBlockOutline` | false | boolean |
 | `screenEffectScale` (Distortion Effects) | 1.0 | 0.0 to 1.0 |
-| `fovEffectScale` (FOV Effects) | 1.0 | 0.0 to 1.0, the slider value is squared (the codec uses an `xmap`: sqrt for display, square for use; inferred) |
-| `darknessEffectScale` | 1.0 | 0.0 to 1.0 |
+| `fovEffectScale` (FOV Effects) | 1.0 | 0.0 to 1.0; the slider position p (0..1) is **squared**: the value used and stored is p x p, and the slider shows `sqrt(value)` (read: the option's `xmap` pair is `Mth.square` and `Math.sqrt`; the label shows the stored value as a percent, inferred from the label function receiving the mapped value) |
+| `darknessEffectScale` | 1.0 | 0.0 to 1.0; same squared mapping as `fovEffectScale` (read: the same `xmap` pair) |
 | `damageTiltStrength` | 1.0 | 0.0 to 1.0 |
 | `darkMojangStudiosBackground` | false | boolean |
 | `hideLightningFlashes` | false | boolean |
@@ -990,6 +993,492 @@ mapping: crash C, reloadChunk A, showHitboxes B, clearChat D, showChunkBorders G
 copyRecreateCommand I, spectate N, switchGameMode F4, debugOptions F6, focusPause P, dumpDynamicTextures S,
 reloadResourcePacks T, profiling L, copyLocation C, dumpVersion V, profilingChart 1, fpsCharts 2, networkCharts 3,
 lightmapTexture 4, improvedTransparency X).
+
+### 7.4 Stored forms that differ from the slider value, corrections to 7.2, and the label formats
+
+Round OPT (artifact `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`, static reading of
+`Options`, `OptionInstance`, the option screens and `assets/minecraft/lang/en_us.json`). Where a row of 7.2 disagrees with this section, this section wins; the
+rows of 7.2 were corrected in place for the same facts.
+
+**Stored forms (what `options.txt` holds).** Every option is written through the codec of its `OptionInstance`:
+
+| Option | File form | Notes |
+|---|---|---|
+| `fov` | a double, `(fov - 70) / 40`: 30 stores `-1.0`, 70 stores `0.0`, 110 stores `1.0`; the slider and the in-memory value are the integer 30 to 110 (default 70) | read back as `floor(d x 40 + 70)` (the two conversion functions of the `fov` option); a file value outside -1.0..1.0 maps outside 30..110 and is then rejected by the integer range (default kept; inferred) |
+| `mouseWheelSensitivity` | a double `10^(s / 100)` where s is the integer slider -200..100; range 0.01 to 10.0; default `1.0` (s = 0) | the slider position is `floor(log10(d) x 100)` |
+| `entityDistanceScaling` | a double 0.5 to 5.0; slider integer 2..20 = value x 4; default 1.0 | |
+| `chunkSectionFadeInTime` | a double 0.0 to 2.0; slider integer 0..40 = value x 20; default 0.75 | |
+| `chatDelay` | a double 0.0 to 6.0; slider integer 0..60 = value x 10; default 0.0 | |
+| `notificationDisplayTime` | a double 0.5 to 10.0; slider integer 5..100 = value x 10; default 1.0 | |
+| `maxFps` | an integer 10..260; slider integer 1..26 = value / 10; default 120 | 260 is the "Unlimited" step |
+| `guiScale` | integer 0 (Auto) to the window maximum (cap 2147483646) | see 7.2 and the GUI scale values below |
+| `chatVisibility` | an **integer**: 0 `full`, 1 `system`, 2 `hidden` | `LEGACY_CODEC` (plain integer, wrapped modulo the count when out of range, `ByIdMap` strategy WRAP); a quoted name is not accepted, so such a line keeps the default (inferred from the codec being integer-only) |
+| `prioritizeChunkUpdates` | an integer: 0 none ("Threaded"), 1 player-affected ("Semi Blocking"), 2 nearby ("Fully Blocking") | same codec kind |
+| `particles` | an integer: 0 `all`, 1 `decreased`, 2 `minimal` | same codec kind |
+| `attackIndicator` | an integer: 0 `off`, 1 `crosshair`, 2 `hotbar` | same codec kind |
+| `textureFiltering` | an integer: 0 none, 1 RGSS, 2 anisotropic | same codec kind |
+| `narrator` | an integer: 0 off, 1 all, 2 chat, 3 system | same codec kind |
+| `renderClouds` | a JSON string `"false"` (off), `"fast"`, `"true"` (fancy); a bare boolean is accepted (true = fancy, false = off); default fancy | the names are the `legacyName` field read from `CloudStatus`; the persisted key is `renderClouds` (there is no persisted `cloudStatus`) |
+| `graphicsPreset` | `"fast"`, `"fancy"`, `"fabulous"`, `"custom"` (default `"fancy"`) | |
+| `preferredGraphicsBackend` | `"default"`, `"opengl"`, `"vulkan"` | |
+| `inactivityFpsLimit` | `"minimized"`, `"afk"` (default `"afk"`) | |
+| `mainHand` | `"left"`, `"right"` (default `"right"`) | |
+| `musicToast` | `"never"`, `"pause"`, `"pause_and_toast"` (default `"never"`) | |
+| `musicFrequency` | `"DEFAULT"`, `"FREQUENT"`, `"CONSTANT"` (upper case; default `"DEFAULT"`) | |
+| `sharePresence` | `"none"`, `"limited"`, `"all"` (default `"all"`; not applicable) | |
+| booleans | `true` / `false` | |
+
+**Correction of `chatHeightUnfocused`.** The default is `70 / (getHeight(1.0) - 20)` with `getHeight(1.0) = 180`: 70 / 160 = **0.4375** (the earlier
+0.3125 in 7.2 was an arithmetic slip). Chat pixel formulas (`ChatComponent`): width in pixels = `floor(w x 280 + 40)` for the 0..1 value w (40 to 320
+px); height in pixels = `floor(h x 160 + 20)` (20 to 180 px). Defaults then give a chat width of 320 px, a focused height of 180 px and an unfocused
+height of `floor(0.4375 x 160 + 20)` = 90 px.
+
+**Label formats.** Every option button shows `Caption: value` through the language key `options.generic_value` (`%s: %s`) unless a row below says
+otherwise. Booleans without a special format show the caption with `options.on.composed` / `options.off.composed` (`%s: ON` / `%s: OFF`). Enum
+values show the value's own key (texts in 08-style tables of the design document, builtin-ui-art.md section 6.2). The special value formats:
+
+| Option (caption key) | Value text |
+|---|---|
+| `options.sensitivity` | value 0: `*yawn*` (`options.sensitivity.min`); value 1: `HYPERSPEED!!!` (`.max`); otherwise percent of `value x 2` (`%s: %s%%`; the default 0.5 shows `Sensitivity: 100%`) |
+| `options.fov` | 70: `Normal` (`options.fov.min`); 110: `Quake Pro` (`options.fov.max`); otherwise the integer |
+| `options.gamma` (Brightness) | the integer `floor(value x 100)`: 0 `Moody`, 50 `Default`, 100 `Bright`, else the integer |
+| `options.guiScale` | 0: `Auto`; else the integer |
+| `options.framerateLimit` | 260: `Unlimited`; else `%s fps` (`options.framerate`) |
+| `options.renderDistance`, `options.simulationDistance`, `options.renderCloudsDistance` | `%s Chunks` (`options.chunks`) |
+| `options.weatherRadius` | `%s Blocks` (`options.blocks`) |
+| `options.biomeBlendRadius` | the key `options.biomeBlendRadius.<2r+1>` (r = slider 0..7): 1 `OFF (Fastest)`, 3 `3x3 (Fast)`, 5 `5x5 (Normal)`, 7 `7x7 (High)`, 9 `9x9 (Very High)`, 11 `11x11 (Extreme)`, 13 `13x13 (Showoff)`, 15 `15x15 (Maximum)` |
+| `options.mipmapLevels` | 0: `OFF`; else the integer |
+| `options.maxAnisotropy` | `%sx` of `2^v` (v = 1..3: 2x, 4x, 8x; default v = 2 shows `4x`); v = 0 shows `OFF` (not reachable, range starts at 1; inferred) |
+| `options.chunkFade` | value <= 0: `Chunk Fade: None` (`options.chunkFade.none`); else `Chunk Fade: %s second(s)` with the value printed as `%.2f` |
+| `options.chat.delay_instant` (caption key) | value <= 0: `Chat Delay: None` (`options.chat.delay_none`); else `Chat Delay: %s second(s)` with `%.1f` (the caption key `options.chat.delay_instant` has no text in the language file and is never shown) |
+| `options.notifications.display_time` | `%sx` of the double (for example `1.0x`) |
+| `options.sprintWindow` | 0: `OFF`; else the integer |
+| `options.accessibility.menu_background_blurriness` | 0: `OFF`; else the integer |
+| `options.mouseWheelSensitivity` | the double printed `%.2f` (default `1.00`) |
+| `options.chat.opacity` | percent of `value x 0.9 + 0.1` (the stored 1.0 shows `100%`) |
+| `options.chat.scale` | 0: `OFF`; else percent of the value |
+| `options.chat.width`, `options.chat.height.focused`, `options.chat.height.unfocused` | pixels (`%s: %spx`) by the chat pixel formulas above |
+| `options.chat.line_spacing`, `options.accessibility.text_background_opacity`, `options.accessibility.panorama_speed`, `options.entityDistanceScaling` | percent of the value (`%s: %s%%`, the value x 100 truncated) |
+| `options.screenEffectScale`, `options.fovEffectScale`, `options.darknessEffectScale`, `options.damageTiltStrength`, `options.glintSpeed`, `options.glintStrength`, every `soundCategory.*` slider | 0: `OFF` (`%s: OFF`); else percent (`%s: %s%%`) |
+| `options.accessibility.text_background` (the `backgroundForChatOnly` boolean) | true `Chat`, false `Everywhere` |
+| `options.key.hold` / `options.key.toggle` (captions `key.sneak`, `key.sprint`, `key.attack`, `key.use`) | `Hold` (false) / `Toggle` (true) |
+| `options.audioDevice` | the device name; the empty string shows `System Default` |
+| `options.fullscreen.resolution` (the key `options.fullscreen.exclusive.mode`) | -1: `Current`; else `%sx%s@%s (%sbit)` (width, height, refresh, bit depth of that video mode) |
+| `options.graphics.preset` | the preset's own text, `Fast`, `Fancy`, `Fabulous!` or `Custom` |
+
+Percentages use the truncating form `(int)(value x 100)` (`percentValueLabel`): 0.75 shows 75, 0.3125 shows 31.
+
+**GUI scale values.** The slider runs from 0 to `calculateScale(0, forceUnicode)`, the largest scale the window allows. For a requested scale r (0 when
+Auto) and a framebuffer of W x H pixels, the applied scale starts at 1 and grows by 1 while the current scale s differs from r, s < W, s < H,
+`floor(W / (s + 1)) >= 320` and `floor(H / (s + 1)) >= 240`; when "force unicode font" is on and the result is odd, 1 is added. So the maximum is the
+largest s with `floor(W / s) >= 320` and `floor(H / s) >= 240`. Examples (unicode off): 1920 x 1080 gives 4; 1280 x 720 gives 3; 854 x 480 gives 2; 640 x 480
+gives 2; 320 x 240 gives 1; a requested 2 on 1920 x 1080 gives 2. The slider's maximum label is a plain integer; 0 shows `Auto`.
+
+### 7.5 Key codes, mouse buttons and key labels
+
+Key bindings store the key by name (`key.keyboard.w`, `key.mouse.left`, `key.keyboard.unknown` = unbound), and every default in 7.3 is a **keyboard
+code** of the table below (SDL scancodes: letter A = 4 up to Z = 29, digits 1 to 9 = 30 to 38, 0 = 39). Mouse buttons are `key.mouse.left` = 1,
+`key.mouse.middle` = 2, `key.mouse.right` = 3, `key.mouse.4` to `key.mouse.8` = 4 to 8. Read from `InputConstants$Type` (the table of
+`addKey` registrations: 246 keyboard entries, the unknown key 0 and 8 mouse buttons).
+
+**Key label rule** (`InputConstants$Type` keyboard formatter). The label of an unbound key is `Not Bound` (`key.keyboard.unknown`). Otherwise the
+client asks the windowing library for the name of the key under the current layout; when that name is exactly one code point it is shown
+**upper-cased** (so layout-dependent: W, Z, `[`, and so on); otherwise the label is the language text of the key's own name key (the table below). A
+client with no layout query uses the table: single-character names (letters, digits) are the upper-cased name (inferred); the punctuation names have their own
+language text in the table (`'`, `,`, `=`, `` ` ``, `[`, `]`, `;`, `-`, `.`, `/`, `\`). Mouse buttons show `Left Button`, `Middle Button`, `Right Button`;
+buttons 4 to 8 show `Button 4` and so on (`key.mouse` = `Button %1$s`; the mouse formatter itself was not traced to the end, inferred). On a platform
+variant the client remaps the Windows and Meta keys to `*.windows`, `*.command`, `*.meta` or `*.option` texts (the language file carries these extra
+names: Left/Right Windows, Command, Meta, Option, plus `key.keyboard.f25`, `key.keyboard.new`, `key.keyboard.save`); that remap is platform-specific and a
+CobolCraft client uses the plain `*.win` texts.
+
+| Code | Name | Label |
+|---|---|---|
+| 0 | `unknown` | Not Bound |
+| 4 | `a` | A (computed: upper-case key name) |
+| 5 | `b` | B (computed: upper-case key name) |
+| 6 | `c` | C (computed: upper-case key name) |
+| 7 | `d` | D (computed: upper-case key name) |
+| 8 | `e` | E (computed: upper-case key name) |
+| 9 | `f` | F (computed: upper-case key name) |
+| 10 | `g` | G (computed: upper-case key name) |
+| 11 | `h` | H (computed: upper-case key name) |
+| 12 | `i` | I (computed: upper-case key name) |
+| 13 | `j` | J (computed: upper-case key name) |
+| 14 | `k` | K (computed: upper-case key name) |
+| 15 | `l` | L (computed: upper-case key name) |
+| 16 | `m` | M (computed: upper-case key name) |
+| 17 | `n` | N (computed: upper-case key name) |
+| 18 | `o` | O (computed: upper-case key name) |
+| 19 | `p` | P (computed: upper-case key name) |
+| 20 | `q` | Q (computed: upper-case key name) |
+| 21 | `r` | R (computed: upper-case key name) |
+| 22 | `s` | S (computed: upper-case key name) |
+| 23 | `t` | T (computed: upper-case key name) |
+| 24 | `u` | U (computed: upper-case key name) |
+| 25 | `v` | V (computed: upper-case key name) |
+| 26 | `w` | W (computed: upper-case key name) |
+| 27 | `x` | X (computed: upper-case key name) |
+| 28 | `y` | Y (computed: upper-case key name) |
+| 29 | `z` | Z (computed: upper-case key name) |
+| 30 | `1` | 1 (computed: upper-case key name) |
+| 31 | `2` | 2 (computed: upper-case key name) |
+| 32 | `3` | 3 (computed: upper-case key name) |
+| 33 | `4` | 4 (computed: upper-case key name) |
+| 34 | `5` | 5 (computed: upper-case key name) |
+| 35 | `6` | 6 (computed: upper-case key name) |
+| 36 | `7` | 7 (computed: upper-case key name) |
+| 37 | `8` | 8 (computed: upper-case key name) |
+| 38 | `9` | 9 (computed: upper-case key name) |
+| 39 | `0` | 0 (computed: upper-case key name) |
+| 40 | `enter` | Enter |
+| 41 | `escape` | Escape |
+| 42 | `backspace` | Backspace |
+| 43 | `tab` | Tab |
+| 44 | `space` | Space |
+| 45 | `minus` | - |
+| 46 | `equal` | = |
+| 47 | `left.bracket` | [ |
+| 48 | `right.bracket` | ] |
+| 49 | `backslash` | \ |
+| 50 | `world.2` | World 2 |
+| 51 | `semicolon` | ; |
+| 52 | `apostrophe` | ' |
+| 53 | `grave.accent` | ` |
+| 54 | `comma` | , |
+| 55 | `period` | . |
+| 56 | `slash` | / |
+| 57 | `caps.lock` | Caps Lock |
+| 58 | `f1` | F1 |
+| 59 | `f2` | F2 |
+| 60 | `f3` | F3 |
+| 61 | `f4` | F4 |
+| 62 | `f5` | F5 |
+| 63 | `f6` | F6 |
+| 64 | `f7` | F7 |
+| 65 | `f8` | F8 |
+| 66 | `f9` | F9 |
+| 67 | `f10` | F10 |
+| 68 | `f11` | F11 |
+| 69 | `f12` | F12 |
+| 70 | `print.screen` | Print Screen |
+| 71 | `scroll.lock` | Scroll Lock |
+| 72 | `pause` | Pause |
+| 73 | `insert` | Insert |
+| 74 | `home` | Home |
+| 75 | `page.up` | Page Up |
+| 76 | `delete` | Delete |
+| 77 | `end` | End |
+| 78 | `page.down` | Page Down |
+| 79 | `right` | Right Arrow |
+| 80 | `left` | Left Arrow |
+| 81 | `down` | Down Arrow |
+| 82 | `up` | Up Arrow |
+| 83 | `num.lock` | Num Lock |
+| 84 | `keypad.divide` | Keypad / |
+| 85 | `keypad.multiply` | Keypad * |
+| 86 | `keypad.subtract` | Keypad - |
+| 87 | `keypad.add` | Keypad + |
+| 88 | `keypad.enter` | Keypad Enter |
+| 89 | `keypad.1` | Keypad 1 |
+| 90 | `keypad.2` | Keypad 2 |
+| 91 | `keypad.3` | Keypad 3 |
+| 92 | `keypad.4` | Keypad 4 |
+| 93 | `keypad.5` | Keypad 5 |
+| 94 | `keypad.6` | Keypad 6 |
+| 95 | `keypad.7` | Keypad 7 |
+| 96 | `keypad.8` | Keypad 8 |
+| 97 | `keypad.9` | Keypad 9 |
+| 98 | `keypad.0` | Keypad 0 |
+| 99 | `keypad.period` | Keypad . |
+| 100 | `world.1` | World 1 |
+| 101 | `application` | Application |
+| 102 | `power` | Power |
+| 103 | `keypad.equal` | Keypad = |
+| 104 | `f13` | F13 |
+| 105 | `f14` | F14 |
+| 106 | `f15` | F15 |
+| 107 | `f16` | F16 |
+| 108 | `f17` | F17 |
+| 109 | `f18` | F18 |
+| 110 | `f19` | F19 |
+| 111 | `f20` | F20 |
+| 112 | `f21` | F21 |
+| 113 | `f22` | F22 |
+| 114 | `f23` | F23 |
+| 115 | `f24` | F24 |
+| 116 | `execute` | Execute |
+| 117 | `help` | Help |
+| 118 | `menu` | Menu |
+| 119 | `select` | Select |
+| 120 | `stop` | Stop |
+| 121 | `again` | Again |
+| 122 | `undo` | Undo |
+| 123 | `cut` | Cut |
+| 124 | `copy` | Copy |
+| 125 | `paste` | Paste |
+| 126 | `find` | Find |
+| 127 | `mute` | Mute |
+| 128 | `volume.up` | Volume Up |
+| 129 | `volume.down` | Volume Down |
+| 133 | `keypad.comma` | Keypad , |
+| 134 | `keypad.equals.as400` | Keypad = (AS400) |
+| 135 | `international1` | International 1 |
+| 136 | `international2` | International 2 |
+| 137 | `international3` | International 3 |
+| 138 | `international4` | International 4 |
+| 139 | `international5` | International 5 |
+| 140 | `international6` | International 6 |
+| 141 | `international7` | International 7 |
+| 142 | `international8` | International 8 |
+| 143 | `international9` | International 9 |
+| 144 | `lang1` | Language 1 |
+| 145 | `lang2` | Language 2 |
+| 146 | `lang3` | Language 3 |
+| 147 | `lang4` | Language 4 |
+| 148 | `lang5` | Language 5 |
+| 149 | `lang6` | Language 6 |
+| 150 | `lang7` | Language 7 |
+| 151 | `lang8` | Language 8 |
+| 152 | `lang9` | Language 9 |
+| 153 | `alternate.erase` | Alternate Erase |
+| 154 | `sys.req` | SysRq |
+| 155 | `cancel` | Cancel |
+| 156 | `clear` | Clear |
+| 157 | `prior` | Prior |
+| 158 | `enter2` | Enter 2 |
+| 159 | `separator` | Separator |
+| 160 | `out` | Out |
+| 161 | `oper` | Oper |
+| 162 | `clear.again` | Clear Again |
+| 163 | `crsel` | CrSel |
+| 164 | `exsel` | ExSel |
+| 176 | `keypad.00` | Keypad 00 |
+| 177 | `keypad.000` | Keypad 000 |
+| 178 | `thousands.separator` | Thousands Separator |
+| 179 | `decimal.separator` | Decimal Separator |
+| 180 | `currency.unit` | Currency Unit |
+| 181 | `currency.subunit` | Currency Subunit |
+| 182 | `keypad.left.parenthesis` | Keypad ( |
+| 183 | `keypad.right.parenthesis` | Keypad ) |
+| 184 | `keypad.left.brace` | Keypad { |
+| 185 | `keypad.right.brace` | Keypad } |
+| 186 | `keypad.tab` | Keypad Tab |
+| 187 | `keypad.backspace` | Keypad Backspace |
+| 188 | `keypad.a` | Keypad A |
+| 189 | `keypad.b` | Keypad B |
+| 190 | `keypad.c` | Keypad C |
+| 191 | `keypad.d` | Keypad D |
+| 192 | `keypad.e` | Keypad E |
+| 193 | `keypad.f` | Keypad F |
+| 194 | `keypad.xor` | Keypad XOR |
+| 195 | `keypad.power` | Keypad ^ |
+| 196 | `keypad.percent` | Keypad % |
+| 197 | `keypad.less` | Keypad < |
+| 198 | `keypad.greater` | Keypad > |
+| 199 | `keypad.ampersand` | Keypad & |
+| 200 | `keypad.double.ampersand` | Keypad && |
+| 201 | `keypad.vertical.bar` | Keypad \| |
+| 202 | `keypad.double.vertical.bar` | Keypad \|\| |
+| 203 | `keypad.colon` | Keypad : |
+| 204 | `keypad.hash` | Keypad # |
+| 205 | `keypad.space` | Keypad Space |
+| 206 | `keypad.at` | Keypad @ |
+| 207 | `keypad.exclamation` | Keypad ! |
+| 208 | `keypad.memory.store` | Keypad MS |
+| 209 | `keypad.memory.recall` | Keypad MR |
+| 210 | `keypad.memory.clear` | Keypad MC |
+| 211 | `keypad.memory.add` | Keypad M+ |
+| 212 | `keypad.memory.subtract` | Keypad M- |
+| 213 | `keypad.memory.multiply` | Keypad M* |
+| 214 | `keypad.memory.divide` | Keypad M/ |
+| 215 | `keypad.plus.minus` | Keypad ± |
+| 216 | `keypad.clear` | Keypad Clear |
+| 217 | `keypad.clear.entry` | Keypad Clear Entry |
+| 218 | `keypad.binary` | Keypad Binary |
+| 219 | `keypad.octal` | Keypad Octal |
+| 220 | `keypad.decimal` | Keypad Decimal |
+| 221 | `keypad.hexadecimal` | Keypad Hexadecimal |
+| 224 | `left.control` | Left Control |
+| 225 | `left.shift` | Left Shift |
+| 226 | `left.alt` | Left Alt |
+| 227 | `left.win` | Left Win |
+| 228 | `right.control` | Right Control |
+| 229 | `right.shift` | Right Shift |
+| 230 | `right.alt` | Right Alt |
+| 231 | `right.win` | Right Win |
+| 257 | `mode` | Mode |
+| 258 | `sleep` | Sleep |
+| 259 | `wake` | Wake |
+| 260 | `channel.up` | Channel Up |
+| 261 | `channel.down` | Channel Down |
+| 262 | `media.play` | Media Play |
+| 263 | `media.pause` | Media Pause |
+| 264 | `media.record` | Record |
+| 265 | `media.fast.forward` | Fast Forward |
+| 266 | `media.rewind` | Rewind |
+| 267 | `media.next.track` | Next Track |
+| 268 | `media.previous.track` | Previous Track |
+| 269 | `media.stop` | Media Stop |
+| 270 | `media.eject` | Eject |
+| 271 | `media.play.pause` | Play/Pause |
+| 272 | `media.select` | Media Select |
+| 273 | `ac.new` | AC New |
+| 274 | `ac.open` | AC Open |
+| 275 | `ac.close` | AC Close |
+| 276 | `ac.exit` | AC Exit |
+| 277 | `ac.save` | AC Save |
+| 278 | `ac.print` | AC Print |
+| 279 | `ac.properties` | AC Properties |
+| 280 | `ac.search` | AC Search |
+| 281 | `ac.home` | AC Home |
+| 282 | `ac.back` | AC Back |
+| 283 | `ac.forward` | AC Forward |
+| 284 | `ac.stop` | AC Stop |
+| 285 | `ac.refresh` | AC Refresh |
+| 286 | `ac.bookmarks` | AC Favorites |
+| 287 | `soft.left` | Soft Left |
+| 288 | `soft.right` | Soft Right |
+| 289 | `call` | Call |
+| 290 | `end.call` | End Call |
+
+### 7.6 Option screens: titles, order of the widgets and behaviour
+
+Read from `OptionsScreen`, `OptionsSubScreen`, `OptionsList` and the sub-screen classes. Texts are in builtin-ui-art.md section 6.2 (keys named
+here). "Big" is one 310-pixel-wide widget in a row (`OptionsList$Entry.big`); a "small" widget is created by `OptionInstance.createButton` with its default width of **150** pixels, and two go in a row
+(`OptionsList$Entry.small`): the row's left x is the screen's half width minus 155 (the constant 155 in the row layout), and each following widget in the row is placed 160 pixels to the
+right of the one before (`X_OFFSET` = 160), so the pair is 150 + 10 + 150 = 310 pixels wide (read). A header entry is a text line in the list (font height 9). List rows are 25 pixels high (`OptionsList`
+constructor constant).
+
+**Common frame (`OptionsSubScreen`).** Title at the top (centred), a scrolling list in the middle, and a footer with one **Done** button 200 pixels wide
+(`gui.done`); Done (or Escape) closes the screen, which saves `options.txt` (`Options.save` on `removed()`).
+
+**Options screen (title "Options", `options.title`).** Header 61 pixels and footer 33 pixels. First a vertical layout (spacing 8) holding the **FOV** slider
+(the `fov` option's widget, `options.fov`); beside it in the real client sits the difficulty control or, outside a world, the online button
+(`options.online`, 150 x 20), both not applicable here. Then a two-column grid (cell padding 4 horizontal, 4 below, centred) of 150-wide buttons in this
+order, row by row: Skin Customization..., Music & Sounds...; Video Settings..., Controls...; Language..., Chat Settings...; Resource Packs...,
+Accessibility Settings...; Telemetry Data..., Credits & Attribution.... The last two have no function in CobolCraft (no telemetry; credits are not
+supplied); a client may omit them. The button texts are the keys `options.skinCustomisation`, `options.sounds`, `options.video`, `options.controls`,
+`options.language`, `options.chat`, `options.resourcepack`, `options.accessibility`; Resource Packs opens the screen of section 8 (title
+`resourcePack.title`). Footer: Done.
+
+**Video Settings (title `options.videoTitle`)**, in order:
+
+| Group | Widgets (option, caption key) |
+|---|---|
+| header `Display` | big: Fullscreen Resolution (`options.fullscreen.exclusive.mode`; slider -1..mode count - 1; only meaningful with Exclusive Fullscreen; tooltip `options.fullscreen.exclusive.mode.tooltip`); small, in order: Max Framerate, VSync, Reduce fps when (`inactivityFpsLimit`), GUI Scale, Fullscreen, Exclusive Fullscreen, Brightness (`gamma`), Graphics API (`preferredGraphicsBackend`); on macOS also Menu/Dock Visibility |
+| header `Quality & Performance` | big: Preset (`graphicsPreset`); small, in order: Biome Blend, Render Distance, Chunk Builder (`prioritizeChunkUpdates`), Simulation Distance, Smooth Lighting (`ao`), Clouds, Particles, Mipmap Levels, Entity Shadows, Entity Distance, Menu Background Blur, Cloud Distance, See-Through Leaves, Improved Transparency, Texture Filtering, Anisotropic Filtering, Weather Effect Radius |
+| header `Preferences` | small, in order: Autosave Indicator, Show Vignette, Attack Indicator, Chunk Fade Time |
+
+When a restart is needed (the graphics API choice changed) a second line `Some of your changes require a game restart to be applied.` is added under the title.
+Changing mipmap levels, texture filtering or the anisotropy level reloads the resources when the screen closes (the screen keeps the three values from when it opened;
+inferred from the saved `old*` fields). Presets and Custom: see the table below. View Bobbing is not on this screen; it is on the Accessibility screen.
+
+**Graphics presets (`GraphicsPreset.apply`).** Choosing `Fast`, `Fancy` or `Fabulous!` on the Preset button sets these 17 options (each is set only when its
+value differs, and the open Video screen refreshes the widget); choosing `Custom` sets nothing and leaves every option as it is. Order of application is the order of
+the rows. Round OPT read these values from `GraphicsPreset`:
+
+| Option (stored key) | Fast | Fancy | Fabulous! |
+|---|---|---|---|
+| `biomeBlendRadius` | 1 (shown 3x3) | 2 (5x5) | 2 (5x5) |
+| `renderDistance` | 8 | 16 | 32 |
+| `prioritizeChunkUpdates` | 0 none | 1 player-affected | 1 player-affected |
+| `simulationDistance` | 6 | 12 | 12 |
+| `ao` | false | true | true |
+| `renderClouds` | fast | fancy | fancy |
+| `particles` | 1 decreased | 0 all | 0 all |
+| `mipmapLevels` | 2 | 4 | 4 |
+| `entityShadows` | false | true | true |
+| `entityDistanceScaling` | 0.75 | 1.0 | 1.25 |
+| `menuBackgroundBlurriness` | 2 | 5 | 5 |
+| `cloudRange` | 32 | 64 | 128 |
+| `cutoutLeaves` | false | true | true |
+| `improvedTransparency` | false | false | **true** |
+| `weatherRadius` | 5 | 10 | 10 |
+| `maxAnisotropyBit` | 1 | 1 | 2 |
+| `textureFiltering` | 0 none | 1 RGSS | 2 anisotropic, or 1 RGSS when the graphics device reports known anisotropy problems (a device query; a client with none uses anisotropic) |
+
+The values are written through the option's own setter, so an out-of-range value is subject to that option's range (render distance 32 on a machine whose range ends at 16
+is not traced further; inferred: the range rejects or clamps it). Other options are untouched by every preset (frame rate, GUI scale, gamma and the rest).
+
+**At launch.** The saved preset is applied once at start-up (7.1): with `fast`, `fancy` or `fabulous` the file's values for the 17 options are replaced by this table (so a hand-edited
+`renderDistance` is lost unless `graphicsPreset` is `custom`); with `custom` nothing is replaced. Applying the preset at launch does not rewrite the file until the next save.
+
+**What makes the preset `Custom`.** Changing any one of the same 17 options by hand (the widget's change listener) sets `graphicsPreset` to `custom` and refreshes the Preset
+button; this is skipped while a preset is being applied. The 17 are exactly the rows of the table above. Changing any other option (frame rate, GUI scale, vignette and so on) does not touch the preset.
+
+**GUI-screen and device conditions.** The preset itself never opens a screen. The unsupported-graphics warning screen (title `options.graphics.warning.title`, message
+`options.graphics.warning.message` with the renderer, vendor and version lines, buttons `Continue Without Support` and `Take Me Back`) is opened by the Video screen when a
+click on the **Improved Transparency** widget happens while the device is on the client's graphics warn list: Continue turns Improved Transparency on and rebuilds the
+level, Take Me Back turns it off. The warn list is a data file of the graphics-device layer that CobolCraft has no equivalent of, so the screen never appears there
+(the list itself was not read).
+
+**Controls (title `controls.title`, "Controls")**: small, in order: Sneak (Hold/Toggle), Sprint (Hold/Toggle), Attack/Destroy (Hold/Toggle), Use Item/Place Block
+(Hold/Toggle), Auto-Jump, Sprint Window, Quit Shortcuts, Right Click Emulation (macOS only), Operator Items Tab; then two buttons: `Mouse Settings...`
+(`options.mouse_settings`) and `Key Binds...` (`controls.keybinds`).
+
+**Mouse Settings (title `options.mouse_settings.title`)**, in order: Sensitivity, Scroll Sensitivity, Discrete Scrolling, Invert Mouse X, Invert Mouse Y,
+Allow Cursor Changes.
+
+**Key Binds (title `controls.keybinds.title`)**. The list holds every key mapping (the array of 7.3's actions, debug keys included), sorted by category in
+the registration order movement, misc, multiplayer, gameplay, inventory, creative, spectator, debug (the labels are `key.category.minecraft.<name>`:
+Movement, Miscellaneous, Multiplayer, Gameplay, Inventory, Creative Mode, Spectator, Debug), then by the mapping's secondary order value (all constructors read pass no
+explicit value, so 0; inferred), then by the label text compared as strings in the active language. A category entry is shown as a header line; each key
+entry is a row 20 pixels high with the action label on the left (the widest label sets the button column), a **key button 75 pixels wide** showing the key
+label of 7.5 and a **Reset button 50 pixels wide** (`controls.reset`, "Reset") that is active only while the mapping differs from its default. Footer: Reset Keys
+(`controls.resetAll`, restores every default) and Done. Interaction: clicking a key button selects that mapping (its label becomes `> label <`, with the label white
+and underlined and the arrows yellow); the next key press binds that key; the next mouse button press binds that mouse button; Escape binds `Not Bound`
+(`key.keyboard.unknown`) and ends the selection. A key already used by another mapping (same key; a default binding on both sides does not count) is a
+conflict: the button label shows `[` white label ` ]` with the brackets yellow and the button's tooltip is `controls.keybinds.duplicateKeybinds` ("This key is also
+used for:\n%s") with the other actions' labels separated by `, `. The selection is cleared after a binding; a click made right after binding is ignored
+for a short time (the screen records the binding time; the interval was not traced). A line `key_<name>:<value>` whose value is not a known key name logs
+"Invalid keyMapping {} = {}, unbinding" and leaves the mapping unbound.
+
+**Music & Sounds (title `options.sounds.title`)**: big: Master Volume; small, in the order of the sound sources after the master (Music, Jukebox/Note Blocks,
+Weather, Blocks, Hostile Mobs, Friendly Mobs, Players, Ambient/Environment, Narrator/Voice, UI); big: Device; a small pair: Closed Captions
+(`showSubtitles`), Directional Audio; a small pair: Music Frequency, Music Toast. The source order is `master, music, record, weather, block, hostile, neutral,
+player, ambient, voice, ui` (ids 0 to 10), which is also the order of the `soundCategory_` lines in the file.
+
+**Accessibility Settings (title `options.accessibility.title`)**, in order: Narrator, Closed Captions, High Contrast, Menu Background Blur, Text Background
+Opacity, Text Background (Chat/Everywhere), Chat Text Opacity, Line Spacing, Chat Delay, Notification Time, View Bobbing, Distortion Effects, FOV Effects, Darkness
+Pulsing, Damage Tilt, Glint Speed, Glint Strength, Hide Sky Flashes, Monochrome Logo, Panorama Scroll Speed, Hide Splash Texts, Narrator Hotkey, Rotate with Minecarts,
+High Contrast Block Outlines; the footer adds a link button `Accessibility Guide` (`options.accessibility.link`). High Contrast is disabled (tooltip
+`options.accessibility.high_contrast.error.tooltip`) when the `high_contrast` pack is not available. Rotate with Minecarts is the experimental-world option (its tooltip
+says so; shown but only meaningful with the Minecart Improvements setting).
+
+**Chat Settings (title `options.chat.title`)**, in order: Chat (visibility), Colors, Web Links, Prompt on Links, Chat Text Opacity, Text Background Opacity, Chat Text Size,
+Line Spacing, Chat Delay, Width, Focused Height, Unfocused Height, Narrator, Command Suggestions, Hide Matched Names, Reduced Debug Info, Only Show Secure Chat,
+Save Unsent Chats.
+
+**Skin Customization (title `options.skinCustomisation.title`)**: one on/off button per model part in the order Cape, Jacket, Left Sleeve, Right Sleeve, Left Pant Leg,
+Right Pant Leg, Hat (label `Part: ON` / `Part: OFF`, the part's text from `options.modelPart.<part>`; each toggle updates the player model and the client information
+sent to the server, 14 and 05c), then the Main Hand option (`Main Hand: Left` / `Right`).
+
+**Language (title `options.language.title`)**: the header holds the title and, under it, a **search box** (200 x 15, hint `Search...`, key `gui.language.search`, drawn in the
+search-hint style, which is grey and italic (`ChatFormatting.GRAY` and `ITALIC`); it has the initial focus). The title and the box are stacked in a vertical layout with **4** pixels between them; typing filters the list to the languages whose name or region text (compared lower-case) contains the typed text. Header
+height is the title line (9) plus 12 plus 15 = 36 pixels. The footer is 53 pixels high and stacks, with 8 pixels between: the grey note `(Language translations may
+not be 100%% accurate)` (`options.languageAccuracyWarning`, shown with a single `%`), then a row of two buttons 8 pixels apart: **Font Settings...** (`options.font`) and **Done**. The
+list shows each available language by its name and region (taken from each language's metadata, not from the language file). Done with a changed selection stores the language
+code in `lang`, switches the language and reloads the resource packs (`Minecraft.reloadResourcePacks`), then closes; a missing or empty translation file shows
+`options.language.empty_or_missing_translation`. The jar's `assets/minecraft/lang` holds two files, `en_us.json` and `deprecated.json` (a list of removed keys); the list of
+languages and their display names is not in either (the jar ships English only; that other languages are downloaded separately is recalled, not verified).
+
+**Font Settings (title `options.font.title`, "Font Settings"; opened from the Language screen)**: small widgets in this order: Force Unicode Font (`forceUnicodeFont`, boolean),
+Japanese Glyph Variants (`japaneseGlyphVariants`, boolean; tooltip `options.japaneseGlyphVariants.tooltip`); footer Done. Both change which font providers are used and reload
+the font; they are options a client with the built-in font (08 section 10.10, builtin-ui-art.md section 4.12) may show disabled or omit.
+
+**Online Options (title `options.online.title`; opened by the button beside the FOV slider on the Options screen)**, in order: header `Friends List` (`options.online.friends.header`); a small pair: the
+on/off button Friends List (`options.friendsList`) and the on/off button Allow Requests (`options.allowFriendRequests`; tooltip `options.allowFriendRequests.tooltip`); a small pair: In-Game Notification
+(`inGameNotification`, tooltip `options.inGameNotification.tooltip`) and Visibility (`sharePresence`: Full, Limited, Hidden); a big button `Xbox Settings...` (`options.online.xboxSettings`); header `Servers`
+with Allow Server Listings (`allowServerListing`, big); header `Realms` with Realms News & Invites (`realmsNotifications`, big). Turning the Friends List on asks for confirmation with the dialog of
+`options.friendsList.confirm.*`. **Not built in CobolCraft** (no Realms, friends service or presence); the keys of 7.2 are tolerated in a file.
+
+**Options not on any CobolCraft screen.** The options of 7.2 marked "not applicable" (Realms, telemetry, presence sharing, friend requests) have texts in builtin-ui-art.md section 6.2 for completeness; difficulty (`options.difficulty*`) is a world option of the in-world screen and is not
+covered by this section.
+
+**Legacy `options.dat`.** The artifact contains no reader of an `options.dat` file (a search of the `Options` class strings and the constant pools of the option screens
+found only `options.txt`); the format of a legacy `options.dat` is therefore not described here (builtin-ui-art.md Open question 36).
+
+
 
 ---
 
@@ -1061,6 +1550,8 @@ exist is dropped ("Removed resource pack ... from options because it doesn't see
 incompatible pack is dropped unless its id is in `incompatibleResourcePacks`; a pack in `incompatibleResourcePacks` that
 is now compatible is removed from that list; the surviving ids are given to `PackRepository.setSelected`. Required
 packs are always added (`rebuildSelected`).
+
+**Built-in optional packs**: a pack bundled in the jar has the id of its file name without `.zip` (no `file/` prefix), the source "built-in" and, unless it is the base pack, selection config not required, default position TOP, not fixed; the base pack `vanilla` is required, BOTTOM, not fixed. A BOTTOM pack is inserted at the lowest index above any pack that is both fixed and BOTTOM. CobolCraft's optional Faithful skin (id `cobolcraft_faithful_skin`, level 2, off by default, listed only for a cobolcraft-type world) is specified in docs/design/faithful-pack-mapping.md §9.7. The jar bundles no optional pack instance (the ids `programmer_art` and `high_contrast` are only constants), so the TOP default is read from code alone; the skin's BOTTOM is a deliberate deviation.
 
 ---
 

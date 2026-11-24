@@ -1,0 +1,1 @@
+{"type": "minecraft:huge_fungus", "valid_base_block": "minecraft:warped_nylium", "stem_state": "minecraft:warped_stem", "hat_state": "minecraft:warped_wart_block", "decor_state": "minecraft:shroomlight", "replaceable_blocks": {"type": "minecraft:matching_blocks", "blocks": ["minecraft:oak_sapling", "minecraft:short_grass"]}}

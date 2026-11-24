@@ -1,0 +1,8 @@
+## Lane 002-lane-decals (T12500+)
+
+Operator report on the release build: (1) pink petals, glow lichen and the other flat decals flicker where they lie on a block; (2) leaf litter and pink petals must stack in one block, one segment per use.
+
+- [x] T12500 [US-client] Write `client/tests/test_decal_faces.cob` (red first): ELEMENT-BAKE of a flat element with a face on both sides (glow lichen north/south at z 0.1, petal pad up/down at y 2.99, a rotated stem pair) puts the two quads 0.004 apart, each toward its own side; a single-face flat element and a full cube are not moved
+- [x] T12501 [US-client] Implement the decal separation in ELEMENT-BAKE (`client/src/models.cob`): cause is that the two quads of one flat element lie in one plane and the solid pipeline passes equal depth, so the quad looking into the supporting block (light 0) and the one looking into the air fight for the pixel. 08 and 12 name no offset (12 gives only the crumbling overlay a depth bias); chosen: a geometric shift of 0.002 block along each quad's normal, before the element rotation, rather than a depth bias in the shared opaque pipeline
+- [x] T12502 [US-core] Write `core/tests/acc_segment_stack.cob` (red first, real standard data): five uses of pink petals on one block give 1, 2, 3, 4 and then nothing; from side faces; facing from the placer; wildflowers and leaf litter; sneaking and another item still place beside the clicked block
+- [x] T12503 [US-core] Implement `core/src/segment-place.cob` (SEG-STACK, SEG-FACING, SEG-AMOUNT-NAME) called from BLOCK-PLACE (29b-4 section 10.4, 29b-3 section 5.8). Not done: the other canBeReplaced rules, stacking at the 5th use clicked on a side face still places a new block beside (the document's canBeReplaced is false at 4)

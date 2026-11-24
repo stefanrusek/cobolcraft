@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:dual_noise",
+  "noise": {
+    "base_amplitude": 0.955388882960065,
+    "base_octave": 0
+  },
+  "scale": 1.0,
+  "seed": 1,
+  "slow_noise": {
+    "base_amplitude": 0.955388882960065,
+    "base_octave": 0
+  },
+  "slow_scale": 1.0,
+  "states": [
+    "minecraft:poppy"
+  ],
+  "variety": [
+    3,
+    1
+  ]
+}

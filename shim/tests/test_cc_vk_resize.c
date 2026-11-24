@@ -1,6 +1,7 @@
 /* Implementation test of shim/src/cc_vk.c and shim/src/cc_win.c: swapchain recreation after the
  * window is resized, a frame skipped while the window is minimised, and meshes and textures replaced
- * while a frame is being recorded (their old buffers stay valid until the frame has completed). */
+ * while a frame is being recorded (their old buffers stay valid until the frame has completed, with two frames in flight). */
+#include <stdlib.h>
 #include <string.h>
 
 #include "cc_internal.h"
@@ -9,19 +10,22 @@
 
 #define S cc_vk_state
 
-static const float TRIANGLE[3 * 7] = {
-    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1,  0.5f, -0.5f, 0.5f, 1, 0, 1, 1,  0.0f, 0.5f, 0.5f, 0.5f, 1, 1, 1,
+static const float TRIANGLE[3 * 11] = {
+    -0.5f, -0.5f, 0.5f, 0, 0, 1, 1, 0, 1, 1, 1,  0.5f, -0.5f, 0.5f, 1, 0, 1, 1, 0, 1, 1, 1,  0.0f, 0.5f, 0.5f, 0.5f, 1, 1, 1, 0, 1, 1, 1,
 };
 static const float IDENTITY[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 static const float CLEAR[4] = {0.2f, 0.3f, 0.4f, 1};
 
 int main(void) {
+    setenv("CC_VK_INFLIGHT", "2", 1);
+    unsetenv("CC_VK_PRESENT");
     cc_win_open(320, 240, "test_cc_vk_resize", 0);
     cc_vk_init();
     uint8_t rgba[4] = {255, 255, 255, 255};
     cc_vk_texture(CC_TEX_UI, 1, 1, rgba);
     cc_vk_mesh(7, TRIANGLE, 3);
 
+    tl_int("test cc_vk present mode is FIFO without CC_VK_PRESENT", VK_PRESENT_MODE_FIFO_KHR, S.present_mode);
     int32_t win_w, win_h, fb_w, fb_h;
     cc_win_size(&win_w, &win_h, &fb_w, &fb_h);
     tl_int("test cc_vk swapchain extent is the framebuffer size", 1,
@@ -46,7 +50,14 @@ int main(void) {
     cc_vk_draw(7, CC_PIPE_UI, CC_TEX_UI, IDENTITY);
     cc_vk_draw(8, CC_PIPE_UI, CC_TEX_UI, IDENTITY); /* empty slot: nothing is drawn */
     cc_vk_frame_end();
+    /* Two frames are in flight: the frame that could draw with them has completed when the frame after the next one begins (it waits
+     * for the fence of the slot it reuses). */
+    cc_vk_frame_begin(CLEAR);
+    tl_int("test cc_vk replaced resources are kept while the frame that could use them may still be running", 2, (long long)S.garbage_count);
+    cc_vk_frame_end();
+    cc_vk_frame_begin(CLEAR);
     tl_int("test cc_vk replaced resources are destroyed once the frame has completed", 0, (long long)S.garbage_count);
+    cc_vk_frame_end();
 
     /* A swapchain reported out of date by presentation is recreated at the next frame. */
     S.stale = 1;

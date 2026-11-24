@@ -1,0 +1,18 @@
+# Fixture: Spawn Entity, a cow (standard type id)
+# Phase: play. Direction: clientbound (S->C). Packet id 0x01 (1).
+# Doc refs: 05a 0x01; 00 sections 4.4 (Angle), 4.6 (LpVec3); 46 section 11 (entity type ids)
+# Stated inputs:
+#   entity id 300; UUID 00000000-0000-0000-0000-0000000000b1; type 30 (cow); position (-12.5, 64.0, 40.25); movement zero (one byte 00); yaw 90, pitch 0; data 0
+
+01                                               # packet id: VarInt 0x01
+ac 02                                            # Entity id: VarInt 300
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 b1  # Entity UUID
+1e                                               # Entity type: VarInt 30
+c0 29 00 00 00 00 00 00                          # X: Double -12.5
+40 50 00 00 00 00 00 00                          # Y: Double 64.0
+40 44 20 00 00 00 00 00                          # Z: Double 40.25
+00                                               # Movement: LpVec3 (0, 0, 0)
+00                                               # Pitch: Angle 0.0 degrees
+40                                               # Yaw: Angle 90.0 degrees
+40                                               # Head yaw: Angle 90.0 degrees
+00                                               # Data: VarInt 0

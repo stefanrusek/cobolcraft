@@ -1,0 +1,197 @@
+*> Entity NBT, part 1 rest (docs/protocol/45-entity-nbt-1 section 5; lane 002-lane-p49m, T31000): CustomName (any text component form), Tags (a set of
+*> at most 1024 strings, written when not empty), data (the custom data compound, written when not empty) and Team (a team the core does not have: dropped)
+*> are read from a saved mob and written back after UUID (CustomName) and after HasVisualFire (Tags, data) in the table order.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTITY-NBT-1B.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY DIMENSIONS.
+ COPY ETIDS.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-NAME                PIC X(16) VALUE "Alice".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-ALICE               BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG VALUE 1.
+ 01 WS-CZ                  BINARY-LONG VALUE 2.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-MOB                 BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-ROOT                BINARY-LONG.
+ 01 WS-FRAMING             BINARY-LONG VALUE 1.
+ 01 WS-ROOT-TYPE           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-PATH                PIC X(128).
+ 01 WS-TEXT                PIC X(8192).
+ 01 WS-HEAD                PIC X(8192).
+ 01 WS-TAIL                PIC X(8192).
+ 01 WS-SNBT                PIC X(1024).
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-NAME-Z              PIC X(32).
+ 01 WS-NAME-LEN            BINARY-LONG.
+ 01 WS-ID                  PIC X(32).
+ 01 WS-ID-LEN              BINARY-LONG.
+ 01 WS-ELEMENT             PIC X(8).
+ 01 WS-ELEMENT-LEN         BINARY-LONG VALUE 1.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-MINUS-ONE           BINARY-LONG VALUE -1.
+ 01 WS-T-STRING            BINARY-LONG VALUE 8.
+ 01 WS-T-DOUBLE            BINARY-LONG VALUE 6.
+ 01 WS-T-COMPOUND          BINARY-LONG VALUE 10.
+ 01 WS-TAG-TOTAL           BINARY-LONG.
+ 01 WS-TEXT-SKIP           PIC X(8192).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-POS-X               FLOAT-LONG VALUE 20.5.
+ 01 WS-POS-Y               FLOAT-LONG VALUE 55.
+ 01 WS-POS-Z               FLOAT-LONG VALUE 37.25.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-HOSTILE-MOBS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-ALICE
+     MOVE DIM-MAIN TO WS-DIM
+     MOVE ET-SODGRAZER TO WS-TYPE
+*>   A mob saved with a CustomName compound, three Tags (one twice), custom data and a Team.
+     MOVE SPACES TO WS-SNBT
+     STRING '{id:"cobolcraft:sodgrazer",Pos:[20.5d,55.0d,37.25d],CustomName:{text:"Bob"},Tags:["a","b","a"],'
+         'data:{x:1,y:"z"},Team:"red"}' DELIMITED BY SIZE INTO WS-SNBT
+     CALL "ENT-SNBT" USING WS-SNBT PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-NBT-READ" USING WS-DIM PB-BUFFER WS-OUTCOME
+     PERFORM SAVE-AND-RENDER
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US15 45-1§5 CustomName follows UUID, Tags and data follow HasVisualFire (Tags a set, Team gone)" TO TL-CASE
+     MOVE "CustomName:{text:Bob},Tags:[a,b],data:{x:1,y:z},Health:" TO TL-EXPECTED
+     MOVE WS-TAIL(1:FUNCTION LENGTH(FUNCTION TRIM(TL-EXPECTED))) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-HITS
+     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "Team"
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US15 45-1§5 Team names no scoreboard team of the core: it is dropped and never saved" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HITS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The name as a String, an empty Tags list, an empty data compound: the name only is written.
+     MOVE SPACES TO WS-SNBT
+     STRING '{id:"cobolcraft:sodgrazer",Pos:[20.5d,55.0d,37.25d],CustomName:"Alice",Tags:[],data:{}}' DELIMITED BY SIZE INTO WS-SNBT
+     PERFORM RELOAD
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US15 45-1§5 a String CustomName round trips; an empty Tags list and an empty data are not written" TO TL-CASE
+     MOVE "CustomName:Alice,Health:" TO TL-EXPECTED
+     MOVE WS-TAIL(1:FUNCTION LENGTH(FUNCTION TRIM(TL-EXPECTED))) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A CustomName that is no text component (an Int) is a decode error: no name.
+     MOVE SPACES TO WS-SNBT
+     STRING '{id:"cobolcraft:sodgrazer",Pos:[20.5d,55.0d,37.25d],CustomName:5}' DELIMITED BY SIZE INTO WS-SNBT
+     PERFORM RELOAD
+     MOVE 0 TO WS-HITS
+     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "CustomName:"
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US15 45-1§5 a CustomName that is not a text component leaves the name unset" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HITS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Tags: 1024 distinct-or-not strings are accepted as a set; 1025 fail the size limit and leave the set empty.
+     MOVE 1024 TO WS-TAG-TOTAL
+     PERFORM BUILD-TAGGED
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-REMOVE" USING WS-MOB
+     CALL "ENTITY-NBT-READ" USING WS-DIM PB-BUFFER WS-OUTCOME
+     PERFORM SAVE-AND-RENDER
+     MOVE 0 TO WS-HITS
+     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "Tags:[t]"
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance US15 45-1§5 1024 equal tags collapse to the one tag of the set" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-HITS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1025 TO WS-TAG-TOTAL
+     PERFORM BUILD-TAGGED
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-REMOVE" USING WS-MOB
+     CALL "ENTITY-NBT-READ" USING WS-DIM PB-BUFFER WS-OUTCOME
+     PERFORM SAVE-AND-RENDER
+     MOVE 0 TO WS-HITS
+     INSPECT WS-TEXT TALLYING WS-HITS FOR ALL "Tags:"
+     MOVE "acceptance US15 45-1§5 a Tags list of 1025 fails the size limit: the set stays empty" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-HITS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+*> Loads WS-SNBT in place of the mob that is there and writes it again.
+ RELOAD.
+     PERFORM FIND-MOB
+     IF WS-MOB > 0
+         CALL "ENTITY-REMOVE" USING WS-MOB
+     END-IF
+     CALL "ENT-SNBT" USING WS-SNBT PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-NBT-READ" USING WS-DIM PB-BUFFER WS-OUTCOME
+     PERFORM SAVE-AND-RENDER.
+ FIND-MOB.
+     MOVE 0 TO WS-MOB
+     PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
+         IF EN-USED(WS-ROW) = 1 AND EN-PLAYER(WS-ROW) = 0 AND EN-TYPE(WS-ROW) = WS-TYPE
+             MOVE WS-ROW TO WS-MOB
+         END-IF
+     END-PERFORM.
+*> The entities of chunk (1, 2) written and rendered: WS-TEXT is the Entities list, WS-TAIL the text after the UUID's closing bracket.
+ SAVE-AND-RENDER.
+     PERFORM FIND-MOB
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "ENTITY-NBT-WRITE" USING WS-DIM WS-CX WS-CZ PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-ROOT-TYPE
+     MOVE PB-POS TO WS-ROOT
+     MOVE "Entities" TO WS-PATH
+     CALL "TEST-NBT-GET" USING PB-BUFFER WS-ROOT WS-PATH WS-TEXT
+     MOVE SPACES TO WS-HEAD WS-TAIL
+     MOVE 1 TO WS-PTR
+     UNSTRING WS-TEXT DELIMITED BY "UUID:I[" INTO WS-TEXT-SKIP WITH POINTER WS-PTR
+     MOVE WS-TEXT(WS-PTR:) TO WS-HEAD
+     MOVE 1 TO WS-PTR
+     UNSTRING WS-HEAD DELIMITED BY "]," INTO WS-TEXT-SKIP WITH POINTER WS-PTR
+     MOVE SPACES TO WS-TAIL
+     MOVE WS-HEAD(WS-PTR:) TO WS-TAIL.
+*> A mob with a Tags list of WS-TAG-TOTAL strings "t", in a buffer for ENTITY-NBT-READ.
+ BUILD-TAGGED.
+     PERFORM FIND-MOB
+     IF WS-MOB > 0
+         CALL "ENTITY-REMOVE" USING WS-MOB
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE SPACES TO WS-NAME-Z
+     MOVE 0 TO WS-NAME-LEN
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NAME-Z WS-NAME-LEN
+     MOVE "Entities" TO WS-NAME-Z
+     MOVE 8 TO WS-NAME-LEN
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NAME-Z WS-NAME-LEN WS-T-COMPOUND WS-ONE
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NAME-Z WS-MINUS-ONE
+     MOVE "id" TO WS-NAME-Z MOVE 2 TO WS-NAME-LEN
+     MOVE "cobolcraft:sodgrazer" TO WS-ID
+     MOVE 20 TO WS-ID-LEN
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NAME-Z WS-NAME-LEN WS-ID WS-ID-LEN
+     MOVE "Pos" TO WS-NAME-Z MOVE 3 TO WS-NAME-LEN
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NAME-Z WS-NAME-LEN WS-T-DOUBLE WS-THREE
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WS-NAME-Z WS-MINUS-ONE WS-POS-X
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WS-NAME-Z WS-MINUS-ONE WS-POS-Y
+     CALL "NBT-WRITE-DOUBLE" USING PB-BUFFER WS-NAME-Z WS-MINUS-ONE WS-POS-Z
+     MOVE "Tags" TO WS-NAME-Z MOVE 4 TO WS-NAME-LEN
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NAME-Z WS-NAME-LEN WS-T-STRING WS-TAG-TOTAL
+     MOVE "t" TO WS-ELEMENT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-TAG-TOTAL
+         CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NAME-Z WS-MINUS-ONE WS-ELEMENT WS-ELEMENT-LEN
+     END-PERFORM
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     CALL "NBT-WRITE-LIST-END" USING PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER.
+ END PROGRAM TEST-ENTITY-NBT-1B.
+ COPY ENTSNBT.
+ COPY CORETEST.

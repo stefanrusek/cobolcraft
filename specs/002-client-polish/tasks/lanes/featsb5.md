@@ -1,0 +1,5 @@
+## Lane 002-lane-featsb5 (T9300+)
+
+- [x] T9300 [US12-core] fossil feature (35-6 section 10.2): core/src/feat-fossil.cob, core/tests/test_feat_35_6_10.cob, fixtures core/tests/fixtures/gen_fossil.py (lane featsb5; base check: debug and release hashes of test_gen_hashes identical on the featsb4 tip (0 of 144 areas and 180 structures differ); structure hashes igloo and ruined_portal_mountain differ from the featsb4 recording taken before the Nether work, area hashes equal; release 784 ms per area chunk average (debug 1422 ms), structures 812 ms average)
+- [x] T9301 [US12-core] End and void data-driven feature types (35-7 sections 8, 9, 10): core/src/feat-end.cob (types 15, 6, 12, 13, 11, 55), core/tests/test_feat_35_7_end.cob, fixtures core/tests/fixtures/endfeat (lane featsb5; not gated as families: the End driver END-GEN-FEATURES runs these features from its own table)
+- [x] T9302 [US12-core] root_system feature (35-4 section 10): core/src/feat-root.cob, core/tests/test_feat_35_4_10.cob, fixtures core/tests/fixtures/gen_rootsys.py (lane featsb5)

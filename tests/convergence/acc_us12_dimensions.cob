@@ -1,11 +1,13 @@
 *> Convergence acceptance test of US12-1 to US12-4 and SC-012 (spec.md US12; standin-content §15
 *> extra dimensions: the Subroutine, its generator, travel by goto_pad; FR-009 extra-dimensions): two
 *> survival Players in one single-player world (the host's in-process core, the second client over a
-*> further memory connection). The host's items, health and food are set with operator commands
-*> (empty, supply, vitality, ration); everything else goes through the clients' controls: a goto_pad
+*> further memory connection). The host's items are set with the standard operator commands (clear, give;
+*> tp moves Bobby, execute in names the dimension); everything else goes through the clients' controls: a goto_pad
 *> placed and used with the right button, blocks placed, the pause menu's Disconnect and Quit World.
 *> Outcomes are read from the clients: dimension name, position, sky, world replica, inventory
 *> replica, health, food, game mode.
+*> The standard world's three dimensions (minecraft:overworld, the_nether, the_end), the portals between them and
+*> the standard day timeline (T3599) are in acc_f2us12_dimensions.cob.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US12-DIMENSIONS.
  DATA DIVISION.
@@ -61,27 +63,21 @@
      CALL "CV-UNTIL-PLAY" USING CONVH WS-ALICE WS-JOINED
      CALL "CV-ATTACH" USING CONVH WS-BOBBY
      CALL "CV-UNTIL-PLAY" USING CONVH WS-BOBBY WS-JOINED
-     MOVE "/empty Alice" TO WS-LINE
+     MOVE "/clear Alice" TO WS-LINE
      MOVE 12 TO WS-LINE-LENGTH
      PERFORM ALICE-SAYS
-     MOVE "/supply Alice goto_pad 2" TO WS-LINE
-     MOVE 24 TO WS-LINE-LENGTH
+     MOVE "/give Alice cobolcraft:goto_pad 2" TO WS-LINE
+     MOVE 33 TO WS-LINE-LENGTH
      PERFORM ALICE-SAYS
-     MOVE "/supply Alice greystone 10" TO WS-LINE
-     MOVE 26 TO WS-LINE-LENGTH
+     MOVE "/give Alice cobolcraft:greystone 10" TO WS-LINE
+     MOVE 35 TO WS-LINE-LENGTH
      PERFORM ALICE-SAYS
-     MOVE "/supply Alice lucite 5" TO WS-LINE
-     MOVE 22 TO WS-LINE-LENGTH
-     PERFORM ALICE-SAYS
-     MOVE "/vitality Alice 20" TO WS-LINE
-     MOVE 18 TO WS-LINE-LENGTH
-     PERFORM ALICE-SAYS
-     MOVE "/ration Alice 15" TO WS-LINE
-     MOVE 16 TO WS-LINE-LENGTH
+     MOVE "/give Alice cobolcraft:lucite 5" TO WS-LINE
+     MOVE 31 TO WS-LINE-LENGTH
      PERFORM ALICE-SAYS
 *>   Bobby steps out of Alice's view (both start on the spawn point, inside each other's box).
-     MOVE "/relocate Bobby at 2 56 12" TO WS-LINE
-     MOVE 26 TO WS-LINE-LENGTH
+     MOVE "/tp Bobby 2 56 12" TO WS-LINE
+     MOVE 17 TO WS-LINE-LENGTH
      PERFORM ALICE-SAYS
      MOVE 20 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
@@ -155,8 +151,8 @@
 *>   Bobby is moved beside the main pad (the dimension named: Alice, who sends the command, is in
 *>   the Subroutine). Alice goes back to main with her arrival pad; then Bobby, aiming at the main
 *>   pad's west face (Alice now stands on it), travels to the Subroutine.
-     MOVE "/relocate Bobby at 5 56 8 main" TO WS-LINE
-     MOVE 30 TO WS-LINE-LENGTH
+     MOVE "/execute in cobolcraft:main run tp Bobby 5 56 8" TO WS-LINE
+     MOVE 47 TO WS-LINE-LENGTH
      PERFORM ALICE-SAYS
      MOVE 20 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N

@@ -5,7 +5,7 @@
 | Covers | Round RS26 part 4 (partial coverage; the uncovered items are listed in Open questions 2, 10 and 11): the open questions of 19 (7 to 23, and the sound table of 3, with 1, 2 and 30 to 32 answered or declared not determinable) for the land animals, plus 18 Open questions 2, 10 and 19 as far as they concern the Brain behaviours of goat, frog, armadillo, sniffer and camel (`LongJumpToRandomPos`, `LongJumpMidJump`, `LongJumpToPreferredBlock`, `TryFindLand`, `TryFindLandNearLiquid`, `TryFindLiquid`, `Croak`, `ShootTongue`, the armadillo sensor). Golems and the villager are not covered (see 44 parts 3 and others). Data rows (tags, loot tables, sound variant registries, structure NBT) are not tabulated: the schema and the semantics are given and a tag's members are quoted only where they define the semantics. |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact recorded in `README.md`) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`) and of the data files under `data/minecraft/` of the same jar, with no execution. Classes read: `world.entity.animal.**`, `world.entity.ai.behavior.*`, `ai.goal.*`, `ai.sensing.MobSensor`, `SensorType`, `TamableAnimal`, `ShoulderRidingEntity`, `ServerPlayer`, `SnifferEggBlock`, `TurtleEggBlock`, `BlockPos`, `LevelReader`, `Equippable`, `SoundEvents`. |
-| Evidence rule | Every value is read in this round. "(inferred)" marks a deduction from the shape of read code; "(recalled, not verified)" marks nothing in this document; everything not read is in Open questions. Class and method names are citations only. |
+| Evidence rule | Every value is read from the artifact. "(inferred)" marks a deduction from the shape of read code; "(recalled, not verified)" marks nothing in this document; everything not read is in Open questions. Class and method names are citations only. |
 | Dependencies | 18 framework (goals, Brain, `MoveToBlockGoal`, `HurtByTargetGoal`, taming, breeding), 19 (per-mob parameters), 20 (camel husk jockey spawn, 4.3), 46 (registry ids), 04 (tags) |
 
 Notation: "tick" is a game tick (1/20 s). "U(a, b)" is a uniform integer from a to b inclusive. `rand` is the mob's random source. Distances in blocks. "Manhattan scan" is `findBlocksInBoxByManhattanDistance(centre, r)`: the positions whose Manhattan distance from the centre is at most r (a diamond clipped to a cube of half-size r in all three axes), visited in increasing Manhattan distance (the order inside one distance was not expanded, Open question 1).
@@ -105,7 +105,7 @@ Constants: time-out 100, catch animation 6 ticks, tongue animation 10 ticks, unr
 | Strength at spawn | `nextFloat < 0.04` selects an upper bound of 5, otherwise 3; strength = `1 + nextInt(bound)`, so 1 to 3 (96 percent) or 1 to 5 (4 percent). Stored clamped to 1..5. The variant is random from the variant list unless the group data fixes it, in which case the group's variant is used |
 | Offspring | `strength = nextInt(max(parentA, parentB)) + 1`, plus 1 with probability 0.03 (clamped to 5 by the setter); the variant is one of the two parents' with equal chance; other genes by the equine foal rule (19 section 3.2) |
 | Inventory | `getInventoryColumns() = hasChest ? strength : 0`; the slot count is `3 x columns` (`AbstractMountInventoryMenu.getInventorySize`), so a chested llama has 3 to 15 chest slots; the donkey and mule have 5 columns, 15 slots. (The saddle and body slots are equipment slots, not in this count.) |
-| Carpets | `canUseSlot` is true for every slot. The decor goes to the BODY equipment slot. The carpet items carry an equippable component: slot BODY, equip sound `entity.llama.swag`, shearing sound `entity.llama.carpet_unequip`, asset by dye colour, `allowed entities` = llama and trader llama, can be sheared. The generic horse interaction (empty-handed or not) equips an item if it is equippable in the BODY slot for this entity type and no body armour is worn (the item is consumed, kept as drop-when-killed) |
+| Carpets | `canUseSlot` is true for every slot. The decor goes to the BODY equipment slot. The carpet items carry an equippable component: slot BODY, equip sound `entity.llama.swag`, shearing sound `item.llama_carpet.unequip`, asset by dye colour, `allowed entities` = llama and trader llama, can be sheared. The generic horse interaction (empty-handed or not) equips an item if it is equippable in the BODY slot for this entity type and no body armour is worn (the item is consumed, kept as drop-when-killed) |
 | Feeding / taming | as 19 section 3.5; `getMaxTemper` is 30; `canPerformRearing` false; `canEatGrass` false; immobile while eating or dying |
 | Leash | follow-leash speed 2.0; a baby that is in a caravan does not follow its mother (the mother-following rule is skipped when `inCaravan`) |
 | Spit | `rangedAttackUncertainty` 10.0 (the level argument is unused); see 19 section 3.7 for the vector; the attacker sets `didSpit` true |
@@ -151,7 +151,7 @@ Shared constants: `canEat(item)` = the item has the food and consumable componen
 - **`SeekShelterGoal`** (a flee-sun goal): usable when not sleeping, with no target; during thunder with sky access it uses the sun-flee position search at once; otherwise every `reducedTickDelay(100)` ticks (counter), if it is bright outside, it can see the sky and the position is not in a village (`isVillage`), it searches for a shelter position. `start` clears the states.
 - **`PerchAndSearchGoal`** (MOVE, LOOK): usable with probability 0.02 per check when the fox was hurt by a mob, or otherwise: not sleeping, no target, navigation done, nothing alertable, not pouncing, not crouching. `start`: looks remaining `2 + nextInt(3)` (inferred from the `iadd`), sitting, stop navigation. Each look lasts `adjustedTickDelay(80 + nextInt(20))` ticks toward the direction `(cos, sin)` of a random angle (2 pi x nextDouble) and then rerolls.
 - **`FoxEatBerriesGoal`** (a `MoveToBlockGoal` variant, accepted distance 2.0, path recalculated every 100 ticks): valid targets are a sweet berry bush with age >= 2 or a cave vine with glow berries. At the target it waits 40 ticks, then (game rule mob griefing on) picks: sweet berries set the bush age to 1 (not one step lower); the berry count is `1 + nextInt(2)`, plus 1 more when the bush age was 3; when the main hand is empty one berry goes into the hand (count minus 1) and the remainder is popped as an item at the bush position; the sound is the sweet berry bush pick sound (volume 1, pitch 1); the block change then emits the block-change game event. Glow berries use the vine's pick routine. While at the target a 5 percent chance per tick plays the sniff sound.
-- **`FoxStrollThroughVillageGoal(speed, interval)`** (19 Open question 11; read): it extends the generic `StrollThroughVillageGoal`, whose own rules were not read here (Open question 11). The fox additions: `start` first clears the fox's states (sitting, crouching, interested, and so on, as `clearStates`), then runs the base start; `canUse` and `canContinueToUse` both also require `canFoxMove`: the fox is not sleeping, not sitting, not defending and has no attack target.
+- **`FoxStrollThroughVillageGoal(speed, interval)`** (19 Open question 11; read): it extends the generic `StrollThroughVillageGoal`, whose rules are in 44-x1 section 8.8. The fox additions: `start` first clears the fox's states (sitting, crouching, interested, and so on, as `clearStates`), then runs the base start; `canUse` and `canContinueToUse` both also require `canFoxMove`: the fox is not sleeping, not sitting, not defending and has no attack target.
 - **Faceplant, float, panic, breed, look and follow-parent** goals: the parameters are in 19 section 7; `FoxMoveControl` and `FoxLookControl` were not expanded.
 - Tick animations: interested angle approaches 1 or 0 by factor 0.4 per tick; the crouch amount rises by 0.2 per tick to 5.0 while crouching and resets to 0 otherwise. A sleeping fox that is faceplanted spawns block-break particles (event 2001) with probability 0.2 per tick.
 
@@ -167,7 +167,7 @@ Shared constants: `canEat(item)` = the item has the food and consumable componen
 
 | Goal | Parameters and rules (read) |
 |---|---|
-| `CatLieOnBlockGoal(cat, speed, range)` | a `MoveToBlockGoal` with the registered speed and range and a vertical search of 6 from -2 (`verticalSearchStart -2`); flags JUMP and MOVE. `canUse`: the cat is tame, not ordered to sit and not already lying, then the base search. `nextStartTick` is the constant 40 (not the base random 200 + 0..199). `start` runs the base start and then clears the sitting pose; `tick` runs the base tick, clears the sitting pose, then: when the target is not reached the lying flag is cleared; when it is reached the lying flag is set if not already set (read in full in this round); `stop` runs the base stop and clears lying. The 40 is a bytecode constant returned by the `nextStartTick` override. Valid target: the block above is empty and the block is in tag `cats_can_lie_on` |
+| `CatLieOnBlockGoal(cat, speed, range)` | a `MoveToBlockGoal` with the registered speed and range and a vertical search of 6 from -2 (`verticalSearchStart -2`); flags JUMP and MOVE. `canUse`: the cat is tame, not ordered to sit and not already lying, then the base search. `nextStartTick` is the constant 40 (not the base random 200 + 0..199). `start` runs the base start and then clears the sitting pose; `tick` runs the base tick, clears the sitting pose, then: when the target is not reached the lying flag is cleared; when it is reached the lying flag is set if not already set (read in full); `stop` runs the base stop and clears lying. The 40 is a bytecode constant returned by the `nextStartTick` override. Valid target: the block above is empty and the block is in tag `cats_can_lie_on` |
 | `CatSitOnBlockGoal(cat, speed, range)` | `canUse`: tame, not ordered to sit, then the base search (base start delay rule). `start` sets the sitting pose, `tick` sets it when reached, `stop` clears it. Valid target: the block above is empty, the block is in tag `cats_can_sit_on` and it passes a per-block check list: a furnace must be lit; a chest must have no viewer (`ChestBlockEntity.getOpenCount` is not above 0, i.e. closed); a bed must be its head part |
 | `CatTemptGoal` | extends the tempt goal; keeps a `selectedPlayer` and replaces the base scare-off: in `tick`, when no player is selected, a `nextInt(adjustedTickDelay(600))` roll may select the tempting player; a `nextInt(adjustedTickDelay(500))` roll clears the selection. `canScare` (the rule that makes a tempted cat flee) is true only when the selected player is the tempting player and the base rule holds. `canUse` additionally needs the cat not to be tame |
 | `CatRelaxOnOwnerGoal` | in 19 section 5 (morning gift): additionally, the goal position is the owner's block, adjusted by the bed's facing; it is blocked while another cat within the box inflated by 2 around the position is lying or in relax state one; `start` sits and moves to the position at speed 1.1; `stop` clears lying, rolls the gift with the environment attribute `cat_waking_up_gift_chance` at the cat's position (compared to `nextFloat`) when the owner's sleep timer exceeds 100, and sets relax state one |
@@ -195,13 +195,104 @@ Afterwards, independently for the main gene and then the hidden gene, a `nextInt
 | Trait | Goal | Rules |
 |---|---|---|
 | Worried | `PandaAvoidGoal` | usable only when worried (and `canPerformAction`); the avoided player at range 8 or monster at range 4; in `tick` a worried panda sits during thunder outside water and stops sitting when not eating |
-| Lazy | `PandaLieOnBackGoal` | lazy and `canPerformAction`; start roll `nextInt(400)`; continues while not in water, lazy, and a 1 in 600 roll then a `nextInt(2000)` roll does not end it; lying on its back lasts until the continue test fails (200-tick related counter) |
-| Lazy | `PandaSitGoal` | usable when not a baby, not in water, `canPerformAction`, unhappy counter 0, the hand empty and no pick-up item in the box inflated 6; the continue test uses 1 in 600 then `nextInt(2000)` rolls |
-| Playful | `PandaRollGoal` | not a baby, playful, `canPerformAction`; checks the block the roll would land on (0.5 offset along the yaw); `nextInt(60)` roll for playful pandas, otherwise `nextInt(500)`; `start` calls `roll` |
-| Weak | `PandaSneezeGoal` | not a baby, `canPerformAction`; roll `nextInt(500)` for weak pandas, otherwise `nextInt(6000)`; `start` calls `sneeze`. Sneeze sequence in 19 section 8 |
+| Lazy | `PandaLieOnBackGoal` | exact rules in 7.2 |
+| Any (not only lazy) | `PandaSitGoal` | exact rules in 7.3 |
+| Playful or baby | `PandaRollGoal` | exact rules in 7.1 |
+| Baby | `PandaSneezeGoal` | exact rules in 7.4 |
 | Aggressive | `PandaAttackGoal` (melee, speed 1.2) | requires `canPerformAction`; aggressive pandas have the targeting changes through `PandaHurtByTargetGoal` (no ignored classes); the damage attribute is the base panda value (19) |
 
 `canPickUpAndEat(itemEntity)` uses item tag `panda_eats_from_ground` = `#panda_food` (= bamboo) and cake. `isFood` uses `panda_food`. The unhappy counter counts down each tick (the "cannot breed" sound plays at counters 29 and 14) and makes the panda look at its target while positive. The sneeze counter advances while sneezing: pre-sneeze sound at 1, sneeze at more than 20. `mobInteract` details of feeding are unchanged from 19.
+
+**Reading rules for 7.1 to 7.5 (read in `Panda` and its goal classes).** `reducedTickDelay(n)` is `ceil(n / 2)`
+(`Mth.positiveCeilDiv(n, 2)`; 18 section 4.1 explains why goals count delays at half rate). Every roll below is
+`nextInt(reducedTickDelay(n)) == 1` using the panda's own random source: the **value tested against is 1, not 0**. The panda
+state flags live in one synchronised byte: sneezing 2, rolling 4, sitting 8, lying on the back 16; the eating state is a
+separate integer counter (`isEating` is counter above 0; `eat(true)` sets 1 and `eat(false)` sets 0).
+`canPerformAction` is: not lying on the back, not scared (`isScared` = worried gene and thundering), not eating, not rolling
+and not sitting.
+
+### 7.1 `PandaRollGoal` and `Panda.roll` / `handleRoll`
+
+Goal flags: MOVE, LOOK, JUMP; not interruptible; `canContinueToUse` is always false (a one-shot).
+`canUse`, in order:
+1. The panda must be (a baby **or** playful) and on the ground; otherwise false.
+2. `canPerformAction` must hold; otherwise false.
+3. Let `a = yRot * 0.017453292` (float). `fx = -Mth.sin(a)`, `fz = Mth.cos(a)` (the table functions of 10 section 16.3, as
+   floats). `dx` = the sign of `fx` (1 or -1) when `|fx| > 0.5`, else 0; `dz` likewise from `fz` (`Mth.sign`).
+4. If the block at (own block position + (dx, -1, dz)) is air: true (no roll is drawn).
+5. If the panda is playful: draw `nextInt(30) == 1` (`reducedTickDelay(60)` is 30); if that is true: true.
+6. Draw `nextInt(250) == 1` (`reducedTickDelay(500)`); that is the result.
+(A playful panda that fails step 5 therefore also draws in step 6: two draws; a non-playful baby draws once.)
+`start` sets the rolling flag (`roll(true)`).
+
+`Panda.tick` runs `handleRoll` every tick while the rolling flag is set (otherwise it resets the roll counter `rollCounter`
+to 0). `handleRoll`:
+1. `rollCounter += 1`. If `rollCounter > 32`: clear the rolling flag and stop (so the roll lasts counters 1 to 32, 32 ticks).
+2. Server only, for counters 1 to 32:
+   - `rollCounter == 1`: `a = yRot * 0.017453292` (float); `s` = 0.1 for a baby, otherwise 0.2 (float); the stored roll
+     velocity `rollDelta` = (`vx + (-Mth.sin(a)) * s`, 0, `vz + Mth.cos(a) * s`) where `vx`, `vz` are the current velocity
+     components (the products are float, then widened); then the velocity is set to `rollDelta + (0, 0.27, 0)`: an upward hop
+     of 0.27 plus the horizontal push.
+   - counter 7, 15 or 23: the velocity is set to (0, `onGround ? 0.27 : vy`, 0): horizontal velocity is zeroed and the panda
+     hops again if it is on the ground (the horizontal push is dropped at each of these three ticks).
+   - any other counter: the velocity is set to (`rollDelta.x`, `vy`, `rollDelta.z`): the stored horizontal push is re-applied,
+     the vertical component is left to physics.
+3. The client-only `rollAmount` animation value moves by +0.15 per tick while rolling and -0.19 per tick otherwise, clamped
+   to [0, 1] (same for `sitAmount` while sitting and `onBackAmount` while lying on the back; render values only).
+
+### 7.2 `PandaLieOnBackGoal` (lie on its back; the end rule)
+
+Flags: none (empty set). It keeps a private `cooldown` (a game-tick stamp, initially 0).
+- `canUse`: `cooldown < tickCount`, the panda is lazy, `canPerformAction`, and `nextInt(200) == 1` (`reducedTickDelay(400)`).
+- `start`: set the on-back flag; `cooldown = 0`.
+- `canContinueToUse` (evaluated every goal tick), in order: if the panda is in water: false. If the panda is **not lazy**:
+  draw `nextInt(300) == 1` (`reducedTickDelay(600)`), and if it is 1: false. (A lazy panda skips this roll.) Then draw
+  `nextInt(1000) == 1` (`reducedTickDelay(2000)`): false when 1. Otherwise true.
+- `stop`: clear the on-back flag; `cooldown = tickCount + 200`.
+So a lazy panda stays on its back until it enters water or a one-in-1000 draw per goal tick ends it (mean about 1000 goal ticks,
+2000 game ticks); the 200-tick value is only the **cooldown before the next lie-down can start**, not a duration. The goal is
+not forced to end when the panda becomes non-lazy by a gene change; the rule above then applies. While the on-back flag is set
+`canPerformAction` is false, which blocks the roll, sneeze, sit and avoid goals.
+
+### 7.3 `PandaSitGoal` (sit and pick up food)
+
+Flags: MOVE. Private `cooldown` stamp (initially 0). The item predicate used by this goal is `canPickUpAndEat`: the dropped
+item is in item tag `panda_eats_from_ground` (members `#panda_food`, which is `bamboo`, and `cake`), is alive and has no
+pick-up delay.
+- `canUse`: `cooldown <= tickCount`; the panda is not a baby, not in water; `canPerformAction`; the unhappy counter is not
+  above 0. Then: true when the main hand is non-empty; otherwise true when at least one item entity passing the predicate is
+  inside the panda's bounding box inflated by 6 on every axis. No random roll.
+- `start`: if the main hand is empty: list the passing item entities in the box inflated by 8; when the list is non-empty,
+  walk to the **first** entity of the list at speed 1.2000000476837158 (1.2f widened). If the main hand is not empty:
+  `tryToSit` (when not in water: forward movement 0, navigation stopped, sitting flag set). Then `cooldown = 0`.
+- `tick`: while the sitting flag is clear and the main hand is non-empty: `tryToSit`.
+- `canContinueToUse`: the same two rolls as 7.2: in water false; for a non-lazy panda `nextInt(300) == 1` ends it; then
+  `nextInt(1000) == 1` ends it.
+- `stop`: when the main hand is non-empty: drop it as an item entity at the panda, clear the hand, and set
+  `cooldown = tickCount + 20 * (nextInt(50) + 10)` for a lazy panda or `tickCount + 20 * (nextInt(150) + 10)` otherwise
+  (the delay in seconds, 10 to 59 for lazy, 10 to 159 otherwise). In every case then clear the sitting flag. (With an empty hand
+  at stop the cooldown is not changed.)
+Picking up: `Panda.pickUpItem` runs when the item entity touches the panda and the main hand is empty and the item passes
+`canPickUpAndEat`: the whole stack goes to the main hand (guaranteed drop), the item entity is discarded.
+
+### 7.4 `PandaSneezeGoal` and `handleEating` (the counters)
+
+`PandaSneezeGoal`: one-shot (`canContinueToUse` false), no flags. `canUse`: the panda **is a baby** and `canPerformAction`;
+then, if weak: `nextInt(250) == 1` (`reducedTickDelay(500)`) gives true; otherwise (and for a weak panda that missed)
+`nextInt(3000) == 1` (`reducedTickDelay(6000)`). `start`: `sneeze(true)` (flag 2; `sneeze(false)` also resets the sneeze
+counter to 0). The counter and the end of the sneeze (counter above 20: `sneeze(false)` and `afterSneeze`) are in the previous
+section and in 19 section 8.
+
+`handleEating` (every tick, after the roll and sit updates):
+1. If not eating, sitting, not scared, the main hand non-empty and `nextInt(80) == 1`: `eat(true)` (counter 1). Otherwise, if
+   the main hand is empty **or** the panda is not sitting: `eat(false)` (counter 0).
+2. If now eating: the eating particles are spawned; on the server, when the eat counter is above 80 **and** `nextInt(20) == 1`:
+   if the counter is above 100 and the held item is in `panda_eats_from_ground`: the held item is consumed (hand emptied,
+   game event `eat`) and the panda stands up (`sit(false)`); then in every case of this branch `eat(false)`. Otherwise the
+   counter is incremented by 1.
+   So eating lasts between 81 and (on average about 20 more) ticks, and food is consumed only when the draw succeeds after tick
+   100; a draw at counters 81 to 100 just ends the eating without consuming the item.
+
 
 ## 8. Polar bear (answers 19 Open question 15)
 
@@ -240,15 +331,35 @@ Goals and constants read (parameters of speeds are in 19 section 12):
 | Goal | Rules |
 |---|---|
 | `TurtleGoToWaterGoal` (a `MoveToBlockGoal`, range 24, speed 2.0 for a baby, otherwise the registered value) | usable when the turtle is a baby, or not going home and without an egg, and (the base rule); recalculates the path every 160 ticks; continues up to 1200 ticks; valid target: a water block |
-| `TurtleGoHomeGoal` | usable when not a baby, with no egg, a 1 in 700 roll (`nextInt(700) == 0`), and the home position is NOT within 64.0 of the turtle (all `closerToCenterThan(home, d)` calls in the turtle goals compare a plain distance, not a squared one; read). `start`/`stop` set `goingHome`. Continues while the home is not within 7.0 and `closeToHomeTryTicks <= 600`. `tick` (read): `near` = the home is within 16.0 of the turtle; when near, `closeToHomeTryTicks` + 1. When the navigation is done: (1) search `getPosTowards(turtle, horizontal 16, vertical 3, home bottom centre, angle 0.3141593)`; (2) if that gave nothing, search again with (8, 7, angle 1.5707964), the same home target (the target argument of the second call was read as the same local value, inferred); (3) when a position exists, the turtle is not near and the block at that position is not water, search a third time with (16, 5, angle 1.5707964) replacing it; (4) with no position at the end the `stuck` flag is set and the tick ends; otherwise the navigation moves to the position at the goal's speed. (`getPosTowards` is a framework random-position helper that was not read, Open question 4.) |
+| `TurtleGoHomeGoal` | usable when not a baby, with no egg, a 1 in 700 roll (`nextInt(700) == 0`), and the home position is NOT within 64.0 of the turtle (all `closerToCenterThan(home, d)` calls in the turtle goals compare a plain distance, not a squared one; read). `start`/`stop` set `goingHome`. Continues while the home is not within 7.0 and `closeToHomeTryTicks <= 600`. `tick` (read): `near` = the home is within 16.0 of the turtle; when near, `closeToHomeTryTicks` + 1. When the navigation is done: (1) search `getPosTowards(turtle, horizontal 16, vertical 3, home bottom centre, angle 0.3141593)`; (2) if that gave nothing, search again with (8, 7, angle 1.5707964), the same home target (the second call passes the same vector as the first; the angle constants are the float values 0.3141592741012573 and 1.5707963705062866); (3) when a position exists, the turtle is not near and the block at that position is not water, search a third time with (16, 5, angle 1.5707964) replacing it; (4) with no position at the end the `stuck` flag is set and the tick ends; otherwise the navigation moves to the position at the goal's speed. (`getPosTowards` is `DefaultRandomPos.getPosTowards(mob, h, v, target, maxAngle)`, specified in 44-3 section 2.19; the water test in step 3 is on the block (`Blocks.WATER`, the water block, not a waterlogged block) containing the candidate. `Turtle.getWalkTargetValue`, which scores the candidates of those searches, is read in 11.1.) |
 | `TurtleTravelGoal` (to the open water, used by turtles that have laid eggs) | `canUse`: not going home, no egg, and the turtle in water. `start` (one rule): x offset = `nextInt(1025) - 512`, y offset = `nextInt(9) - 4`, z offset = `nextInt(1025) - 512` (drawn in the order x, y, z); if the y offset plus the turtle's y exceeds sea level minus 1 the y offset is set to 0; the travel target is the block containing the turtle's position plus the three offsets; `stuck` is cleared. `tick` (read): when the navigation is done, the same first two position searches as `TurtleGoHomeGoal` ((16, 3, 0.3141593) then (8, 7, 1.5707964)) toward the travel target; a found position is accepted only if `hasChunksAt` holds for the box of half-size 34 around the floored target (a 34 on each side); with no position `stuck` is set; otherwise the navigation moves there. The goal continues while the navigation is not done and the turtle is not going home, not in love and has no egg |
 | `TurtleRandomStrollGoal` | usable when not going home and no egg |
 | `TurtleLayEggGoal` (range 16) | usable with an egg and within 9.0 (distance) of the home position (range 16 for the block search); the laying counter reaches 200, a sound is played with volume 0.3, the egg block is placed with its `eggs` property set to `1 + nextInt(4)` and the egg flag cleared; 600 is the post-lay value of the delay counter (read) |
 | `TurtleBreedGoal` | no egg required; `breed` sets both parents' age to 6000 and an egg flag on one parent; the experience amount is `1 + nextInt(7)` (read) |
-| `TurtlePanicGoal` | `canUse`: the base should-panic test, then a look for water within 7 blocks (`lookForWater` with 7); when a water block is found its position is the panic target, otherwise the base random-position search runs (read at the call level) |
+| `TurtlePanicGoal` | `canUse`: the base should-panic test, then a look for water within 7 blocks (`lookForWater` with 7); when a water block is found its position is the panic target, otherwise the base random-position search runs (`lookForWater` is read in 11.1) |
 | `TurtleMoveControl` | `updateSpeed` (read, all operators are divisions): in water, motion gets +0.005 in y; when the home is not within 16.0 the speed becomes `max(speed / 2, 0.08)`; a baby (still in water) then gets `max(speed / 3, 0.06)` applied to the already-updated speed, so the two reductions compound; on land (on the ground) the speed becomes `max(speed / 2, 0.06)`. `tick`: when the operation is MOVE_TO and the navigation is done the speed is set to 0; it rotates toward the target with a 90 degree turn limit and moves the speed toward `speedModifier x movement_speed` with lerp factor 0.125; when the target is within 1e-5 the speed is 0; in water a vertical push of `speed x 0.1`-scale is added to y motion (inferred) |
 
 **Turtle egg block** (hatch rules read): `onPlace` plays level event 2012 (15 particles) when the block under it is sand (tag `sand`). `randomTick`: `shouldUpdateHatchLevel` reads the environment attribute `turtle_egg_hatch_chance` at the position (> 0 and `nextFloat` below it; the attribute is data and varies with time of day). When it succeeds and the egg is on sand, the hatch stage (`hatch` 0 to 2) advances with the crack sound; at stage 2 the block is removed (sound, game events, level event 2001) and one baby turtle per egg in the `eggs` property (1 to 4) spawns at the block with age -24000 and the home set to the block, at offset 0.3 (+ 0.2 x index) in x and 0.3 in z. **Trample** (`destroyEgg`): `stepOn` (an entity that is not sneaking) with `rand(100)`; `fallOn` for a zombie with `rand(3)`; the egg breaks (one fewer egg, or the block) when `rand == 0` and `canDestroyEgg`: never for a turtle or a bat; a player only outside spawn protection; another living entity only when the mob griefing game rule is on (read; the non-living case was not expanded). `playerDestroy` also reduces the egg count.
+
+### 11.1 Turtle position scoring and the water search
+
+**`Turtle.getWalkTargetValue(pos, level)`** (the score used by every `DefaultRandomPos` / `LandRandomPos` candidate draw of the
+turtle's goals, 44-3 section 2.19), in order: (1) when the turtle is **not** going home (`goingHome` false) and the fluid at `pos` is in
+tag `water` (any water fluid state, including flowing and waterlogged): **10.0**; (2) when the block **below** `pos` is in block tag
+`sand` (`TurtleEggBlock.onSand` = `isSand(pos.below())`): **10.0**; (3) otherwise the light cost
+`getPathfindingCostFromLightLevels(pos)` = `lightMagic(pos) - 0.5` (44-1 section 4.13). While going home the turtle therefore
+prefers sand to water; otherwise water and sand tie at 10 and ties go to the earliest of the 10 candidates (44-3 section 2.19).
+
+**`PanicGoal.lookForWater(level, entity, range)`** (inherited by `TurtlePanicGoal`, which passes 7; the plain `PanicGoal` passes 5 for
+a burning mob, 18 section 4.2): let `p` be the entity's block position. If the block state at `p` has a **non-empty collision shape**
+the result is none (a turtle standing inside a solid-shaped block does not look). Otherwise scan the positions in the
+ordered box `LevelReader.findBlocksInBoxByManhattanDistance(p, range, 1)` (reach `range` on x and z, **1 on y**; the iterator is
+`BlockPos.withinBoxByManhattanDistance(p, range, 1, range)`, order: increasing Manhattan depth,
+[35-7](35-worldgen-features-7-nether-end-misc.md) section 2.3) and return the first position whose block state has a fluid
+state in tag `water`; none when no position qualifies. The position itself is depth 0 and is examined first. The goal's target is
+that block position's integer coordinates as a position (no 0.5 offset): the navigation moves to the block's corner coordinates
+at the goal's speed. Nothing is drawn from the random generator by the search; when it returns none the goal falls back to the
+framework random position search (`findRandomPosition`, 18 section 4.2).
 
 ## 12. Armadillo (answers 19 Open question 19)
 
@@ -307,7 +418,7 @@ Constants read: attributes `max_health` 10, `flying_speed` 0.6, `movement_speed`
 | `BeeGrowCropGoal` | usable when `rand < 0.3` and a flower-or-crop check passes (wait of about 10 ticks between checks); in its tick every `nextInt(30)`-gated step (30-tick random) it advances a crop in tag `bee_growables` (= `#crops`, sweet berry bush, cave vines, cave vines plant) by one growth stage: crops via `getStateForAge(age + 1)`, stems and berry bushes by +1 age to a maximum of 7 or 3 (their age properties), cave vines by their berries state; shows level event 2011 (15 particles) |
 | Anger and sharing | the hurt-by goal `BeeHurtByOtherGoal`: continues only while the bee is angry; `alertOther` makes other **bees that the angry bee has a line of sight to** target the attacker. The alert box is the shared rule of `HurtByTargetGoal.alertOthers`: the follow distance (the bee's `follow_range`, 16 at the animal base) horizontally and **10 blocks** vertically around the bee; it skips the bee itself, mobs with a target, tamed-animal owners other than its own and allies |
 | Sting death | the two `1200` constants are `STING_DEATH_COUNTDOWN` (not a stay-out countdown). A bee that has stung counts `timeSinceSting` up; every 5th tick the bee dies (generic damage equal to its health) when `nextInt(clamp(1200 - timeSinceSting, 1, 1200)) == 0`, so the chance per check rises as the time passes |
-| Nest and exit timings | hive occupancy and release timers belong to the beehive block entity (19 section 16 holds the bee rules); not read in this round (Open question 2) |
+| Nest and exit timings | hive occupancy and release timers belong to the beehive block entity (19 section 16 holds the bee rules); not read (Open question 2) |
 | Other read constants | `TICKS_WITHOUT_NECTAR_BEFORE_GOING_HOME` 3600; `MAX_CROPS_GROWABLE` 10; sting poison 10 seconds on normal and 18 on hard; wander distance reductions `RESTRICTED_WANDER_DISTANCE_REDUCTION` 24 and `DEFAULT_WANDER_DISTANCE_REDUCTION` 16; `TICKS_BEFORE_GOING_TO_KNOWN_FLOWER` 600; `COOLDOWN_BEFORE_LOCATING_NEW_HIVE` and `_NEW_FLOWER` 200 |
 
 ## 16. Parrot (answers 19 Open question 23)
@@ -317,7 +428,7 @@ Constants read: attributes `max_health` 10, `flying_speed` 0.6, `movement_speed`
 - **Dance**: `setRecordPlayingNearby(pos, playing)` sets `partyParrot` and remembers the jukebox position; in `aiStep` the party state clears when the position is not within **3.46** blocks (`closerThan(position, 3.46)`) or the block is no longer a jukebox. (The 19 note of the 3.46 check stands.)
 - **Taming and poison** (`mobInteract`): food tag `parrot_food`; taming `nextInt(10) == 0` succeeds (the draw's bound was read as 10) with hearts events 7 (success) and 6 (fail); poisonous food (tag `parrot_poisonous_food` = cookie, data; `parrot_food` = wheat seeds, melon seeds, pumpkin seeds, beetroot seeds, torchflower seeds, pitcher pod) applies Poison for 900 ticks (the item is consumed) and then deals the player-attack damage 3.4028235E38 unless the player is in creative mode AND the parrot is invulnerable; attributes `max_health` 6, `flying_speed` 0.4, `movement_speed` 0.2, attack damage 3.0.
 
-## 17. Sound events per mob (answers 19 Open question 3)
+## 17. Sound events per mob
 
 Resource names are the first argument of the `SoundEvents` registration read from the static initialiser (`namespace minecraft`, `SoundEvents.X` registered as `entity.<mob>.<name>`). Methods are the class method in which the constant is referenced; "hurt", "death", "ambient" are the standard mob sound slots.
 
@@ -330,7 +441,7 @@ Resource names are the first argument of the `SoundEvents` registration read fro
 | Donkey / mule | `entity.donkey.ambient` / `entity.mule.ambient` | `.hurt`, `.death` | `.angry`, `.eat`, `.jump`, `.chest` |
 | Skeleton horse | `entity.skeleton_horse.ambient` (`.ambient_water` in water) | `.hurt`, `.death` | `.swim`, `.gallop_water`, `.step_water`, `.jump_water` |
 | Zombie horse | `entity.zombie_horse.ambient` | `.hurt`, `.death` | `.angry`, `.eat` |
-| Llama / trader llama | `entity.llama.ambient` | `.hurt`, `.death` | `.angry`, `.eat`, `.step`, `.chest`, `.spit`, `.swag` (carpet equip), `.carpet_unequip` |
+| Llama / trader llama | `entity.llama.ambient` | `.hurt`, `.death` | `.angry`, `.eat`, `.step`, `.chest`, `.spit`, `.swag` (carpet equip) and the separate sound event `item.llama_carpet.unequip` (carpet shearing) |
 | Camel | `entity.camel.ambient` | `.hurt`, `.death` | `.step`, `.step_sand`, `.eat`, `.sit`, `.stand`, `.saddle`, `.dash`, `.dash_ready` |
 | Camel husk | `entity.camel_husk.ambient` | `.hurt`, `.death` | same suffixes as the camel under `entity.camel_husk.*` |
 | Rabbit | `entity.rabbit.ambient` | `.hurt`, `.death` | `.jump`, `.attack` |
@@ -353,14 +464,14 @@ The 19 Open questions that this table does not answer are listed by number in se
 ## 18. Answers to the other scope questions
 
 - **Deferred 19 Open questions.** 19 Open question 4 (spawn tags) and 24 to 29 (villager, the golems, the wandering trader) are not answered in this part; they belong to other parts of 44 (spawning and structures, villagers) and are only referenced here. 19 Open question 33 (unlabelled numeric `Brain` arguments) is closed here only for the frog (section 10), the armadillo (section 12), the camel (2.3), the sniffer (13) and the goat ram (9); it stays open for allay, every other mob brain, and the 18 framework behaviours not named here.
-- **19 Open question 11** (`FoxStrollThroughVillage`): answered in section 4 for the fox additions only; the base goal is Open question 11.
-- **19 Open question 1** (happy ghast, bat): they are covered in 21; nothing to add from this round.
+- **19 Open question 11** (`FoxStrollThroughVillage`): answered in section 4 for the fox additions only; the base goal is in 44-x1 section 8.8.
+- **19 Open question 1** (happy ghast, bat): they are covered in 21; nothing to add here.
 - **19 Open question 2** (axolotl): left to 21.
 - **19 Open question 30** (sound variant registries; ids depend on Registry Data order, a server choice): confirmed as not determinable from the artifact (the order is that of the registry loader and the data pack).
-- **19 Open question 31** (entity ids from registration order, inferred): not re-verified in this round; the registry id document 46 exists and is the place for it.
+- **19 Open question 31** (entity ids from registration order, inferred): not re-verified here; the registry id document 46 exists and is the place for it.
 - **19 Open question 32** (item definitions): out of scope here; the carpet equippable component of section 2.2 is the one item fact needed by the mobs.
-- **18 Open question 2** (per-mob `getWalkTargetValue` overrides) and **10** (per-mob values): the per-mob values read in this round are: llama strength and slots, camel pose timings, rabbit jump timing, fox constants, sniffer and armadillo timings, bee and parrot constants (sections 2 to 16). Walk-target value overrides were not found as separate methods in the classes read for these mobs except through the base `Animal` (not a goal of this round).
-- **18 Open question 19**: `TryFindLand`, `TryFindLandNearLiquid`, `TryFindLiquid` are specified in 1.2 except for the scan order inside one Manhattan distance; `Croak` in 1.3; `SetHiddenState` (20-tick and 300-tick constant pair) is read at the constant level; `CopyMemoryWithExpiry` and `GoToWantedItem` are classes in the artifact that this round did not expand.
+- **18 Open question 2** (per-mob `getWalkTargetValue` overrides) and **10** (per-mob values): the per-mob values read are: llama strength and slots, camel pose timings, rabbit jump timing, fox constants, sniffer and armadillo timings, bee and parrot constants (sections 2 to 16). Walk-target value overrides were not found as separate methods in the classes read for these mobs except through the base `Animal`.
+- **18 Open question 19**: `TryFindLand`, `TryFindLandNearLiquid`, `TryFindLiquid` are specified in 1.2 except for the scan order inside one Manhattan distance; `Croak` in 1.3; `SetHiddenState` (20-tick and 300-tick constant pair) is read at the constant level; `CopyMemoryWithExpiry` and `GoToWantedItem` are classes in the artifact that are not expanded here.
 - **18 Open question 3** (the three `LongJump*` behaviours): specified in 1.1.
 
 ## 19. Worked examples
@@ -388,16 +499,16 @@ The 19 Open questions that this table does not answer are listed by number in se
 
 ## Open questions
 
-1. The visiting order inside one Manhattan distance (`BlockPos.manhattanOrdered`) was not expanded: it decides which of several equally near land or liquid blocks `TryFindLand*` picks.
-2. `FoxMoveControl`, `FoxLookControl`, `FaceplantGoal` and `FoxFloatGoal` internals; panda `handleRoll`, `roll`, `sneeze`, eating timers; bee `BeeAttackGoal` and the hive entry and exit timers in the beehive block entity (`BeehiveBlockEntity`). Not read.
+1. Closed: see 44-1 section 3 and 35-7 section 2.3.
+2. `FoxMoveControl`, `FoxLookControl`, `FaceplantGoal` and `FoxFloatGoal` internals; bee `BeeAttackGoal` and the hive entry and exit timers in the beehive block entity (`BeehiveBlockEntity`). Not read. (The panda items, `handleRoll`, `roll`, `sneeze` and the eating timers, are in 7.1 to 7.4.)
 3. Where tag `cat_does_not_teleport_to` is consulted (cat owner teleport) was searched for in `TamableAnimal` and `Cat` and not found; the `CatLieOnBlockGoal.tick` lying toggle was read in full (section 6).
-4. Turtle: the third-argument target of the second `getPosTowards` call (read as the same local value, inferred), and the helpers `getPosTowards` and `lookForWater` themselves.
+4. Closed: see 44-3 section 2.19 and 11.1.
 5. Allay: `StayCloseToTarget` internals beyond the arguments.
 6. The tadpole age-up, `TryLaySpawnOnFluidNearLand`, `CopyMemoryWithExpiry` and `GoToWantedItem` were not expanded (18 Open question 19 remains for these two).
 7. Wolf: the `Beg` interest animation values were not read.
 8. Per-mob sound pitch and volume values are not tabulated (section 17 gives names only); the sound variant registries (data) are not tabulated.
 9. 19 Open questions 1, 2, 30, 31, 32 are answered only as "covered elsewhere or not determinable"; entity ids were not re-verified here.
 10. Land animals with no coverage in this document, so still open in 19 and 21: sheep, cow, pig, chicken, mooshroom and ocelot goals; horse, donkey, mule, skeleton-horse trap (`SkeletonTrapGoal`) and zombie-horse behaviour beyond the jump scale and the llama; the camel dash and camel panic details; the wolf armour and tail values beyond the constants of section 5.
-11. Not read: the base `StrollThroughVillageGoal` (fox, 19 Open question 11), the baby-follow gate predicate of the camel brain, the `FollowTemptation` internals beyond the two constants, and the frog SWIM trigger mapping beyond the method handle (section 10, inferred).
+11. Not read: the baby-follow gate predicate of the camel brain, the `FollowTemptation` internals beyond the two constants, and the frog SWIM trigger mapping beyond the method handle (section 10, inferred).
 12. Left to other parts of 44: 19 Open questions 4 (spawn tags) and 24 to 29 (villager, golems, wandering trader).
-13. Goat `UNIHORN_CHANCE` (0.1): the constant was read in `Goat`, but the method that rolls it was not traced; which horn is removed and when (spawn, birth) is unknown. Also the bee `BeeAttackGoal` and the horse, donkey, mule and zombie-horse brains were not read (see 2 and 10).
+13. Closed: goat horns, see 44-x1 section 8.10. Not read: the bee `BeeAttackGoal` and the horse, donkey, mule and zombie-horse brains were not read (see 2 and 10).

@@ -1,8 +1,9 @@
 *> Acceptance test, US7-4 core half (spec US7 scenario 4; tasks T495; standin-content §10.6, §10.7;
 *> data-model §6; 09 §3.3 rows 0x45, 0x54, 0x0C, §3.2 row 0x7C): when a survival player's health
 *> reaches 0 the player is sent Player Combat Kill carrying the cause, every player receives the death
-*> message as System Chat, every non-empty inventory slot becomes a ground item at the feet + 0.5
-*> with the §10.6 motion and pickup delay 30 and the inventory is empty; after Client Command
+*> message as System Chat, every non-empty inventory slot becomes a ground item at the eyes - 0.3 (feet + 1.32)
+*> with the death-drop motion of 41 section 2.4 (a random circle of radius below 0.5, vy 0.2) and pickup delay 40 and the
+*> inventory is empty; after Client Command
 *> PERFORM_RESPAWN the player is sent Respawn to cobolcraft:main (data to keep 0x00) and the join
 *> stream, and is at the world spawn with full health and food. A player who disconnects while dead
 *> is dead again on the next join, where they left (the stored state "as they left it", data-model
@@ -73,7 +74,7 @@
      MOVE "acceptance US7-4 given a survival player's health reaches zero when they die then "
          & "they are sent Player Combat Kill carrying the cause, the death message" TO TL-CASE
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "damage 1 type 1 source 0 | hurt 1 | health 0 food 24 | kill 1 cobolcraft.death.fall("
+     MOVE "damage 1 type 1 source 0 | hurt 1 | health 0 food 20 | kill 1 cobolcraft.death.fall("
          & "Alice) | chat cobolcraft.death.fall(Alice)" TO TL-EXPECTED
      PERFORM CHECK
 
@@ -102,20 +103,20 @@
      MOVE "T" TO TL-MODE
 
      MOVE "acceptance US7-4 given a survival player dies then slot 0 (64 greystone) lies on the "
-         & "ground as one item at the feet + 0.5 with motion (-0.1, 0.2, -0.1) and pickup delay 30"
+         & "ground as one item at the eyes - 0.3 (y 102.32) with a motion on a circle of radius below 0.5, vy 0.2, and pickup delay 40"
          TO TL-CASE
      MOVE 3 TO WS-ENTITY
      PERFORM DESCRIBE-ITEM
-     MOVE "item 2 x 64 at 20.500 101.500 20.500 motion -0.100 0.200 -0.100 delay 30"
+     MOVE "item 2 x 64 at 20.500 102.320 20.500 motion circle ok vy 0.200 delay 40"
          TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US7-4 given a survival player dies then slot 9 (the trowel) lies on the "
-         & "ground with motion (0.02, 0.2, -0.06) and pickup delay 30, the tenth and last item"
+         & "ground like it, with its own random circle motion and pickup delay 40, the tenth and last item"
          TO TL-CASE
      MOVE 12 TO WS-ENTITY
      PERFORM DESCRIBE-ITEM
-     MOVE "item 11 x 1 at 20.500 101.500 20.500 motion 0.020 0.200 -0.060 delay 30"
+     MOVE "item 11 x 1 at 20.500 102.320 20.500 motion circle ok vy 0.200 delay 40"
          TO TL-EXPECTED
      PERFORM CHECK
 
@@ -124,12 +125,12 @@
          & "world spawn position" TO TL-CASE
      CALL "TEST-CLIENT-COMMAND" USING WS-ALICE WS-ACTION
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "respawn cobolcraft:main mode 0 keep 0 | health 30 food 24 | position 4.5 54.0 8.5"
+     MOVE "respawn cobolcraft:main mode 0 keep 0 | health 20 food 20 | position 4.5 54.0 8.5"
          TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US7-4 given a dead player when they respawn then they are alive in "
-         & "cobolcraft:main at the world spawn with health 30, food 24, survival, the inventory "
+         & "cobolcraft:main at the world spawn with health 20, food 20, survival, the inventory "
          & "empty and the starting items not given again" TO TL-CASE
      MOVE SPACES TO TL-OBSERVED
      MOVE 1 TO WS-PTR
@@ -152,7 +153,7 @@
      END-PERFORM
      MOVE WS-SUM TO WS-E1
      STRING " items " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED POINTER WS-PTR
-     MOVE "state 1 dim 1 at 4.500 54.000 8.500 health 30 food 24 mode 0 items 0"
+     MOVE "state 1 dim 1 at 4.500 54.000 8.500 health 20 food 20 mode 0 items 0"
          TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -176,7 +177,7 @@
      CALL "TEST-DRAIN-HEALTH" USING WS-CAROL WS-TEXT
      MOVE PL-ENTITY-ID(WS-ROW) TO WS-E1
      MOVE SPACES TO TL-EXPECTED
-     STRING "health 0 food 24 | position 20.5 101.0 20.5 | kill " FUNCTION TRIM(WS-E1)
+     STRING "health 0 food 20 | position 20.5 101.0 20.5 | kill " FUNCTION TRIM(WS-E1)
          " cobolcraft.death.fall(Carol)" DELIMITED BY SIZE INTO TL-EXPECTED
      PERFORM CHECK
      MOVE "acceptance US7-4 given a player who rejoined dead when they have loaded then they "
@@ -187,7 +188,7 @@
      MOVE SPACES TO TL-OBSERVED
      STRING "state " FUNCTION TRIM(WS-E1) " then health " FUNCTION TRIM(WS-E2)
          DELIMITED BY SIZE INTO TL-OBSERVED
-     MOVE "state 2 then health 30" TO TL-EXPECTED
+     MOVE "state 2 then health 20" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
@@ -204,12 +205,15 @@
      STRING "item " FUNCTION TRIM(WS-E1) " x " FUNCTION TRIM(WS-E2) " at " FUNCTION TRIM(WS-R1)
          " " FUNCTION TRIM(WS-R2) " " FUNCTION TRIM(WS-R3) DELIMITED BY SIZE INTO WS-TEXT
          POINTER WS-PTR
-     COMPUTE WS-R1 ROUNDED = EN-VX(WS-I)
      COMPUTE WS-R2 ROUNDED = EN-VY(WS-I)
-     COMPUTE WS-R3 ROUNDED = EN-VZ(WS-I)
      MOVE EN-DELAY(WS-I) TO WS-E3
-     STRING " motion " FUNCTION TRIM(WS-R1) " " FUNCTION TRIM(WS-R2) " " FUNCTION TRIM(WS-R3)
-         " delay " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR.
+     IF EN-VX(WS-I) * EN-VX(WS-I) + EN-VZ(WS-I) * EN-VZ(WS-I) < 0.25
+         STRING " motion circle ok vy " FUNCTION TRIM(WS-R2) " delay " FUNCTION TRIM(WS-E3)
+             DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     ELSE
+         STRING " motion circle bad vy " FUNCTION TRIM(WS-R2) " delay " FUNCTION TRIM(WS-E3)
+             DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     END-IF.
 
  CHECK.
      MOVE WS-TEXT TO TL-OBSERVED

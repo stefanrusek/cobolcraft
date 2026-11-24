@@ -1,0 +1,417 @@
+*> Implementation test of lane bugviewbob (T62420-T62423; docs/protocol/53 section 15.2: "the bob (and the hurt tilt) is applied to the world projection with no camera-type
+*> test, so it also shakes the world in third person"; 12 section 6.1): the world view RENDER-LIST-BUILD makes is the tilt and the bob multiplied in before the camera
+*> (view' = M x view). With the camera at yaw 0 and pitch 0 the view rows are right (-1, 0, 0), up (0, 1, 0) and -forward (0, 0, -1); the expected matrices of M x view come
+*> from scratchpad/models/view_pose.py. The same in every camera mode, none with the option bobView off, and the frustum planes the chunk columns are culled by follow the
+*> tilted camera (the right axis is the normalised difference of the left and right planes, the up axis that of the top and bottom ones).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-WORLD-VIEW-BOB.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY TESTLIB.
+ 01 WS-SERVER              BINARY-LONG.
+ 01 WS-SCENARIO            PIC X(160).
+ 01 WS-NAME                PIC X(240).
+ 01 WS-EXPECTED.
+    05 WS-EXP              BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-EXP-AXIS            BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-EDIT                PIC Z9.
+ 01 WS-OBS                 BINARY-LONG.
+ 01 WS-DIFF                BINARY-LONG.
+ 01 WS-LEN                 FLOAT-LONG.
+ 01 WS-AXIS-V              FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-OPT-NAME            PIC X(40).
+ 01 WS-OPT-VALUE           PIC X(4096).
+ 01 WS-OPT-LENGTH          BINARY-LONG.
+ 01 WS-OPT-OK              BINARY-LONG.
+ 01 WS-HURT-MS             BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE 0 TO PL-YAW PL-PITCH PL-OSET
+*>   Scenario: at rest (no walking, no hurt) the pose is the identity, first person.
+     MOVE "at rest (no walking, no hurt) the pose is the identity, first person" TO WS-SCENARIO
+     MOVE 0 TO CL-CAMERA
+     MOVE 0.5 TO CL-PARTIAL
+     MOVE 0 TO PL-BOB-O
+     MOVE 0 TO PL-BOB
+     MOVE 0 TO PL-WALK-O
+     MOVE 0 TO PL-WALK
+     MOVE 30 TO PL-HEALTH
+     MOVE 0 TO PL-DEATH-TIME
+     MOVE 0 TO PL-HURT-UNTIL
+     MOVE 0 TO PL-HURT-DIR
+     MOVE "bobView" TO WS-OPT-NAME
+     MOVE "true" TO WS-OPT-VALUE
+     MOVE 4 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE "damageTiltStrength" TO WS-OPT-NAME
+     MOVE "1.0" TO WS-OPT-VALUE
+     MOVE 3 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE -1000000 TO WS-EXP(1)
+     MOVE 0 TO WS-EXP(2)
+     MOVE 0 TO WS-EXP(3)
+     MOVE 0 TO WS-EXP(4)
+     MOVE 0 TO WS-EXP(5)
+     MOVE 1000000 TO WS-EXP(6)
+     MOVE 0 TO WS-EXP(7)
+     MOVE 0 TO WS-EXP(8)
+     MOVE 0 TO WS-EXP(9)
+     MOVE 0 TO WS-EXP(10)
+     MOVE -1000000 TO WS-EXP(11)
+     MOVE 0 TO WS-EXP(12)
+     MOVE 0 TO WS-EXP(13)
+     MOVE 0 TO WS-EXP(14)
+     MOVE 0 TO WS-EXP(15)
+     MOVE 1000000 TO WS-EXP(16)
+     PERFORM CHECK-VIEW
+*>   Scenario: walking at partial 0.5, first person.
+     MOVE "walking at partial 0.5, first person" TO WS-SCENARIO
+     MOVE 0 TO CL-CAMERA
+     MOVE 0.5 TO CL-PARTIAL
+     MOVE 0.06 TO PL-BOB-O
+     MOVE 0.1 TO PL-BOB
+     MOVE 9.8 TO PL-WALK-O
+     MOVE 10.0 TO PL-WALK
+     MOVE 30 TO PL-HEALTH
+     MOVE 0 TO PL-DEATH-TIME
+     MOVE 0 TO PL-HURT-UNTIL
+     MOVE 0 TO PL-HURT-DIR
+     MOVE "bobView" TO WS-OPT-NAME
+     MOVE "true" TO WS-OPT-VALUE
+     MOVE 4 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE "damageTiltStrength" TO WS-OPT-NAME
+     MOVE "1.0" TO WS-OPT-VALUE
+     MOVE 3 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE -999999 TO WS-EXP(1)
+     MOVE 1294 TO WS-EXP(2)
+     MOVE 0 TO WS-EXP(3)
+     MOVE 0 TO WS-EXP(4)
+     MOVE 1294 TO WS-EXP(5)
+     MOVE 999981 TO WS-EXP(6)
+     MOVE 6079 TO WS-EXP(7)
+     MOVE 0 TO WS-EXP(8)
+     MOVE 8 TO WS-EXP(9)
+     MOVE 6079 TO WS-EXP(10)
+     MOVE -999982 TO WS-EXP(11)
+     MOVE 0 TO WS-EXP(12)
+     MOVE -12361 TO WS-EXP(13)
+     MOVE -76085 TO WS-EXP(14)
+     MOVE 0 TO WS-EXP(15)
+     MOVE 1000000 TO WS-EXP(16)
+     PERFORM CHECK-VIEW
+*>   Scenario: walking at partial 0.5, third person behind.
+     MOVE "walking at partial 0.5, third person behind" TO WS-SCENARIO
+     MOVE 1 TO CL-CAMERA
+     MOVE 0.5 TO CL-PARTIAL
+     MOVE 0.06 TO PL-BOB-O
+     MOVE 0.1 TO PL-BOB
+     MOVE 9.8 TO PL-WALK-O
+     MOVE 10.0 TO PL-WALK
+     MOVE 30 TO PL-HEALTH
+     MOVE 0 TO PL-DEATH-TIME
+     MOVE 0 TO PL-HURT-UNTIL
+     MOVE 0 TO PL-HURT-DIR
+     MOVE "bobView" TO WS-OPT-NAME
+     MOVE "true" TO WS-OPT-VALUE
+     MOVE 4 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE "damageTiltStrength" TO WS-OPT-NAME
+     MOVE "1.0" TO WS-OPT-VALUE
+     MOVE 3 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE -999999 TO WS-EXP(1)
+     MOVE 1294 TO WS-EXP(2)
+     MOVE 0 TO WS-EXP(3)
+     MOVE 0 TO WS-EXP(4)
+     MOVE 1294 TO WS-EXP(5)
+     MOVE 999981 TO WS-EXP(6)
+     MOVE 6079 TO WS-EXP(7)
+     MOVE 0 TO WS-EXP(8)
+     MOVE 8 TO WS-EXP(9)
+     MOVE 6079 TO WS-EXP(10)
+     MOVE -999982 TO WS-EXP(11)
+     MOVE 0 TO WS-EXP(12)
+     MOVE -12361 TO WS-EXP(13)
+     MOVE -76085 TO WS-EXP(14)
+     MOVE 0 TO WS-EXP(15)
+     MOVE 1000000 TO WS-EXP(16)
+     PERFORM CHECK-VIEW
+*>   Scenario: walking at partial 0.5, third person in front.
+     MOVE "walking at partial 0.5, third person in front" TO WS-SCENARIO
+     MOVE 2 TO CL-CAMERA
+     MOVE 0.5 TO CL-PARTIAL
+     MOVE 0.06 TO PL-BOB-O
+     MOVE 0.1 TO PL-BOB
+     MOVE 9.8 TO PL-WALK-O
+     MOVE 10.0 TO PL-WALK
+     MOVE 30 TO PL-HEALTH
+     MOVE 0 TO PL-DEATH-TIME
+     MOVE 0 TO PL-HURT-UNTIL
+     MOVE 0 TO PL-HURT-DIR
+     MOVE "bobView" TO WS-OPT-NAME
+     MOVE "true" TO WS-OPT-VALUE
+     MOVE 4 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE "damageTiltStrength" TO WS-OPT-NAME
+     MOVE "1.0" TO WS-OPT-VALUE
+     MOVE 3 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE 999999 TO WS-EXP(1)
+     MOVE -1294 TO WS-EXP(2)
+     MOVE 0 TO WS-EXP(3)
+     MOVE 0 TO WS-EXP(4)
+     MOVE 1294 TO WS-EXP(5)
+     MOVE 999981 TO WS-EXP(6)
+     MOVE 6079 TO WS-EXP(7)
+     MOVE 0 TO WS-EXP(8)
+     MOVE -8 TO WS-EXP(9)
+     MOVE -6079 TO WS-EXP(10)
+     MOVE 999982 TO WS-EXP(11)
+     MOVE 0 TO WS-EXP(12)
+     MOVE -12361 TO WS-EXP(13)
+     MOVE -76085 TO WS-EXP(14)
+     MOVE 0 TO WS-EXP(15)
+     MOVE 1000000 TO WS-EXP(16)
+     PERFORM CHECK-VIEW
+*>   Scenario: option bobView false while walking: identity, first person.
+     MOVE "option bobView false while walking: identity, first person" TO WS-SCENARIO
+     MOVE 0 TO CL-CAMERA
+     MOVE 0.5 TO CL-PARTIAL
+     MOVE 0.06 TO PL-BOB-O
+     MOVE 0.1 TO PL-BOB
+     MOVE 9.8 TO PL-WALK-O
+     MOVE 10.0 TO PL-WALK
+     MOVE 30 TO PL-HEALTH
+     MOVE 0 TO PL-DEATH-TIME
+     MOVE 0 TO PL-HURT-UNTIL
+     MOVE 0 TO PL-HURT-DIR
+     MOVE "bobView" TO WS-OPT-NAME
+     MOVE "false" TO WS-OPT-VALUE
+     MOVE 5 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE "damageTiltStrength" TO WS-OPT-NAME
+     MOVE "1.0" TO WS-OPT-VALUE
+     MOVE 3 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE -1000000 TO WS-EXP(1)
+     MOVE 0 TO WS-EXP(2)
+     MOVE 0 TO WS-EXP(3)
+     MOVE 0 TO WS-EXP(4)
+     MOVE 0 TO WS-EXP(5)
+     MOVE 1000000 TO WS-EXP(6)
+     MOVE 0 TO WS-EXP(7)
+     MOVE 0 TO WS-EXP(8)
+     MOVE 0 TO WS-EXP(9)
+     MOVE 0 TO WS-EXP(10)
+     MOVE -1000000 TO WS-EXP(11)
+     MOVE 0 TO WS-EXP(12)
+     MOVE 0 TO WS-EXP(13)
+     MOVE 0 TO WS-EXP(14)
+     MOVE 0 TO WS-EXP(15)
+     MOVE 1000000 TO WS-EXP(16)
+     PERFORM CHECK-VIEW
+*>   Scenario: hurt 0.5 direction 30 and bobbing at partial 0.25 (tilt outermost, then bob), first person.
+     MOVE "hurt 0.5 direction 30 and bobbing at partial 0.25 (tilt outermost, then bob), first person" TO WS-SCENARIO
+     MOVE 0 TO CL-CAMERA
+     MOVE 0.25 TO CL-PARTIAL
+     MOVE 0.06 TO PL-BOB-O
+     MOVE 0.1 TO PL-BOB
+     MOVE 2.0 TO PL-WALK-O
+     MOVE 2.6 TO PL-WALK
+     MOVE 30 TO PL-HEALTH
+     MOVE 0 TO PL-DEATH-TIME
+     COMPUTE PL-HURT-UNTIL = CL-NOW-MS + 250
+     MOVE 30 TO PL-HURT-DIR
+     MOVE "bobView" TO WS-OPT-NAME
+     MOVE "true" TO WS-OPT-VALUE
+     MOVE 4 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE "damageTiltStrength" TO WS-OPT-NAME
+     MOVE "1.0" TO WS-OPT-VALUE
+     MOVE 3 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE -999038 TO WS-EXP(1)
+     MOVE 43856 TO WS-EXP(2)
+     MOVE 554 TO WS-EXP(3)
+     MOVE 0 TO WS-EXP(4)
+     MOVE 43854 TO WS-EXP(5)
+     MOVE 998619 TO WS-EXP(6)
+     MOVE 28914 TO WS-EXP(7)
+     MOVE 0 TO WS-EXP(8)
+     MOVE 715 TO WS-EXP(9)
+     MOVE 28911 TO WS-EXP(10)
+     MOVE -999582 TO WS-EXP(11)
+     MOVE 0 TO WS-EXP(12)
+     MOVE -26770 TO WS-EXP(13)
+     MOVE -48420 TO WS-EXP(14)
+     MOVE -1167 TO WS-EXP(15)
+     MOVE 1000000 TO WS-EXP(16)
+     PERFORM CHECK-VIEW
+*>   Scenario: dying (deathTime 10 + 0.5) with a hurt 0.5 direction 90 and bobbing: the hurt tilt stays, first person.
+     MOVE "dying (deathTime 10 + 0.5) with a hurt 0.5 direction 90 and bobbing: the hurt tilt stays, first person" TO WS-SCENARIO
+     MOVE 0 TO CL-CAMERA
+     MOVE 0.5 TO CL-PARTIAL
+     MOVE 0.04 TO PL-BOB-O
+     MOVE 0.08 TO PL-BOB
+     MOVE 1.0 TO PL-WALK-O
+     MOVE 1.3 TO PL-WALK
+     MOVE 0 TO PL-HEALTH
+     MOVE 10 TO PL-DEATH-TIME
+     COMPUTE PL-HURT-UNTIL = CL-NOW-MS + 250
+     MOVE 90 TO PL-HURT-DIR
+     MOVE "bobView" TO WS-OPT-NAME
+     MOVE "true" TO WS-OPT-VALUE
+     MOVE 4 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE "damageTiltStrength" TO WS-OPT-NAME
+     MOVE "1.0" TO WS-OPT-VALUE
+     MOVE 3 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE -999281 TO WS-EXP(1)
+     MOVE -37914 TO WS-EXP(2)
+     MOVE -148 TO WS-EXP(3)
+     MOVE 0 TO WS-EXP(4)
+     MOVE -37878 TO WS-EXP(5)
+     MOVE 998135 TO WS-EXP(6)
+     MOVE 47876 TO WS-EXP(7)
+     MOVE 0 TO WS-EXP(8)
+     MOVE -1668 TO WS-EXP(9)
+     MOVE 47847 TO WS-EXP(10)
+     MOVE -998853 TO WS-EXP(11)
+     MOVE 0 TO WS-EXP(12)
+     MOVE 29939 TO WS-EXP(13)
+     MOVE -8338 TO WS-EXP(14)
+     MOVE -447 TO WS-EXP(15)
+     MOVE 1000000 TO WS-EXP(16)
+     PERFORM CHECK-VIEW
+*>   Scenario: hurt 0.5 direction 90 alive, no walking, first person.
+     MOVE "hurt 0.5 direction 90 alive, no walking, first person" TO WS-SCENARIO
+     MOVE 0 TO CL-CAMERA
+     MOVE 1.0 TO CL-PARTIAL
+     MOVE 0 TO PL-BOB-O
+     MOVE 0 TO PL-BOB
+     MOVE 0 TO PL-WALK-O
+     MOVE 0 TO PL-WALK
+     MOVE 30 TO PL-HEALTH
+     MOVE 0 TO PL-DEATH-TIME
+     COMPUTE PL-HURT-UNTIL = CL-NOW-MS + 250
+     MOVE 90 TO PL-HURT-DIR
+     MOVE "bobView" TO WS-OPT-NAME
+     MOVE "true" TO WS-OPT-VALUE
+     MOVE 4 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE "damageTiltStrength" TO WS-OPT-NAME
+     MOVE "1.0" TO WS-OPT-VALUE
+     MOVE 3 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE -1000000 TO WS-EXP(1)
+     MOVE 0 TO WS-EXP(2)
+     MOVE 0 TO WS-EXP(3)
+     MOVE 0 TO WS-EXP(4)
+     MOVE 0 TO WS-EXP(5)
+     MOVE 998864 TO WS-EXP(6)
+     MOVE 47652 TO WS-EXP(7)
+     MOVE 0 TO WS-EXP(8)
+     MOVE 0 TO WS-EXP(9)
+     MOVE 47652 TO WS-EXP(10)
+     MOVE -998864 TO WS-EXP(11)
+     MOVE 0 TO WS-EXP(12)
+     MOVE 0 TO WS-EXP(13)
+     MOVE 0 TO WS-EXP(14)
+     MOVE 0 TO WS-EXP(15)
+     MOVE 1000000 TO WS-EXP(16)
+     PERFORM CHECK-VIEW
+*>   Scenario: dying with deathTime 20 and no hurt: the roll stops at 20, first person.
+     MOVE "dying with deathTime 20 and no hurt: the roll stops at 20, first person" TO WS-SCENARIO
+     MOVE 0 TO CL-CAMERA
+     MOVE 0.5 TO CL-PARTIAL
+     MOVE 0 TO PL-BOB-O
+     MOVE 0 TO PL-BOB
+     MOVE 0 TO PL-WALK-O
+     MOVE 0 TO PL-WALK
+     MOVE 0 TO PL-HEALTH
+     MOVE 20 TO PL-DEATH-TIME
+     MOVE 0 TO PL-HURT-UNTIL
+     MOVE 0 TO PL-HURT-DIR
+     MOVE "bobView" TO WS-OPT-NAME
+     MOVE "true" TO WS-OPT-VALUE
+     MOVE 4 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE "damageTiltStrength" TO WS-OPT-NAME
+     MOVE "1.0" TO WS-OPT-VALUE
+     MOVE 3 TO WS-OPT-LENGTH
+     CALL "OPTIONS-SET" USING CLIENT-STATE WS-OPT-NAME WS-OPT-VALUE WS-OPT-LENGTH WS-OPT-OK
+     MOVE -997987 TO WS-EXP(1)
+     MOVE -63424 TO WS-EXP(2)
+     MOVE 0 TO WS-EXP(3)
+     MOVE 0 TO WS-EXP(4)
+     MOVE -63424 TO WS-EXP(5)
+     MOVE 997987 TO WS-EXP(6)
+     MOVE 0 TO WS-EXP(7)
+     MOVE 0 TO WS-EXP(8)
+     MOVE 0 TO WS-EXP(9)
+     MOVE 0 TO WS-EXP(10)
+     MOVE -1000000 TO WS-EXP(11)
+     MOVE 0 TO WS-EXP(12)
+     MOVE 0 TO WS-EXP(13)
+     MOVE 0 TO WS-EXP(14)
+     MOVE 0 TO WS-EXP(15)
+     MOVE 1000000 TO WS-EXP(16)
+     PERFORM CHECK-VIEW
+     STOP RUN.
+
+ CHECK-VIEW.
+     MOVE 0 TO RL-DRAW-COUNT RL-UPLOAD-COUNT
+     CALL "RENDER-LIST-BUILD" USING CLIENT-STATE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+         COMPUTE WS-OBS ROUNDED = RL-VIEW(WS-I) * 1000000
+         COMPUTE WS-DIFF = FUNCTION ABS(WS-EXP(WS-I) - WS-OBS)
+         IF WS-DIFF <= 3
+             MOVE WS-EXP(WS-I) TO WS-OBS
+         END-IF
+         MOVE WS-I TO WS-EDIT
+         MOVE SPACES TO WS-NAME
+         STRING "world view, " DELIMITED BY SIZE WS-SCENARIO DELIMITED BY "  " ": view element " DELIMITED BY SIZE
+             WS-EDIT DELIMITED BY SIZE " (millionths)" DELIMITED BY SIZE INTO WS-NAME
+         MOVE WS-NAME TO TL-CASE
+         MOVE "N" TO TL-MODE
+         MOVE WS-EXP(WS-I) TO TL-EXPECTED-N
+         MOVE WS-OBS TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+*>   The frustum planes: the right axis (row 1 of the view) is the unit vector along left minus right plane normal, the up axis (row 2) along top minus bottom.
+     PERFORM VARYING WS-J FROM 0 BY 1 UNTIL WS-J > 1
+         COMPUTE WS-LEN = 0
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+             COMPUTE WS-AXIS-V(WS-I) = RL-CULL-PLANE(WS-J * 6 + WS-I) - RL-CULL-PLANE(WS-J * 6 + WS-I + 3)
+             COMPUTE WS-LEN = WS-LEN + WS-AXIS-V(WS-I) * WS-AXIS-V(WS-I)
+         END-PERFORM
+         COMPUTE WS-LEN = FUNCTION SQRT(WS-LEN)
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+             COMPUTE WS-OBS ROUNDED = WS-AXIS-V(WS-I) / WS-LEN * 1000000
+             COMPUTE WS-K = (WS-I - 1) * 4 + WS-J + 1
+             COMPUTE WS-DIFF = FUNCTION ABS(WS-OBS - WS-EXP(WS-K))
+             IF WS-DIFF <= 3
+                 MOVE WS-EXP(WS-K) TO WS-OBS
+             END-IF
+             MOVE SPACES TO WS-NAME
+             MOVE WS-I TO WS-EDIT
+             STRING "world view, " DELIMITED BY SIZE WS-SCENARIO DELIMITED BY "  " ": frustum axis " DELIMITED BY SIZE
+                 WS-EDIT DELIMITED BY SIZE " of the view row " DELIMITED BY SIZE INTO WS-NAME
+             MOVE WS-NAME TO TL-CASE
+             MOVE "N" TO TL-MODE
+             MOVE WS-EXP(WS-K) TO TL-EXPECTED-N
+             MOVE WS-OBS TO TL-OBSERVED-N
+             CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         END-PERFORM
+     END-PERFORM.
+ END PROGRAM TEST-WORLD-VIEW-BOB.
+ COPY CLTEST.

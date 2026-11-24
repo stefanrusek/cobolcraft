@@ -1,0 +1,161 @@
+*> Coverage of the failure branches of the armour trim reader of ENTITY-EQ-COMPONENTS (WHEN 58): a trim component whose bytes end where a holder, an identifier length byte
+*> or the identifier should be, an identifier longer than 40, and a text value ITEM-NBT-SKIP reports malformed each leave the slot with no trim.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-COVE-D-TRIM.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY TESTLIB.
+ COPY PROTO.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ROW-AREA            PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG VALUE 10.5.
+ 01 WS-Y                   FLOAT-LONG VALUE 64.
+ 01 WS-Z                   FLOAT-LONG VALUE 10.5.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-ID                  BINARY-LONG VALUE 7.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 104.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-E1                  BINARY-LONG.
+ 01 WS-E2                  BINARY-LONG.
+ 01 WS-E3                  BINARY-LONG.
+ 01 WS-E4                  BINARY-LONG.
+ 01 WS-ROW                BINARY-LONG.
+ 01 WS-LABEL               PIC X(100).
+ PROCEDURE DIVISION.
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE "zombie" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     CALL "TEST-COVE-D-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 58 TO PB-ISX-TYPE(1)
+     MOVE 1 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"03" TO PB-ISX-VALUE(1)(1:1)
+     MOVE 5 TO WS-SLOT
+     PERFORM PUT-EQUIP
+     MOVE "cove-d trim: only a material holder: no pattern holder byte left leaves no trim" TO WS-LABEL
+     MOVE -1 TO WS-E1
+     MOVE 0 TO WS-E2 WS-E3 WS-E4
+     PERFORM CHECK-HEAD
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 58 TO PB-ISX-TYPE(1)
+     MOVE 1 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"00" TO PB-ISX-VALUE(1)(1:1)
+     MOVE 5 TO WS-SLOT
+     PERFORM PUT-EQUIP
+     MOVE "cove-d trim: an inline holder with no identifier length byte leaves no trim" TO WS-LABEL
+     MOVE -1 TO WS-E1
+     MOVE 0 TO WS-E2 WS-E3 WS-E4
+     PERFORM CHECK-HEAD
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 58 TO PB-ISX-TYPE(1)
+     MOVE 43 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"0029" TO PB-ISX-VALUE(1)(1:2)
+     MOVE ALL "a" TO PB-ISX-VALUE(1)(3:41)
+     MOVE 5 TO WS-SLOT
+     PERFORM PUT-EQUIP
+     MOVE "cove-d trim: an inline identifier longer than 40 leaves no trim" TO WS-LABEL
+     MOVE -1 TO WS-E1
+     MOVE 0 TO WS-E2 WS-E3 WS-E4
+     PERFORM CHECK-HEAD
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 58 TO PB-ISX-TYPE(1)
+     MOVE 4 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"00016100" TO PB-ISX-VALUE(1)(1:4)
+     MOVE 5 TO WS-SLOT
+     PERFORM PUT-EQUIP
+     MOVE "cove-d trim: an inline identifier with a malformed text value leaves no trim" TO WS-LABEL
+     MOVE -1 TO WS-E1
+     MOVE 0 TO WS-E2 WS-E3 WS-E4
+     PERFORM CHECK-HEAD
+     STOP RUN.
+
+ PUT-EQUIP.
+*>   The stack goes to ENTITY-EQ-COMPONENTS as the component table holds it: the packet reader (PB-GET-ITEM-STACK) only passes a trim component it has walked whole, so a
+*>   cut or malformed one reaches the reader only through the table itself.
+     MOVE 1 TO PB-ISX-COUNT
+     MOVE 5 TO PB-ISX-ITEM
+     MOVE 0 TO PB-ISX-REMOVED-COUNT
+     MOVE 1 TO WS-ROW
+     CALL "ENTITY-EQ-COMPONENTS" USING CLIENT-STATE WS-ROW WS-SLOT PB-ITEMSTACK-X.
+
+ ASSERT-LABEL.
+     MOVE "N" TO TL-MODE
+     MOVE WS-LABEL TO TL-CASE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ CHECK-HEAD-NONE.
+     MOVE -1 TO WS-E1
+     MOVE 0 TO WS-E2 WS-E3 WS-E4
+     PERFORM CHECK-HEAD.
+
+ CHECK-HEAD.
+*>   The four head values packed as one number: dye + 100000000 * (material * 1000000 + pattern * 100 + foil) is avoided; each is its own case.
+     MOVE WS-LABEL TO TL-CASE
+     STRING FUNCTION TRIM(WS-LABEL) " (dye)" DELIMITED BY SIZE INTO TL-CASE
+     MOVE WS-E1 TO TL-EXPECTED-N
+     MOVE EN-EQ-DYE(1, 6) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO TL-CASE
+     STRING FUNCTION TRIM(WS-LABEL) " (trim)" DELIMITED BY SIZE INTO TL-CASE
+     COMPUTE TL-EXPECTED-N = WS-E2 * 1000 + WS-E3
+     COMPUTE TL-OBSERVED-N = EN-EQ-TRIM-MAT(1, 6) * 1000 + EN-EQ-TRIM-PAT(1, 6)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE SPACES TO TL-CASE
+     STRING FUNCTION TRIM(WS-LABEL) " (foil)" DELIMITED BY SIZE INTO TL-CASE
+     MOVE WS-E4 TO TL-EXPECTED-N
+     MOVE EN-EQ-FOIL(1, 6) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-COVE-D-TRIM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-COVE-D-SPAWN.
+*> USING CLIENT-STATE, entity id, type (registry id), x y z (FLOAT-LONG), yaw (FLOAT-SHORT, also the head yaw): Add Entity.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-ADD                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-UUID                PIC X(16) VALUE LOW-VALUES.
+ 01 WS-V0                  FLOAT-LONG VALUE 0.
+ 01 WS-V1                  FLOAT-LONG VALUE 0.
+ 01 WS-V2                  FLOAT-LONG VALUE 0.
+ 01 WS-A0                  FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ID L-TYPE L-X L-Y L-Z L-YAW.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-V0 WS-V1 WS-V2
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER WS-A0
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-PACKET" USING CLIENT-STATE PB-BUFFER WS-ADD
+     GOBACK.
+ END PROGRAM TEST-COVE-D-SPAWN.
+

@@ -1,0 +1,1 @@
+{"type": "minecraft:add", "left": {"type": "minecraft:blend_alpha"}, "right": {"type": "minecraft:add", "left": {"type": "minecraft:blend_offset"}, "right": {"type": "minecraft:add", "left": {"type": "minecraft:beardifier"}, "right": 2.5}}}

@@ -1,0 +1,16 @@
+{
+ "feature": "minecraft:poppy",
+ "placement": [
+  {
+   "type": "minecraft:cuboid",
+   "xz_size": {
+    "type": "minecraft:uniform",
+    "min_inclusive": 2,
+    "max_inclusive": 2
+   },
+   "y_size": 2,
+   "include_edges": false,
+   "include_interior": false
+  }
+ ]
+}

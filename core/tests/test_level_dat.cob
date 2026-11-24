@@ -20,8 +20,10 @@
  01 WS-ROOT                BINARY-LONG.
  01 WS-PATH                PIC X(128).
  01 WS-TEXT                PIC X(8192).
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-TIME                BINARY-LONG.
  01 WS-OBSERVED            PIC X(8192).
- 01 WS-EDIT                PIC -(9)9.
+ 01 WS-EDIT                PIC -(10)9.
  01 WS-FEDIT               PIC -(5)9.999.
  01 WS-ALICE-NAME          PIC X(16) VALUE "Alice".
  01 WS-BOB-NAME            PIC X(16) VALUE "Bob".
@@ -49,8 +51,9 @@
      MOVE 60 TO CW-SPAWN-Y
      MOVE -3.5 TO CW-SPAWN-Z
      MOVE 45 TO CW-SPAWN-YAW
-     MOVE WK-DRIZZLE TO CW-WEATHER-KIND(DIM-MAIN)
-     MOVE 1500 TO CW-WEATHER-LEFT(DIM-MAIN)
+     MOVE WK-DRIZZLE TO WS-KIND
+     MOVE 1500 TO WS-TIME
+     CALL "WEATHER-SET-KIND" USING WS-KIND WS-TIME
      CALL "LEVEL-DAT-WRITE"
      CALL "TEST-NBT-FILE" USING WS-FILE PB-BUFFER WS-ROOT
      MOVE "test level dat keys: DataVersion 5023, LevelName, GameMode, Time, Spawn, Weather of "
@@ -63,36 +66,43 @@
      MOVE "Spawn" TO WS-PATH PERFORM ADD-GET
      MOVE "Weather" TO WS-PATH PERFORM ADD-GET
      MOVE "5023 Level Test 1 12345 {Dimension:cobolcraft:main,X:10.500,Y:60.000,Z:-3.500,"
-         & "Yaw:45.000} {cobolcraft:main:{Kind:cobolcraft:drizzle,Remaining:1500}}" TO TL-EXPECTED
+         & "Yaw:45.000} {clear_weather_time:0,rain_time:1500,thunder_time:1500,raining:1,"
+         & "thundering:0,cobolcraft:main:{Kind:cobolcraft:drizzle,Remaining:1500}}" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "test level dat read back restores name, game mode, time, spawn and weather" TO TL-CASE
      MOVE "changed" TO CW-NAME
      MOVE 0 TO CW-GAME-MODE CW-TIME CW-SPAWN-X CW-SPAWN-Y CW-SPAWN-Z CW-SPAWN-YAW
-     MOVE WK-CLEAR TO CW-WEATHER-KIND(DIM-MAIN)
-     MOVE 7 TO CW-WEATHER-LEFT(DIM-MAIN)
+     MOVE WK-CLEAR TO WS-KIND
+     MOVE 7 TO WS-TIME
+     CALL "WEATHER-SET-KIND" USING WS-KIND WS-TIME
      CALL "LEVEL-DAT-READ"
      PERFORM DESCRIBE-WORLD
-     MOVE "Level Test 1 12345 10.500 60.000 -3.500 45.000 2 1500" TO TL-EXPECTED
+     MOVE "Level Test 1 12345 10.500 60.000 -3.500 45.000 1 1500" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "test level dat weather until changed is stored as Remaining -1 and read back as -1"
-         TO TL-CASE
-     MOVE WK-HAILSTORM TO CW-WEATHER-KIND(DIM-MAIN)
-     MOVE WEATHER-UNTIL-CHANGED TO CW-WEATHER-LEFT(DIM-MAIN)
+     MOVE "test level dat a hailstorm of the longest time is stored as the five fields and read back as raining, "
+         & "thundering and the same time" TO TL-CASE
+     MOVE WK-HAILSTORM TO WS-KIND
+     MOVE 2147483647 TO WS-TIME
+     CALL "WEATHER-SET-KIND" USING WS-KIND WS-TIME
      CALL "LEVEL-DAT-WRITE"
      CALL "TEST-NBT-FILE" USING WS-FILE PB-BUFFER WS-ROOT
      MOVE SPACES TO WS-OBSERVED
      MOVE "Weather" TO WS-PATH PERFORM ADD-GET
-     MOVE 0 TO CW-WEATHER-LEFT(DIM-MAIN)
+     CALL "WEATHER-INIT"
      CALL "LEVEL-DAT-READ"
-     MOVE CW-WEATHER-KIND(DIM-MAIN) TO WS-EDIT
+     MOVE CW-RAINING TO WS-EDIT
      STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
          INTO WS-OBSERVED
-     MOVE CW-WEATHER-LEFT(DIM-MAIN) TO WS-EDIT
+     MOVE CW-THUNDERING TO WS-EDIT
      STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
          INTO WS-OBSERVED
-     MOVE "{cobolcraft:main:{Kind:cobolcraft:hailstorm,Remaining:-1}} 3 -1" TO TL-EXPECTED
+     MOVE CW-RAIN-TIME TO WS-EDIT
+     STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
+         INTO WS-OBSERVED
+     MOVE "{clear_weather_time:0,rain_time:2147483647,thunder_time:2147483647,raining:1,thundering:1,"
+         & "cobolcraft:main:{Kind:cobolcraft:hailstorm,Remaining:2147483647}} 1 1 2147483647" TO TL-EXPECTED
      PERFORM CHECK
 
 *>   GameMode and new players: the stored mode is survival (0), the setting creative (1).
@@ -152,10 +162,10 @@
      COMPUTE WS-FEDIT ROUNDED = CW-SPAWN-Y PERFORM ADD-FEDIT
      COMPUTE WS-FEDIT ROUNDED = CW-SPAWN-Z PERFORM ADD-FEDIT
      COMPUTE WS-FEDIT ROUNDED = CW-SPAWN-YAW PERFORM ADD-FEDIT
-     MOVE CW-WEATHER-KIND(DIM-MAIN) TO WS-EDIT
+     MOVE CW-RAINING TO WS-EDIT
      STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
          INTO WS-OBSERVED
-     MOVE CW-WEATHER-LEFT(DIM-MAIN) TO WS-EDIT
+     MOVE CW-RAIN-TIME TO WS-EDIT
      STRING FUNCTION TRIM(WS-OBSERVED) " " FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
          INTO WS-OBSERVED.
 

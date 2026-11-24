@@ -1,7 +1,15 @@
 *> The create-world screen (US16-1; 08 §10.8.6 create_world texts): the world name field (focused;
 *> it starts with the default name, typed text goes into it, Backspace deletes its last character,
-*> Enter creates), the game mode control (survival or creative, a click switches), Create and Cancel.
+*> Enter creates), the optional seed field below the type control (a click or Tab focuses it, the same
+*> editing; empty = random seed, a number is that seed, other text its Java string hash: 11 section 12.1,
+*> done by the core from the text; at most 64 bytes, the hint shows while it is empty; builtin-ui-art UI-24,
+*> world-types WT-19; the seed cannot be changed after creation), the game mode control (survival or creative, a click switches), the world type
+*> control (US2: standard, the default, superflat or cobolcraft, a click cycles in that order (world-types.md §12);
+*> a Ctrl-click selects the hidden debug type, which reads like the standard one: world-types.md §2.1), the
+*> Customize button below it (enabled for superflat only: the flat editor of flat-world.cob, 56 6.1), Create and Cancel.
 *> Create names the folder (WORLD-FOLDER-NAME, client-surface §2) and opens the new world (SP-OPEN).
+*> A standard, superflat or debug world with the packs not ok (CL-PACKS-STATUS) is not created: the screen shows
+*> cobolcraft.world_type.standard.unavailable (world-types.md §8.2) and nothing else happens.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CREATE-WORLD-BUILD.
@@ -10,6 +18,7 @@
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  COPY CLARGS.
+ COPY CONTENT.
  01 WS-KIND                BINARY-LONG.
  01 WS-ACTION              BINARY-LONG.
  01 WS-X                   BINARY-LONG.
@@ -25,11 +34,14 @@
  01 WS-Z2                  BINARY-LONG VALUE 0.
  01 WS-Z3                  BINARY-LONG VALUE 0.
  01 WS-Z4                  BINARY-LONG VALUE 0.
+ 01 WS-HINT-RGB            BINARY-LONG VALUE 10526880.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-GW                   BINARY-LONG.
  01 L-GH                   BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-GW L-GH.
+*>   The widths are set on every build (the buttons below narrow WS-W, which persists between frames).
+     MOVE 200 TO WS-W
      MOVE WK-LABEL TO WS-KIND
      COMPUTE WS-X = L-GW / 2 - 100
      MOVE 20 TO WS-Y
@@ -45,7 +57,12 @@
      MOVE WK-FIELD TO WS-KIND
      MOVE 58 TO WS-Y
      MOVE SM-EDIT-NAME TO WS-TEXT
-     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-Z1 WS-Z2 WS-X WS-Y WS-W WS-H WS-TEXT
+     MOVE 1 TO WS-STATE
+     IF SM-FOCUS = 2
+         MOVE 0 TO WS-STATE
+     END-IF
+     MOVE ACT-FIELD-NAME TO WS-ACTION
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-Z2 WS-X WS-Y WS-W WS-H WS-TEXT
          SM-EDIT-NAME-LENGTH WS-STATE
 *>   The game mode control: "Game mode: <mode name>".
      MOVE "cobolcraft.gamemode.survival" TO WS-KEY
@@ -65,8 +82,74 @@
      MOVE 90 TO WS-Y
      CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-Z1 WS-X WS-Y WS-W WS-H WS-TEXT
          WS-LENGTH WS-Z4
+*>   The world type control: "World type: <type name>" (debug reads as the standard type; superflat is the
+*>   generator.minecraft.flat text of 56 6.5).
+     MOVE "cobolcraft.world_type.standard" TO WS-KEY
+     MOVE 30 TO WS-KEY-LENGTH
+     IF SP-CREATE-TYPE = CT-TYPE-COBOLCRAFT
+         MOVE "cobolcraft.world_type.cobolcraft" TO WS-KEY
+         MOVE 32 TO WS-KEY-LENGTH
+     END-IF
+     IF SP-CREATE-TYPE = CL-TYPE-SUPERFLAT
+         MOVE "generator.minecraft.flat" TO WS-KEY
+         MOVE 24 TO WS-KEY-LENGTH
+     END-IF
+     CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-TEXT WS-LENGTH
+     MOVE 1 TO LA-COUNT
+     MOVE WS-TEXT TO LA-TEXT(1)
+     MOVE FUNCTION MIN(WS-LENGTH, 256) TO LA-LENGTH(1)
+     MOVE "cobolcraft.screen.create_world.type" TO WS-KEY
+     MOVE 35 TO WS-KEY-LENGTH
+     CALL "LANG-FORMAT" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH LANG-ARGS WS-TEXT WS-LENGTH
+     MOVE ACT-WORLD-TYPE TO WS-ACTION
+     MOVE 112 TO WS-Y
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-Z1 WS-X WS-Y WS-W WS-H WS-TEXT
+         WS-LENGTH WS-Z4
+*>   The Customize button (56 6.1): enabled while the type has an editor, which only superflat has here.
+     MOVE WK-BUTTON TO WS-KIND
+     MOVE 138 TO WS-Y
+     MOVE ACT-FLAT-CUSTOMIZE TO WS-ACTION
+     MOVE "selectWorld.customizeType" TO WS-KEY
+     MOVE 25 TO WS-KEY-LENGTH
+     MOVE 2 TO WS-STATE
+     IF SP-CREATE-TYPE = CL-TYPE-SUPERFLAT
+         MOVE 0 TO WS-STATE
+     END-IF
+     CALL "LANG-GET" USING CLIENT-STATE WS-KEY WS-KEY-LENGTH WS-TEXT WS-LENGTH
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-Z1 WS-X WS-Y WS-W WS-H WS-TEXT
+         WS-LENGTH WS-STATE
+*>   The seed row: the label, the field (the second one) and, while it is empty, the hint over it.
+     MOVE WK-LABEL TO WS-KIND
+     MOVE 164 TO WS-Y
+     MOVE ACT-NONE TO WS-ACTION
+     MOVE "cobolcraft.screen.create_world.seed" TO WS-KEY
+     MOVE 35 TO WS-KEY-LENGTH
+     CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-Z2 WS-Z3 WS-KEY
+         WS-KEY-LENGTH
+     MOVE WK-FIELD TO WS-KIND
+     MOVE 174 TO WS-Y
+     MOVE ACT-FIELD-SEED TO WS-ACTION
+     MOVE SM-EDIT-SEED TO WS-TEXT
+     MOVE 0 TO WS-STATE
+     IF SM-FOCUS = 2
+         MOVE 1 TO WS-STATE
+     END-IF
+     CALL "WIDGET-ADD" USING CLIENT-STATE WS-KIND WS-ACTION WS-Z2 WS-X WS-Y WS-W WS-H WS-TEXT
+         SM-EDIT-SEED-LENGTH WS-STATE
+     IF SM-EDIT-SEED-LENGTH = 0
+         MOVE WK-LABEL TO WS-KIND
+         MOVE 180 TO WS-Y
+         ADD 4 TO WS-X
+         MOVE "cobolcraft.screen.create_world.seed_hint" TO WS-KEY
+         MOVE 40 TO WS-KEY-LENGTH
+         CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-Z2 WS-Z3 WS-KEY
+             WS-KEY-LENGTH
+         CALL "WIDGET-COLOUR" USING CLIENT-STATE WS-HINT-RGB
+         SUBTRACT 4 FROM WS-X
+     END-IF
+     MOVE WK-BUTTON TO WS-KIND
      MOVE 98 TO WS-W
-     MOVE 130 TO WS-Y
+     MOVE 202 TO WS-Y
      MOVE ACT-CREATE-WORLD TO WS-ACTION
      MOVE "cobolcraft.screen.create_world.create" TO WS-KEY
      MOVE 37 TO WS-KEY-LENGTH
@@ -78,13 +161,25 @@
      MOVE 31 TO WS-KEY-LENGTH
      CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-ACTION WS-X WS-Y WS-W WS-H WS-KEY
          WS-KEY-LENGTH
+     IF SP-CREATE-REFUSED = 1
+         MOVE WK-LABEL TO WS-KIND
+         COMPUTE WS-X = L-GW / 2 - 100
+         MOVE 226 TO WS-Y
+         MOVE "cobolcraft.world_type.standard.unavailable" TO WS-KEY
+         MOVE 42 TO WS-KEY-LENGTH
+         CALL "WIDGET-ADD-KEY" USING CLIENT-STATE WS-KIND WS-Z1 WS-X WS-Y WS-Z2 WS-Z3 WS-KEY
+             WS-KEY-LENGTH
+     END-IF
      GOBACK.
  END PROGRAM CREATE-WORLD-BUILD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CREATE-WORLD-INPUT.
-*> USING CLIENT-STATE: typed code points (UTF-8 encoded) are appended to the name while it has
-*> room (64 bytes); Backspace removes its last character; Enter creates the world.
+*> USING CLIENT-STATE: typed code points (UTF-8 encoded) are appended to the focused field (SM-FOCUS 2 the
+*> seed, otherwise the name) while it has room (64 bytes); Backspace removes its last character; Tab moves
+*> the focus between the name and the seed field; Enter creates the world. A code point that does not fit
+*> is dropped whole (a character is never cut). Non-BMP text is stored as typed (UTF-8) and the core reads
+*> it as two UTF-16 units for its hash (11 section 12.1).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -99,13 +194,28 @@
  PROCEDURE DIVISION USING CLIENT-STATE.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > IN-TEXT-COUNT
          CALL "UTF8-ENCODE" USING IN-TEXT(WS-I) WS-BYTES WS-COUNT
-         IF SM-EDIT-NAME-LENGTH + WS-COUNT <= 64
-             MOVE WS-BYTES(1:WS-COUNT) TO SM-EDIT-NAME(SM-EDIT-NAME-LENGTH + 1:WS-COUNT)
-             ADD WS-COUNT TO SM-EDIT-NAME-LENGTH
-         END-IF
+         EVALUATE TRUE
+             WHEN SM-FOCUS = 2 AND SM-EDIT-SEED-LENGTH + WS-COUNT <= 64
+                 MOVE WS-BYTES(1:WS-COUNT) TO SM-EDIT-SEED(SM-EDIT-SEED-LENGTH + 1:WS-COUNT)
+                 ADD WS-COUNT TO SM-EDIT-SEED-LENGTH
+             WHEN SM-FOCUS NOT = 2 AND SM-EDIT-NAME-LENGTH + WS-COUNT <= 64
+                 MOVE WS-BYTES(1:WS-COUNT) TO SM-EDIT-NAME(SM-EDIT-NAME-LENGTH + 1:WS-COUNT)
+                 ADD WS-COUNT TO SM-EDIT-NAME-LENGTH
+         END-EVALUATE
      END-PERFORM
      IF IN-KEY-PRESSED(CC-KEY-BACKSPACE + 1) = 1
-         CALL "TEXT-DROP-LAST" USING SM-EDIT-NAME SM-EDIT-NAME-LENGTH
+         IF SM-FOCUS = 2
+             CALL "TEXT-DROP-LAST" USING SM-EDIT-SEED SM-EDIT-SEED-LENGTH
+         ELSE
+             CALL "TEXT-DROP-LAST" USING SM-EDIT-NAME SM-EDIT-NAME-LENGTH
+         END-IF
+     END-IF
+     IF IN-KEY-PRESSED(CC-KEY-TAB + 1) = 1
+         IF SM-FOCUS = 2
+             MOVE 1 TO SM-FOCUS
+         ELSE
+             MOVE 2 TO SM-FOCUS
+         END-IF
      END-IF
      IF IN-KEY-PRESSED(CC-KEY-ENTER + 1) = 1
          CALL "SCREEN-ACTION" USING CLIENT-STATE WS-ACTION WS-ZERO
@@ -115,10 +225,12 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CREATE-WORLD-CREATE.
-*> USING CLIENT-STATE: Create: an empty name becomes the default name; the folder is named from the
-*> name and the world created and opened in the chosen mode.
+*> USING CLIENT-STATE: Create: a standard, superflat or debug world with the packs not ok is refused (the screen
+*> shows why); otherwise an empty name becomes the default name, the folder is named from the name and
+*> the world created and opened in the chosen mode and type.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CONTENT.
  01 WS-KEY                 PIC X(80) VALUE "cobolcraft.screen.create_world.default_name".
  01 WS-KEY-LENGTH          BINARY-LONG VALUE 43.
  01 WS-TEXT                PIC X(512).
@@ -131,6 +243,10 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
+     IF SP-CREATE-TYPE NOT = CT-TYPE-COBOLCRAFT AND CL-PACKS-STATUS NOT = CT-PACKS-OK
+         MOVE 1 TO SP-CREATE-REFUSED
+         GOBACK
+     END-IF
      MOVE SM-EDIT-NAME TO WS-NAME
      MOVE SM-EDIT-NAME-LENGTH TO WS-NAME-LENGTH
      IF WS-NAME-LENGTH = 0
@@ -144,3 +260,31 @@
      CALL "SP-OPEN" USING CLIENT-STATE WS-FOLDER WS-FOLDER-LENGTH WS-NAME WS-NAME-LENGTH WS-MODE
      GOBACK.
  END PROGRAM CREATE-WORLD-CREATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CREATE-WORLD-TYPE.
+*> USING CLIENT-STATE: a click on the world type control: with Ctrl held (CONTROLS-CTRL-DOWN) the
+*> hidden debug type; otherwise standard becomes superflat, superflat becomes cobolcraft and cobolcraft or
+*> debug becomes standard (world-types.md §12). A refusal shown by the last Create goes away.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ COPY CONTENT.
+ 01 WS-CTRL                PIC 9.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     CALL "CONTROLS-CTRL-DOWN" USING CLIENT-STATE WS-CTRL
+     EVALUATE TRUE
+         WHEN WS-CTRL = 1
+             MOVE CT-TYPE-DEBUG TO SP-CREATE-TYPE
+         WHEN SP-CREATE-TYPE = CT-TYPE-STANDARD
+             MOVE CL-TYPE-SUPERFLAT TO SP-CREATE-TYPE
+         WHEN SP-CREATE-TYPE = CL-TYPE-SUPERFLAT
+             MOVE CT-TYPE-COBOLCRAFT TO SP-CREATE-TYPE
+         WHEN OTHER
+             MOVE CT-TYPE-STANDARD TO SP-CREATE-TYPE
+     END-EVALUATE
+     MOVE 0 TO SP-CREATE-REFUSED
+     GOBACK.
+ END PROGRAM CREATE-WORLD-TYPE.

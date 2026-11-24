@@ -1,0 +1,390 @@
+*> Acceptance test (002-lane-p49n; docs/protocol/20 sections 13 and 13.2, 26 entity predicates): the pillager's five-slot inventory and loot pickup, the charging metadata 17 and the captain's
+*> ominous bottle. SimpleContainer(5): an added item merges into a stack of the same item up to the stack size and then takes the first empty slot; the pillager picks up a ground item
+*> within reach (no delay, mob_griefing on) that is not a banner when it has no active raid (with a raid it wants only the ominous banner, which goes to the head by the Raider rule, so
+*> nothing enters the inventory). A raider is a captain when it wears the wave's banner or is a patrol leader with no raid wave; a captain pillager drops an ominous bottle (fixture
+*> entities/pillager.json: entity_properties type_specific/raider is_captain).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-P49N-PILLAGER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY CONTENT.
+ COPY STDMOBS.
+ COPY P49NSTATE.
+ COPY RAIDSTATE.
+ COPY PATROL.
+ COPY CITEMS.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-DIRT                BINARY-LONG.
+ 01 WS-STICK               BINARY-LONG.
+ 01 WS-BANNER              BINARY-LONG.
+ 01 WS-BOTTLE              BINARY-LONG.
+ 01 WS-PILLAGER            BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-CX                  FLOAT-LONG.
+ 01 WS-CZ                  FLOAT-LONG.
+ 01 WS-FX                  BINARY-LONG.
+ 01 WS-FZ                  BINARY-LONG.
+ 01 WS-FY                  BINARY-LONG.
+ 01 WS-FSIZE               BINARY-LONG VALUE 40.
+ 01 WS-FKIND               BINARY-LONG VALUE 1.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-GROUND              BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-ZF1                 FLOAT-LONG VALUE 0.
+ 01 WS-ZF2                 FLOAT-LONG VALUE 0.
+ 01 WS-ZF3                 FLOAT-LONG VALUE 0.
+ 01 WS-RULE-NAME           PIC X(40) VALUE "mob_griefing".
+ 01 WS-RULE-ROW            BINARY-LONG.
+ 01 WS-RULE-VALUE          BINARY-DOUBLE.
+ 01 WS-CAPTAIN             BINARY-LONG.
+ 01 WS-HAS-RAID            BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-CASE                PIC X(100).
+ 01 WS-CASE240             PIC X(240).
+ 01 WS-EXP                 BINARY-LONG.
+ 01 WS-OBS                 BINARY-LONG.
+ 01 WS-IDS                 PIC X(1024).
+ 01 WS-WANTED              BINARY-LONG VALUE 101.
+ 01 WS-EXPECTED            PIC X(1024).
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-AREA512             PIC X(512).
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
+ 01 WS-THREE               BINARY-LONG VALUE 3.
+ 01 WS-FIVE                BINARY-LONG VALUE 5.
+ 01 WS-SEVENTY             BINARY-LONG VALUE 70.
+ 01 WS-LOOT-DIR            PIC X(1100) VALUE "core/tests/fixtures/stdmob-loot".
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-BEFORE              BINARY-LONG.
+ 01 WS-PLANKS              BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     CALL "LOOT-LOAD" USING WS-LOOT-DIR WS-STATUS
+     MOVE PL-CONN(WS-PLAYER) TO WS-CONN
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     COMPUTE WS-FX = FUNCTION INTEGER(WS-X) - 20
+     COMPUTE WS-FZ = FUNCTION INTEGER(WS-Z) - 20
+     COMPUTE WS-FY = FUNCTION INTEGER(WS-Y) - 1
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX WS-FZ WS-FSIZE WS-FY WS-FKIND
+     MOVE "minecraft:dirt" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-DIRT WS-ITEM-ROW WS-STATUS
+     MOVE "minecraft:stick" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-STICK WS-ITEM-ROW WS-STATUS
+     MOVE "minecraft:white_banner" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-BANNER WS-ITEM-ROW WS-STATUS
+     MOVE "minecraft:ominous_bottle" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-BOTTLE WS-ITEM-ROW WS-STATUS
+     COMPUTE WS-CX = WS-X + 4
+     MOVE WS-Z TO WS-CZ
+     MOVE "minecraft:pillager" TO WS-KEY
+     CALL "PN-SPAWN" USING WS-DIM WS-KEY WS-CX WS-Y WS-CZ WS-PILLAGER
+     CALL "BR-RULE-FIND" USING WS-RULE-NAME WS-RULE-ROW
+     MOVE 1 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-ROW WS-RULE-VALUE
+     PERFORM CLEAR-RAIDS
+
+*>   SimpleContainer.addItem: 3 dirt in slot 1; 70 more fill slot 1 to 64 and put 9 in slot 2.
+     CALL "PILLAGER-INV-ADD" USING WS-PILLAGER WS-DIRT WS-THREE WS-LEFT
+     MOVE "acceptance US15 20§13.2 The first item goes into slot 1 (3 dirt, nothing left)" TO WS-CASE
+     MOVE 3000 TO WS-EXP
+     COMPUTE WS-OBS = PN-INV-COUNT(WS-PILLAGER, 1) * 1000 + WS-LEFT
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "PILLAGER-INV-ADD" USING WS-PILLAGER WS-DIRT WS-SEVENTY WS-LEFT
+     MOVE "acceptance US15 20§13.2 70 more fill slot 1 to the stack size 64 and 9 go to slot 2" TO WS-CASE
+     MOVE 64009 TO WS-EXP
+     COMPUTE WS-OBS = PN-INV-COUNT(WS-PILLAGER, 1) * 1000 + PN-INV-COUNT(WS-PILLAGER, 2)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "PILLAGER-INV-ADD" USING WS-PILLAGER WS-STICK WS-ONE WS-LEFT
+     MOVE "acceptance US15 20§13.2 Another item takes the first empty slot (slot 3)" TO WS-CASE
+     COMPUTE WS-EXP = WS-STICK + 1
+     MOVE PN-INV-ITEM(WS-PILLAGER, 3) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 64 TO PN-INV-COUNT(WS-PILLAGER, 2)
+     COMPUTE PN-INV-ITEM(WS-PILLAGER, 2) = WS-DIRT + 1
+     COMPUTE PN-INV-ITEM(WS-PILLAGER, 4) = WS-DIRT + 1
+     MOVE 64 TO PN-INV-COUNT(WS-PILLAGER, 4)
+     COMPUTE PN-INV-ITEM(WS-PILLAGER, 5) = WS-DIRT + 1
+     MOVE 64 TO PN-INV-COUNT(WS-PILLAGER, 5)
+     MOVE 64 TO PN-INV-COUNT(WS-PILLAGER, 3)
+     COMPUTE PN-INV-ITEM(WS-PILLAGER, 3) = WS-DIRT + 1
+     CALL "PILLAGER-INV-ADD" USING WS-PILLAGER WS-DIRT WS-FIVE WS-LEFT
+     MOVE "acceptance US15 20§13.2 With the five slots full 5 more are left over" TO WS-CASE
+     MOVE 5 TO WS-EXP
+     MOVE WS-LEFT TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     PERFORM EMPTY-INVENTORY
+
+*>   Loot pickup: dirt x2 beside it, no raid: it takes both; with the delay, griefing off, a banner or a far stack it takes nothing.
+     COMPUTE WS-CX = WS-X + 4.5
+     CALL "GI-SPAWN" USING WS-DIM WS-CX WS-Y WS-CZ WS-ZF1 WS-ZF2 WS-ZF3 WS-DIRT WS-TWO WS-ZERO WS-GROUND
+     MOVE 5 TO EN-DELAY(WS-GROUND)
+     CALL "PILLAGER-PICKUP-TICK" USING WS-PILLAGER
+     MOVE "acceptance US15 20§13.2 An item with a pickup delay is left" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE PN-INV-COUNT(WS-PILLAGER, 1) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO EN-DELAY(WS-GROUND)
+     MOVE 0 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-ROW WS-RULE-VALUE
+     CALL "PILLAGER-PICKUP-TICK" USING WS-PILLAGER
+     MOVE "acceptance US15 20§13.2 With mob_griefing off it picks up nothing" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE PN-INV-COUNT(WS-PILLAGER, 1) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-ROW WS-RULE-VALUE
+     MOVE EN-ID(WS-PILLAGER) TO RR-ID(1)
+     MOVE 1 TO RR-RAID(1)
+     MOVE 1 TO RD-USED(1)
+     CALL "PILLAGER-PICKUP-TICK" USING WS-PILLAGER
+     MOVE "acceptance US15 20§13.2 With an active raid it wants only the banner: dirt is left" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE PN-INV-COUNT(WS-PILLAGER, 1) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     PERFORM CLEAR-RAIDS
+     CALL "PILLAGER-PICKUP-TICK" USING WS-PILLAGER
+     MOVE "acceptance US15 20§13.2 Without a raid it takes the whole stack of dirt into slot 1" TO WS-CASE
+     MOVE 2 TO WS-EXP
+     MOVE PN-INV-COUNT(WS-PILLAGER, 1) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 20§13.2 The ground stack is gone" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE EN-USED(WS-GROUND) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     PERFORM EMPTY-INVENTORY
+*>   A banner goes to the head by the Raider rule, not into the inventory.
+     CALL "GI-SPAWN" USING WS-DIM WS-CX WS-Y WS-CZ WS-ZF1 WS-ZF2 WS-ZF3 WS-BANNER WS-ONE WS-ZERO WS-GROUND
+     MOVE 0 TO EN-DELAY(WS-GROUND)
+     CALL "PILLAGER-PICKUP-TICK" USING WS-PILLAGER
+     MOVE "acceptance US15 20§13.2 A banner does not enter the inventory (the Raider rule takes it)" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE PN-INV-COUNT(WS-PILLAGER, 1) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-GROUND
+*>   A stack 3 blocks away is out of reach.
+     COMPUTE WS-CX = WS-X + 8
+     CALL "GI-SPAWN" USING WS-DIM WS-CX WS-Y WS-CZ WS-ZF1 WS-ZF2 WS-ZF3 WS-STICK WS-ONE WS-ZERO WS-GROUND
+     MOVE 0 TO EN-DELAY(WS-GROUND)
+     CALL "PILLAGER-PICKUP-TICK" USING WS-PILLAGER
+     MOVE "acceptance US15 20§13.2 A stack 4 blocks away is out of reach" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE PN-INV-COUNT(WS-PILLAGER, 1) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-GROUND
+
+*>   Metadata 17: charging the crossbow (EN-DRAW 1) is true, back to false after it.
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     MOVE 1 TO EN-DRAW(WS-PILLAGER)
+     CALL "PILLAGER-FLAGS-TICK" USING WS-PILLAGER
+     MOVE SPACES TO WS-AREA512
+     MOVE FUNCTION CHAR(EN-ID(WS-PILLAGER) + 1) TO WS-AREA512(1:1)
+     CALL "TEST-HEX-OF" USING WS-AREA512 WS-ONE WS-HEX
+     MOVE SPACES TO WS-EXPECTED
+     STRING WS-HEX(1:2) "110801ff" DELIMITED BY SIZE INTO WS-EXPECTED
+     MOVE "acceptance US15 20§13.2 Charging the crossbow sends metadata 17 true" TO WS-CASE240
+     CALL "PN-CHECK-HEX" USING WS-CONN WS-CASE240 WS-WANTED WS-EXPECTED
+     MOVE 2 TO EN-DRAW(WS-PILLAGER)
+     CALL "PILLAGER-FLAGS-TICK" USING WS-PILLAGER
+     MOVE SPACES TO WS-EXPECTED
+     STRING WS-HEX(1:2) "110800ff" DELIMITED BY SIZE INTO WS-EXPECTED
+     MOVE "acceptance US15 20§13.2 Charged: metadata 17 goes false" TO WS-CASE240
+     CALL "PN-CHECK-HEX" USING WS-CONN WS-CASE240 WS-WANTED WS-EXPECTED
+     CALL "PILLAGER-FLAGS-TICK" USING WS-PILLAGER
+     MOVE "none" TO WS-EXPECTED
+     MOVE "acceptance US15 20§13.2 No change, no packet" TO WS-CASE240
+     CALL "PN-CHECK-HEX" USING WS-CONN WS-CASE240 WS-WANTED WS-EXPECTED
+     MOVE 0 TO EN-DRAW(WS-PILLAGER)
+
+*>   The captain test (20 section 13): a plain raider is none; a patrol leader outside a raid wave is a captain; the banner wearer of a wave is one and has a raid.
+     CALL "RAIDER-IS-CAPTAIN" USING WS-PILLAGER WS-CAPTAIN WS-HAS-RAID
+     MOVE "acceptance US15 20§13 A plain pillager is no captain and has no raid" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS = WS-CAPTAIN * 10 + WS-HAS-RAID
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE EN-ID(WS-PILLAGER) TO PT-ID(1)
+     MOVE 1 TO PT-LEADER(1)
+     CALL "RAIDER-IS-CAPTAIN" USING WS-PILLAGER WS-CAPTAIN WS-HAS-RAID
+     MOVE "acceptance US15 20§13 A patrol leader with no raid wave is a captain" TO WS-CASE
+     MOVE 10 TO WS-EXP
+     COMPUTE WS-OBS = WS-CAPTAIN * 10 + WS-HAS-RAID
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE EN-ID(WS-PILLAGER) TO RR-ID(1)
+     MOVE 1 TO RR-RAID(1)
+     MOVE 0 TO RR-LEADER(1)
+     CALL "RAIDER-IS-CAPTAIN" USING WS-PILLAGER WS-CAPTAIN WS-HAS-RAID
+     MOVE "acceptance US15 20§13 A patrol leader in a raid wave without the banner is not a captain" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS = WS-CAPTAIN * 10 + WS-HAS-RAID
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO PT-ID(1) PT-LEADER(1)
+     MOVE 1 TO RR-LEADER(1)
+     CALL "RAIDER-IS-CAPTAIN" USING WS-PILLAGER WS-CAPTAIN WS-HAS-RAID
+     MOVE "acceptance US15 20§13 The wave's banner wearer is a captain with a raid" TO WS-CASE
+     MOVE 11 TO WS-EXP
+     COMPUTE WS-OBS = WS-CAPTAIN * 10 + WS-HAS-RAID
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     PERFORM CLEAR-RAIDS
+
+*>   The loot: a captain pillager that dies drops one ominous bottle; a plain one drops nothing.
+     MOVE WS-BOTTLE TO WS-I
+     PERFORM COUNT-ITEMS
+     MOVE WS-COUNT TO WS-BEFORE
+     MOVE EN-ID(WS-PILLAGER) TO RR-ID(1)
+     MOVE 1 TO RR-RAID(1)
+     MOVE 1 TO RR-LEADER(1)
+     CALL "STDMOB-DIE" USING WS-PILLAGER
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 20§13.2 A captain pillager drops an ominous bottle" TO WS-CASE
+     COMPUTE WS-EXP = WS-BEFORE + 1
+     MOVE WS-COUNT TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     PERFORM CLEAR-RAIDS
+     CALL "ENTITY-REMOVE" USING WS-PILLAGER
+     COMPUTE WS-CX = WS-X + 4
+     MOVE "minecraft:pillager" TO WS-KEY
+     CALL "PN-SPAWN" USING WS-DIM WS-KEY WS-CX WS-Y WS-CZ WS-PILLAGER
+     PERFORM COUNT-ITEMS
+     MOVE WS-COUNT TO WS-BEFORE
+     CALL "STDMOB-DIE" USING WS-PILLAGER
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 20§13.2 A plain pillager drops none" TO WS-CASE
+     MOVE WS-BEFORE TO WS-EXP
+     MOVE WS-COUNT TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     STOP RUN.
+
+ EMPTY-INVENTORY.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 5
+         MOVE 0 TO PN-INV-ITEM(WS-PILLAGER, WS-I) PN-INV-COUNT(WS-PILLAGER, WS-I)
+     END-PERFORM.
+
+ CLEAR-RAIDS.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RR-MAX
+         MOVE 0 TO RR-ID(WS-I) RR-RAID(WS-I) RR-LEADER(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RD-MAX
+         MOVE 0 TO RD-USED(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PT-MAX
+         MOVE 0 TO PT-ID(WS-I) PT-LEADER(WS-I)
+     END-PERFORM.
+
+*> WS-COUNT: the item entities of item id WS-I.
+ COUNT-ITEMS.
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+         IF EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) = CR-LOOSE-ITEM AND EN-ITEM(WS-E) = WS-I
+             ADD EN-ITEM-COUNT(WS-E) TO WS-COUNT
+         END-IF
+     END-PERFORM.
+ END PROGRAM TEST-P49N-PILLAGER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PN-SPAWN.
+*> USING dim, key (PIC X(112)), x, y, z (FLOAT-LONG), row out.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-KEY                  PIC X(112).
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-KEY L-X L-Y L-Z L-ROW.
+     CALL "CONTENT-ENTITY-BY-KEY" USING L-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     CALL "MOB-SPAWN" USING L-DIM WS-TYPE L-X L-Y L-Z WS-YAW L-ROW
+     GOBACK.
+ END PROGRAM PN-SPAWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CHK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ LINKAGE SECTION.
+ 01 L-CASE                 PIC X(100).
+ 01 L-EXPECTED             BINARY-LONG.
+ 01 L-OBSERVED             BINARY-LONG.
+ PROCEDURE DIVISION USING L-CASE L-EXPECTED L-OBSERVED.
+     MOVE "N" TO TL-MODE
+     MOVE L-CASE TO TL-CASE
+     MOVE L-EXPECTED TO TL-EXPECTED-N
+     MOVE L-OBSERVED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     GOBACK.
+ END PROGRAM TEST-CHK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PN-CHECK-HEX.
+*> USING connection id, case (X(240)), wanted packet id, expected hex of the body ("none": no such packet): the body of the first packet of that id drained from the connection.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-AREA                PIC X(65536) BASED.
+ 01 WS-COPY                PIC X(512).
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-TEXT                PIC X(4096).
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-CASE                 PIC X(240).
+ 01 L-WANTED               BINARY-LONG.
+ 01 L-EXPECTED             PIC X(1024).
+ PROCEDURE DIVISION USING L-ID L-CASE L-WANTED L-EXPECTED.
+     MOVE "none" TO WS-HEX
+     MOVE 0 TO WS-FOUND WS-OUTCOME
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID = L-WANTED AND WS-FOUND = 0
+             MOVE 1 TO WS-FOUND
+             SET ADDRESS OF WS-AREA TO PK-ADDR
+             COMPUTE WS-COUNT = PK-LENGTH - PK-POS
+             MOVE SPACES TO WS-COPY
+             MOVE WS-AREA(PK-POS + 1:WS-COUNT) TO WS-COPY
+             CALL "TEST-HEX-OF" USING WS-COPY WS-COUNT WS-HEX
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     MOVE WS-HEX TO WS-TEXT
+     MOVE L-CASE TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE L-EXPECTED TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     GOBACK.
+ END PROGRAM PN-CHECK-HEX.
+ COPY CORETEST.
+ COPY MOBSPTEST.

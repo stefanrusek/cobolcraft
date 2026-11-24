@@ -119,57 +119,6 @@
  END PROGRAM PACK-ROOT-READ.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. FILE-READ-ALL.
-*> USING path (PIC X(1100)), path length, area, capacity, length out, status out (0 read; 1 the
-*> file cannot be opened or read; 5 larger than the capacity: length out is its size, nothing read).
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- 01 WS-PATH                PIC X(1101).
- 01 WS-INFO.
-    05 WS-SIZE             PIC X(8) COMP-X.
-    05 FILLER              PIC X(8).
- 01 WS-ACCESS              PIC X COMP-X VALUE 1.
- 01 WS-DENY                PIC X COMP-X VALUE 0.
- 01 WS-DEVICE              PIC X COMP-X VALUE 0.
- 01 WS-HANDLE              PIC X(4).
- 01 WS-OFFSET              PIC X(8) COMP-X VALUE 0.
- 01 WS-COUNT               PIC X(4) COMP-X.
- 01 WS-FLAGS               PIC X COMP-X VALUE 0.
- LINKAGE SECTION.
- 01 L-PATH                 PIC X(1100).
- 01 L-PATH-LENGTH          BINARY-LONG.
- 01 L-AREA                 PIC X.
- 01 L-CAPACITY             BINARY-LONG.
- 01 L-LENGTH               BINARY-LONG.
- 01 L-STATUS               BINARY-LONG.
- PROCEDURE DIVISION USING L-PATH L-PATH-LENGTH L-AREA L-CAPACITY L-LENGTH L-STATUS.
-     MOVE 0 TO L-LENGTH
-     MOVE 1 TO L-STATUS
-     MOVE SPACES TO WS-PATH
-     MOVE L-PATH(1:L-PATH-LENGTH) TO WS-PATH
-     CALL "CBL_CHECK_FILE_EXIST" USING WS-PATH WS-INFO
-     IF RETURN-CODE NOT = 0
-         MOVE 0 TO RETURN-CODE
-         GOBACK
-     END-IF
-     MOVE WS-SIZE TO L-LENGTH
-     IF WS-SIZE > L-CAPACITY
-         MOVE 5 TO L-STATUS
-         GOBACK
-     END-IF
-     CALL "CBL_OPEN_FILE" USING WS-PATH WS-ACCESS WS-DENY WS-DEVICE WS-HANDLE
-     IF RETURN-CODE NOT = 0
-         MOVE 0 TO RETURN-CODE L-LENGTH
-         GOBACK
-     END-IF
-     MOVE WS-SIZE TO WS-COUNT
-     CALL "CBL_READ_FILE" USING WS-HANDLE WS-OFFSET WS-COUNT WS-FLAGS L-AREA
-     CALL "CBL_CLOSE_FILE" USING WS-HANDLE
-     MOVE 0 TO L-STATUS RETURN-CODE
-     GOBACK.
- END PROGRAM FILE-READ-ALL.
-
- IDENTIFICATION DIVISION.
  PROGRAM-ID. PACK-SOURCE-FILES.
 *> USING CLIENT-STATE, pack (kind 1 or 2, open; the packs above it open with their PK-META): the
 *> pack's file table PK-FILES (at most CL-MAX-PACK-FILES entries of 268 bytes: logical path
@@ -181,7 +130,7 @@
  COPY CLCONST.
  01 WS-TABLE.
     05 WS-COUNT            BINARY-LONG.
-    05 WS-FILE OCCURS 8192 TIMES.
+    05 WS-FILE OCCURS 16384 TIMES.
        10 WS-F-PATH        PIC X(256).
        10 WS-F-LENGTH      BINARY-LONG.
        10 WS-F-INDEX       BINARY-LONG.
@@ -195,7 +144,7 @@
  01 WS-PREFIX-LENGTH       BINARY-LONG.
  01 WS-BYTES               BINARY-LONG.
  01 WS-INDEX               BINARY-LONG.
- 01 B-FILES                PIC X(2195456) BASED.
+ 01 B-FILES                PIC X(4390912) BASED.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-PACK                 BINARY-LONG.
@@ -245,20 +194,22 @@
  PROGRAM-ID. PACK-FOLDER-SCAN.
 *> USING CLIENT-STATE, pack (a folder), file table (PACK-SOURCE-FILES layout), layer prefix
 *> (PIC X(80): "" or "<overlay>/"), prefix length, overlay: every file under
-*> <root>/<prefix>assets, depth first (cc_fs_list; at most 64 directories pending), offered to
+*> <root>/<prefix>assets, depth first (cc_fs_list; at most 512 directories pending: the vanilla textures/entity directory alone has 79 sub-directories), offered to
 *> PACK-FILE-ADD with its path relative to the root.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-STACK.
-    05 WS-DIR OCCURS 64 TIMES.
+    05 WS-DIR OCCURS 512 TIMES.
        10 WS-DIR-PATH      PIC X(256).
        10 WS-DIR-LENGTH    BINARY-LONG.
  01 WS-DEPTH               BINARY-LONG.
  01 WS-CUR                 PIC X(256).
  01 WS-CUR-LENGTH          BINARY-LONG.
  01 WS-DIRZ                PIC X(1400).
- 01 WS-LIST                PIC X(65536).
- 01 WS-LIST-CAPACITY       BINARY-LONG VALUE 65536.
+*> A directory listing of the generated vanilla pack is about 80,000 bytes (models/block alone has
+*> 2,900 names); a listing that does not fit is dropped whole by cc_fs_list, which hid every model.
+ 01 WS-LIST                PIC X(524288).
+ 01 WS-LIST-CAPACITY       BINARY-LONG VALUE 524288.
  01 WS-LIST-COUNT          BINARY-LONG.
  01 WS-RC                  BINARY-LONG.
  01 WS-PTR                 BINARY-LONG.
@@ -270,7 +221,7 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-PACK                 BINARY-LONG.
- 01 L-TABLE                PIC X(2195460).
+ 01 L-TABLE                PIC X(4390916).
  01 L-PREFIX               PIC X(80).
  01 L-PREFIX-LENGTH        BINARY-LONG.
  01 L-OVERLAY              BINARY-LONG.
@@ -302,7 +253,7 @@
                  WHEN WS-ENTRY(1:1) = "F"
                      CALL "PACK-FILE-ADD" USING CLIENT-STATE L-PACK L-TABLE WS-PATH
                          WS-PATH-LENGTH L-PREFIX-LENGTH WS-ZERO L-OVERLAY
-                 WHEN WS-DEPTH < 64
+                 WHEN WS-DEPTH < 512
                      ADD 1 TO WS-DEPTH
                      MOVE WS-PATH TO WS-DIR-PATH(WS-DEPTH)
                      MOVE WS-PATH-LENGTH TO WS-DIR-LENGTH(WS-DEPTH)
@@ -332,7 +283,7 @@
  01 L-PACK                 BINARY-LONG.
  01 L-TABLE.
     05 L-COUNT             BINARY-LONG.
-    05 L-FILE OCCURS 8192 TIMES.
+    05 L-FILE OCCURS 16384 TIMES.
        10 L-F-PATH         PIC X(256).
        10 L-F-LENGTH       BINARY-LONG.
        10 L-F-INDEX        BINARY-LONG.
@@ -498,7 +449,7 @@
  01 L-PATH                 PIC X(256).
  01 L-LENGTH               BINARY-LONG.
  01 L-INDEX                BINARY-LONG.
- 01 B-TABLE                PIC X(2195456) BASED.
+ 01 B-TABLE                PIC X(4390912) BASED.
  PROCEDURE DIVISION USING CLIENT-STATE L-PACK L-PATH L-LENGTH L-INDEX.
      MOVE 0 TO L-INDEX
      SET ADDRESS OF B-TABLE TO PK-FILES(L-PACK)
@@ -535,7 +486,7 @@
  01 L-CAPACITY             BINARY-LONG.
  01 L-LENGTH               BINARY-LONG.
  01 L-STATUS               BINARY-LONG.
- 01 B-TABLE                PIC X(2195456) BASED.
+ 01 B-TABLE                PIC X(4390912) BASED.
  COPY CLMCMETA.
  PROCEDURE DIVISION USING CLIENT-STATE L-PACK L-INDEX L-AREA L-CAPACITY L-LENGTH L-STATUS.
      SET ADDRESS OF B-TABLE TO PK-FILES(L-PACK)
@@ -587,8 +538,14 @@
  01 L-PATH                 PIC X(256).
  01 L-LENGTH               BINARY-LONG.
  01 L-FOUND                BINARY-LONG.
- 01 B-TABLE                PIC X(2195456) BASED.
+ 01 B-TABLE                PIC X(4390912) BASED.
  PROCEDURE DIVISION USING CLIENT-STATE L-PACK L-INDEX L-PATH L-LENGTH L-FOUND.
+     IF PK-KIND(L-PACK) = 3
+         MOVE 0 TO L-FOUND
+         MOVE "filtered" TO L-PATH
+         MOVE 8 TO L-LENGTH
+         GOBACK
+     END-IF
      IF PK-KIND(L-PACK) = 0
          CALL "BUILTIN-PATH" USING L-INDEX L-PATH L-LENGTH L-FOUND
          IF L-FOUND = 1
@@ -628,6 +585,11 @@
  01 L-LENGTH               BINARY-LONG.
  01 L-FOUND                BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-PACK L-PATH L-LENGTH L-FOUND.
+     IF PK-KIND(L-PACK) = 3
+         CALL "SKIN-FIND" USING L-PATH L-LENGTH WS-INDEX
+         MOVE FUNCTION MIN(WS-INDEX, 1) TO L-FOUND
+         GOBACK
+     END-IF
      IF PK-KIND(L-PACK) = 0
          CALL "BUILTIN-FIND" USING L-PATH L-LENGTH WS-INDEX
          MOVE FUNCTION MIN(WS-INDEX, 1) TO L-FOUND
@@ -664,6 +626,10 @@
  01 L-FOUND                BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-PACK L-PATH L-LENGTH L-AREA L-CAPACITY L-OUT-LENGTH
          L-FOUND.
+     IF PK-KIND(L-PACK) = 3
+         CALL "SKIN-READ" USING L-PATH L-LENGTH L-AREA L-CAPACITY L-OUT-LENGTH L-FOUND
+         GOBACK
+     END-IF
      IF PK-KIND(L-PACK) = 0
          CALL "BUILTIN-READ" USING L-PATH L-LENGTH L-AREA L-CAPACITY L-OUT-LENGTH L-FOUND
          GOBACK
@@ -716,6 +682,10 @@
  01 L-H                    BINARY-LONG.
  01 L-FOUND                BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-PACK L-PATH L-LENGTH L-AREA L-CAPACITY L-W L-H L-FOUND.
+     IF PK-KIND(L-PACK) = 3
+         MOVE 0 TO L-W L-H L-FOUND
+         GOBACK
+     END-IF
      IF PK-KIND(L-PACK) = 0
          CALL "BUILTIN-IMAGE" USING L-PATH L-LENGTH L-AREA L-CAPACITY L-W L-H L-FOUND
          GOBACK

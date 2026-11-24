@@ -1,0 +1,15 @@
+{
+ "feature": "minecraft:poppy",
+ "placement": [
+  {
+   "type": "minecraft:bogus_modifier",
+   "positions": [
+    [
+     0,
+     64,
+     0
+    ]
+   ]
+  }
+ ]
+}

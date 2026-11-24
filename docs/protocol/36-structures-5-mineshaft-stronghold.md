@@ -7,7 +7,7 @@
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact already recorded in [README.md](README.md)) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`) of `net.minecraft.world.level.levelgen.structure.structures.{MineshaftStructure, MineshaftStructure$Type, MineshaftPieces and its nested classes, StrongholdStructure, StrongholdPieces and its nested classes}` and of `StructurePiece`, `StructurePiecesBuilder`, `BoundingBox`, `ChunkGeneratorStructureState`, `WorldgenRandom`, `Direction$Plane`, `Util.getRandom`, `RandomSource`; and of the data files `data/minecraft/worldgen/structure/{mineshaft, mineshaft_mesa, stronghold}.json`, `worldgen/structure_set/{mineshafts, strongholds}.json` and the tag files named in section 1. A small stack-summarising script was used to read the bytecode; no execution of the artifact. |
 | Operator decisions | Standard Minecraft content is the target; the tool extracts the data pack and this document specifies the engines (ticket CC-0001, Decisions "World scope", "Vanilla assets and data"; design map `docs/design/README.md` GAP-12b, rule R7). |
-| Status | Written by the reader for round RS20, part 5. |
+| Status | Written by the reader for round RS20, part 5; corrected or extended in round R1 (clean-room round 2026-11-18): sections 1, 2.8, 2.13, 3.9 and Open questions. |
 
 Class names in backticks say where a fact was read; they are not the design. "(inferred)" marks a deduction and "(recalled, not
 verified)" marks something not read; both are listed in the Open questions (none of the latter was needed). Every value, ordering
@@ -36,7 +36,7 @@ fixed states; "Gen sel(skip)" the selector form. `AIR*` is cave air (`Blocks.CAV
 | Structure `stronghold` | type `stronghold`, biomes `#minecraft:has_structure/stronghold` (which is `#minecraft:is_overworld`), `spawn_overrides {}`, `step surface_structures`, `terrain_adaptation bury` | `worldgen/structure/stronghold.json` |
 | Tags used by code | `#minecraft:mineshaft_blocking` (biome tag, contents `deep_dark`), `#minecraft:structure/eye_of_ender_located` (contents `stronghold`), `#minecraft:structure/mineshaft` (both mineshafts), `#minecraft:structure/on_mineshaft_maps` (contents: `minecraft:mineshaft` only; consumer and search are Open question 15) | `tags/worldgen/...` |
 | Chest loot tables | `abandoned_mineshaft` (mineshaft chests and chest minecarts), `stronghold_corridor`, `stronghold_crossing`, `stronghold_library` | `loot_table/chests/*.json` |
-| Built-in datapack variant | `abandoned_mineshaft.json` exists a second time at `data/minecraft/datapacks/trade_rebalance/data/minecraft/loot_table/chests/abandoned_mineshaft.json` (the optional built-in `trade_rebalance` datapack, found by listing the jar; contents not compared with the base table). The extraction tool must copy it as a separate datapack file; which table applies depends on whether that datapack is enabled (Open question 14) | jar listing |
+| Built-in datapack variant | `abandoned_mineshaft.json` exists a second time at `data/minecraft/datapacks/trade_rebalance/data/minecraft/loot_table/chests/abandoned_mineshaft.json` (the optional built-in `trade_rebalance` datapack, found by listing the jar; compared with the base table in round R1: identical except that the pack's table has a **fourth pool**, `rolls` 1, with entries `minecraft:empty` (weight 4) and `minecraft:book` (weight 1, function `enchant_randomly` with `options` `minecraft:efficiency`), i.e. a one-in-five chance of an Efficiency book; the first three pools and the other top-level members are equal). The extraction tool must copy it as a separate datapack file; the pack's table applies only when that datapack and its feature flag `trade_rebalance` are enabled, which they are not by default (36-4 Open question 3; Open question 14) | jar listing |
 
 How the data meets the engines: with `spacing 1` and `separation 0` every chunk is a potential start chunk (36-1 section 4.3 draws
 `nextInt(1)` twice, always 0). `legacy_type_3` then keeps a chunk when, after `setLargeFeatureSeed(levelSeed, cx, cz)`,
@@ -220,8 +220,8 @@ nothing; both with depth `depth + 1`. For an EAST or WEST piece, `i` from `minX 
 
 ### 2.8 Cobwebs
 
-`maybePlaceCobWeb(level, box, random, chance, x, y, z)`: if `isInterior(x, y, z)` and `random.nextFloat() < chance` (draw only when interior) and `hasSturdyNeighbours(x, y, z, 2)`,
-place cobweb. `hasSturdyNeighbours` counts, over the six directions in the order DOWN, UP, NORTH, SOUTH, WEST, EAST (`Direction.values`),
+`maybePlaceCobWeb(level, box, random, chance, x, y, z)`: three tests in this order, each evaluated only when the previous one held: (1) `isInterior(x, y, z)` (36-1 section 6.5: the world position of `(x, y + 1, z)` is inside the write box **and** below the `OCEAN_FLOOR_WG` height of its column); (2) `random.nextFloat() < chance`; (3) `hasSturdyNeighbours(x, y, z, 2)`; when all three hold, `placeBlock(cobweb)`.
+**The random draw is made only when test (1) holds**: a cobweb position that is outside the write box, or at or above the surface, consumes no random number. (Read in `MineShaftCorridor.maybePlaceCobWeb`; round R1 confirmed it against section 2.13, which is corrected to match.) `hasSturdyNeighbours` counts, over the six directions in the order DOWN, UP, NORTH, SOUTH, WEST, EAST (`Direction.values`),
 the neighbours of the world position that are inside the write box and whose block is face-sturdy towards the cell; it returns true as soon as the count reaches 2.
 
 ### 2.9 `isInInvalidLocation` (every mineshaft piece's first test) and `canBeReplaced`
@@ -293,8 +293,17 @@ Saved keys: `MST` only. No fields. No random in the constructor.
 
 Chests exist only as chest minecarts (section 2.10), 1 % per side per corridor section, loot `abandoned_mineshaft`, rolled by 26 when the minecart is opened. The only spawner is the
 cave spider spawner of a spider corridor (one per such corridor, 1 in 23 of non-rail corridors). Draw order inside one `postProcess` is the order of the numbered steps above. `postProcess` runs once per chunk the piece touches, with the
-shared per-structure `random` of that chunk (36-1 section 8: seeded once per structure per chunk, every piece touching the chunk drawing from it in list order); cells outside the chunk's write
-box are skipped by `placeBlock` but their draws (`generateMaybeBox`, cobweb and torch chances) are still consumed.
+shared per-structure `random` of that chunk (36-1 section 8: seeded once per structure per chunk, every piece touching the chunk drawing from it in list order); the draw rules for positions outside the chunk's write box differ by helper (read in `StructurePiece` and `MineShaftCorridor`; this paragraph was corrected in round R1, it used to say that cobweb draws were consumed outside the box, which contradicts section 2.8):
+
+| Draw | Made for a position outside the write box? |
+|---|---|
+| `generateMaybeBox` (ceiling opening, spider-corridor cobweb fill): one `nextFloat` per cell, y outermost then x then z | **Yes**, for every cell of the box; only the later `placeBlock` is skipped (and, with `requireInterior`, the interior test comes after the draw) |
+| `maybeGenerateBlock` (the two support torches of section 2.7): one `nextFloat` | **Yes**, the draw is made before any position test; `placeBlock` then skips the write |
+| The rail of step 8: guarded by the floor test, then `maybeGenerateBlock` | **No** outside the box: `getBlock` returns air outside the box, so the floor test fails and no draw is made; inside the box the draw follows a non-air, solid floor block |
+| `maybePlaceCobWeb` (section 2.8): one `nextFloat` | **No**: the interior test (inside the box and below the surface) comes first, and a failed test makes no draw |
+| The `nextInt(4)` of `placeSupport` (section 2.7) | **No** outside the box: `placeSupport` first needs `isSupportingBox`, which reads the three ceiling cells through `getBlock` (air outside the box), so for a column outside the box it returns before any draw. For a column inside the box the `nextInt(4)` and, on the non-zero branch, the two torch draws are made even when the torch cell itself (`z - 1` or `z + 1`) lies outside the box |
+| The `nextInt(100)` chest checks of step 5 items 3 and 4, the `nextInt(5)` of the side branches, the constructor draws | **Yes**, unconditional (the chest write itself is guarded by the box test of section 2.10) |
+| The spider position `sz = (z - 1) + nextInt(3)` | Drawn whenever `spiderCorridor` and not `hasPlacedSpider`, regardless of the box; only the spawner write is guarded by the box and interior tests |
 
 ---
 
@@ -387,7 +396,7 @@ Each class's `createPiece(builder, random, x, y, z, direction, genDepth)` comput
 | `FillerCorridor` (separate `findPieceBox`, below) | -1, -1, 0 | 5 x 5 x variable | none |
 
 All draws happen only after the box test passed. **`entryDoor`** = `randomSmallDoor`: `n = nextInt(5)`; `0` or `1` gives OPENING, `2` WOOD_DOOR, `3` GRATES, `4` IRON_DOOR (so OPENING is 40 %, the others 20 %).
-Small door types by ordinal: OPENING 0, WOOD_DOOR 1, GRATES 2, IRON_DOOR 3; saved under `EntryDoor` through a legacy enum codec (encoding not traced, Open question 5).
+Small door types by ordinal: OPENING 0, WOOD_DOOR 1, GRATES 2, IRON_DOOR 3; saved under `EntryDoor` as the upper-case constant name (the encoding table is in section 3.9).
 
 **`FillerCorridor.findPieceBox(builder, random, x, y, z, direction)`:** `box = orientBox(x, y, z, -1, -1, 0, 5, 5, 4, direction)`; `c = findCollisionPiece(box)`; if null return null. If `c.box.minY == box.minY`:
 for `d = 2` down to 1: `b = orientBox(x, y, z, -1, -1, 0, 5, 5, d, direction)`; if `c.box` does not intersect `b` return `orientBox(..., 5, 5, d + 1, ...)`; if the loop ends return null. (A corridor that
@@ -429,8 +438,7 @@ saved): `pendingChildren` (list), `previousPiece`, `portalRoomPiece`. `getLocato
 ### 3.7 Pieces: layout of each class
 
 All stone is "SB" (stone bricks) when written explicitly. `Gen sel(skip)` = shell with the selector; the shell of the eleven rooms below uses `skipAir true` ("skip") except the portal room. Doors listed use
-`generateSmallDoor`. Torch states are wall torches, `facing` in the local frame. The saved keys not listed are only the base keys (`id`, `BB`, `O`, `GD`) and `EntryDoor` (every stronghold piece except portal room, filler corridor
-and the start).
+`generateSmallDoor`. Torch states are wall torches, `facing` in the local frame. The saved keys not listed are only the base keys (`id`, `BB`, `O`, `GD`) and `EntryDoor` (every stronghold piece, including the portal room, the filler corridor and the start: section 3.9; the earlier text excepted those three, corrected in round R1).
 
 **`Straight`** (keys: `Left`, `Right`, `EntryDoor`): children `Forward(1, 1)`; if `leftChild` `Left(1, 2)`; if `rightChild` `Right(1, 2)`. Layout: Gen sel(skip) `box(0,0,0 .. 4,4,6)`; door `entryDoor` at `(1,1,0)`; OPENING at `(1,1,6)`; torches
 facing EAST at `(1,2,1)` and `(1,2,5)`, facing WEST at `(3,2,1)` and `(3,2,5)`, each by `maybeGenerateBlock(0.1)` in the order `(1,2,1)`, `(3,2,1)`, `(1,2,5)`, `(3,2,5)`; if `leftChild` Gen box `(0,1,2 .. 0,3,4)` `AIR*`; if `rightChild`
@@ -480,7 +488,7 @@ at `(8+k, 6, 12-k)` and, when `k != 2`, fence (north, east) at `(8+k, 6, 11-k)`;
 fence (west) at `(7,8,7)`, fence (north, south, east, west) at `(6,7,7)` and `(7,7,7)`, fence (east) at `(5,7,7)`, fence (west) at `(8,7,7)`, fence (east, north) at `(6,7,6)`, (east, south) at `(6,7,8)`, (west, north) at `(7,7,6)`,
 (west, south) at `(7,7,8)`; torches (upright) at `(5,8,7)`, `(8,8,7)`, `(6,8,6)`, `(6,8,8)`, `(7,8,6)`, `(7,8,8)`. Finally (tall or not): `createChest((3,3,5), stronghold_library)`; if tall: `AIR*` at `(12,9,1)` and `createChest((12,8,1), stronghold_library)`.
 
-**`PortalRoom`** (key `Mob`; no `EntryDoor`; no ordinary children; `addChildren(start, ...)` sets `start.portalRoomPiece = this` when `start` is not null): Layout in order:
+**`PortalRoom`** (key `Mob`; the saved `EntryDoor` exists but is never used for geometry, section 3.9; no ordinary children; `addChildren(start, ...)` sets `start.portalRoomPiece = this` when `start` is not null): Layout in order:
 1. Gen sel **(no skip)** `box(0,0,0 .. 10,7,15)`; GRATES door at `(4,1,0)`.
 2. Gen sel(no skip): `(1,6,1 .. 1,6,14)`, `(9,6,1 .. 9,6,14)`, `(2,6,1 .. 8,6,2)`, `(2,6,14 .. 8,6,14)`, `(1,1,1 .. 2,1,4)`, `(8,1,1 .. 9,1,4)`.
 3. Lava Gen box `(1,1,1 .. 1,1,3)`, `(9,1,1 .. 9,1,3)`; Gen sel(no skip) `(3,1,8 .. 7,1,12)`; lava `(4,1,9 .. 6,1,11)`.
@@ -506,13 +514,31 @@ is not known). The implementation reproduces the coordinates as given.
 |---|---|
 | `shs` Straight | `EntryDoor`, `Left` (bool), `Right` (bool) |
 | `shcc` ChestCorridor | `EntryDoor`, `Chest` (bool) |
-| `shfc` FillerCorridor | `Steps` (int) |
+| `shfc` FillerCorridor | `EntryDoor`, `Steps` (int) |
 | `sh5c` FiveCrossing | `EntryDoor`, `leftLow`, `leftHigh`, `rightLow`, `rightHigh` |
 | `shlt`, `shrt` turns; `shph` PrisonHall; `shssd` StraightStairsDown | `EntryDoor` |
 | `shli` Library | `EntryDoor`, `Tall` (bool) |
-| `shpr` PortalRoom | `Mob` (bool) |
+| `shpr` PortalRoom | `EntryDoor`, `Mob` (bool) |
 | `shrc` RoomCrossing | `EntryDoor`, `Type` (int) |
 | `shsd` StairsDown and `shstart` Start | `EntryDoor`, `Source` (bool) |
+
+**`EntryDoor` encoding (read in round R1).** The key `EntryDoor` of every stronghold piece (every row above: including `shfc` FillerCorridor and `shpr` PortalRoom, whose NBT constructors call the `StrongholdPiece` constructor that reads it, and whose `addAdditionalSaveData` calls the base version that writes it; corrected in round R1, the earlier table omitted it for these two) is a **string**: the
+constant name of the `SmallDoorType` enum, in upper case, written through `ExtraCodecs.legacyEnum` (encoder: the enum's `toString`, which the enum does not override, so `name()`; decoder: `valueOf` of the
+exact string, case-sensitive, no ordinal and no lower-case alias). The enum has four constants, in declaration order:
+
+| Ordinal (declaration order; never written) | Saved string | Doorway built by `generateSmallDoor` |
+|---|---|---|
+| 0 | `OPENING` | an opening (no door) |
+| 1 | `WOOD_DOOR` | a wooden door |
+| 2 | `GRATES` | iron bars |
+| 3 | `IRON_DOOR` | an iron door with buttons |
+
+(The doorway geometry per type is in section 3.5; the table only fixes the spelling.) A piece reads the key in the shared `StrongholdPiece` NBT constructor with `read(key, codec).orElseThrow()`: a missing key (so a saved piece of any stronghold type, `shfc` and `shpr` included, that lacks `EntryDoor` fails to load), a
+non-string tag or an unknown string makes `read` return an empty optional, and `orElseThrow` raises `NoSuchElementException`, so the piece is not constructed (36-1 section 6.7: an exception while loading a piece logs the id and skips that piece; there is no fallback to `OPENING` when
+loading: the field's initial `OPENING` is overwritten by the read, or construction aborts). A vanilla
+save never contains another string. The same codec form is used by `Rotation.LEGACY_CODEC` and `Mirror.LEGACY_CODEC` (read in `Rotation` and `Mirror`: `legacyEnum` over `valueOf`; neither enum overrides `toString`): the strings are `NONE`, `CLOCKWISE_90`,
+`CLOCKWISE_180`, `COUNTERCLOCKWISE_90` and `NONE`, `LEFT_RIGHT`, `FRONT_BACK`, upper case, case-sensitive, decode failure as above. (The enums also carry lower-case serialized names `none`, `clockwise_90`, `180`, `counterclockwise_90`, `left_right`, `front_back`,
+which belong to their `StringRepresentable` codecs, not to the legacy codec.)
 
 A loaded piece has no `previousPiece`, `pendingChildren` or `portalRoomPiece` (they are generation-time only). Mineshaft keys are in sections 2.5, 2.6, 2.11, 2.12. (Piece ids: 36-1 section 2.4; they are the lower-cased code strings listed in section 2.2.)
 
@@ -585,11 +611,11 @@ The probability that a generated portal room is already complete is `0.1^12 = 1e
 
 ## 6. Open questions
 
-1. **Rotation and mirror of block properties.** Every directional state in this document is the NORTH-frame state; `placeBlock` then mirrors and rotates it (36-1 section 6.5). How a fence's four connection booleans, an iron bars' booleans, a wall torch's facing, a stairs' facing and shape, a ladder, a door's facing and a stone button's facing and face transform under mirror and rotation is the block's rotate and mirror rule. This round located the rules in 24: fence and iron bars (`CrossCollisionBlock`) in 24-4 section 6.2 (rotation permutation table; `LEFT_RIGHT` swaps `north` and `south`, `FRONT_BACK` swaps `east` and `west`); stairs in 24-5 section 7.10 (facing rotates; mirror rotates 180 degrees and replaces the shape by the table there); ladder in 24-3 section 7.1 ("rotate and mirror act on `facing`", the mapping not tabulated). Not found in 24: the door's (`facing`, `hinge`), the wall torch's `facing` and the stone button's (`face`, `facing`) transforms. For a horizontal `facing` property the assumption is that rotation turns `facing` by the rotation and mirror maps it as in the stair row (inferred, not read in this round); a door's `hinge` swap under mirror is unread. These three remain to be covered by a block registry addendum.
+1. (Closed in round R1 by [24-block-registry-9-rotation-and-mirror.md](24-block-registry-9-rotation-and-mirror.md).) **Rotation and mirror of block properties.** Every directional state in this document is the NORTH-frame state; `placeBlock` then mirrors and rotates it (36-1 section 6.5). The consolidated rules are 24-9: doors (`facing` rotates, mirror rotates `facing` by the mirror's rotation and always toggles `hinge`) in 24-9 section 3.10; `wall_torch` (a `WallTorchBlock` rule provider, listed in the block table of 24-9, worked example 3 there: `facing=east` under `LEFT_RIGHT` is unchanged, under `FRONT_BACK` becomes `west`); stone and wooden buttons are family A (`facing` follows the rotation and mirror rule, `face` is kept); ladders (`LadderBlock`), stairs and fences/iron bars are in the same document. The earlier assumption (inferred) that a horizontal `facing` follows the stair-row rule is therefore replaced by those rows.
 2. **`getLocatorPosition`.** No class of the artifact calls it (section 3.10); a server-side caller outside this jar cannot be excluded (inferred).
 3. **`Math.cos` and `Math.sin` precision.** The ring list (36-1 section 4.6) rounds `cos * radius`; a platform whose `cos` differs in the last bit can change a ring chunk at a rounding boundary. The reference results were not verified against the artifact.
 4. **Block entity details.** The spawner configuration after `setEntityId(type, random)` (spawn data, delays, ranges), the chest block entity loot-table seed handling and the end portal frame's block-entity-free state are 31 and 24.
-5. **`EntryDoor` encoding.** The type is saved through a legacy enum codec; whether it writes the ordinal or an upper-case name, and what it reads for an unknown value, was not traced.
+5. (Closed in round R1.) **`EntryDoor` encoding**: upper-case constant name, section 3.9.
 6. **Chest minecart entity setup.** `chest_minecart` creation with the chunk-generation spawn reason, its initial position and loot table fields are read; the entity's NBT and tracking are 21 and 45.
 7. **Per-chunk eye draws in the portal room.** The 12 eye draws are made inside `postProcess` from the chunk's shared random stream, and the room is 11 by 16 blocks, so it can touch up to four chunks; each chunk draws its own twelve values, and the frames inside each chunk take that chunk's values. No state in the piece records the pattern (read: only `Mob` is saved). The consequence (a frame's eye state depends on which chunk's stream placed it; the all-eyes portal condition is evaluated per chunk) follows from the code but was not examined further.
 8. **Mineshaft `isInInvalidLocation` liquids.** `BlockState.liquid()` is used as read; its definition (fluid state not empty versus a liquid material) is in 24.
@@ -597,7 +623,7 @@ The probability that a generated portal room is already complete is `0.1^12 = 1e
 10. **`FiveCrossing` child mismatch** (section 3.8) is derived by arithmetic, not by observation of generated structures.
 11. **Beardifier for `bury`.** The terrain-adaptation effect of the stronghold's boxes is 36-1 section 9; the contribution of `FillerCorridor` and `Library` boxes as pieces with `bury` was not separately traced.
 12. **Biome tags.** The contents of `has_structure/mineshaft` (including the newest cave biomes), `has_structure/mineshaft_mesa`, `is_overworld` and `stronghold_biased_to` are data; the tool must copy them.
-13. **Ring seed.** `concentricRingsSeed` equal to the level seed (assumed in section 4.1) was not separately confirmed.
-14. **`trade_rebalance` loot table.** The datapack copy of `abandoned_mineshaft` was listed but not compared with the base table, and its enable conditions (datapack pack metadata, feature flags) were not read here.
+13. (Closed in round R1.) **Ring seed**: `concentricRingsSeed` is the world seed for the normal generators and 0 for the flat generator (36-1 section 4.1, read in `ChunkGeneratorStructureState`).
+14. (Closed in round R1.) **`trade_rebalance` loot table**: enable conditions are answered by 36-4 Open question 3 (the flag is off by default, the pack only enables it); the datapack copy was compared with the base table and differs only by the extra fourth pool described in the section 1 table note (an Efficiency book at 1 in 5).
 15. **`on_mineshaft_maps` consumer.** The tag contains `minecraft:mineshaft`; the only reference found by grepping the jar's `data/` text is the `exploration_map` modifier of `abandoned_camp_secret_chest` (a loot table of another structure, not owned by this document). No villager trade refers to it. Whether code refers to the tag by a constant was not searched in bytecode. How `exploration_map` locates the structure (26, 36-1 section 11) is not repeated here.
 16. **Unconfirmed stronghold details.** An independent review checked the mineshaft and the top-level stronghold mechanics, but not the per-block layouts of `Library`, `PrisonHall`, `RoomCrossing`, `FiveCrossing` and `PortalRoom` (section 3.7), the 5-try walk's branch where a piece factory returns null and the walk continues with the next entry (`generatePieceFromSmallDoor`), the Left and Right helper offsets, or the `FillerCorridor.findPieceBox` and beardifier details. They are not shown wrong; a later reviewer should spot-check them against the artifact before they are relied on.

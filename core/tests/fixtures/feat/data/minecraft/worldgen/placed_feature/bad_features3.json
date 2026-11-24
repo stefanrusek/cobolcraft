@@ -1,0 +1,14 @@
+{
+ "feature": {
+  "type": "minecraft:weighted_random_selector",
+  "features": [
+   {
+    "data": "minecraft:pf_poppy"
+   },
+   {
+    "weight": 1
+   }
+  ]
+ },
+ "placement": []
+}

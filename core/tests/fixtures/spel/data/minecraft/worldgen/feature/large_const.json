@@ -1,0 +1,1 @@
+{"type": "minecraft:large_dripstone", "column_radius": 4, "height_scale": 1.2, "max_column_radius_to_cave_height_ratio": 0.5, "min_bluntness_for_wind": 0.5, "min_radius_for_wind": 3, "replaceable_blocks": "#minecraft:dripstone_replaceable_blocks", "stalactite_bluntness": 0.7, "stalagmite_bluntness": 0.8, "wind_speed": 0.25, "floor_to_ceiling_search_range": 20}

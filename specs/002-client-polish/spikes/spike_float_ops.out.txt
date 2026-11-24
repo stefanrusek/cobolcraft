@@ -1,0 +1,3 @@
+FLOAT-LONG compute a*b+c  07573877 -> 07574110
+COMP-2 compute a*b+c      07574110 -> 07574340
+BINARY-DOUBLE a*b+c       07574340 -> 07574344

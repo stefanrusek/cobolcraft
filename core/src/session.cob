@@ -58,6 +58,8 @@
      END-PERFORM
      IF L-ID > 0
          INITIALIZE CN-ENTRY(L-ID)
+*>       A new connection owes no acknowledgement (one left by an earlier connection of this id, or by a world reset, is not its own).
+         CALL "BC-ACK-CLEAR" USING L-ID
          MOVE 1 TO CN-USED(L-ID)
          MOVE L-KIND TO CN-KIND(L-ID)
          MOVE PH-HANDSHAKE TO CN-PHASE(L-ID)
@@ -433,6 +435,8 @@
      MOVE CN-OUT(L-ID) TO PB-BUFFER
      CALL "PB-FREE" USING PB-BUFFER
      INITIALIZE CN-ENTRY(L-ID)
+*>   The Block Changed Ack it still owed is dropped with it: nobody is left to receive it (a connection that ended before its next tick).
+     CALL "BC-ACK-CLEAR" USING L-ID
      GOBACK.
  END PROGRAM SESSION-RELEASE.
 

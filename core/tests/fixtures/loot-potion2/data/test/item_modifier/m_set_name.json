@@ -1,0 +1,7 @@
+{
+ "type": "minecraft:set_name",
+ "name": {
+  "text": "Hi"
+ },
+ "target": "custom_name"
+}

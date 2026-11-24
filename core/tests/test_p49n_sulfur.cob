@@ -1,0 +1,636 @@
+*> Acceptance test (002-lane-p49n; docs/protocol/20 section 18.2): the sulfur cube's BODY slot, archetypes, swallowing, shearing, the explosive fuse and the hot contact damage.
+*> The archetype item tags (data) are bound here: explosive tnt, hot magma_block, regular dirt, bouncy oak_planks. A cube that is not a baby takes one swallowable ground item (griefing on, no
+*> pickup delay) or the item a player gives, drops the previous body item, and shears drop the body. An explosive body primes with flint and steel, a fire charge or fire damage (fuse 120) or
+*> explosion damage (nextInt(30) + 15), sends metadata 19, is invulnerable from then on and explodes with power 3 after the fuse without splitting; tnt_explodes off refuses priming and
+*> mob_griefing off leaves the blocks. A hot body hurts touching mobs for 1.0 sulfur_cube_hot damage. checkSulfurCubeSpawnRules is always true.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-P49N-SULFUR.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY CONTENT.
+ COPY STDMOBS.
+ COPY CITEMS.
+ COPY P49NSTATE.
+ COPY XORO.
+ COPY RULES.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TNT                 BINARY-LONG.
+ 01 WS-MAGMA               BINARY-LONG.
+ 01 WS-DIRT                BINARY-LONG.
+ 01 WS-PLANKS              BINARY-LONG.
+ 01 WS-STICK               BINARY-LONG.
+ 01 WS-SHEARS              BINARY-LONG.
+ 01 WS-FLINT               BINARY-LONG.
+ 01 WS-CHARGE              BINARY-LONG.
+ 01 WS-MEMBERS.
+    05 WS-MEMBER           BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-TAG-REGISTRY        PIC X(48) VALUE "item".
+ 01 WS-TAG                 PIC X(112).
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-CUBE                BINARY-LONG.
+ 01 WS-COW                 BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-CX                  FLOAT-LONG.
+ 01 WS-CZ                  FLOAT-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-FX                  BINARY-LONG.
+ 01 WS-FZ                  BINARY-LONG.
+ 01 WS-FY                  BINARY-LONG.
+ 01 WS-FSIZE               BINARY-LONG VALUE 40.
+ 01 WS-FKIND               BINARY-LONG VALUE 1.
+ 01 WS-MASK                BINARY-LONG.
+ 01 WS-PREVIOUS            BINARY-LONG.
+ 01 WS-PRIMED              BINARY-LONG.
+ 01 WS-SHORT               BINARY-LONG.
+ 01 WS-HANDLED             BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-CASE                PIC X(100).
+ 01 WS-CASE240             PIC X(240).
+ 01 WS-EXP                 BINARY-LONG.
+ 01 WS-OBS                 BINARY-LONG.
+ 01 WS-IDS                 PIC X(1024).
+ 01 WS-WANTED              BINARY-LONG VALUE 101.
+ 01 WS-EXPECTED            PIC X(1024).
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-AREA512             PIC X(512).
+ 01 WS-TNT-RULE            PIC X(40) VALUE "tnt_explodes".
+ 01 WS-GRIEF-RULE          PIC X(40) VALUE "mob_griefing".
+ 01 WS-TNT-ROW             BINARY-LONG.
+ 01 WS-GRIEF-ROW           BINARY-LONG.
+ 01 WS-VALUE               BINARY-DOUBLE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-DIRT-STATE          BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-GROUND              BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-CAUSE               BINARY-LONG.
+ 01 WS-DAMAGE              BINARY-LONG.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-HEALTH              BINARY-LONG.
+ 01 WS-REASON              BINARY-LONG VALUE 0.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-SEED                BINARY-DOUBLE UNSIGNED VALUE 7.
+ 01 WS-ID-A                BINARY-LONG.
+ 01 WS-ZERO-F1             FLOAT-LONG VALUE 0.
+ 01 WS-ZERO-F2             FLOAT-LONG VALUE 0.
+ 01 WS-ZERO-F3             FLOAT-LONG VALUE 0.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
+ 01 WS-CUBE-TYPE           BINARY-LONG.
+ 01 WS-BEFORE              BINARY-LONG.
+ 01 WS-ZTYPE               BINARY-LONG.
+ 01 WS-HAND0               BINARY-LONG VALUE 0.
+ 01 WS-SNEAK0              BINARY-LONG VALUE 0.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE PL-CONN(WS-PLAYER) TO WS-CONN
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     MOVE PL-Y(WS-PLAYER) TO WS-Y
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     COMPUTE WS-BX = FUNCTION INTEGER(WS-X)
+     COMPUTE WS-BY = FUNCTION INTEGER(WS-Y)
+     COMPUTE WS-BZ = FUNCTION INTEGER(WS-Z)
+     COMPUTE WS-FX = WS-BX - 20
+     COMPUTE WS-FZ = WS-BZ - 20
+     COMPUTE WS-FY = WS-BY - 1
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-FX WS-FZ WS-FSIZE WS-FY WS-FKIND
+     MOVE "minecraft:tnt" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-TNT WS-ITEM-ROW WS-STATUS
+     MOVE "minecraft:magma_block" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-MAGMA WS-ITEM-ROW WS-STATUS
+     MOVE "minecraft:dirt" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-DIRT WS-ITEM-ROW WS-STATUS
+     MOVE "minecraft:oak_planks" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-PLANKS WS-ITEM-ROW WS-STATUS
+     MOVE "minecraft:stick" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-STICK WS-ITEM-ROW WS-STATUS
+     MOVE "minecraft:shears" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-SHEARS WS-ITEM-ROW WS-STATUS
+     MOVE "minecraft:flint_and_steel" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-FLINT WS-ITEM-ROW WS-STATUS
+     MOVE "minecraft:fire_charge" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-CHARGE WS-ITEM-ROW WS-STATUS
+     MOVE "minecraft:sulfur_cube_archetype/explosive" TO WS-TAG
+     MOVE WS-TNT TO WS-MEMBER(1)
+     CALL "TAG-PUT" USING WS-TAG-REGISTRY WS-TAG WS-ONE WS-MEMBERS WS-STATUS
+     MOVE "minecraft:sulfur_cube_archetype/hot" TO WS-TAG
+     MOVE WS-MAGMA TO WS-MEMBER(1)
+     CALL "TAG-PUT" USING WS-TAG-REGISTRY WS-TAG WS-ONE WS-MEMBERS WS-STATUS
+     MOVE "minecraft:sulfur_cube_archetype/regular" TO WS-TAG
+     MOVE WS-DIRT TO WS-MEMBER(1)
+     CALL "TAG-PUT" USING WS-TAG-REGISTRY WS-TAG WS-ONE WS-MEMBERS WS-STATUS
+     MOVE "minecraft:sulfur_cube_archetype/bouncy" TO WS-TAG
+     MOVE WS-PLANKS TO WS-MEMBER(1)
+     CALL "TAG-PUT" USING WS-TAG-REGISTRY WS-TAG WS-ONE WS-MEMBERS WS-STATUS
+     MOVE 2 TO PL-MODE(WS-PLAYER)
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     CALL "BR-RULE-FIND" USING WS-TNT-RULE WS-TNT-ROW
+     CALL "BR-RULE-FIND" USING WS-GRIEF-RULE WS-GRIEF-ROW
+     MOVE 1 TO WS-VALUE
+     CALL "BR-RULE-SET" USING WS-TNT-ROW WS-VALUE
+     CALL "BR-RULE-SET" USING WS-GRIEF-ROW WS-VALUE
+     COMPUTE WS-CX = WS-X + 2
+     MOVE WS-Z TO WS-CZ
+     MOVE "minecraft:sulfur_cube" TO WS-KEY
+     CALL "PN-SPAWN" USING WS-DIM WS-KEY WS-CX WS-Y WS-CZ WS-CUBE
+     CALL "STDMOB-INDEX" USING EN-TYPE(WS-CUBE) WS-M
+     MOVE EN-TYPE(WS-CUBE) TO WS-CUBE-TYPE
+
+*>   The archetypes of an item: the tag members, and nothing for a stick.
+     CALL "SULFUR-ARCH-MASK" USING WS-TNT WS-MASK
+     MOVE "acceptance US15 20§18.2 TNT matches the explosive archetype (bit 2)" TO WS-CASE
+     MOVE 2 TO WS-EXP
+     MOVE WS-MASK TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "SULFUR-ARCH-MASK" USING WS-MAGMA WS-MASK
+     MOVE "acceptance US15 20§18.2 A magma block matches the hot archetype (bit 6)" TO WS-CASE
+     MOVE 32 TO WS-EXP
+     MOVE WS-MASK TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "SULFUR-ARCH-MASK" USING WS-STICK WS-MASK
+     MOVE "acceptance US15 20§18.2 A stick matches no archetype: it is not swallowable" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE WS-MASK TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+
+*>   The BODY slot: equip dirt, then tnt: the dirt comes back.
+     CALL "SULFUR-EQUIP" USING WS-CUBE WS-DIRT WS-PREVIOUS
+     MOVE "acceptance US15 20§18.2 An empty BODY slot returns no previous item" TO WS-CASE
+     MOVE -1 TO WS-EXP
+     MOVE WS-PREVIOUS TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "SULFUR-EQUIP" USING WS-CUBE WS-TNT WS-PREVIOUS
+     MOVE "acceptance US15 20§18.2 Equipping TNT returns the dirt it held" TO WS-CASE
+     MOVE WS-DIRT TO WS-EXP
+     MOVE WS-PREVIOUS TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO PN-BODY(WS-CUBE)
+
+*>   pickUpItem: a ground stack of 2 dirt next to the cube: the cube takes one and the stack keeps one.
+     COMPUTE WS-CX = WS-X + 2.5
+     CALL "GI-SPAWN" USING WS-DIM WS-CX WS-Y WS-CZ WS-ZERO-F1 WS-ZERO-F2 WS-ZERO-F3 WS-DIRT WS-TWO WS-ZERO WS-GROUND
+     MOVE 0 TO EN-DELAY(WS-GROUND)
+     CALL "SULFUR-PICKUP-TICK" USING WS-CUBE
+     MOVE "acceptance US15 20§18.2 The cube swallows one dirt of the ground stack" TO WS-CASE
+     COMPUTE WS-EXP = WS-DIRT + 1
+     MOVE PN-BODY(WS-CUBE) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 20§18.2 The stack keeps the other dirt" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE EN-ITEM-COUNT(WS-GROUND) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "SULFUR-PICKUP-TICK" USING WS-CUBE
+     MOVE "acceptance US15 20§18.2 With the BODY slot full it takes nothing more" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE EN-ITEM-COUNT(WS-GROUND) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO PN-BODY(WS-CUBE)
+     MOVE 5 TO EN-DELAY(WS-GROUND)
+     CALL "SULFUR-PICKUP-TICK" USING WS-CUBE
+     MOVE "acceptance US15 20§18.2 An item with a pickup delay is not taken" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE PN-BODY(WS-CUBE) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO EN-DELAY(WS-GROUND)
+     MOVE 0 TO WS-VALUE
+     CALL "BR-RULE-SET" USING WS-GRIEF-ROW WS-VALUE
+     CALL "SULFUR-PICKUP-TICK" USING WS-CUBE
+     MOVE "acceptance US15 20§18.2 With mob_griefing off the cube takes nothing" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE PN-BODY(WS-CUBE) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-VALUE
+     CALL "BR-RULE-SET" USING WS-GRIEF-ROW WS-VALUE
+     MOVE 1 TO EN-VARIANT(WS-CUBE)
+     CALL "SULFUR-PICKUP-TICK" USING WS-CUBE
+     MOVE "acceptance US15 20§18.2 A baby (size 1) takes nothing" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE PN-BODY(WS-CUBE) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 2 TO EN-VARIANT(WS-CUBE)
+     CALL "SULFUR-PICKUP-TICK" USING WS-CUBE
+     CALL "SULFUR-PICKUP-TICK" USING WS-CUBE
+     MOVE "acceptance US15 20§18.2 The last item of the stack is swallowed and the stack is gone" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE EN-USED(WS-GROUND) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO PN-BODY(WS-CUBE)
+*>   a stick is not swallowable
+     CALL "GI-SPAWN" USING WS-DIM WS-CX WS-Y WS-CZ WS-ZERO-F1 WS-ZERO-F2 WS-ZERO-F3 WS-STICK WS-ONE WS-ZERO WS-GROUND
+     CALL "SULFUR-PICKUP-TICK" USING WS-CUBE
+     MOVE "acceptance US15 20§18.2 A stick is left where it is" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE PN-BODY(WS-CUBE) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-GROUND
+
+*>   Shearing through the interaction: shears on a cube with TNT drop the TNT as an item; with an empty slot nothing drops.
+     CALL "SULFUR-EQUIP" USING WS-CUBE WS-TNT WS-PREVIOUS
+     MOVE WS-SHEARS TO PL-SLOT-ITEM(WS-PLAYER, 1)
+     MOVE 1 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     MOVE 0 TO PL-SLOT-VAR(WS-PLAYER, 1)
+     MOVE 0 TO PL-HELD(WS-PLAYER)
+     MOVE EN-ID(WS-CUBE) TO WS-ID-A
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE WS-TNT TO WS-I
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 20§18.2 Shears on a cube drop its body item" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE WS-COUNT TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 20§18.2 The BODY slot is empty after shearing" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE PN-BODY(WS-CUBE) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 20§18.2 Shears on an empty cube drop nothing more" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE WS-COUNT TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+
+*>   A player gives oak planks: the cube takes them (the held stack shrinks); giving dirt after that drops the planks.
+     MOVE WS-PLANKS TO PL-SLOT-ITEM(WS-PLAYER, 1)
+     MOVE 3 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 20§18.2 A given swallowable item goes into the BODY slot" TO WS-CASE
+     COMPUTE WS-EXP = WS-PLANKS + 1
+     MOVE PN-BODY(WS-CUBE) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 20§18.2 The held stack lost one item" TO WS-CASE
+     MOVE 2 TO WS-EXP
+     MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE WS-DIRT TO PL-SLOT-ITEM(WS-PLAYER, 1)
+     MOVE 2 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE WS-PLANKS TO WS-I
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 20§18.2 Giving another item drops the body item it replaces" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE WS-COUNT TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 20§18.2 The BODY slot holds the dirt now" TO WS-CASE
+     COMPUTE WS-EXP = WS-DIRT + 1
+     MOVE PN-BODY(WS-CUBE) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE WS-STICK TO PL-SLOT-ITEM(WS-PLAYER, 1)
+     MOVE 1 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 20§18.2 A stick is not given to the cube" TO WS-CASE
+     COMPUTE WS-EXP = WS-DIRT + 1
+     MOVE PN-BODY(WS-CUBE) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+
+*>   Priming: dirt is not explosive; TNT is. Fuse 120 and metadata 19 (index 0x13, INT, VarInt 120 = 0x78).
+     MOVE 0 TO WS-SHORT
+     CALL "SULFUR-PRIME" USING WS-CUBE WS-SHORT WS-PRIMED
+     MOVE "acceptance US15 20§18.2 A cube with a dirt body cannot be primed" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE WS-PRIMED TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "SULFUR-EQUIP" USING WS-CUBE WS-TNT WS-PREVIOUS
+     MOVE 0 TO WS-VALUE
+     CALL "BR-RULE-SET" USING WS-TNT-ROW WS-VALUE
+     CALL "SULFUR-PRIME" USING WS-CUBE WS-SHORT WS-PRIMED
+     MOVE "acceptance US15 20§18.2 With tnt_explodes off priming is refused" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE WS-PRIMED TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-VALUE
+     CALL "BR-RULE-SET" USING WS-TNT-ROW WS-VALUE
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     CALL "SULFUR-PRIME" USING WS-CUBE WS-SHORT WS-PRIMED
+     MOVE "acceptance US15 20§18.2 An explosive body primes with the archetype's fuse 120" TO WS-CASE
+     MOVE 120 TO WS-EXP
+     MOVE PN-FUSE(WS-CUBE) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE SPACES TO WS-AREA512
+     MOVE FUNCTION CHAR(EN-ID(WS-CUBE) + 1) TO WS-AREA512(1:1)
+     CALL "TEST-HEX-OF" USING WS-AREA512 WS-ONE WS-HEX
+     MOVE SPACES TO WS-EXPECTED
+     STRING WS-HEX(1:2) "130178ff" DELIMITED BY SIZE INTO WS-EXPECTED
+     MOVE "acceptance US15 20§18.2 Priming sends metadata 19 MAX_FUSE 120" TO WS-CASE240
+     CALL "PN-CHECK-HEX" USING WS-CONN WS-CASE240 WS-WANTED WS-EXPECTED
+     CALL "SULFUR-PRIME" USING WS-CUBE WS-SHORT WS-PRIMED
+     MOVE "acceptance US15 20§18.2 A cube that is primed already cannot be primed again" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE WS-PRIMED TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+*>   Invulnerable: a player's hit changes nothing.
+     MOVE 10 TO WS-DAMAGE
+     MOVE CAUSE-PLAYER TO WS-CAUSE
+     MOVE EN-HEALTH(WS-CUBE) TO WS-HEALTH
+     MOVE 0 TO EN-HURT(WS-CUBE)
+     CALL "HEALTH-MOB-DAMAGE" USING WS-CUBE WS-DAMAGE WS-CAUSE WS-PLAYER
+     MOVE "acceptance US15 20§18.2 A primed cube is invulnerable" TO WS-CASE
+     MOVE WS-HEALTH TO WS-EXP
+     MOVE EN-HEALTH(WS-CUBE) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-CUBE
+
+*>   Triggers: fire damage primes with the normal fuse (120), explosion damage with the short one (15 to 44), flint and steel and a fire charge through the interaction.
+     MOVE "minecraft:sulfur_cube" TO WS-KEY
+     COMPUTE WS-CX = WS-X + 2
+     CALL "PN-SPAWN" USING WS-DIM WS-KEY WS-CX WS-Y WS-CZ WS-CUBE
+     CALL "SULFUR-EQUIP" USING WS-CUBE WS-TNT WS-PREVIOUS
+     MOVE CAUSE-IN-FIRE TO WS-CAUSE
+     MOVE 1 TO WS-DAMAGE
+     CALL "HEALTH-MOB-DAMAGE" USING WS-CUBE WS-DAMAGE WS-CAUSE WS-NONE
+     MOVE "acceptance US15 20§18.2 Fire damage primes with the normal fuse" TO WS-CASE
+     MOVE 120 TO WS-EXP
+     MOVE PN-FUSE(WS-CUBE) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-CUBE
+     CALL "PN-SPAWN" USING WS-DIM WS-KEY WS-CX WS-Y WS-CZ WS-CUBE
+     CALL "SULFUR-EQUIP" USING WS-CUBE WS-TNT WS-PREVIOUS
+     MOVE CAUSE-EXPLOSION TO WS-CAUSE
+     CALL "HEALTH-MOB-DAMAGE" USING WS-CUBE WS-DAMAGE WS-CAUSE WS-NONE
+     MOVE "acceptance US15 20§18.2 Explosion damage primes with a short fuse (15 to 44)" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE 0 TO WS-OBS
+     IF PN-FUSE(WS-CUBE) >= 15 AND PN-FUSE(WS-CUBE) <= 44
+         MOVE 1 TO WS-OBS
+     END-IF
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-CUBE
+     CALL "PN-SPAWN" USING WS-DIM WS-KEY WS-CX WS-Y WS-CZ WS-CUBE
+     CALL "SULFUR-EQUIP" USING WS-CUBE WS-TNT WS-PREVIOUS
+     MOVE EN-ID(WS-CUBE) TO WS-ID-A
+     MOVE WS-FLINT TO PL-SLOT-ITEM(WS-PLAYER, 1)
+     MOVE 1 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 20§18.2 Flint and steel primes an explosive cube" TO WS-CASE
+     MOVE 120 TO WS-EXP
+     MOVE PN-FUSE(WS-CUBE) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "ENTITY-REMOVE" USING WS-CUBE
+     CALL "PN-SPAWN" USING WS-DIM WS-KEY WS-CX WS-Y WS-CZ WS-CUBE
+     CALL "SULFUR-EQUIP" USING WS-CUBE WS-TNT WS-PREVIOUS
+     MOVE EN-ID(WS-CUBE) TO WS-ID-A
+     MOVE WS-CHARGE TO PL-SLOT-ITEM(WS-PLAYER, 1)
+     MOVE 2 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     MOVE "acceptance US15 20§18.2 A fire charge primes it and is used up (2 to 1)" TO WS-CASE
+     MOVE 1201 TO WS-EXP
+     COMPUTE WS-OBS = PN-FUSE(WS-CUBE) * 10 + PL-SLOT-COUNT(WS-PLAYER, 1)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+
+*>   The fuse: dirt blocks beside the cube; 120 ticks later it is gone, without a split, and the blocks next to it with it (mob_griefing on); with it off the blocks stay.
+     COMPUTE WS-FX = WS-BX + 3
+     MOVE "minecraft:dirt" TO WS-KEY
+     CALL "MS-TEST-STATE" USING WS-KEY WS-DIRT-STATE
+     COMPUTE WS-FZ = WS-BZ
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-BY WS-FZ WS-DIRT-STATE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 119
+         CALL "SULFUR-TICK" USING WS-CUBE
+     END-PERFORM
+     MOVE "acceptance US15 20§18.2 After 119 ticks the cube is still there with fuse 1" TO WS-CASE
+     MOVE 11 TO WS-EXP
+     COMPUTE WS-OBS = PN-FUSE(WS-CUBE) * 10 + EN-USED(WS-CUBE)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE EN-ID(WS-CUBE) TO WS-ID-A
+     CALL "SULFUR-TICK" USING WS-CUBE
+     MOVE "acceptance US15 20§18.2 The 120th tick explodes it: the cube is gone" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE 0 TO WS-OBS
+     IF EN-USED(WS-CUBE) = 1 AND EN-ID(WS-CUBE) = WS-ID-A
+         MOVE 1 TO WS-OBS
+     END-IF
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-FX WS-BY WS-FZ WS-STATE
+     MOVE "acceptance US15 20§18.2 The explosion (power 3) destroyed the dirt block beside it" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE WS-STATE TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     PERFORM COUNT-CUBES
+     MOVE "acceptance US15 20§18.2 An exploding cube never splits (no cube left)" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE WS-COUNT TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+*>   mob_griefing off: the explosion leaves the blocks.
+     MOVE "minecraft:sulfur_cube" TO WS-KEY
+     CALL "PN-SPAWN" USING WS-DIM WS-KEY WS-CX WS-Y WS-CZ WS-CUBE
+     CALL "SULFUR-EQUIP" USING WS-CUBE WS-TNT WS-PREVIOUS
+     CALL "SULFUR-PRIME" USING WS-CUBE WS-SHORT WS-PRIMED
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-BY WS-FZ WS-DIRT-STATE
+     MOVE 0 TO WS-VALUE
+     CALL "BR-RULE-SET" USING WS-GRIEF-ROW WS-VALUE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 120
+         CALL "SULFUR-TICK" USING WS-CUBE
+     END-PERFORM
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-FX WS-BY WS-FZ WS-STATE
+     MOVE "acceptance US15 20§18.2 With mob_griefing off the explosion leaves the dirt block" TO WS-CASE
+     MOVE WS-DIRT-STATE TO WS-EXP
+     MOVE WS-STATE TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-VALUE
+     CALL "BR-RULE-SET" USING WS-GRIEF-ROW WS-VALUE
+*>   tnt_explodes switched off before the fuse ends: no explosion, the cube is gone.
+     CALL "PN-SPAWN" USING WS-DIM WS-KEY WS-CX WS-Y WS-CZ WS-CUBE
+     CALL "SULFUR-EQUIP" USING WS-CUBE WS-TNT WS-PREVIOUS
+     CALL "SULFUR-PRIME" USING WS-CUBE WS-SHORT WS-PRIMED
+     MOVE 0 TO WS-VALUE
+     CALL "BR-RULE-SET" USING WS-TNT-ROW WS-VALUE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 120
+         CALL "SULFUR-TICK" USING WS-CUBE
+     END-PERFORM
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-FX WS-BY WS-FZ WS-STATE
+     MOVE "acceptance US15 20§18.2 With tnt_explodes off at 0 the cube goes without an explosion" TO WS-CASE
+     MOVE WS-DIRT-STATE TO WS-EXP
+     MOVE WS-STATE TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-VALUE
+     CALL "BR-RULE-SET" USING WS-TNT-ROW WS-VALUE
+
+*>   Death: a cube holding dirt drops it; a plain size-2 cube splits in two.
+     CALL "PN-SPAWN" USING WS-DIM WS-KEY WS-CX WS-Y WS-CZ WS-CUBE
+     CALL "SULFUR-EQUIP" USING WS-CUBE WS-DIRT WS-PREVIOUS
+     MOVE WS-DIRT TO WS-I
+     PERFORM COUNT-ITEMS
+     MOVE WS-COUNT TO WS-BEFORE
+     MOVE 100 TO WS-DAMAGE
+     MOVE CAUSE-PLAYER TO WS-CAUSE
+     MOVE 0 TO EN-HURT(WS-CUBE)
+     CALL "HEALTH-MOB-DAMAGE" USING WS-CUBE WS-DAMAGE WS-CAUSE WS-PLAYER
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 20§18.2 A dying cube drops its body item" TO WS-CASE
+     COMPUTE WS-EXP = WS-BEFORE + 1
+     MOVE WS-COUNT TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     PERFORM COUNT-CUBES
+     MOVE "acceptance US15 20§18.2 and it still splits in two" TO WS-CASE
+     MOVE 2 TO WS-EXP
+     MOVE WS-COUNT TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+
+*>   Hot: a cube with a magma block body hurts a cow it touches by 1 (the cow has 10).
+     CALL "PN-SPAWN" USING WS-DIM WS-KEY WS-CX WS-Y WS-CZ WS-CUBE
+     CALL "SULFUR-EQUIP" USING WS-CUBE WS-MAGMA WS-PREVIOUS
+     MOVE "minecraft:cow" TO WS-KEY
+     CALL "PN-SPAWN" USING WS-DIM WS-KEY WS-CX WS-Y WS-CZ WS-COW
+     CALL "SULFUR-CONTACT" USING WS-CUBE
+     MOVE "acceptance US15 20§18.2 A hot cube hurts a touching cow by 1.0" TO WS-CASE
+     MOVE 9 TO WS-EXP
+     MOVE EN-HEALTH(WS-COW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE EN-HEALTH(WS-COW) TO WS-HEALTH
+     CALL "SULFUR-EQUIP" USING WS-CUBE WS-DIRT WS-PREVIOUS
+     MOVE 0 TO EN-HURT(WS-COW)
+     CALL "SULFUR-CONTACT" USING WS-CUBE
+     MOVE "acceptance US15 20§18.2 A cube with another body does not" TO WS-CASE
+     MOVE WS-HEALTH TO WS-EXP
+     MOVE EN-HEALTH(WS-COW) TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+
+*>   checkSulfurCubeSpawnRules is always true: on a sunlit floor where a zombie could not spawn.
+     CALL "XORO-SEED" USING WS-SEED XR-STATE
+     CALL "STDMOB-INDEX" USING EN-TYPE(WS-CUBE) WS-M
+     MOVE WS-BX TO WS-FX
+     CALL "MS6-RULE-AT" USING XR-STATE WS-DIM WS-M WS-BX WS-BY WS-BZ WS-REASON WS-OK
+     MOVE "acceptance US15 20§18.2 The sulfur cube spawn rule is always true (natural reason)" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     MOVE WS-OK TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "minecraft:zombie" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZTYPE WS-ITEM-ROW WS-STATUS
+     CALL "STDMOB-INDEX" USING WS-ZTYPE WS-M
+     MOVE 6000 TO CW-TIME
+     CALL "MS6-RULE-AT" USING XR-STATE WS-DIM WS-M WS-BX WS-BY WS-BZ WS-REASON WS-OK
+     MOVE "acceptance US15 20§18.2 (a zombie cannot spawn there by day: the rule differs)" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     MOVE WS-OK TO WS-OBS
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     STOP RUN.
+
+*> WS-COUNT: the item entities of item id WS-I.
+ COUNT-ITEMS.
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+         IF EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) = CR-LOOSE-ITEM AND EN-ITEM(WS-E) = WS-I
+             ADD EN-ITEM-COUNT(WS-E) TO WS-COUNT
+         END-IF
+     END-PERFORM.
+
+*> WS-COUNT: the live sulfur cubes.
+ COUNT-CUBES.
+     MOVE 0 TO WS-COUNT
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
+         IF EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) = WS-CUBE-TYPE AND EN-HEALTH(WS-E) > 0
+             ADD 1 TO WS-COUNT
+         END-IF
+     END-PERFORM.
+ END PROGRAM TEST-P49N-SULFUR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PN-SPAWN.
+*> USING dim, key (PIC X(112)), x, y, z (FLOAT-LONG), row out.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-KEY                  PIC X(112).
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-KEY L-X L-Y L-Z L-ROW.
+     CALL "CONTENT-ENTITY-BY-KEY" USING L-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     CALL "MOB-SPAWN" USING L-DIM WS-TYPE L-X L-Y L-Z WS-YAW L-ROW
+     IF L-KEY = "minecraft:sulfur_cube"
+         CALL "SULFUR-CUBE-INIT" USING L-ROW
+     END-IF
+     GOBACK.
+ END PROGRAM PN-SPAWN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CHK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ LINKAGE SECTION.
+ 01 L-CASE                 PIC X(100).
+ 01 L-EXPECTED             BINARY-LONG.
+ 01 L-OBSERVED             BINARY-LONG.
+ PROCEDURE DIVISION USING L-CASE L-EXPECTED L-OBSERVED.
+     MOVE "N" TO TL-MODE
+     MOVE L-CASE TO TL-CASE
+     MOVE L-EXPECTED TO TL-EXPECTED-N
+     MOVE L-OBSERVED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     GOBACK.
+ END PROGRAM TEST-CHK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PN-CHECK-HEX.
+*> USING connection id, case (X(240)), wanted packet id, expected hex of the body ("none": no such packet): the body of the first packet of that id drained from the connection.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-AREA                PIC X(65536) BASED.
+ 01 WS-COPY                PIC X(512).
+ 01 WS-HEX                 PIC X(1024).
+ 01 WS-TEXT                PIC X(4096).
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-CASE                 PIC X(240).
+ 01 L-WANTED               BINARY-LONG.
+ 01 L-EXPECTED             PIC X(1024).
+ PROCEDURE DIVISION USING L-ID L-CASE L-WANTED L-EXPECTED.
+     MOVE "none" TO WS-HEX
+     MOVE 0 TO WS-FOUND WS-OUTCOME
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-DRAIN" USING L-ID PB-BUFFER WS-CLOSE
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING PB-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0 AND WS-PACKET-ID = L-WANTED AND WS-FOUND = 0
+             MOVE 1 TO WS-FOUND
+             SET ADDRESS OF WS-AREA TO PK-ADDR
+             COMPUTE WS-COUNT = PK-LENGTH - PK-POS
+             MOVE SPACES TO WS-COPY
+             MOVE WS-AREA(PK-POS + 1:WS-COUNT) TO WS-COPY
+             CALL "TEST-HEX-OF" USING WS-COPY WS-COUNT WS-HEX
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     MOVE WS-HEX TO WS-TEXT
+     MOVE L-CASE TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE L-EXPECTED TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "N" TO TL-MODE
+     GOBACK.
+ END PROGRAM PN-CHECK-HEX.
+ COPY CORETEST.
+ COPY MOBSPTEST.

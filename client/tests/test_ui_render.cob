@@ -22,6 +22,8 @@
  01 WS-GW                  BINARY-LONG.
  01 WS-GH                  BINARY-LONG.
  01 WS-UNFOCUSED           BINARY-LONG.
+ 01 WS-VT-LAYER            PIC XX VALUE "UI".
+ 01 WS-VT-OK               BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "CL-INIT" USING CLIENT-STATE
      CALL "PACK-STACK-INIT" USING CLIENT-STATE
@@ -48,10 +50,10 @@
      MOVE 2 TO SM-W-LENGTH(1)
      CALL "UI-RENDER" USING CLIENT-STATE
      MOVE "ui a label is one quad per character: 'A' at window (20, 40) to (36, 56) with the cell "
-         & "(8, 16)-(16, 24) of the 128 x 88 UI atlas (font, icon cells, swatches); 'b' 12 "
+         & "(8, 16)-(16, 24) of the 256-wide UI atlas (font, icon cells, swatches, GUI sprites); 'b' 12 "
          & "pixels further" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "12.00 20.00 40.00 0.06 0.18 36.00 56.00 0.13 0.27 1.00 1.00 32.00" TO TL-EXPECTED
+     MOVE "12.00 20.00 40.00 0.03 0.01 36.00 56.00 0.06 0.01 1.00 1.00 32.00" TO TL-EXPECTED
      MOVE SPACES TO WS-OUT
      MOVE 1 TO WS-PTR
      MOVE RL-UI-COUNT TO WS-E
@@ -65,6 +67,30 @@
      COMPUTE WS-E ROUNDED = RL-UI-A(1)
      STRING " " FUNCTION TRIM(WS-E) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
      COMPUTE WS-E ROUNDED = RL-UI-X(7)
+     STRING " " FUNCTION TRIM(WS-E) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+     MOVE WS-OUT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   An overlay of state 503 (the drag preview rectangle) is one quad of alpha 0.50 and the next, state 0, is opaque again (40-1 5.4).
+     MOVE 2 TO SM-WIDGET-COUNT
+     INITIALIZE SM-WIDGET(1)
+     INITIALIZE SM-WIDGET(2)
+     MOVE WK-OVERLAY TO SM-W-KIND(1) SM-W-KIND(2)
+     MOVE SW-WHITE TO SM-W-ARG(1) SM-W-ARG(2)
+     MOVE 16 TO SM-W-W(1) SM-W-H(1) SM-W-W(2) SM-W-H(2)
+     MOVE 503 TO SM-W-STATE(1)
+     CALL "UI-RENDER" USING CLIENT-STATE
+     MOVE "ui an overlay of state 503 is drawn with alpha 0.50 and an overlay of state 0 after it with alpha 1.00"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "12.00 0.50 1.00" TO TL-EXPECTED
+     MOVE SPACES TO WS-OUT
+     MOVE 1 TO WS-PTR
+     MOVE RL-UI-COUNT TO WS-E
+     STRING FUNCTION TRIM(WS-E) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+     COMPUTE WS-E ROUNDED = RL-UI-A(1)
+     STRING " " FUNCTION TRIM(WS-E) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+     COMPUTE WS-E ROUNDED = RL-UI-A(7)
      STRING " " FUNCTION TRIM(WS-E) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
      MOVE WS-OUT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -90,9 +116,8 @@
      MOVE "y" TO SM-W-TEXT(3)
      MOVE 1 TO SM-W-LENGTH(3)
      CALL "UI-RENDER" USING CLIENT-STATE
-     MOVE "ui a button: background (0, 0)-(200, 40) on the centre of the button swatch, text "
-         & "centred (x 88); a focused field: field swatch, text, caret; a selected entry: selected "
-         & "swatch, text"
+     MOVE "ui a button: nine quads of the built-in button art from (0, 0), the first 6 window pixels "
+         & "square on the sprite corner; a focused field: field swatch, text, caret; a selected entry"
          TO TL-CASE
      MOVE SPACES TO WS-OUT
      MOVE 1 TO WS-PTR
@@ -109,8 +134,21 @@
      MOVE 37 TO WS-VERTEX
      CALL "TEST-UI-VERTEX" USING CLIENT-STATE WS-VERTEX WS-OUT WS-PTR
      MOVE WS-OUT TO TL-OBSERVED
-     MOVE "48.00 0.00 0.00 0.22 0.95 200.00 40.00 0.22 0.95 88.00 0.00 100.00 0.34 0.95"
-         & " 0.00 200.00 0.28 0.95" TO TL-EXPECTED
+     MOVE "96.00 0.00 0.00 0.00 0.03 6.00 6.00 0.01 0.03 6.00 0.00 6.00 0.00 0.03 0.00 34.00 0.00 0.04"
+         TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   A disabled button (state 2) is drawn with the quads of an enabled one: the button sprite.
+     MOVE 1 TO SM-WIDGET-COUNT
+     MOVE 0 TO SM-W-STATE(1)
+     CALL "UI-RENDER" USING CLIENT-STATE
+     MOVE RL-UI-COUNT TO WS-UNFOCUSED
+     MOVE 2 TO SM-W-STATE(1)
+     CALL "UI-RENDER" USING CLIENT-STATE
+     MOVE "ui a disabled button renders the same quads as an enabled one (the sprite is the same)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE WS-UNFOCUSED TO TL-EXPECTED-N
+     MOVE RL-UI-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   The edit-server screen with the address field holding its full 256 bytes: focused, the field
@@ -134,6 +172,13 @@
      MOVE "N" TO TL-MODE
      MOVE 6 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = RL-UI-COUNT - WS-UNFOCUSED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "TEST-VERTEX-TINTS" USING CLIENT-STATE WS-VT-LAYER WS-VT-OK
+     MOVE "tint channel every vertex of the user interface quads is untinted white (1, 1, 1) and has no sky term"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-VT-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-UI-RENDER.
@@ -162,3 +207,4 @@
      STRING " " FUNCTION TRIM(WS-E) DELIMITED BY SIZE INTO L-TEXT WITH POINTER L-PTR
      GOBACK.
  END PROGRAM TEST-UI-VERTEX.
+ COPY CLTEST.

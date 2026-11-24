@@ -1,0 +1,20 @@
+# Fixture: Respawn into minecraft:the_nether
+# Phase: play. Direction: clientbound (S->C). Packet id 0x54 (84).
+# Doc refs: 05b 0x54 and CommonPlayerSpawnInfo; 39 (portals)
+# Stated inputs:
+#   spawn info for minecraft:the_nether: dimension type 1, sea level 32, other fields as in play-s2c-32-login-all-dimensions-standard; data to keep 0x01
+
+54                                               # packet id: VarInt 0x54
+01                                               # Spawn info.Dimension type: VarInt 1 (registry id in config-s2c-07-registry-data-dimension-type-standard)
+14 6d 69 6e 65 63 72 61 66 74 3a 74 68 65 5f 6e  # Spawn info.Dimension: Identifier
+65 74 68 65 72                                   #   (continued)
+11 22 33 44 55 66 77 88                          # Spawn info.Hashed seed: Long 0x1122334455667788
+01                                               # Spawn info.Game mode: VarInt 1 (creative)
+01                                               # Spawn info.Previous game mode: OptionalVarInt 1 (survival)
+00                                               # Spawn info.Is debug: Boolean false
+00                                               # Spawn info.Is flat: Boolean false
+01 13 6d 69 6e 65 63 72 61 66 74 3a 6f 76 65 72  # Spawn info.Last death location: present, minecraft:overworld (10, 64, -10)
+77 6f 72 6c 64 00 00 02 bf ff ff 60 40           #   (continued)
+00                                               # Spawn info.Portal cooldown: VarInt 0
+20                                               # Spawn info.Sea level: VarInt 32
+01                                               # Data to keep: Byte 0x01

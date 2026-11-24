@@ -257,7 +257,7 @@ operator overrules it; it is a recommendation made with the reconciliation, not 
 | 6 | First-join state of the cobolcraft world type. | The stand-in starting kit stays in the cobolcraft type; the standard type starts empty. | The kit is content. | S23, spec US4-8 |
 | 7 | Player chat: standard Player Chat and Disguised Chat with standard chat types, or CobolCraft's System Chat. | Standard, in both world types. | The standard commands need chat types (16 §8). | S34, P09-3, P09-14 |
 | 8 | Operator status and bans: standard permission levels 0 to 4 and list semantics, or a binary operator. | Standard levels stored in `access.dat`. | Standard commands test levels (15 §2). | P07-4, spec FR-016, US14, US17 |
-| 9 | World folder and configuration: keep CobolCraft's schemas (07 §9) and add `WorldType`; configuration key `world-type`. | Keep CobolCraft schemas; vanilla-loadable saves are not a goal. | The vanilla schemas are not documented and no decision asks for them. | P07-1, P07-3, spec FR-009 |
+| 9 | World folder and configuration: keep CobolCraft's schemas (07 §9) and add `WorldType`; configuration key `world-type`. | Keep CobolCraft schemas for the cobolcraft world type. The standard world type, and any folder of a real 26.3 game, uses the game's own layout (07 §10), opened and written back by CobolCraft (operator request after the first version of this decision: vanilla worlds must load; the clean-room round SAVEFMT documented the vanilla schemas). | The vanilla schemas are now documented (07 §10). | P07-1, P07-3, spec FR-009 |
 | 10 | Optional Faithful skin for the cobolcraft world type (Part 3.5). | An extra built-in pack, off by default, covering blocks and items only; entities keep their strips; turf is left out. | Cheap, reversible, keeps faithful §3 and §4 useful. | F-6, F-7, F-10 |
 | 11 | Where the generated packs live and when they are rebuilt. | In the user's game directory under a git-ignored folder; rebuilt when the jar's SHA-256 differs from the recorded one; only a jar with the SHA-256 recorded in docs/protocol/README.md is accepted. | CC-0001: pack and jar are never committed; format risk. | GAP-32, C8, C10 |
 | 12 | Missing-texture look. | Keep the orange and black stripes. | Engine-generated, tested. | S18, S20 |
@@ -444,3 +444,32 @@ does not restate them.
 | [46-registry-ids.md](../protocol/46-registry-ids.md) | 15 | 0 | Static registry ids on the wire |
 | [47-default-skin.md](../protocol/47-default-skin.md) | 13 | 1 | Default player skin and skin handling |
 | Total (133 documents) | 1926 | 59 | |
+
+### 8.3 Status of the open items that bear on feature 002 (specs/002-client-polish)
+
+Updated for tasks T0044 of the plan's Phase 2a. "Closed by round X in Foundational (reviewed)" means the clean-room
+round of that name (tasks T0017 to T0036) closed the item and its review tasks are done. Items not named here do not bear on this feature and keep their status above.
+
+| Open item (document, number) | Status | By |
+|---|---|---|
+| Options screen texts (`builtin-ui-art.md` 13) | closed by round OPT in Foundational (reviewed) | T0017, T0018 |
+| Sprite sizes and sheet regions, tooltip frame, recipe-book tabs and toasts, minimum window size, contrast values (`builtin-ui-art.md`) | closed by round GUI in Foundational (reviewed) | T0019, T0020 |
+| Per-biome grass tint (`faithful-pack-mapping.md`; 43) | closed by round TINT in Foundational (reviewed) | T0021, T0022 |
+| Save layout of 07 versus 33 (`world-types.md` 12) | closed by round SAVE in Foundational (reviewed) | T0023, T0024 |
+| Seed text hash (`world-types.md` 11; 11 Open question) | closed by round SEED in Foundational (reviewed) | T0025, T0026 |
+| Optional Faithful skin: pack id, title, stack level, toggle placement (`world-types.md` 14, `faithful-pack-mapping.md` 11) | closed by round SKIN in Foundational (reviewed) | T0027, T0028 |
+| Single-player world opened to others (`world-types.md` 10) | closed by round SPOPEN in Foundational (reviewed) | T0029, T0030 |
+| `TestInstanceBlockEditScreen` (`40-menus-9` 1) | closed by round TIBE in Foundational (reviewed) | T0031, T0032 |
+| PNG kinds the jar and Faithful use (`22-extraction-tool.md`) | closed by round PNG in Foundational (reviewed) | T0033, T0034 |
+| `libm` functions and rounding rules of 10, 11, 15, 18 | closed by round LIBM in Foundational (reviewed) | T0035, T0036 |
+| Vanilla client against a cobolcraft server (`world-types.md` 8) | closed by T0039: behaviour recorded in `world-types.md` §8.3; a refusal at login is a new design, out of scope (spec US21 scenario 2) | T0039 |
+| Cobolcraft-type content the shared rules need beyond the bench (FR-027) | closed by T0040: `cobolcraft-standard-core.md` §5.10 (no new object; the bench picture, the bench language keys, the creative lists) | T0040 |
+| Bench texture, model and icon (`standin-content.md` 15; `cobolcraft-standard-core.md` §9) | closed by T0040 (CORE-33) | T0040 |
+| Bench values and the operator's confirmation of the bench (`world-types.md` 15, 16) | closed: values in `cobolcraft-standard-core.md` §5; the operator confirmed in the spec Clarifications (answer 1) | spec Clarifications |
+| Operator confirmation of the namespace reading (`world-types.md` 17) | closed: confirmed in the spec Clarifications (answer 2) | spec Clarifications |
+| Texture path of every cobolcraft block, item and mob (FR-012) | closed by T0043: `faithful-pack-mapping.md` §3 (bench rows added), §4 (bench item row, coverage statement); none unmapped | T0043 |
+| Rows of `09-cobolcraft-profile.md` for the standard rules (wire-delta §2) | closed (review fixes applied): `09` §3.5.1 to §3.5.9 | T0041, T0042 |
+| Debug world layout (operator addition) | closed (review fixes applied): `debug-world.md`; `world-types.md` §2.1 lists `debug` | T0037, T0038 |
+| Sound event helper question (`46` Open question 14) | out of scope: sounds are removed by spec FR-043 and no sound packet is sent | FR-043 |
+| Accepting an unknown jar (`22` Open question 1) | out of scope: rejected by Part 7 decision 11 (only the jar with the recorded SHA-256 is accepted) | Part 7 decision 11 |
+| Entity geometry for a cobolcraft skin (`faithful-pack-mapping.md` Open question 1) | out of scope: the optional skin covers blocks and items only (spec FR-006) | FR-006 |

@@ -1,0 +1,900 @@
+*> Test of the support rules (core/src/support-29.cob, lane bugsw T10305; docs/protocol/29 sections 3.2 and 9.5, 24 part 2): on the generated vanilla data pack (CC_GENERATED_DIR, skipped as a pass
+*> without it) every rule is asked by SUP-SURVIVES for the block in its cell with its support present and absent (plants on their ground, sugar cane beside water, cactus beside a solid block,
+*> kelp on magma, doors, wall and floor attachments), and SUP-DESTROY-STATE for what a destroyed block leaves.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SUPPORT-RULES.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CBLOCKS.
+ 01 WS-DIR                 PIC X(1024).
+ 01 WS-ENV                 PIC X(1024).
+ 01 WS-FILE                PIC X(1100).
+ 01 WS-FILE-INFO           PIC X(16).
+ 01 WS-NAME                PIC X(16) VALUE "Alice".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY112              PIC X(112).
+ 01 WS-PAIRS               PIC X(160).
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-SUBJECT             BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-DX                  BINARY-LONG.
+ 01 WS-DY                  BINARY-LONG.
+ 01 WS-DZ                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-PX                  BINARY-LONG.
+ 01 WS-PY                  BINARY-LONG.
+ 01 WS-PZ                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-NAME-CASE           PIC X(80).
+ 01 WS-EXPECT              BINARY-DOUBLE.
+ 01 WS-TEXT-AREA           PIC X(4096).
+ 01 WS-NEW                 BINARY-LONG.
+ 01 WS-WATER               BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE SPACES TO WS-ENV
+     ACCEPT WS-ENV FROM ENVIRONMENT "CC_GENERATED_DIR"
+     IF WS-ENV = SPACES
+         MOVE "/tmp/cc-test/generated" TO WS-DIR
+     ELSE
+         MOVE WS-ENV TO WS-DIR
+     END-IF
+     MOVE SPACES TO WS-FILE
+     STRING FUNCTION TRIM(WS-DIR TRAILING) "/vanilla-data/pack.mcmeta" X"00" DELIMITED BY SIZE INTO WS-FILE
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-FILE WS-FILE-INFO
+     IF RETURN-CODE NOT = 0
+         MOVE "N" TO TL-MODE
+         MOVE "test support rules no generated packs here, skipped" TO TL-CASE
+         MOVE 1 TO TL-EXPECTED-N
+         MOVE 1 TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         STOP RUN
+     END-IF
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE "standard" TO CS-WORLD-TYPE
+     MOVE WS-DIR TO CS-GENERATED-DIR
+     MOVE 0 TO CS-DEFAULT-MODE
+     MOVE 2 TO CS-VIEW-DISTANCE
+     MOVE 0 TO CS-HOSTILE-MOBS
+     MOVE "12345" TO CS-SEED-TEXT
+     MOVE "Rules" TO CS-NEW-WORLD-NAME
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "TEST-JOIN-OP" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-PLAYER
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     COMPUTE WS-PX = FUNCTION INTEGER(PL-X(WS-PLAYER)) + 4
+     COMPUTE WS-PY = FUNCTION INTEGER(PL-Y(WS-PLAYER)) + 60
+     COMPUTE WS-PZ = FUNCTION INTEGER(PL-Z(WS-PLAYER)) + 4
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:poppy" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:grass_block" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "poppy on grass" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:poppy" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "poppy on stone" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:dead_bush" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:sand" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "dead bush on sand" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:dead_bush" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "dead bush on stone" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:red_mushroom" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "mushroom on stone" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:red_mushroom" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:glass" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "mushroom on glass" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:lily_pad" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:water" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "lily pad on water" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:lily_pad" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "lily pad on stone" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:seagrass" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:sand" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "seagrass on sand" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:seagrass" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:glass" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "seagrass on glass" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:sea_pickle" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "sea pickle on stone" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:sea_pickle" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "sea pickle on air" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:tall_seagrass" TO WS-KEY112
+     MOVE "half=lower" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:sand" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "tall seagrass lower on sand" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:tall_seagrass" TO WS-KEY112
+     MOVE "half=upper" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:tall_seagrass" TO WS-KEY112
+     MOVE "half=lower" TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "tall seagrass upper on lower" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:tall_seagrass" TO WS-KEY112
+     MOVE "half=upper" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "tall seagrass upper on stone" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:snow" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:dirt" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "snow on dirt" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:snow" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:ice" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "snow on ice" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:snow" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "snow on air" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:sugar_cane" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:sugar_cane" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "cane on cane" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:sugar_cane" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:sand" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "minecraft:water" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE -1 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "cane on sand beside water" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:sugar_cane" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:sand" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "cane on sand dry" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:sugar_cane" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "cane on stone" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:cactus" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:sand" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "cactus on sand" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:cactus" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:sand" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE -1 TO WS-DX
+     MOVE 0 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "cactus on sand with stone beside" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:cactus" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:cactus" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "cactus on cactus" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:cactus" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:dirt" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "cactus on dirt" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:kelp" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "kelp on stone" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:kelp" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:magma_block" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "kelp on magma" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:kelp" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:kelp_plant" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "kelp on kelp plant" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:kelp" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:water" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "kelp on water" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:bamboo" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:dirt" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "bamboo on dirt" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:bamboo" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "bamboo on stone" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:bamboo" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:bamboo" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "bamboo on bamboo" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:tall_grass" TO WS-KEY112
+     MOVE "half=lower" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:dirt" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "tall grass lower on dirt" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:tall_grass" TO WS-KEY112
+     MOVE "half=upper" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:tall_grass" TO WS-KEY112
+     MOVE "half=lower" TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "tall grass upper on lower" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:tall_grass" TO WS-KEY112
+     MOVE "half=upper" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "tall grass upper on stone" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:torch" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "torch on stone" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:torch" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "torch on air" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:torch" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:oak_fence" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "torch on fence" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:redstone_wire" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "redstone wire on stone" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:wall_torch" TO WS-KEY112
+     MOVE "facing=north" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE 0 TO WS-DY
+     MOVE 1 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "wall torch with block behind" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:wall_torch" TO WS-KEY112
+     MOVE "facing=north" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "wall torch without block behind" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:ladder" TO WS-KEY112
+     MOVE "facing=east,waterlogged=false" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE -1 TO WS-DX
+     MOVE 0 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "ladder with block behind" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:lever" TO WS-KEY112
+     MOVE "face=floor,facing=north,powered=false" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "lever on the floor" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:lever" TO WS-KEY112
+     MOVE "face=ceiling,facing=north,powered=false" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE 1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "lever on the ceiling" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:lever" TO WS-KEY112
+     MOVE "face=wall,facing=north,powered=false" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE 0 TO WS-DY
+     MOVE 1 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "lever on a wall" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:lever" TO WS-KEY112
+     MOVE "face=wall,facing=north,powered=false" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "lever without support" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:oak_door" TO WS-KEY112
+     MOVE "facing=north,half=lower,hinge=left,open=false,powered=false" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "door lower on stone" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:oak_door" TO WS-KEY112
+     MOVE "facing=north,half=lower,hinge=left,open=false,powered=false" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "door lower on air" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:oak_door" TO WS-KEY112
+     MOVE "facing=north,half=upper,hinge=left,open=false,powered=false" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:oak_door" TO WS-KEY112
+     MOVE "facing=north,half=lower,hinge=left,open=false,powered=false" TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "door upper on lower" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:oak_door" TO WS-KEY112
+     MOVE "facing=north,half=upper,hinge=left,open=false,powered=false" TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX
+     MOVE -1 TO WS-DY
+     MOVE 0 TO WS-DZ
+     PERFORM PUT-CELL
+     MOVE "door upper on stone" TO WS-NAME-CASE
+     MOVE 0 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:stone" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     MOVE 0 TO WS-DX WS-DY WS-DZ
+     PERFORM PUT-CELL
+     MOVE WS-STATE TO WS-SUBJECT
+     MOVE "stone needs nothing" TO WS-NAME-CASE
+     MOVE 1 TO WS-EXPECT
+     PERFORM CHECK-SURVIVES
+*>   What a destroyed block leaves
+     PERFORM CLEAR-CELLS
+     MOVE "minecraft:kelp" TO WS-KEY112
+     MOVE SPACES TO WS-PAIRS
+     PERFORM STATE-OF
+     CALL "SUP-DESTROY-STATE" USING WS-STATE WS-NEW
+     MOVE "minecraft:water" TO WS-KEY112
+     PERFORM STATE-OF
+     MOVE WS-STATE TO WS-WATER
+     MOVE "test support rules: a destroyed kelp leaves a water source" TO TL-CASE
+     MOVE WS-WATER TO TL-EXPECTED-N
+     MOVE WS-NEW TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "minecraft:oak_slab" TO WS-KEY112
+     MOVE "type=bottom,waterlogged=true" TO WS-PAIRS
+     PERFORM STATE-OF
+     CALL "SUP-DESTROY-STATE" USING WS-STATE WS-NEW
+     MOVE "test support rules: a destroyed waterlogged slab leaves a water source" TO TL-CASE
+     MOVE WS-WATER TO TL-EXPECTED-N
+     MOVE WS-NEW TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "minecraft:oak_slab" TO WS-KEY112
+     MOVE "type=bottom,waterlogged=false" TO WS-PAIRS
+     PERFORM STATE-OF
+     CALL "SUP-DESTROY-STATE" USING WS-STATE WS-NEW
+     MOVE "test support rules: a destroyed dry slab leaves air" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-NEW TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-STATE
+     CALL "SUP-DESTROY-STATE" USING WS-STATE WS-NEW
+     MOVE "test support rules: air leaves air" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-NEW TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ STATE-OF.
+     CALL "BLOCKS-STATE-OF" USING WS-KEY112 WS-PAIRS WS-STATE.
+
+*> The 5 x 5 x 5 cube around the subject cell is air.
+ CLEAR-CELLS.
+     PERFORM VARYING WS-I FROM -2 BY 1 UNTIL WS-I > 2
+         PERFORM VARYING WS-J FROM -2 BY 1 UNTIL WS-J > 2
+             PERFORM VARYING WS-K FROM -2 BY 1 UNTIL WS-K > 2
+                 COMPUTE WS-X = WS-PX + WS-I
+                 COMPUTE WS-Y = WS-PY + WS-J
+                 COMPUTE WS-Z = WS-PZ + WS-K
+                 CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-AIR
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM.
+
+*> The block WS-KEY112 with WS-PAIRS goes to the cell at the offset (WS-DX, WS-DY, WS-DZ) from the subject cell.
+ PUT-CELL.
+     PERFORM STATE-OF
+     COMPUTE WS-X = WS-PX + WS-DX
+     COMPUTE WS-Y = WS-PY + WS-DY
+     COMPUTE WS-Z = WS-PZ + WS-DZ
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE.
+
+ CHECK-SURVIVES.
+     CALL "SUP-SURVIVES" USING WS-DIM WS-PX WS-PY WS-PZ WS-SUBJECT WS-OK
+     MOVE "N" TO TL-MODE
+     MOVE SPACES TO TL-CASE
+     STRING "test support rules: " FUNCTION TRIM(WS-NAME-CASE) DELIMITED BY SIZE INTO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-SUPPORT-RULES.
+ COPY CORETEST.
+ COPY CMDTEST.

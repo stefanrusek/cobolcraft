@@ -1,0 +1,16 @@
+{
+ "feature": {
+  "type": "minecraft:weighted_random_selector",
+  "features": [
+   {
+    "data": "minecraft:pf_poppy",
+    "weight": 1
+   },
+   {
+    "data": "minecraft:pf_dandelion",
+    "weight": 3
+   }
+  ]
+ },
+ "placement": []
+}

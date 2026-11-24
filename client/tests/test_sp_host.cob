@@ -51,6 +51,7 @@
  01 WS-E4                  PIC -(9)9.
  01 WS-E5                  PIC -(9)9.
  01 WS-E6                  PIC -(9)9.
+ 01 WS-SAVED-SCREEN        BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SP-START" USING CLIENT-STATE WS-DIR WS-DIR-LENGTH
      CALL "SP-OPEN" USING CLIENT-STATE WS-FOLDER WS-FOLDER-LENGTH WS-NAME WS-NAME-LENGTH WS-MODE
@@ -75,6 +76,31 @@
          " online " FUNCTION TRIM(WS-E6) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+     MOVE "sp host a hosted world generates its standard chunks in the generation workers (docs/design/generation-worker.md)"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     CALL "GEN-WORKERS-GET" USING WS-NUMBER
+     MOVE WS-NUMBER TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     IF TL-OBSERVED-N > 0 AND TL-OBSERVED-N < 5
+         MOVE 1 TO TL-OBSERVED-N
+     ELSE
+         MOVE 0 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
+
+     MOVE SP-SETTINGS TO CORE-SETTINGS
+     MOVE "sp host the settings handed to the core carry the 002 fields: the world type (a new "
+         & "world is a cobolcraft one unless the create screen chose), the game directory, no seed text"
+         TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "cobolcraft build/client-test-sp-host []" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(CS-WORLD-TYPE) " " FUNCTION TRIM(CS-GAME-DIR) " [" FUNCTION TRIM(CS-SEED-TEXT)
+         "]" DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
      MOVE SP-SETTINGS TO CORE-SETTINGS
      MOVE "build/client-test-sp-host/saves/First/access.dat" TO WS-PATH
      MOVE 48 TO WS-PATH-LENGTH
@@ -91,7 +117,8 @@
          FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   Tick cadence: 50 frames 20 ms apart are 1000 ms, 20 ticks; one frame 200 ms later catches up 4.
+*>   Tick cadence: 50 frames 20 ms apart are 1000 ms, 20 ticks; one frame 200 ms later owes 4 and runs
+*>   3 (CL-MAX-PUMP-TICKS; the fourth is spread to the next frame).
      MOVE SP-TICKS TO WS-TICKS
      PERFORM 50 TIMES
          CALL "TEST-STEP" USING CLIENT-STATE
@@ -100,10 +127,10 @@
      MOVE SP-TICKS TO WS-TICKS
      MOVE 200 TO WS-MS
      CALL "TEST-EVENTS-MS" USING CLIENT-STATE WS-EVENTS WS-ZERO WS-MS
-     MOVE "sp host one CORE-TICK per elapsed 50 ms: 20 in 1000 ms of 20 ms frames, 4 in one frame "
-         & "200 ms later" TO TL-CASE
+     MOVE "sp host one CORE-TICK per elapsed 50 ms: 20 in 1000 ms of 20 ms frames, 3 (the cap) in one "
+         & "frame 200 ms later" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 2004 TO TL-EXPECTED-N
+     MOVE 2003 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-T1 * 100 + SP-TICKS - WS-TICKS
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
@@ -153,13 +180,50 @@
      MOVE 1 TO CS-HOST-KIND
      MOVE CORE-SETTINGS TO SP-SETTINGS
 
+*>   The screens that pause the integrated game (T59912): the book editor (40-8 section 3: isPauseScreen true, the Screen default), the command block, test block and
+*>   jigsaw screens (40-9 section 3: the default too); not the sign editor (40-8 section 6.2: isPauseScreen false) and not a container screen (40-1 section 5.7).
+     MOVE SM-SCREEN TO WS-SAVED-SCREEN
+     MOVE "N" TO TL-MODE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+         EVALUATE WS-I
+             WHEN 1
+                 MOVE SCR-BOOK TO SM-SCREEN
+                 MOVE 1 TO TL-EXPECTED-N
+                 MOVE "sp host the book editor screen pauses the tick (40-8 section 3)" TO TL-CASE
+             WHEN 2
+                 MOVE SCR-CMDBLOCK TO SM-SCREEN
+                 MOVE 1 TO TL-EXPECTED-N
+                 MOVE "sp host the command block screen pauses the tick (40-9 section 3)" TO TL-CASE
+             WHEN 3
+                 MOVE SCR-FORM TO SM-SCREEN
+                 MOVE 1 TO TL-EXPECTED-N
+                 MOVE "sp host the test block and jigsaw screen pauses the tick (40-9 section 3)" TO TL-CASE
+             WHEN 4
+                 MOVE SCR-SIGN TO SM-SCREEN
+                 MOVE 0 TO TL-EXPECTED-N
+                 MOVE "sp host the sign editor does not pause the tick (40-8 section 6.2: isPauseScreen false)" TO TL-CASE
+             WHEN 5
+                 MOVE SCR-CONTAINER TO SM-SCREEN
+                 MOVE 0 TO TL-EXPECTED-N
+                 MOVE "sp host a container screen does not pause the tick (40-1 section 5.7)" TO TL-CASE
+             WHEN 6
+                 MOVE SCR-WORLD TO SM-SCREEN
+                 MOVE 0 TO TL-EXPECTED-N
+                 MOVE "sp host the world screen does not pause the tick" TO TL-CASE
+         END-EVALUATE
+         CALL "SP-PUMP" USING CLIENT-STATE
+         MOVE SP-PAUSED TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+     MOVE WS-SAVED-SCREEN TO SM-SCREEN
+
 *>   Quitting (US16-5): the pause menu's quit-world control saves through CORE-STOP and returns
 *>   to the title screen. level.dat is removed first, so finding it afterwards shows the save.
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE "sp host the pause menu of a hosted world offers Save and Leave the World in place of "
          & "Disconnect" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "Game Menu|Back to the World|Open to Others|Save and Leave the World" TO TL-EXPECTED
+     MOVE "Game Menu|Back to the World|Options|Open to Others|Save and Leave the World" TO TL-EXPECTED
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL "CBL_DELETE_FILE" USING WS-LEVEL
@@ -189,15 +253,15 @@
          INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   The shutdown command in a hosted world is the host quitting (standin-content §16 row 29): the
-*>   host holds operator status, so it runs; the next frame quits the world.
+*>   `stop` is a dedicated-server command (16 section 2, 57-client-closures-4 section 3.4): in a hosted world the line is an unknown command, the world keeps running and
+*>   the chat shows the error; the host quits through the pause menu (SP-QUIT).
      CALL "SP-OPEN" USING CLIENT-STATE WS-FOLDER WS-FOLDER-LENGTH WS-NAME WS-NAME-LENGTH WS-MODE
      CALL "TEST-SP-JOIN" USING CLIENT-STATE WS-JOINED
      MOVE 0 TO CH-COUNT
      MOVE CC-KEY-SLASH TO WS-KEY
      CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
-     MOVE "shutdown" TO WS-TYPED
-     MOVE 8 TO WS-TYPED-LENGTH
+     MOVE "stop" TO WS-TYPED
+     MOVE 4 TO WS-TYPED-LENGTH
      CALL "TEST-TYPE" USING CLIENT-STATE WS-TYPED WS-TYPED-LENGTH
      MOVE CC-KEY-ENTER TO WS-KEY
      CALL "TEST-KEY" USING CLIENT-STATE WS-KEY
@@ -205,9 +269,9 @@
          CALL "TEST-STEP" USING CLIENT-STATE
      END-PERFORM
      CALL "CORE-STATUS-GET" USING CORE-STATUS
-     MOVE "sp host the host's /shutdown command (operator status as host) quits the world: saved "
-         & "(run state 2), title screen" TO TL-CASE
-     MOVE "joined 1 active 0 run 2 screen 1" TO TL-EXPECTED
+     MOVE "sp host the host's /stop is no command of a hosted world (57-4 section 3.4): the world keeps "
+         & "running (run state 0), the world screen stays" TO TL-CASE
+     MOVE "joined 1 active 1 run 0 screen 5" TO TL-EXPECTED
      MOVE WS-JOINED TO WS-E1
      MOVE SP-ACTIVE TO WS-E2
      MOVE CST-RUN-STATE TO WS-E3
@@ -216,14 +280,13 @@
      STRING "joined " FUNCTION TRIM(WS-E1) " active " FUNCTION TRIM(WS-E2) " run "
          FUNCTION TRIM(WS-E3) " screen " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "sp host the shutdown confirmation (sent before stopping, standin-content §16 row 29) "
-         & "reaches the host's chat before the world is quit" TO TL-CASE
-     MOVE "Shutting down" TO TL-EXPECTED
-     MOVE "none" TO TL-OBSERVED
-     IF CH-COUNT > 0
-         MOVE CH-TEXT(CH-COUNT) TO TL-OBSERVED
-     END-IF
+     MOVE "sp host the unknown command error of /stop is chat of the world (two lines: the message and the line with the mark)" TO TL-CASE
+     MOVE "chat 2" TO TL-EXPECTED
+     MOVE CH-COUNT TO WS-E1
+     MOVE SPACES TO TL-OBSERVED
+     STRING "chat " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "SP-QUIT" USING CLIENT-STATE
 
 *>   A connection the core ends: CORE-STOP called past the host sends Disconnect and hands the
 *>   memory connection back (close flag; the host itself cannot be ejected); the client shows

@@ -3,7 +3,8 @@
 *> creative player leaves the ground (Take Item Entity, Remove Entities to its viewers) and is added
 *> to that player's inventory (Container Set Slot). View distance 2. Alice (entity 1, survival,
 *> starting items, pry_bar held) stays at the spawn point and breaks greystone at (22, 101, 20) on a
-*> greystone block at (22, 100, 20); the yield rests at (22.5, 101, 20.5). Bob (entity 2) is made
+*> greystone floor at y = 100 (x 18 to 26, z 18 to 22); the yield (a random popResource position near (22.5, 101, 20.5),
+*> 41 section 2.1, pickup delay 10) comes to rest on it. Bob (entity 2) is made
 *> creative after joining (mode changes by command are US14). Both players start with the
 *> survival starting items, so slot 0 (64 greystone) is full and the item goes to slot 10, the
 *> first empty slot.
@@ -39,6 +40,14 @@
  01 WS-TEXT                PIC X(1024).
  01 WS-E1                  PIC -(9)9.
  01 WS-E2                  PIC -(9)9.
+ 01 WS-R1                  PIC -(6)9.99.
+ 01 WS-R2                  PIC -(6)9.99.
+ 01 WS-R3                  PIC -(6)9.99.
+ 01 WS-ADD                 PIC X(80).
+ 01 WS-BEFORE              PIC X(1024).
+ 01 WS-FLOOR-X             BINARY-LONG.
+ 01 WS-FLOOR-Z             BINARY-LONG.
+ 01 WS-ENTITY              BINARY-LONG.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE 0 TO CS-DEFAULT-MODE
@@ -50,33 +59,46 @@
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-BOB
      MOVE 1 TO PL-MODE(CN-PLAYER(WS-BOB))
      MOVE 100 TO WS-Y
-     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     PERFORM VARYING WS-FLOOR-X FROM 18 BY 1 UNTIL WS-FLOOR-X > 26
+         PERFORM VARYING WS-FLOOR-Z FROM 18 BY 1 UNTIL WS-FLOOR-Z > 22
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FLOOR-X WS-Y WS-FLOOR-Z WS-STATE
+         END-PERFORM
+     END-PERFORM
      CALL "TEST-HELD" USING WS-ALICE WS-SLOT
 
      MOVE "acceptance US5-2 given a ground item when a creative player is within pickup range "
-         & "then once its pickup delay (6 ticks) is over it is taken (Take Item Entity, "
-         & "the inventory update, Remove Entities) and is added to that player's inventory" TO TL-CASE
+         & "then once its pickup delay (10 ticks) is over it is taken (Take Item Entity, "
+         & "inventory update, Remove Entities) and added, first on the eleventh tick" TO TL-CASE
      MOVE 21.5 TO WS-FX
      CALL "TEST-MOVE" USING WS-BOB WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
      CALL "TEST-DRAIN-ENTITIES" USING WS-ALICE WS-TEXT
      PERFORM BREAK-BLOCK
      CALL "TEST-DRAIN-ENTITIES" USING WS-BOB WS-TEXT
-     MOVE 5 TO WS-TICKS
+     MOVE 10 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-ENTITIES" USING WS-BOB WS-TEXT
+     CALL "TEST-DROP-MOVES" USING WS-TEXT
+     MOVE WS-TEXT TO WS-BEFORE
      MOVE 1 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-ENTITIES" USING WS-BOB WS-TEXT
+     CALL "TEST-DROP-MOVES" USING WS-TEXT
+     MOVE SPACES TO TL-OBSERVED
+     STRING "before [" FUNCTION TRIM(WS-BEFORE) "] after [" FUNCTION TRIM(WS-TEXT) "]"
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE TL-OBSERVED TO WS-TEXT
      MOVE CN-PLAYER(WS-BOB) TO WS-ROW
      PERFORM ADD-SLOT
-     MOVE "127(3,2,1) 20(10=2x1) 78(3) slot 10 2x1" TO TL-EXPECTED
+     MOVE "before [] after [127(3,2,1) 20(10=2x1) 78(3)] slot 10 2x1" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US5-2 given a ground item picked up by a creative player then the other "
          & "viewers, who saw it appear and fall, are sent Take Item Entity and Remove Entities too" TO TL-CASE
      CALL "TEST-DRAIN-ENTITIES" USING WS-ALICE WS-TEXT
-     MOVE "4 8 49 1(3,1@22.50,101.25,20.50) 101(3=2x1) 4 128(3)x4 127(3,2,1) 78(3)"
-         TO TL-EXPECTED
+     CALL "TEST-DROP-MOVES" USING WS-TEXT
+     MOVE SPACES TO TL-EXPECTED
+     STRING "5 4 5x8 49 " FUNCTION TRIM(WS-ADD) " 101(3=2x1) 103(3) 8 4 127(3,2,1) 78(3)"
+         DELIMITED BY SIZE INTO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US5-2 given a ground item resting out of every player's range when a "
@@ -94,6 +116,7 @@
      MOVE 1 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-ENTITIES" USING WS-ALICE WS-TEXT
+     CALL "TEST-DROP-MOVES" USING WS-TEXT
      MOVE CN-PLAYER(WS-ALICE) TO WS-ROW
      PERFORM ADD-SLOT
      MOVE "127(4,1,1) 20(10=2x1) 78(4) slot 10 2x1" TO TL-EXPECTED
@@ -109,7 +132,16 @@
      MOVE 7 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      MOVE 3 TO WS-ACTION
-     PERFORM ACT.
+     PERFORM ACT
+     COMPUTE WS-ENTITY = CW-NEXT-ENTITY-ID - 1
+     CALL "TEST-FIND-ENTITY" USING WS-ENTITY WS-ROW
+     COMPUTE WS-R1 ROUNDED = EN-X(WS-ROW)
+     COMPUTE WS-R2 ROUNDED = EN-Y(WS-ROW)
+     COMPUTE WS-R3 ROUNDED = EN-Z(WS-ROW)
+     MOVE WS-ENTITY TO WS-E1
+     MOVE SPACES TO WS-ADD
+     STRING "1(" FUNCTION TRIM(WS-E1) ",1@" FUNCTION TRIM(WS-R1) "," FUNCTION TRIM(WS-R2) ","
+         FUNCTION TRIM(WS-R3) ")" DELIMITED BY SIZE INTO WS-ADD.
 
  ACT.
      ADD 1 TO WS-SEQ

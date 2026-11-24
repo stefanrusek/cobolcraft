@@ -5,7 +5,7 @@
  01 MODEL-RESOLVED.
     05 MR-MISSING            PIC 9.
     05 MR-ELEMENT-COUNT      BINARY-LONG.
-    05 MR-ELEMENT OCCURS 8 TIMES.
+    05 MR-ELEMENT OCCURS 16 TIMES.
        10 ME-FROM            FLOAT-SHORT OCCURS 3 TIMES.
        10 ME-TO              FLOAT-SHORT OCCURS 3 TIMES.
        10 ME-ROT-KIND        BINARY-LONG.    *> 0 none, 1 single axis, 2 Euler x, y, z
@@ -21,6 +21,19 @@
           15 MF-UV           FLOAT-SHORT OCCURS 4 TIMES.
           15 MF-CULL         BINARY-LONG.    *> DIR-*, DIR-NONE when absent
           15 MF-ROTATION     BINARY-LONG.    *> 0, 90, 180, 270
+          15 MF-TINT         BINARY-LONG.    *> tintindex (08 5.5), -1 when absent
+*>  The display transform for the context firstperson_righthand of the nearest model of the chain that names one (client/src/models.cob DISPLAY-PARSE):
+*>  rotation x y z (degrees), translation x y z (sixteenths) and scale x y z.
+    05 MR-FP-PRESENT         PIC 9.
+    05 MR-FP                 FLOAT-SHORT OCCURS 9 TIMES.
+*>  The display transform for the context gui (08 section 5.6, 12 section 8.1; DISPLAY-PARSE-GUI) as MR-FP, and the model's gui_light (08 section 5.1: the nearest model of the chain
+*>  that names one; 0 none named, 1 front, 2 side).
+    05 MR-GUI-PRESENT        PIC 9.
+    05 MR-GUI                FLOAT-SHORT OCCURS 9 TIMES.
+    05 MR-GUI-LIGHT          BINARY-LONG.
+*>  The same for thirdperson_righthand (1), thirdperson_lefthand (2) and fixed (3): MR-DX-PRESENT(c), MR-DX((c - 1) * 9 + n).
+    05 MR-DX-PRESENT         PIC 9 OCCURS 3 TIMES.
+    05 MR-DX                 FLOAT-SHORT OCCURS 27 TIMES.
     05 MR-SLOT-COUNT         BINARY-LONG.
     05 MR-SLOT OCCURS 16 TIMES.
        10 MS-NAME            PIC X(32).

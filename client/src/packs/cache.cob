@@ -111,8 +111,10 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PACK-CACHE-STORE.
-*> USING CLIENT-STATE, server pack row, area, length, hash (PIC X(40), of the bytes): writes the
-*> bytes to downloads/<uuid>/<hash>, the pack's file (RP-FILE).
+*> USING CLIENT-STATE, server pack row, area, length, hash (PIC X(40), of the bytes), outcome out (BINARY-LONG): writes the
+*> bytes to downloads/<uuid>/<hash>, the pack's file (RP-FILE); outcome 0. A file that cannot be created or written whole
+*> (a full or unwritable disk) is one "ERROR pack: <path> cannot be written" line, the partial file is deleted, RP-FILE is
+*> left alone and the outcome is 1 (the caller fails the download; a truncated pack must never be applied).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-SPACES              PIC X(40) VALUE SPACES.
@@ -125,23 +127,40 @@
  01 WS-OFFSET              PIC X(8) COMP-X VALUE 0.
  01 WS-COUNT               PIC X(4) COMP-X.
  01 WS-FLAGS               PIC X COMP-X VALUE 0.
+ 01 WS-RC1                 BINARY-LONG.
+ 01 WS-RC2                 BINARY-LONG.
+ 01 WS-RC3                 BINARY-LONG.
+ 01 WS-Z                   PIC X(1101).
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ROW                  BINARY-LONG.
  01 L-AREA                 PIC X.
  01 L-LENGTH               BINARY-LONG.
  01 L-HASH                 PIC X(40).
- PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-AREA L-LENGTH L-HASH.
+ 01 L-OUTCOME              BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-AREA L-LENGTH L-HASH L-OUTCOME.
      CALL "PACK-CACHE-PATH" USING CLIENT-STATE RP-UUID(L-ROW) WS-SPACES WS-PATH WS-LENGTH
      CALL "CBL_CREATE_DIR" USING WS-PATH
      CALL "PACK-CACHE-PATH" USING CLIENT-STATE RP-UUID(L-ROW) L-HASH WS-PATH WS-LENGTH
-     CALL "CBL_CREATE_FILE" USING WS-PATH WS-ACCESS WS-DENY WS-DEVICE WS-HANDLE
-     MOVE L-LENGTH TO WS-COUNT
-     CALL "CBL_WRITE_FILE" USING WS-HANDLE WS-OFFSET WS-COUNT WS-FLAGS L-AREA
-     CALL "CBL_CLOSE_FILE" USING WS-HANDLE
+     CALL "CBL_CREATE_FILE" USING WS-PATH WS-ACCESS WS-DENY WS-DEVICE WS-HANDLE RETURNING WS-RC1
+     MOVE 0 TO WS-RC2 WS-RC3
+     IF WS-RC1 = 0
+         MOVE L-LENGTH TO WS-COUNT
+         CALL "CBL_WRITE_FILE" USING WS-HANDLE WS-OFFSET WS-COUNT WS-FLAGS L-AREA RETURNING WS-RC2
+         CALL "CBL_CLOSE_FILE" USING WS-HANDLE RETURNING WS-RC3
+     END-IF
+     COMPUTE L-OUTCOME = FUNCTION MIN(1, FUNCTION ABS(WS-RC1) + FUNCTION ABS(WS-RC2) + FUNCTION ABS(WS-RC3))
      MOVE 0 TO RETURN-CODE
-     MOVE WS-PATH TO RP-FILE(L-ROW)
-     MOVE WS-LENGTH TO RP-FILE-LENGTH(L-ROW)
+     IF L-OUTCOME = 0
+         MOVE WS-PATH TO RP-FILE(L-ROW)
+         MOVE WS-LENGTH TO RP-FILE-LENGTH(L-ROW)
+     ELSE
+         DISPLAY "ERROR pack: " WS-PATH(1:WS-LENGTH) " cannot be written"
+         MOVE LOW-VALUES TO WS-Z
+         MOVE WS-PATH(1:WS-LENGTH) TO WS-Z(1:WS-LENGTH)
+         CALL "CBL_DELETE_FILE" USING WS-Z
+         MOVE 0 TO RETURN-CODE
+     END-IF
      GOBACK.
  END PROGRAM PACK-CACHE-STORE.
 

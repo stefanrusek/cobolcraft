@@ -1,0 +1,1 @@
+{"assets": {"wild": "c"}, "spawn_conditions": [{"priority": 1, "condition": {"type": "minecraft:biome", "biomes": "#minecraft:is_jungle"}}]}

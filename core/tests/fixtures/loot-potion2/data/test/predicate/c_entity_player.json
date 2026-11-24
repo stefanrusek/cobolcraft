@@ -1,0 +1,5 @@
+{
+ "type": "minecraft:entity_properties",
+ "entity": "attacking_player",
+ "predicate": {}
+}

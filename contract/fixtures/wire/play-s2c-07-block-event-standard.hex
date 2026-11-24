@@ -1,0 +1,11 @@
+# Fixture: Block Event, chest opened
+# Phase: play. Direction: clientbound (S->C). Packet id 0x07 (7).
+# Doc refs: 05a 0x07; 00 section 4.1
+# Stated inputs:
+#   location (3, 64, -5); param 0 = 1; param 1 = 2; block registry id 300 (two-byte VarInt, a block id and not a state id)
+
+07                                               # packet id: VarInt 0x07
+00 00 00 ff ff ff b0 40                          # Location: Position (3, 64, -5)
+01                                               # Param 0: UByte 1
+02                                               # Param 1: UByte 2
+ac 02                                            # Block: VarInt 300

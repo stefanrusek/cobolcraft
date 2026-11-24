@@ -1,0 +1,96 @@
+# Fixture: Registry Data (minecraft:chat_type), standard world type
+# Phase: configuration. Direction: clientbound (S->C). Packet id 0x07 (7).
+# Doc refs: 04 Registry Data and section 6 chat_type (ChatTypeDecoration); 16 section 8 (chat type data)
+# Stated inputs:
+#   registry minecraft:chat_type, 3 entries in id order: 0 minecraft:chat, 1 minecraft:say_command, 2 minecraft:msg_command_incoming
+#   chat: translation_key chat.type.text, parameters [sender, content]; narration chat.type.text.narrate, parameters [sender, content]
+#   say_command: chat.type.announcement; msg_command_incoming: commands.message.display.incoming with style {color gray, italic true}
+#   (16 section 8 gives the keys and parameter order; the vanilla chat entry is the plain chat.type.text pair)
+
+07                                               # packet id: VarInt 0x07
+13 6d 69 6e 65 63 72 61 66 74 3a 63 68 61 74 5f  # Registry: Identifier
+74 79 70 65                                      #   (continued)
+03                                               # Entries: VarInt count 3
+# ---- entry 0: minecraft:chat ----
+0e 6d 69 6e 65 63 72 61 66 74 3a 63 68 61 74     # Entry[0].Id: Identifier
+01                                               # Entry[0].Data present: Boolean true
+0a                                               # Entry[0].Data: root Compound (type 0a), unnamed
+0a 00 04 63 68 61 74                             #   NBT Compound (type 0a) name "chat"
+08 00 0f 74 72 61 6e 73 6c 61 74 69 6f 6e 5f 6b  #     NBT String (type 08) name "translation_key"
+65 79                                            #   (continued)
+00 0e 63 68 61 74 2e 74 79 70 65 2e 74 65 78 74  #       String 'chat.type.text'
+09 00 0a 70 61 72 61 6d 65 74 65 72 73           #     NBT List (type 09) name "parameters"
+08 00 00 00 02                                   #       list element type 08, count 2
+00 06 73 65 6e 64 65 72                          #       [0] String 'sender'
+00 07 63 6f 6e 74 65 6e 74                       #       [1] String 'content'
+00                                               #   NBT End: end of the compound
+0a 00 09 6e 61 72 72 61 74 69 6f 6e              #   NBT Compound (type 0a) name "narration"
+08 00 0f 74 72 61 6e 73 6c 61 74 69 6f 6e 5f 6b  #     NBT String (type 08) name "translation_key"
+65 79                                            #   (continued)
+00 16 63 68 61 74 2e 74 79 70 65 2e 74 65 78 74  #       String 'chat.type.text.narrate'
+2e 6e 61 72 72 61 74 65                          #   (continued)
+09 00 0a 70 61 72 61 6d 65 74 65 72 73           #     NBT List (type 09) name "parameters"
+08 00 00 00 02                                   #       list element type 08, count 2
+00 06 73 65 6e 64 65 72                          #       [0] String 'sender'
+00 07 63 6f 6e 74 65 6e 74                       #       [1] String 'content'
+00                                               #   NBT End: end of the compound
+00                                               # NBT End: end of the root compound
+# ---- entry 1: minecraft:say_command ----
+15 6d 69 6e 65 63 72 61 66 74 3a 73 61 79 5f 63  # Entry[1].Id: Identifier
+6f 6d 6d 61 6e 64                                #   (continued)
+01                                               # Entry[1].Data present: Boolean true
+0a                                               # Entry[1].Data: root Compound (type 0a), unnamed
+0a 00 04 63 68 61 74                             #   NBT Compound (type 0a) name "chat"
+08 00 0f 74 72 61 6e 73 6c 61 74 69 6f 6e 5f 6b  #     NBT String (type 08) name "translation_key"
+65 79                                            #   (continued)
+00 16 63 68 61 74 2e 74 79 70 65 2e 61 6e 6e 6f  #       String 'chat.type.announcement'
+75 6e 63 65 6d 65 6e 74                          #   (continued)
+09 00 0a 70 61 72 61 6d 65 74 65 72 73           #     NBT List (type 09) name "parameters"
+08 00 00 00 02                                   #       list element type 08, count 2
+00 06 73 65 6e 64 65 72                          #       [0] String 'sender'
+00 07 63 6f 6e 74 65 6e 74                       #       [1] String 'content'
+00                                               #   NBT End: end of the compound
+0a 00 09 6e 61 72 72 61 74 69 6f 6e              #   NBT Compound (type 0a) name "narration"
+08 00 0f 74 72 61 6e 73 6c 61 74 69 6f 6e 5f 6b  #     NBT String (type 08) name "translation_key"
+65 79                                            #   (continued)
+00 16 63 68 61 74 2e 74 79 70 65 2e 74 65 78 74  #       String 'chat.type.text.narrate'
+2e 6e 61 72 72 61 74 65                          #   (continued)
+09 00 0a 70 61 72 61 6d 65 74 65 72 73           #     NBT List (type 09) name "parameters"
+08 00 00 00 02                                   #       list element type 08, count 2
+00 06 73 65 6e 64 65 72                          #       [0] String 'sender'
+00 07 63 6f 6e 74 65 6e 74                       #       [1] String 'content'
+00                                               #   NBT End: end of the compound
+00                                               # NBT End: end of the root compound
+# ---- entry 2: minecraft:msg_command_incoming ----
+1e 6d 69 6e 65 63 72 61 66 74 3a 6d 73 67 5f 63  # Entry[2].Id: Identifier
+6f 6d 6d 61 6e 64 5f 69 6e 63 6f 6d 69 6e 67     #   (continued)
+01                                               # Entry[2].Data present: Boolean true
+0a                                               # Entry[2].Data: root Compound (type 0a), unnamed
+0a 00 04 63 68 61 74                             #   NBT Compound (type 0a) name "chat"
+08 00 0f 74 72 61 6e 73 6c 61 74 69 6f 6e 5f 6b  #     NBT String (type 08) name "translation_key"
+65 79                                            #   (continued)
+00 21 63 6f 6d 6d 61 6e 64 73 2e 6d 65 73 73 61  #       String 'commands.message.display.incoming'
+67 65 2e 64 69 73 70 6c 61 79 2e 69 6e 63 6f 6d  #   (continued)
+69 6e 67                                         #   (continued)
+09 00 0a 70 61 72 61 6d 65 74 65 72 73           #     NBT List (type 09) name "parameters"
+08 00 00 00 02                                   #       list element type 08, count 2
+00 06 73 65 6e 64 65 72                          #       [0] String 'sender'
+00 07 63 6f 6e 74 65 6e 74                       #       [1] String 'content'
+0a 00 05 73 74 79 6c 65                          #     NBT Compound (type 0a) name "style"
+08 00 05 63 6f 6c 6f 72                          #       NBT String (type 08) name "color"
+00 04 67 72 61 79                                #         String 'gray'
+01 00 06 69 74 61 6c 69 63                       #       NBT Byte (type 01) name "italic"
+01                                               #         Byte 1
+00                                               #     NBT End: end of the compound
+00                                               #   NBT End: end of the compound
+0a 00 09 6e 61 72 72 61 74 69 6f 6e              #   NBT Compound (type 0a) name "narration"
+08 00 0f 74 72 61 6e 73 6c 61 74 69 6f 6e 5f 6b  #     NBT String (type 08) name "translation_key"
+65 79                                            #   (continued)
+00 16 63 68 61 74 2e 74 79 70 65 2e 74 65 78 74  #       String 'chat.type.text.narrate'
+2e 6e 61 72 72 61 74 65                          #   (continued)
+09 00 0a 70 61 72 61 6d 65 74 65 72 73           #     NBT List (type 09) name "parameters"
+08 00 00 00 02                                   #       list element type 08, count 2
+00 06 73 65 6e 64 65 72                          #       [0] String 'sender'
+00 07 63 6f 6e 74 65 6e 74                       #       [1] String 'content'
+00                                               #   NBT End: end of the compound
+00                                               # NBT End: end of the root compound

@@ -13,7 +13,7 @@
  01 WS-SERVER              BINARY-LONG.
  01 WS-CONN                BINARY-LONG VALUE 1.
  01 WS-TEXT                PIC X(1024).
- 01 WS-HEALTH              FLOAT-SHORT VALUE 30.0.
+ 01 WS-HEALTH              FLOAT-SHORT VALUE 20.0.
  01 WS-FOOD                BINARY-LONG VALUE 11.
  01 WS-I                   BINARY-LONG.
  01 WS-HEALTH-W            BINARY-LONG.
@@ -21,26 +21,26 @@
      CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
      CALL "TEST-STEP" USING CLIENT-STATE
      MOVE "acceptance US8-1 given survival with food 24 when the Player is in the world then the "
-         & "HUD shows Food 24/24 after the health" TO TL-CASE
+         & "HUD shows Food 20/20 after the health" TO TL-CASE
      MOVE "T" TO TL-MODE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "+||||||||||Health 30/30|Food 24/24" TO TL-EXPECTED
+     MOVE "|||||||||Health 20/20|Food 20/20" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      CALL "TEST-SET-HEALTH" USING CLIENT-STATE WS-CONN WS-HEALTH WS-FOOD
      CALL "TEST-STEP" USING CLIENT-STATE
      MOVE "acceptance US8-1 given survival when Set Health with food 11 arrives then the HUD "
-         & "shows Food 11/24" TO TL-CASE
+         & "shows Food 11/20" TO TL-CASE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "+||||||||||Health 30/30|Food 11/24" TO TL-EXPECTED
+     MOVE "|||||||||Health 20/20|Food 11/20" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Beside: on the hotbar's row of labels, right of the health label.
      MOVE "acceptance US8-1 the food label is beside the health label: same row, to its right"
          TO TL-CASE
-     MOVE SM-WIDGET-COUNT TO WS-I
+     COMPUTE WS-I = SM-WIDGET-COUNT - 1
      COMPUTE WS-HEALTH-W = WS-I - 1
      MOVE "same row, right" TO TL-EXPECTED
      MOVE "elsewhere" TO TL-OBSERVED
@@ -57,7 +57,7 @@
          & "is not shown" TO TL-CASE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "+|||||||||" TO TL-EXPECTED
+     MOVE "||||||||" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM ACC-US8-FOOD-HUD.

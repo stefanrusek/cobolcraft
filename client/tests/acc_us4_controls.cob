@@ -4,7 +4,7 @@
 *> item held sends Use Item On with that face and the hit point; the left button sends start destroy,
 *> and in survival stop destroy once the break time has passed (a quarter of it with the matching
 *> tool), or abort destroy when released early; in creative start destroy alone; the right button
-*> on a glowtube without a block item sends Use Item On, on another block nothing. What the server
+*> on any targeted block sends Use Item On whatever the hand holds (T4800). What the server
 *> receives is read on the server side of a real loopback connection.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US4-CONTROLS.
@@ -51,20 +51,20 @@
      MOVE WS-TEXT TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   Survival break of greystone by hand: 1.5 s.
+*>   Survival break of greystone by hand: 2.25 s (hardness 1.5 x 1.5 s, the server's rate).
      CALL "TEST-BUTTON" USING CLIENT-STATE WS-LEFT WS-DOWN WS-MS
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(1) WS-THRESHOLD
-     MOVE 1000 TO WS-MS
+     MOVE 2000 TO WS-MS
      CALL "TEST-IDLE" USING CLIENT-STATE WS-MS
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(2) WS-THRESHOLD
-     MOVE 600 TO WS-MS
+     MOVE 400 TO WS-MS
      CALL "TEST-IDLE" USING CLIENT-STATE WS-MS
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(3) WS-THRESHOLD
      MOVE 100 TO WS-MS
      CALL "TEST-IDLE" USING CLIENT-STATE WS-MS
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(4) WS-THRESHOLD
      MOVE "acceptance US4-3 client half given survival when the left button is held on greystone "
-         & "then start destroy is sent at once, nothing more after 1 s, stop destroy once 1.5 s "
+         & "then start destroy is sent at once, nothing more after 2 s, stop destroy once 2.25 s "
          & "have passed, and nothing more while the button stays held" TO TL-CASE
      PERFORM STEPS-TEXT
      MOVE "290000000000000000090102 | - | 290300000000000000090103 | -" TO TL-EXPECTED
@@ -87,7 +87,7 @@
      MOVE "- | 290000000000000000090104 | 290200000000000000090105 | -" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   With the pry bar (hard class, like greystone): a quarter, 375 ms.
+*>   With the pry bar (hard class, like greystone): a quarter, 562 ms.
      MOVE 1 TO PL-SLOT-COUNT(1)
      MOVE 10 TO PL-SLOT-ITEM(1)
      CALL "TEST-BUTTON" USING CLIENT-STATE WS-LEFT WS-DOWN WS-MS
@@ -95,14 +95,14 @@
      MOVE 300 TO WS-MS
      CALL "TEST-IDLE" USING CLIENT-STATE WS-MS
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(2) WS-THRESHOLD
-     MOVE 100 TO WS-MS
+     MOVE 300 TO WS-MS
      CALL "TEST-IDLE" USING CLIENT-STATE WS-MS
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(3) WS-THRESHOLD
      MOVE 20 TO WS-MS
      CALL "TEST-BUTTON" USING CLIENT-STATE WS-LEFT WS-UP WS-MS
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(4) WS-THRESHOLD
      MOVE "acceptance US4-3 client half given the pry bar held when greystone (hard) is broken "
-         & "then stop destroy follows after a quarter of the break time (375 ms)" TO TL-CASE
+         & "then stop destroy follows after a quarter of the break time (562 ms)" TO TL-CASE
      PERFORM STEPS-TEXT
      MOVE "290000000000000000090106 | - | 290300000000000000090107 | -" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -124,7 +124,7 @@
      MOVE "290000000000000000090108 | - | - | -" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   No block item held (the pry bar): greystone gets nothing, a glowtube Use Item On.
+*>   No block item held (the pry bar): every block aimed at gets Use Item On (the server decides what it does).
      MOVE 0 TO PL-MODE
      CALL "TEST-BUTTON" USING CLIENT-STATE WS-RIGHT WS-CLICK WS-MS
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(1) WS-THRESHOLD
@@ -140,11 +140,37 @@
      CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(3) WS-THRESHOLD
      MOVE "-" TO WS-STEP-TEXT(4)
      MOVE "acceptance US4-5 client half given no block item held when the right button is used "
-         & "then greystone gets nothing, a glowtube Use Item On (toggle), and so does a goto_pad "
-         & "(travel, standin §1.3)" TO TL-CASE
+         & "then greystone, a glowtube and a goto_pad all get Use Item On (play2 defect 2: a bench "
+         & "or a furnace opens with an empty hand)" TO TL-CASE
      PERFORM STEPS-TEXT
-     MOVE "- | 4200000000000000000901" & "3f0000003f8000003f000000" & "000009 | "
-         & "4200000000000000000901" & "3f0000003f8000003f000000" & "00000a | -" TO TL-EXPECTED
+     MOVE "4200000000000000000901" & "3f0000003f8000003f000000" & "000009 | "
+         & "4200000000000000000901" & "3f0000003f8000003f000000" & "00000a | "
+         & "4200000000000000000901" & "3f0000003f8000003f000000" & "00000b | -" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Airborne (13 section 2.1 step 7: not on the ground divides the speed by 5, as the server does every tick): the hand on greystone,
+*>   2.25 s on the ground, takes 11.25 s in the air (swimming, falling); stop destroy before that is rejected by the server, so
+*>   the client must not send it early.
+     MOVE 2 TO WS-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     CALL "TEST-STEP" USING CLIENT-STATE
+     MOVE 1 TO PL-FLYING
+     MOVE 0 TO PL-ON-GROUND
+     MOVE 12 TO PL-Y
+     MOVE 0 TO PL-SLOT-COUNT(1)
+     MOVE 20 TO WS-MS
+     CALL "TEST-BUTTON" USING CLIENT-STATE WS-LEFT WS-DOWN WS-MS
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(1) WS-THRESHOLD
+     MOVE 2400 TO WS-MS
+     CALL "TEST-IDLE" USING CLIENT-STATE WS-MS
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(2) WS-THRESHOLD
+     MOVE 9000 TO WS-MS
+     CALL "TEST-IDLE" USING CLIENT-STATE WS-MS
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(3) WS-THRESHOLD
+     MOVE "-" TO WS-STEP-TEXT(4)
+     MOVE "acceptance US4-3 client half given the player is airborne when greystone is broken by hand then stop destroy "
+         & "is not sent after 2.4 s and follows once 11.25 s have passed" TO TL-CASE
+     PERFORM STEPS-TEXT
+     MOVE "29000000000000000009010c | - | 29030000000000000009010d | -" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 

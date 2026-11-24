@@ -1,0 +1,454 @@
+*> Acceptance test (US15, FR-036, SC-008; docs/protocol/18-mob-framework.md section 9.2, with doc 44 part 1 section 4): the decisions of the periodic update (rotation packing, position change, update interval, full position sync, delta limits, velocity).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MOB-18-9-2.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ 01 WS-D                  FLOAT-LONG.
+ 01 WS-DX                 FLOAT-LONG.
+ 01 WS-DY                 FLOAT-LONG.
+ 01 WS-DZ                 FLOAT-LONG.
+ 01 WS-A                  BINARY-LONG.
+ 01 WS-B                  BINARY-LONG.
+ 01 WS-C                  BINARY-LONG.
+ 01 WS-E                  BINARY-LONG.
+ 01 WS-OUT                BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE 0 TO WS-D
+     CALL "M189-PACK-DEGREES" USING WS-D WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: 0 degrees pack to 0 (256 steps per turn)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 90 TO WS-D
+     CALL "M189-PACK-DEGREES" USING WS-D WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: 90 degrees pack to 64 (256 steps per turn)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 64
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 180 TO WS-D
+     CALL "M189-PACK-DEGREES" USING WS-D WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: 180 degrees pack to 128 (256 steps per turn)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 128
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 270 TO WS-D
+     CALL "M189-PACK-DEGREES" USING WS-D WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: 270 degrees pack to 192 (256 steps per turn)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 192
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 359.9 TO WS-D
+     CALL "M189-PACK-DEGREES" USING WS-D WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: 359.9 degrees pack to 255 (256 steps per turn)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 255
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 360 TO WS-D
+     CALL "M189-PACK-DEGREES" USING WS-D WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: 360 degrees pack to 0 (256 steps per turn)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE -90 TO WS-D
+     CALL "M189-PACK-DEGREES" USING WS-D WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: -90 degrees pack to 192 (256 steps per turn)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 192
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1.4 TO WS-D
+     CALL "M189-PACK-DEGREES" USING WS-D WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: 1.4 degrees pack to 0 (256 steps per turn)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1.5 TO WS-D
+     CALL "M189-PACK-DEGREES" USING WS-D WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: 1.5 degrees pack to 1 (256 steps per turn)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 45 TO WS-D
+     CALL "M189-PACK-DEGREES" USING WS-D WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: 45 degrees pack to 32 (256 steps per turn)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 32
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE -1 TO WS-D
+     CALL "M189-PACK-DEGREES" USING WS-D WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: -1 degrees pack to 255 (256 steps per turn)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 255
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 10 TO WS-A
+     MOVE 10 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO WS-E
+     CALL "M189-ROT-CHANGED" USING WS-A WS-B WS-C WS-E WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: rotChanged when nothing changed is 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 11 TO WS-A
+     MOVE 10 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO WS-E
+     CALL "M189-ROT-CHANGED" USING WS-A WS-B WS-C WS-E WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: rotChanged when the yaw differs by 1 is 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 9 TO WS-A
+     MOVE 10 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 5 TO WS-E
+     CALL "M189-ROT-CHANGED" USING WS-A WS-B WS-C WS-E WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: rotChanged when the yaw differs by -1 is 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 10 TO WS-A
+     MOVE 10 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 7 TO WS-E
+     CALL "M189-ROT-CHANGED" USING WS-A WS-B WS-C WS-E WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: rotChanged when the pitch differs by 2 is 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 10 TO WS-A
+     MOVE 10 TO WS-B
+     MOVE 5 TO WS-C
+     MOVE 4 TO WS-E
+     CALL "M189-ROT-CHANGED" USING WS-A WS-B WS-C WS-E WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: rotChanged when the pitch differs by 1 is 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0.00276214 TO WS-DX
+     MOVE 0 TO WS-DY
+     MOVE 0 TO WS-DZ
+     MOVE 1 TO WS-A
+     CALL "M189-POS-CHANGE" USING WS-DX WS-DY WS-DZ WS-A WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: position change of 0.00276214 (squared just above 2^-17) at tick 1 is 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0.0027 TO WS-DX
+     MOVE 0 TO WS-DY
+     MOVE 0 TO WS-DZ
+     MOVE 1 TO WS-A
+     CALL "M189-POS-CHANGE" USING WS-DX WS-DY WS-DZ WS-A WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: position change of 0.0027 (squared below 2^-17) at tick 1 is 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0.0027 TO WS-DX
+     MOVE 0 TO WS-DY
+     MOVE 0 TO WS-DZ
+     MOVE 60 TO WS-A
+     CALL "M189-POS-CHANGE" USING WS-DX WS-DY WS-DZ WS-A WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: position change of 0.0027 at tick 60 (tickCount mod 60 = 0) is 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0.0027 TO WS-DX
+     MOVE 0 TO WS-DY
+     MOVE 0 TO WS-DZ
+     MOVE 61 TO WS-A
+     CALL "M189-POS-CHANGE" USING WS-DX WS-DY WS-DZ WS-A WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: position change of 0.0027 at tick 61 is 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-DX
+     MOVE 0 TO WS-DY
+     MOVE 0 TO WS-DZ
+     MOVE 120 TO WS-A
+     CALL "M189-POS-CHANGE" USING WS-DX WS-DY WS-DZ WS-A WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: position change of nothing at tick 120 is 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0.002 TO WS-DX
+     MOVE 0.002 TO WS-DY
+     MOVE 0.002 TO WS-DZ
+     MOVE 7 TO WS-A
+     CALL "M189-POS-CHANGE" USING WS-DX WS-DY WS-DZ WS-A WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: position change of the three axes (squared 1.2E-5) adds up is 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-A
+     MOVE 3 TO WS-B
+     CALL "M189-UPDATE-DUE" USING WS-A WS-B WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: tick 0 with interval 3 is due 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 3 TO WS-A
+     MOVE 3 TO WS-B
+     CALL "M189-UPDATE-DUE" USING WS-A WS-B WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: tick 3 with interval 3 is due 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 6 TO WS-A
+     MOVE 3 TO WS-B
+     CALL "M189-UPDATE-DUE" USING WS-A WS-B WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: tick 6 with interval 3 is due 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 4 TO WS-A
+     MOVE 3 TO WS-B
+     CALL "M189-UPDATE-DUE" USING WS-A WS-B WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: tick 4 with interval 3 is due 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "M189-UPDATE-DUE" USING WS-A WS-B WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: tick 5 with interval 2 is due 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 40 TO WS-A
+     MOVE 20 TO WS-B
+     CALL "M189-UPDATE-DUE" USING WS-A WS-B WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: tick 40 with interval 20 is due 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 41 TO WS-A
+     MOVE 20 TO WS-B
+     CALL "M189-UPDATE-DUE" USING WS-A WS-B WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: tick 41 with interval 20 is due 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 7 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "M189-UPDATE-DUE" USING WS-A WS-B WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: tick 7 with interval 0 is due 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 5 TO WS-A
+     MOVE 2147483647 TO WS-B
+     CALL "M189-UPDATE-DUE" USING WS-A WS-B WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: tick 5 with interval 2147483647 is due 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "M189-FULL-SYNC" USING WS-A WS-B WS-C WS-E WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: an Entity Position Sync replaces the delta when nothing special: 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "M189-FULL-SYNC" USING WS-A WS-B WS-C WS-E WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: an Entity Position Sync replaces the delta when the entity requires a precise position: 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-A
+     MOVE 401 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "M189-FULL-SYNC" USING WS-A WS-B WS-C WS-E WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: an Entity Position Sync replaces the delta when teleportDelay is above 400: 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-A
+     MOVE 400 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "M189-FULL-SYNC" USING WS-A WS-B WS-C WS-E WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: an Entity Position Sync replaces the delta when teleportDelay is exactly 400: 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "M189-FULL-SYNC" USING WS-A WS-B WS-C WS-E WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: an Entity Position Sync replaces the delta when the entity was riding: 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "M189-FULL-SYNC" USING WS-A WS-B WS-C WS-E WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: an Entity Position Sync replaces the delta when the on-ground flag changed: 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 7.99 TO WS-DX
+     MOVE 0 TO WS-DY
+     MOVE 0 TO WS-DZ
+     CALL "M189-DELTA-FITS" USING WS-DX WS-DY WS-DZ WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: VecDeltaCodec.tryEncode: 7.99 blocks fits" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 8.0 TO WS-DX
+     MOVE 0 TO WS-DY
+     MOVE 0 TO WS-DZ
+     CALL "M189-DELTA-FITS" USING WS-DX WS-DY WS-DZ WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: VecDeltaCodec.tryEncode: 8.0 blocks does not fit (32768)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE -8.0 TO WS-DX
+     MOVE 0 TO WS-DY
+     MOVE 0 TO WS-DZ
+     CALL "M189-DELTA-FITS" USING WS-DX WS-DY WS-DZ WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: VecDeltaCodec.tryEncode: -8.0 blocks fits (-32768)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE -8.01 TO WS-DX
+     MOVE 0 TO WS-DY
+     MOVE 0 TO WS-DZ
+     CALL "M189-DELTA-FITS" USING WS-DX WS-DY WS-DZ WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: VecDeltaCodec.tryEncode: -8.01 does not fit" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-DX
+     MOVE 7.99 TO WS-DY
+     MOVE -7.99 TO WS-DZ
+     CALL "M189-DELTA-FITS" USING WS-DX WS-DY WS-DZ WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: VecDeltaCodec.tryEncode: y and z within 8 blocks" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-DX
+     MOVE 8.5 TO WS-DY
+     MOVE 0 TO WS-DZ
+     CALL "M189-DELTA-FITS" USING WS-DX WS-DY WS-DZ WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: VecDeltaCodec.tryEncode: y 8.5 does not fit" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-DX
+     MOVE 0 TO WS-DY
+     MOVE -9 TO WS-DZ
+     CALL "M189-DELTA-FITS" USING WS-DX WS-DY WS-DZ WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: VecDeltaCodec.tryEncode: z -9 does not fit" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0.0001 TO WS-DX
+     MOVE 0 TO WS-DY
+     MOVE 0 TO WS-DZ
+     CALL "M189-DELTA-FITS" USING WS-DX WS-DY WS-DZ WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: VecDeltaCodec.tryEncode: a tiny delta fits" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0.0000002 TO WS-D
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "M189-VELOCITY-DUE" USING WS-D WS-A WS-B WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: Set Entity Motion: a squared change of 2E-7 is above 1E-7: 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0.00000005 TO WS-D
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "M189-VELOCITY-DUE" USING WS-D WS-A WS-B WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: Set Entity Motion: a squared change of 5E-8 is not: 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-D
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "M189-VELOCITY-DUE" USING WS-D WS-A WS-B WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: Set Entity Motion: it is now exactly zero and was not: 1" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 1
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-D
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "M189-VELOCITY-DUE" USING WS-D WS-A WS-B WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: Set Entity Motion: it is zero and was already zero: 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-D
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "M189-VELOCITY-DUE" USING WS-D WS-A WS-B WS-OUT
+     MOVE "acceptance US15 18§9.2 Periodic updates: Set Entity Motion: nothing changed: 0" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N ROUNDED = 0
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OUT
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-MOB-18-9-2.

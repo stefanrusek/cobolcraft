@@ -89,6 +89,66 @@ PACKS = {
         "assets/cobolcraft/textures/": b"",
         "assets/cobolcraft/.ds_store": b"junk",
     }),
+    # "entmodel": the creeper's entity model image (34-6 section 2, 64 x 32): the texel (x, y) is (10 + x, 10 + y, 77, 255).
+    "entmodel": ("folder", {
+        "pack.mcmeta": new_style("Entity model pack"),
+        "assets/minecraft/textures/entity/creeper/creeper.png": png(64, 32, lambda x, y: (10 + x, 10 + y, 77, 255)),
+    }),
+    # "villagerhat": the villager hat metadata (34-3 1.5): the .mcmeta files of type and profession textures (hat full, partial, an unknown value, a section
+    # that is not there, a file that is not JSON), for villagers and zombie villagers.
+    "villagerhat": ("folder", dict(
+        [("pack.mcmeta", new_style("Villager hat pack"))]
+        + [("assets/minecraft/textures/entity/%s/type/plains.png.mcmeta" % w, json.dumps({"villager": {"hat": "full"}}).encode())
+           for w in ("villager", "zombie_villager")]
+        + [("assets/minecraft/textures/entity/%s/type/desert.png.mcmeta" % w, json.dumps({"villager": {"hat": "partial"}}).encode())
+           for w in ("villager", "zombie_villager")]
+        + [("assets/minecraft/textures/entity/villager/type/swamp.png.mcmeta", json.dumps({"villager": {"hat": "weird"}}).encode()),
+           ("assets/minecraft/textures/entity/villager/profession/armorer.png.mcmeta", json.dumps({"villager": {"hat": "partial"}}).encode()),
+           ("assets/minecraft/textures/entity/villager/profession/butcher.png.mcmeta", json.dumps({"villager": {"hat": "full"}}).encode()),
+           ("assets/minecraft/textures/entity/zombie_villager/profession/butcher.png.mcmeta", json.dumps({"villager": {"hat": "full"}}).encode()),
+           ("assets/minecraft/textures/entity/villager/profession/cleric.png.mcmeta", b"this is not json"),
+           ("assets/minecraft/textures/entity/villager/profession/farmer.png.mcmeta", json.dumps({"other": 1}).encode())])),
+    # "trimtex": the armor trim pattern texture "wild" of the humanoid trims (54 section 18.4, 64 x 32), every texel A0A0A0 (the palette key's first colour).
+    "trimtex": ("folder", {
+        "pack.mcmeta": new_style("Trim texture pack"),
+        "assets/minecraft/textures/trims/entity/humanoid/wild.png": png(64, 32, lambda x, y: (160, 160, 160, 255)),
+    }),
+    # "cracks": the ten break-stage images (12 section 4.1), stage N in the colour (20 N, 0, 255 - 20 N).
+    "cracks": ("folder", dict(
+        [("pack.mcmeta", new_style("Cracks pack"))]
+        + [("assets/minecraft/textures/block/destroy_stage_%d.png" % n, solid((20 * n, 0, 255 - 20 * n)))
+           for n in range(10)])),
+    # "guipack": GUI sprites (12 section 5.9): widget/button 24 x 8 with a nine_slice of border 3 (corners red,
+    # green, blue, yellow; edges grey; centre white), container/slot 18 x 18 plain.
+    "guipack": ("folder", {
+        "pack.mcmeta": new_style("GUI pack"),
+        "assets/minecraft/textures/gui/sprites/widget/button.png": png(24, 8, lambda x, y: (
+            (255, 0, 0, 255) if x < 3 and y < 3 else (0, 255, 0, 255) if x >= 21 and y < 3 else
+            (0, 0, 255, 255) if x < 3 and y >= 5 else (255, 255, 0, 255) if x >= 21 and y >= 5 else
+            (128, 128, 128, 255) if x < 3 or x >= 21 or y < 3 or y >= 5 else (255, 255, 255, 255))),
+        "assets/minecraft/textures/gui/sprites/widget/button.png.mcmeta": json.dumps(
+            {"gui": {"scaling": {"type": "nine_slice", "width": 24, "height": 8, "border": 3}}}).encode(),
+        "assets/minecraft/textures/gui/sprites/container/slot.png": solid((10, 160, 10), 18),
+    }),
+    # "guisides": container/slot with a nine_slice whose border is an object (left 1, top 2, right 3, bottom 4);
+    # "guitile": container/slot with a tile scaling and widget/button with a .mcmeta that is not JSON.
+    "guisides": ("folder", {
+        "pack.mcmeta": new_style("GUI sides pack"),
+        "assets/minecraft/textures/gui/sprites/container/slot.png": solid((10, 10, 160), 18),
+        "assets/minecraft/textures/gui/sprites/container/slot.png.mcmeta": json.dumps(
+            {"gui": {"scaling": {"type": "nine_slice", "width": 18, "height": 18,
+                                 "border": {"left": 1, "top": 2, "right": 3, "bottom": 4}}}}).encode(),
+        "assets/minecraft/textures/gui/sprites/widget/button.png": solid((10, 10, 10), 8),
+        "assets/minecraft/textures/gui/sprites/widget/button.png.mcmeta": b'{"other": 1}',
+    }),
+    "guitile": ("folder", {
+        "pack.mcmeta": new_style("GUI tile pack"),
+        "assets/minecraft/textures/gui/sprites/container/slot.png": solid((160, 10, 10), 18),
+        "assets/minecraft/textures/gui/sprites/container/slot.png.mcmeta": json.dumps(
+            {"gui": {"scaling": {"type": "tile", "width": 18, "height": 18}}}).encode(),
+        "assets/minecraft/textures/gui/sprites/widget/button.png": solid((10, 10, 10), 8),
+        "assets/minecraft/textures/gui/sprites/widget/button.png.mcmeta": b"not json",
+    }),
     "old": ("zip", {"pack.mcmeta": meta("Old pack", pack_format=10)}),
     "newer": ("folder", {"pack.mcmeta": meta("Newer pack", min_format=99, max_format=99)}),
     "mystery": ("folder", {"pack.mcmeta": meta("Mystery pack", min_format=97), "pack.png": b"not a png"}),
@@ -163,7 +223,113 @@ PACKS = {
         "pack.mcmeta": new_style("Second server pack"),
         GREYSTONE: solid((250, 250, 0)),
     }),
+    # Particle definitions (42-1 section 6.1): crit lists a 32 x 16 sprite of minecraft: (red, 200,10,10) and
+    # a 16 x 8 sprite of cobolcraft: (blue, 10,10,200); heart names a sprite that no pack has (missing
+    # texture); poof's definition is not JSON (the missing texture); sweep_attack has an empty list.
+    "particles": ("folder", {
+        "pack.mcmeta": new_style("Particle pack"),
+        "assets/minecraft/particles/crit.json": b'{"textures": ["minecraft:crit", "cobolcraft:spark"]}',
+        "assets/minecraft/particles/heart.json": b'{"textures": ["minecraft:nothere"]}',
+        "assets/minecraft/particles/poof.json": b'[1, 2',
+        "assets/minecraft/particles/sweep_attack.json": b'{"textures": []}',
+        "assets/minecraft/textures/particle/crit.png": png(32, 16, lambda x, y: (200, 10, 10, 255)),
+        "assets/cobolcraft/textures/particle/spark.png": png(16, 8, lambda x, y: (10, 10, 200, 255)),
+    }),
 }
+
+# "many": 300 blocks of 16 pixels (colour (n % 256, n // 256, 7)) and 6 of 32 pixels (colour (9, 9, 100 + k)),
+# for the atlas tests of any sprite size and more than 128 sprites (US3-3).
+MANY = {"pack.mcmeta": new_style("Many sprites")}
+for _n in range(300):
+    MANY["assets/many/textures/block/b%03d.png" % _n] = solid((_n % 256, _n // 256, 7))
+for _k in range(6):
+    MANY["assets/many/textures/block/big%d.png" % _k] = solid((9, 9, 100 + _k), 32)
+PACKS["many"] = ("folder", MANY)
+
+
+def strip(colours, size=16):
+    """A vertical strip of solid frames: frame k is colours[k], each size x size."""
+    return png(size, size * len(colours), lambda x, y: colours[y // size] + (255,))
+
+
+# Animated textures (08 §7.? animation): "animbase" holds the static yellow bad.png; "anim" holds
+# flow (red, green, blue; frames 0, 2 for 4 ticks, 1; frametime 2), mix (black, grey; frametime 4,
+# interpolated), bad (a malformed animation file over a two-frame strip: falls back to animbase's
+# yellow), oddsize (a 16 x 20 image: not a multiple of the frame size, nothing below: missing).
+PACKS["animbase"] = ("folder", {
+    "pack.mcmeta": new_style("Animation base"),
+    "assets/anim/textures/block/bad.png": solid((255, 255, 0)),
+    "assets/anim/textures/block/broken.png": solid((0, 255, 255)),
+})
+PACKS["anim"] = ("folder", {
+    "pack.mcmeta": new_style("Animations"),
+    "assets/anim/textures/block/flow.png": strip([(255, 0, 0), (0, 255, 0), (0, 0, 255)]),
+    "assets/anim/textures/block/flow.png.mcmeta": b'{"animation":{"frametime":2,"frames":[0,{"index":2,"time":4},1]}}',
+    "assets/anim/textures/block/mix.png": strip([(0, 0, 0), (200, 200, 200)]),
+    "assets/anim/textures/block/mix.png.mcmeta": b'{"animation":{"frametime":4,"interpolate":true}}',
+    "assets/anim/textures/block/bad.png": strip([(1, 1, 1), (2, 2, 2)]),
+    "assets/anim/textures/block/bad.png.mcmeta": b"{not json",
+    "assets/anim/textures/block/oddsize.png": png(16, 20, lambda x, y: (5, 5, 5, 255)),
+    "assets/anim/textures/block/oddsize.png.mcmeta": b'{"animation":{}}',
+    "assets/anim/textures/block/broken.png": b"\x89PNG\r\n\x1a\nbroken",
+    "assets/anim/textures/block/plain.png": solid((50, 60, 70)),
+    "assets/anim/textures/block/plain.png.mcmeta": b'{"texture":{"blur":true}}',
+})
+
+
+# "ctm": connected-texture rules in the formats other clients know (OptiFine, MCPatcher, Continuity); the
+# game does not support them and must ignore them without error (FR-010), loading the rest.
+PACKS["ctm"] = ("folder", {
+    "pack.mcmeta": new_style("Connected textures"),
+    "assets/minecraft/optifine/ctm/glass/glass.properties": b"method=ctm\ntiles=0-46\nmatchBlocks=glass\n",
+    "assets/minecraft/optifine/ctm/glass/0.png": solid((1, 2, 3)),
+    "assets/minecraft/mcpatcher/ctm/stone/stone.properties": b"method=random\ntiles=0-3\n",
+    "assets/minecraft/optifine/cit.properties": b"type=item\n",
+    "assets/ctm/models/block/glass.json": b'{"loader":"continuity:ctm","parent":"block/cube_all"}',
+    "assets/ctm/textures/block/after_ctm.png": solid((11, 22, 33)),
+})
+
+
+# Weather images of co-prime heights (CC-0003): 17 and 19 (least common multiple 323), 1000 and 999 (998,001).
+ENV = "assets/cobolcraft/textures/environment/"
+PACKS["weather"] = ("folder", {
+    "pack.mcmeta": new_style("Weather 17 19"),
+    ENV + "drizzle.png": png(16, 17, lambda x, y: (10, 20, 30, 255)),
+    ENV + "hailstorm.png": png(16, 19, lambda x, y: (40, 50, 60, 255)),
+})
+PACKS["weather2"] = ("folder", {
+    "pack.mcmeta": new_style("Weather 1000 999"),
+    ENV + "drizzle.png": png(16, 1000, lambda x, y: (10, 20, 30, 255)),
+    ENV + "hailstorm.png": png(16, 999, lambda x, y: (40, 50, 60, 255)),
+})
+
+
+# The enchantment glint textures (54 section 19.3): the item glint 8 x 8 and the armour glint 4 x 4 (the real ones are 128 x 128).
+MISC = "assets/minecraft/textures/misc/"
+PACKS["glint"] = ("folder", {
+    "pack.mcmeta": new_style("Glint textures"),
+    MISC + "enchanted_glint_item.png": png(8, 8, lambda x, y: (x * 30, y * 30, 90, 255)),
+    MISC + "enchanted_glint_armor.png": png(4, 4, lambda x, y: (200, x * 40, y * 40, 255)),
+})
+
+
+# A trim pattern texture (54 section 18.4): the key greys A0A0A0 and 606060 at (0, 0) and (1, 0), a clear texel at (2, 0), a colour outside the key at (3, 0).
+def trim_pixel(x, y):
+    if y == 0 and x == 0:
+        return (0xA0, 0xA0, 0xA0, 255)
+    if y == 0 and x == 1:
+        return (0x60, 0x60, 0x60, 255)
+    if y == 0 and x == 2:
+        return (0xA0, 0xA0, 0xA0, 0)
+    if y == 0 and x == 3:
+        return (0x12, 0x34, 0x56, 255)
+    return (0, 0, 0, 0)
+
+
+PACKS["trimkey"] = ("folder", {
+    "pack.mcmeta": new_style("Trim pattern texture"),
+    "assets/minecraft/textures/trims/entity/humanoid/wild.png": png(64, 32, trim_pixel),
+})
 
 
 def zip_bytes(files):
@@ -187,6 +353,25 @@ def write(path, data):
         handle.write(data)
 
 
+def big_lang():
+    """A language file in the size of the generated vanilla one (about 9,000 keys, over 500 KB): the
+    keys past the first 4,096 JSON nodes and past 262,144 bytes, a value with escapes and commas."""
+    lines = []
+    for n in range(9000):
+        key = "filler.key.%05d" % n
+        lines.append('  "%s": "Filler text number %d of the language"' % (key, n))
+    lines[5000] = '  "death.attack.mob": "%1$s was slain by %2$s"'
+    lines[5001] = '  "tricky.value": "a, \\"b\\": {c} [d], e"'
+    lines[8999] = '  "zzz.last.key": "the last one"'
+    return ("{\n" + ",\n".join(lines) + "\n}\n").encode()
+
+
+def huge_lang(keys, pad):
+    """A language file of `keys` keys, each text padded to `pad` characters."""
+    lines = ['  "huge.key.%05d": "%s"' % (n, "x" * pad) for n in range(keys)]
+    return ("{\n" + ",\n".join(lines) + "\n}\n").encode()
+
+
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "packs")
     for name, (kind, files) in PACKS.items():
@@ -197,6 +382,14 @@ def main():
             data = zip_bytes(files)
             write(os.path.join(out, name + ".zip"), data)
             write(os.path.join(out, name + ".zip.sha1"), hashlib.sha1(data).hexdigest().encode())
+    write(os.path.join(os.path.dirname(out), "biglang", "pack.mcmeta"),
+          b'{"pack":{"description":"test fixture: a large language file","min_format":[97,1],"max_format":97}}')
+    write(os.path.join(os.path.dirname(out), "biglang", "assets", "minecraft", "lang", "en_us.json"), big_lang())
+    for name, data in (("hugelang", huge_lang(12100, 20)), ("oversizelang", huge_lang(2000, 600))):
+        base = os.path.join(os.path.dirname(out), name)
+        write(os.path.join(base, "pack.mcmeta"),
+              b'{"pack":{"description":"test fixture: a language file past the limits","min_format":[97,1],"max_format":97}}')
+        write(os.path.join(base, "assets", "minecraft", "lang", "en_us.json"), data)
     write(os.path.join(out, "broken.zip"), b"this is not a zip archive")
     write(os.path.join(out, "readme.txt"), b"not a pack")
 

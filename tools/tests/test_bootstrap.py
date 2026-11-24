@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 TOOLS = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-PACKAGES = ["shim", "proto", "core", "server", "client"]
+PACKAGES = ["shim", "formats", "proto", "content", "extract", "core", "server", "client"]
 
 
 class Bootstrap(unittest.TestCase):
@@ -75,6 +75,14 @@ class Bootstrap(unittest.TestCase):
         for directory in ["bin", "shaders"] + [os.path.join(p, d) for p in PACKAGES for d in ("obj", "tests")]:
             self.assertTrue(os.path.isdir(os.path.join(build, directory)), directory)
         self.assertTrue(os.path.isfile(os.path.join(build, "shaders", "probe.vert.spv")))
+        self.assertTrue(os.path.isdir(os.path.join(build, "generated-test")))
+
+    def test_package_list_names_the_new_packages(self):
+        with open(os.path.join(TOOLS, "bootstrap.sh"), encoding="utf-8") as handle:
+            text = handle.read()
+        self.assertIn('PACKAGES="%s"' % " ".join(PACKAGES), text)
+        for package in ("formats", "content", "extract"):
+            self.assertIn(package, text.split('PACKAGES="', 1)[1].split('"', 1)[0].split())
 
 
 if __name__ == "__main__":

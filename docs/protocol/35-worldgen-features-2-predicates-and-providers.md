@@ -3,7 +3,7 @@
 | Item | Value |
 |---|---|
 | Covers | The 16 block predicate types (`net.minecraft.world.level.levelgen.blockpredicates.*`): codec shape, offset handling, evaluation semantics, the engine queries each one makes, and the helper constants. The 10 block state provider types (`net.minecraft.world.level.levelgen.feature.stateproviders.*`): codec shape, the exact random draws and their order, `getState` versus `getOptionalState`, the property-identity rule of `rotated`, `randomized_int` and `copy_properties`, and the shared noise setup and seeding of `noise`, `dual_noise` and `noise_threshold`. |
-| Does not cover | The feature size rules (`featuresize.*`: `two_layers_feature_size`, `three_layers_feature_size`, minimum size computation, `min_clipped_height`), specified in 35-3 §3 and §2.3 with the tree feature that consumes them. The features, placement modifiers, tree placers and decorators that use predicates and providers (siblings: part 1 framework and placement modifiers, part 3 tree placers, part 4 decorators and vegetation, part 5 water and surface, part 6 underground, part 7 nether, end and misc). The `RuleTest` family of ore and structure targets (`structure.templatesystem`, see section 8). Registry-file loading, tag resolution and `HolderSet` forms (23 §5, §6). The weighted-list, int-provider and height-provider engines (23 §7). The noise primitives (10 §3) and the Java LCG (10 §2.6). Data rows: the 240 configured features, 273 placed features and 8 named provider elements in the pack are extracted by the tool (22), not tabulated. |
+| Does not cover | The feature size rules (`featuresize.*`: `two_layers_feature_size`, `three_layers_feature_size`, minimum size computation, `min_clipped_height`), specified in 35-3 §3 and §2.3 with the tree feature that consumes them. The features, placement modifiers, tree placers and decorators that use predicates and providers (siblings: part 1 framework and placement modifiers, part 3 tree placers, part 4 decorators and vegetation, part 5 water and surface, part 6 underground, part 7 nether, end and misc). The `RuleTest` family of ore and structure targets (`structure.templatesystem`, specified in 35-4 §7.5.3; see section 8). Registry-file loading, tag resolution and `HolderSet` forms (23 §5, §6). The weighted-list, int-provider and height-provider engines (23 §7). The noise primitives (10 §3) and the Java LCG (10 §2.6). Data rows: the 240 configured features, 273 placed features and 8 named provider elements in the pack are extracted by the tool (22), not tabulated. |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact already recorded in [README.md](README.md)) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`, `javap -v` for bootstrap methods and constant strings) and of the data files under `data/minecraft/` in the jar, with no execution. Worked examples marked "(computed)" were produced by applying this document's text with a throwaway reference script written for the round; they were not observed from the artifact. |
 | Round | RS19 (GAP-12a of [../design/README.md](../design/README.md)), scope "Part 2" |
@@ -495,12 +495,12 @@ currently at the position.
 
 ## 8. RuleTest helpers (cross-reference)
 
-`RuleTest` (`structure.templatesystem`; `RuleTestType` registers 10 names in this order: `all_of`, `always_true`, `any_of`,
-`block_match`, `blockstate_match`, `not`, `tag_match`, `height_match`, `random_block_match`, `random_blockstate_match`;
-the sibling `PosRuleTestType` registers `always_true`, `linear_pos`, `axis_aligned_linear_pos`) is the *target* test of ore and structure rules. It is
-not used by predicates or providers in this document (providers use `BlockPredicate`). The ore target use, `tag_match`,
-`block_match` and the logical combinators, is in 11 §7.3. The other kinds were read only as to their class list in this
-round and are specified with the structure processors in RS20 (Open question 6).
+`RuleTest` (`structure.templatesystem`) is the *target* test of ore, scattered ore, `replace_single_block` and the structure `rule` processor. It is
+not used by predicates or providers in this document (providers use `BlockPredicate`), and its dispatch key is `predicate_type`, not `type`. The complete
+specification (the ten kinds in registry order `all_of`, `always_true`, `any_of`, `block_match`, `blockstate_match`, `not`, `tag_match`, `height_match`,
+`random_block_match`, `random_blockstate_match`, their fields, matching semantics, the `random_block_match` draw and which random source each consumer passes)
+is **35-4 §7.5.3**; the target-list replacement rule is 35-4 §7.5.2; the ore uses are 11 §7.3 and 35-1 §13; the processor use and the sibling `PosRuleTestType`
+(`always_true`, `linear_pos`, `axis_aligned_linear_pos`) are 36-2 §8. *(Closed in the R3 round; this section previously recorded only the class list.)*
 
 ---
 
@@ -586,9 +586,7 @@ does not appear in the data of this jar (the type exists for code and for other 
    the pack; their behaviour is specified from the bytecode only.
 5. **`normalize: "legacy"` (closed).** Read and written in 5.1.1. Residual: the all-zero modifier list case (wrapped int
    difference) was not examined; `createForLegacyNetherBiome` was not read (not needed by providers).
-6. **RuleTest kinds other than the ore ones.** Section 8: the registration list is read; the behaviour of `blockstate_match`,
-   `random_block_match`, `random_blockstate_match`, `height_match`, `all_of`, `any_of`, `not` and the three `PosRuleTest`
-   kinds was not read here.
+6. **RuleTest kinds other than the ore ones.** Closed: all ten kinds are read and specified in 35-4 §7.5.3 (the three `PosRuleTest` kinds are 36-2 §8.4).
 7. **Reads outside the writable region of a `WorldGenRegion`.** Section 2 notes that reads outside the write zone log
    a warning and still read. What `getChunk` returns for a chunk outside the region's loaded window (an exception
    or a lower-status chunk) was not read; it is the framework's question (sibling part 1) and matters for predicates

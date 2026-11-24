@@ -1,0 +1,5 @@
+device=Apple M4 Pro
+maxImageDimension2D=16384
+maxImageArrayLayers=2048
+maxPushConstantsSize=4096
+RGBA8 sampled 2D: result=0 maxExtent=16384x16384 maxMipLevels=15 maxArrayLayers=2048

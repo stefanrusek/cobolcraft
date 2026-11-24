@@ -27,7 +27,7 @@ A world with no vanilla pack therefore needs those entries. This document writes
 | 2 | The registry inventory: what is sent, how many entries, where the rows are |
 | 3 | The rows of every synchronized registry the core holds |
 | 4 | The tags, with the exact member lists and the Update Tags payload |
-| 5 | The cobolcraft content in the standard schemas: blocks, items, tools, foods, mobs, loot, recipes, the starting kit, the crafting bench |
+| 5 | The cobolcraft content in the standard schemas: blocks, items, tools, foods, mobs, loot, recipes, the starting kit, the crafting bench, and the FR-027 records (5.10: the finding that nothing further is needed, the bench texture, model and icon, the bench language keys, the creative inventory lists) |
 | 6 | Which shared engine reads which core entry |
 | 7 | Worked examples (computed) |
 | 8 | Validation: checkable facts |
@@ -54,7 +54,7 @@ that they are placeholders that may be built and tested only against this docume
 CORE-5 section 3.1; CORE-6 section 3.2; CORE-7, 8 section 3.3; CORE-9 section 3.4; CORE-10, 11, 12 section 3.6; CORE-13 section
 3.5; CORE-14 section 3.7; CORE-15 section 9; CORE-16 section 4; CORE-17, 18 section 5.1; CORE-19, 20 section 5.3; CORE-21 section
 5.4; CORE-22 section 5.6; CORE-23 section 5.7; CORE-24 section 5.8; CORE-25 section 5.9; CORE-26 section 5.5; CORE-27 section
-5.1 (break-time model); CORE-28 section 5.1 (cosmetic columns); CORE-29 section 5.5 (speed attribute); CORE-30 and CORE-31 section 5.5 (spawn-cycle meanings, persistence).
+5.1 (break-time model); CORE-28 section 5.1 (cosmetic columns); CORE-29 section 5.5 (speed attribute); CORE-30 and CORE-31 section 5.5 (spawn-cycle meanings, persistence); CORE-32 to CORE-35 section 5.10 (the FR-027 records: the finding, the bench picture, the bench language keys, the creative lists).
 
 Conventions. JSON is used to write rows because the standard schemas are JSON in a data pack and NBT on the wire
 (04 section 6: booleans are Byte 0 or 1, colours are `"#RRGGBB"` strings). Identifiers with no colon are in `minecraft:`.
@@ -1069,6 +1069,77 @@ role table; its first three roles do not include this one. The core adds the fou
 
 Reason: the same as WT-22. The shared menu engine tests the role, not a name. world-types.md must carry the row (section 9).
 
+### 5.10 Records of FR-027: content the shared rules need beyond the bench
+
+Spec FR-027 allows further cobolcraft content "to work in that type" and requires each addition to be recorded in the
+design documents before it is implemented. This section is that record. **Finding (Decision CORE-32).** Every shared
+rule of feature 002 that reads content (mining, crafting, the recipe book, loot, hunger, damage, commands, item
+entities, the starting kit) is already served by the 13 blocks, 19 items, 10 recipes, 11 loot tables and the tags of
+sections 4 and 5.1 to 5.9. **No further block, item, recipe, entity type or tag is added.** Three things the shared
+engines read are missing as data, none of them a new game object: the bench's picture (a texture, a model and an item
+sprite: section 5.1 and standin §1.4.2 give none), the bench's names in the built-in language, and the creative inventory's
+item lists. Each is recorded here with its values. Checked and not needed: spawn eggs (`/summon` of 16 §4 reaches both
+mobs; an egg would be a new item), a furnace or fuel (no recipe of the type smelts; `seared_flank` is a crafting recipe),
+tool tiers (CORE-17), a tag for the bench (the role of CORE-25 is not a tag).
+
+**Decision CORE-33 (the bench texture, model and item sprite).** The bench is a cube with three textures, written in
+the form of standin §1.4.2 and drawn from colours that §1.4.2 already uses for `ledger_tile` (the bench is made of four
+`ledger_tile`, recipe 9). Block model `cobolcraft:block/crafting_bench`: parent `cobolcraft:block/template_layered`
+(08 §10.4), `top` = `cobolcraft:block/crafting_bench_top`, `side` = `cobolcraft:block/crafting_bench_side`, `bottom` =
+`cobolcraft:block/ledger_tile`. Block state file `crafting_bench.json`: variant `""` -> model
+`cobolcraft:block/crafting_bench` (08 §10.6). Item model `cobolcraft:item/crafting_bench`, `layer0` =
+`cobolcraft:block/crafting_bench_top` (08 §10.7: a block item takes a block sprite; the top is chosen as `turf` does).
+Reason: the standard cube models and the existing templates, no new template.
+
+| Texture (file stem) | Size | Recipe |
+|---|---|---|
+| `crafting_bench_top` | 16 x 16 | Fill `#355D7B`. A 1-px border in `#24425A`. Then `R(4, 4, 11, 11)` in `#3E6C8F` (an inset square) |
+| `crafting_bench_side` | 16 x 16 | Fill `#3E6C8F`. `R(0, 0, 15, 2)` and `R(0, 13, 15, 15)` (a top and a bottom rail), then `R(0, 3, 1, 12)` and `R(14, 3, 15, 12)` (two posts), all in `#24425A` |
+| bottom face | 16 x 16 | the `ledger_tile` texture itself (standin §1.4.2) |
+
+Check values (the rule of standin §1.5: pixel counts and SHA-256 of the raw RGBA bytes, rows top to bottom, pixels left
+to right):
+
+| Texture | Size | Pixel counts | SHA-256 of RGBA |
+|---|---|---|---|
+| `crafting_bench_top` | 16 x 16 | `#355D7B` 132, `#3E6C8F` 64, `#24425A` 60 | `9599fac35369e23801ddf35c1ef1c86e6887fc9abb815a295f50368dde8eaaa6` |
+| `crafting_bench_side` | 16 x 16 | `#3E6C8F` 120, `#24425A` 136 | `e34fe71a796f5c7e126a26d2919bff48e135940be8bb69b8093718746899a7b5` |
+
+The built-in pack therefore holds 17 block PNG files, not 15 (faithful-pack-mapping §9.4), and the bench has its pack
+mapping in faithful-pack-mapping §3 and §4. The bench's block loot (section 5.6), tags (section 4.1), recipe (section
+5.7) and values (sections 5.1, 5.2) were already written; this decision adds only the picture.
+
+**Decision CORE-34 (language keys of the bench).** Added to the built-in `lang/en_us.json` of 08 §10.8 (Open question 11
+names them; builtin-ui-art Open question 23 is their home):
+
+| Key | Text | Source of the text |
+|---|---|---|
+| `block.cobolcraft.crafting_bench` | `Crafting Bench` | the key form of 08 §10.8 (`block.cobolcraft.turf` is "Turf"); the name of the block |
+| `item.cobolcraft.crafting_bench` | `Crafting Bench` | the same, for the item |
+| `container.crafting` | `Crafting` | 13 §3.5 (the title is the translatable component `container.crafting`, "Crafting") |
+
+**Decision CORE-35 (the creative inventory lists of the cobolcraft type).** The creative screen of 40 part 7 builds each
+category tab from a fixed list written in code (40-7 §4.3), and that list names standard items only; a cobolcraft
+creative player would otherwise see no cobolcraft item. In the cobolcraft type the generator of each tab is instead the
+list below, in this order, read from a data file of the type (the file name and path are the planner's, like CORE-24).
+Reason: the lists are the same data-driven form for any content set, and stop the screen offering standard items that do
+not exist in the type (40-7 §4.3: an item disabled for the enabled features is refused, and the cobolcraft type does not
+enable the standard items). A category tab whose list is empty is not displayed (40-7 §2.1, `shouldDisplay`), so the tabs
+not named stay hidden. Every stack is a count-1 stack with no components (README S22), offered to the parent and search
+tabs (40-7 §4.4 "PARENT_AND_SEARCH_TABS").
+
+| Tab (40-7 §2.2) | Items, in order (cobolcraft keys) |
+|---|---|
+| `building_blocks` | `baseplate`, `greystone`, `loam`, `turf`, `grit`, `cardstack`, `lucite`, `ledger_tile`, `slag` |
+| `functional_blocks` | `glowtube`, `goto_pad`, `crafting_bench` |
+| `tools_and_utilities` | `pry_bar`, `trowel` |
+| `food_and_drinks` | `grazer_flank`, `seared_flank`, `sod_cake` |
+| `ingredients` | `dump_shard` |
+| `colored_blocks`, `natural_blocks`, `redstone_blocks`, `combat`, `spawn_eggs`, the operator tab | none (hidden) |
+
+That is 18 items; `cobolcraft:nothing` (item 0) is never listed (item 0 of section 5.2 is the air-equivalent). The `search` tab
+holds the union, 18 items, by the rule of 40-7 §4.4.
+
 ---
 
 ## 6. Which shared engine reads which core entry
@@ -1170,7 +1241,7 @@ All numbers are computed from the rows above.
 | `docs/design/README.md` | S65 and WT-12: recipes 5 and 7 need the bench (Open question 12); GAP-35 closed by this document; S39 and C3: `block_transformer` carries no entry and `enchantment` one entry (CORE-14, CORE-15); C3 and decision 4: the tier tags (`needs_*`, `incorrect_for_*`) are not carried (CORE-17, Open question 13); S37: the stand-in damage types `impact` and `below_world` are dropped (CORE-11); S36 (the `timelines`, `default_clock` and attributes of `surface`, CORE-5, 7, 8) and S42 (Update Tags no longer empty; the own tags `cobolcraft:hard`, `soft`, `tools` retire, section 4) |
 | `docs/protocol/09-cobolcraft-profile.md` line 195 (Set Time row) and line 336 (`ticks` argument, max 29999); `docs/protocol/16` section 4.5 line 320 | stale: they use the clock `cobolcraft:daylight` with total ticks = `Time`, a one-clock world and a 29999 maximum, against CORE-5 (the clock is `minecraft:overworld`, a 24000-tick day) |
 | `docs/protocol/13-client-gameplay-and-controls.md` section 2.1 | state that the break time `ceil(1 / progress per tick)` can differ by one tick from the accumulating single-precision model of 2.2 (CORE-27) |
-| `docs/design/builtin-ui-art.md` and the built-in language file | the language keys of Open question 11; and the missing art of `cobolcraft:crafting_bench`: standin sections 1.4.2 and 1.5 (texture recipes and check values) cover only the 11 blocks and 6 items, so the bench has no texture, model or item icon in any document, and builtin-ui-art line 1554 gives language keys only (a texture recipe, model and icon for the bench block and item are owed) |
+| `docs/design/builtin-ui-art.md` and the built-in language file | the language keys of Open question 11; and the bench's art, **now supplied by CORE-33 (section 5.10)**: standin sections 1.4.2 and 1.5 still cover only the 11 blocks and 6 items, so the bench texture recipes, check values, model and item sprite live in section 5.10 and standin and 08 §10.3 and §10.9 should point to it (08 §10.3 and §10.9 counts are updated: 17 block PNGs); builtin-ui-art line 1554 gives language keys, whose text is CORE-34 |
 | `docs/protocol/17-tools-weapons-and-combat.md` section 4.12, `41-item-entity-physics.md` line 342, `04-registry-sync.md` section 3.2 item 6, `18` section 3 and `standin-content.md` section 4.7 | whichever of `out_of_world` and `fell_out_of_world` is wrong (CORE-12, Open question 1); `docs/protocol/41-item-entity-physics.md` line 342 also names `out_of_world` (tag contents), so all five documents are candidates |
 
 **Decision CORE-15 (no `block_transformer` entry).** README C3 and S39 list `block_transformer` among the entries the

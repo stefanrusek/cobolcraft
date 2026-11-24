@@ -1,0 +1,131 @@
+*> Coverage test, group B (play packets, core/src/play.cob): the Rename Item packet (id 49) as a client sends it: an anvil is opened with Use Item On, a sword is put in the left input, and the
+*> real packet (VarInt id, the name as a string) goes through the play path: the name Blade is the anvil's name, the sword is the result with the cost of 1 level for the rename (the menu
+*> data of the anvil), and a second packet with the name of a section sign alone empties the name (the anvil drops back to the unnamed state).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-COVE-B-RENAME.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY CMENU.
+ COPY CBLOCKS.
+ COPY COREAPI.
+ 01 WS-NAME                PIC X(16).
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG VALUE 1.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-FACE                BINARY-LONG VALUE 1.
+ 01 WS-SEQ                 BINARY-LONG VALUE 0.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-STONE-BLOCK         BINARY-LONG.
+ 01 WS-TABLE               BINARY-LONG.
+ 01 WS-SWORD               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-IDS                 PIC X(1024).
+ 01 WS-MESSAGE             PIC X(768).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(9)9.
+ 01 WS-TEXT                PIC X(256).
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-DEFAULT-MODE
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "Alice" TO WS-NAME
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     CALL "TEST-STANDARD-TABLES"
+     MOVE CN-PLAYER(WS-CONN) TO WS-ROW
+     MOVE 0 TO PL-YAW(WS-ROW) PL-PITCH(WS-ROW)
+     COMPUTE WS-BX = FUNCTION INTEGER(PL-X(WS-ROW)) + 2
+     COMPUTE WS-BY = FUNCTION INTEGER(PL-Y(WS-ROW))
+     COMPUTE WS-BZ = FUNCTION INTEGER(PL-Z(WS-ROW))
+     MOVE "stone" TO WS-KEY
+     CALL "TEST-BLOCK-ID" USING WS-KEY WS-ID
+     MOVE CB-DEFAULT-STATE(WS-ID + 1) TO WS-STONE-BLOCK
+     MOVE "anvil" TO WS-KEY
+     CALL "TEST-BLOCK-ID" USING WS-KEY WS-ID
+     MOVE CB-DEFAULT-STATE(WS-ID + 1) TO WS-TABLE
+     MOVE "diamond_sword" TO WS-KEY
+     CALL "TEST-ITEM-ID" USING WS-KEY WS-SWORD
+     COMPUTE WS-Y = WS-BY - 1
+     PERFORM VARYING WS-X FROM WS-BX BY 1 UNTIL WS-X > WS-BX + 3
+         CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-BZ WS-STONE-BLOCK
+         MOVE 0 TO WS-STATE
+         PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 2
+             COMPUTE WS-S = WS-BY + WS-I
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-S WS-BZ WS-STATE
+         END-PERFORM
+     END-PERFORM
+     MOVE "T" TO TL-MODE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
+         MOVE 0 TO PL-SLOT-COUNT(WS-ROW, WS-I) PL-SLOT-ITEM(WS-ROW, WS-I) PL-SLOT-VAR(WS-ROW, WS-I)
+     END-PERFORM
+     MOVE WS-TABLE TO WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     MOVE WS-BX TO WS-X
+     MOVE WS-BY TO WS-Y
+     MOVE WS-BZ TO WS-Z
+     ADD 1 TO WS-SEQ
+     CALL "TEST-USE-ON" USING WS-CONN WS-X WS-Y WS-Z WS-FACE WS-SEQ
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     MOVE WS-SWORD TO MN-WSLOT-ITEM(WS-ROW, 1)
+     MOVE 1 TO MN-WSLOT-COUNT(WS-ROW, 1)
+     MOVE 0 TO MN-WSLOT-VAR(WS-ROW, 1) MN-WSLOT-COUNT(WS-ROW, 2) MN-WSLOT-ITEM(WS-ROW, 2)
+
+     MOVE "Blade" TO WS-MESSAGE
+     MOVE 5 TO WS-LENGTH
+     CALL "TEST-COVE-B-RENAME-SEND" USING WS-CONN WS-MESSAGE WS-LENGTH
+     MOVE "test cove b rename: the Rename Item packet sets the name Blade (5 bytes) and the cost of 1 level" TO TL-CASE
+     MOVE MN-WNAME-LEN(WS-ROW) TO WS-E1
+     MOVE MN-WDATA(WS-ROW, 1) TO WS-E2
+     MOVE SPACES TO WS-TEXT
+     STRING "name " FUNCTION TRIM(WS-E1) " " MN-WNAME(WS-ROW)(1:5) " cost " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE WS-TEXT TO TL-OBSERVED
+     MOVE "name 5 Blade cost 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE X"C2A7" TO WS-MESSAGE(1:2)
+     MOVE 2 TO WS-LENGTH
+     CALL "TEST-COVE-B-RENAME-SEND" USING WS-CONN WS-MESSAGE WS-LENGTH
+     MOVE "test cove b rename: a Rename Item packet with only a section sign empties the name" TO TL-CASE
+     MOVE MN-WNAME-LEN(WS-ROW) TO WS-E1
+     MOVE WS-E1 TO TL-OBSERVED
+     MOVE "         0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-COVE-B-RENAME.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-COVE-B-RENAME-SEND.
+*> USING connection id, name (PIC X(768)), length: feeds a Rename Item packet (id 49: the name as a string) to the core as the client would send it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 49.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-MESSAGE              PIC X(768).
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-MESSAGE L-LENGTH.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-STRING" USING PB-BUFFER L-MESSAGE L-LENGTH WS-MAX
+     CALL "TEST-FEED-BUFFER" USING L-ID PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM TEST-COVE-B-RENAME-SEND.
+
+ COPY CORETEST.
+ COPY BETEST.

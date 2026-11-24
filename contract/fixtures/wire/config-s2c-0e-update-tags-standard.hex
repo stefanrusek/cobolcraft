@@ -1,0 +1,28 @@
+# Fixture: Update Tags, standard world type
+# Phase: configuration. Direction: clientbound (S->C). Packet id 0x0e (14).
+# Doc refs: 04 Update Tags (RegistryTags, TagEntry), section 5 (static ids), 24 part 1 rows (block ids), 25 part 1 (item ids), 46 section 15
+# Stated inputs:
+#   2 registries: minecraft:block with tag minecraft:planks = [oak_planks 13] and minecraft:base_stone_overworld = [stone 1, cobblestone 12]
+#   minecraft:dimension_type with tag minecraft:in_overworld = [0] (synchronized registry, id = Registry Data order)
+
+0e                                               # packet id: VarInt 0x0e
+03                                               # Registries: VarInt count 3
+0f 6d 69 6e 65 63 72 61 66 74 3a 62 6c 6f 63 6b  # Registry: Identifier
+02                                               # Tags: VarInt count
+10 6d 69 6e 65 63 72 61 66 74 3a 70 6c 61 6e 6b  # Tag name: Identifier
+73                                               #   (continued)
+01 0d                                            # Entries: VarInt count then ids [13]
+1e 6d 69 6e 65 63 72 61 66 74 3a 62 61 73 65 5f  # Tag name: Identifier
+73 74 6f 6e 65 5f 6f 76 65 72 77 6f 72 6c 64     #   (continued)
+02 01 0c                                         # Entries: VarInt count then ids [1, 12]
+0e 6d 69 6e 65 63 72 61 66 74 3a 69 74 65 6d     # Registry: Identifier
+01                                               # Tags: VarInt count
+10 6d 69 6e 65 63 72 61 66 74 3a 70 6c 61 6e 6b  # Tag name: Identifier
+73                                               #   (continued)
+01 3f                                            # Entries: VarInt count then ids [63]
+18 6d 69 6e 65 63 72 61 66 74 3a 64 69 6d 65 6e  # Registry: Identifier
+73 69 6f 6e 5f 74 79 70 65                       #   (continued)
+01                                               # Tags: VarInt count
+16 6d 69 6e 65 63 72 61 66 74 3a 69 6e 5f 6f 76  # Tag name: Identifier
+65 72 77 6f 72 6c 64                             #   (continued)
+01 00                                            # Entries: VarInt count then ids [0]

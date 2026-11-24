@@ -1,0 +1,14 @@
+# Fixture: Update Attributes with a modifier
+# Phase: play. Direction: clientbound (S->C). Packet id 0x86 (134).
+# Doc refs: 05b 0x86 (AttributeSnapshot, AttributeModifier); 46 section 4.2 (max_health 23, movement_speed 26)
+# Stated inputs:
+#   entity 300; attribute max_health (23) base 20.0 with no modifier; movement_speed (26) base 0.1 with one modifier
+#   minecraft:sprinting, amount 0.3, operation 2 (add multiplied total)
+
+86 01                                            # packet id: VarInt 0x86
+ac 02                                            # Entity id: VarInt 300
+02                                               # Attributes: VarInt count 2
+17 40 34 00 00 00 00 00 00 00                    # [0] max_health (23), base Double 20.0, modifiers count 0
+1a 3f b9 99 99 99 99 99 9a 01                    # [1] movement_speed (26), base Double 0.1, modifiers count 1
+13 6d 69 6e 65 63 72 61 66 74 3a 73 70 72 69 6e  #   modifier: id minecraft:sprinting, amount 0.3, operation 2
+74 69 6e 67 3f d3 33 33 33 33 33 33 02           #   (continued)

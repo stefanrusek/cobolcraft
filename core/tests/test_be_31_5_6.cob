@@ -1,0 +1,810 @@
+*> Test of 31-5 section 6, Creaking heart (core/src/be-31-5.cob; T0931): the day attribute, the log rule and block states, the comparator, the server tick countdowns, the link rules, spawning, hurting, experience and the saved key.
+*> Each case runs its statements and shows the items joined by single spaces ("n" integers, "f" floats x 1e6, "t" text up to a stored length).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-5-6.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY CITEMS.
+ 01 WS-SHOW                PIC -(10)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-OUT                 PIC X(8192).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-T10                 BINARY-LONG VALUE 10.
+ 01 WS-FORM                BINARY-LONG VALUE 1.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-NM                  PIC X(32).
+ 01 WS-NML                 BINARY-LONG.
+ 01 WS-SV                  PIC X(256).
+ 01 WS-SVL                 BINARY-LONG.
+ 01 WS-NV                  BINARY-LONG.
+ 01 WS-LV                  BINARY-DOUBLE.
+ 01 WS-IA.
+    05 WS-IAV              BINARY-LONG OCCURS 8 TIMES.
+ 01 WS-LT                  BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG VALUE 0.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-A                 BINARY-LONG.
+ 01 WS-B                 BINARY-LONG.
+ 01 WS-C                 BINARY-LONG.
+ 01 WS-E                 BINARY-LONG.
+ 01 WS-F                 BINARY-LONG.
+ 01 WS-G                 BINARY-LONG.
+ 01 WS-H                 BINARY-LONG.
+ 01 WS-EV                BINARY-LONG.
+ 01 WS-O1                 BINARY-LONG.
+ 01 WS-O2                 BINARY-LONG.
+ 01 WS-O3                 BINARY-LONG.
+ 01 WS-O4                 BINARY-LONG.
+ 01 WS-O5                 BINARY-LONG.
+ 01 WS-O6                 BINARY-LONG.
+ 01 WS-O7                 BINARY-LONG.
+ 01 WS-FA                FLOAT-LONG.
+ 01 WS-FB                FLOAT-LONG.
+ 01 WS-FC                FLOAT-LONG.
+ 01 WS-FD                FLOAT-LONG.
+ 01 WS-FE                FLOAT-LONG.
+ 01 WS-FF                FLOAT-LONG.
+ 01 WS-N24                PIC X(24).
+ 01 WS-N32                PIC X(32).
+ 01 WS-PK                 PIC X(32).
+ 01 WS-SK                 PIC X(32).
+ 01 WS-PASSES.
+    05 WS-PASS            BINARY-LONG OCCURS 4 TIMES.
+ 01 WS-OFFS.
+    05 WS-OFF             OCCURS 64 TIMES.
+       10 WS-OX           BINARY-LONG.
+       10 WS-OY           BINARY-LONG.
+       10 WS-OZ           BINARY-LONG.
+ 01 WS-TX                 PIC X(64).
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "acceptance US12 31-5§6 Creaking heart: creaking_active (6.1): true from tick 12600 until tick 23401 of the 24000-tick day" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     CALL "BE5-HEART-ACTIVE" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 12599 TO WS-A
+     CALL "BE5-HEART-ACTIVE" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 12600 TO WS-A
+     CALL "BE5-HEART-ACTIVE" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 20000 TO WS-A
+     CALL "BE5-HEART-ACTIVE" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 23400 TO WS-A
+     CALL "BE5-HEART-ACTIVE" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 23401 TO WS-A
+     CALL "BE5-HEART-ACTIVE" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 24000 TO WS-A
+     CALL "BE5-HEART-ACTIVE" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 36600 TO WS-A
+     CALL "BE5-HEART-ACTIVE" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 71400 TO WS-A
+     CALL "BE5-HEART-ACTIVE" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0 1 1 1 0 0 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§6 Creaking heart: hasRequiredLogs (6.1): both neighbours along the axis must be pale oak logs and have the heart's axis" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE5-HEART-LOGS" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE5-HEART-LOGS" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE5-HEART-LOGS" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE5-HEART-LOGS" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE5-HEART-LOGS" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§6 Creaking heart: states (6.1, 6.3 step 5): the block turns an uprooted heart with logs awake (active) or dormant and changes nothing else; the entity gives uprooted when there are no logs and no link," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE5-HEART-BLOCK-STATE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE5-HEART-BLOCK-STATE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE5-HEART-BLOCK-STATE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE5-HEART-BLOCK-STATE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE5-HEART-BLOCK-STATE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE5-HEART-BLOCK-STATE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE5-HEART-ENTITY-STATE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE5-HEART-ENTITY-STATE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "BE5-HEART-ENTITY-STATE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE5-HEART-ENTITY-STATE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "BE5-HEART-ENTITY-STATE" USING WS-A WS-B WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "2 1 1 2 0 2 0 2 2 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§6 Creaking heart: comparator (6.6, worked example 5): 0 without a link or protector; else 15 - floor(15 * clamp(d, 0, 32) / 32) (8 blocks give 12, 0 gives 15, 32 or more 0)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     COMPUTE WS-FA = 5.0
+     CALL "BE5-HEART-COMPARATOR" USING WS-A WS-B WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     COMPUTE WS-FA = 5.0
+     CALL "BE5-HEART-COMPARATOR" USING WS-A WS-B WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     COMPUTE WS-FA = 0.0
+     CALL "BE5-HEART-COMPARATOR" USING WS-A WS-B WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     COMPUTE WS-FA = 8.0
+     CALL "BE5-HEART-COMPARATOR" USING WS-A WS-B WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     COMPUTE WS-FA = 32.0
+     CALL "BE5-HEART-COMPARATOR" USING WS-A WS-B WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     COMPUTE WS-FA = 40.0
+     CALL "BE5-HEART-COMPARATOR" USING WS-A WS-B WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     COMPUTE WS-FA = 31.9
+     CALL "BE5-HEART-COMPARATOR" USING WS-A WS-B WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     COMPUTE WS-FA = 1.0
+     CALL "BE5-HEART-COMPARATOR" USING WS-A WS-B WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     COMPUTE WS-FA = -3.0
+     CALL "BE5-HEART-COMPARATOR" USING WS-A WS-B WS-FA WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0 15 12 0 0 1 15 15" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§6 Creaking heart: server tick (6.3 steps 1, 3, 4): ticksExisted counts; with an emitter running the trail is emitted twice above 50 and once otherwise, the hurt sound plays when emitter mod 10 is 0 with pitch" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 10 TO WS-A
+     MOVE "minecraft:creaking_heart" TO WS-KEY
+     MOVE 24 TO WS-SVL
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-A WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 3)
+     MOVE 2 TO WS-A
+     MOVE 0 TO BE-XI(WS-IDX, 4)
+     CALL "BE5-HEART-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-FA
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FA) * 10000
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 0 TO BE-XI(WS-IDX, 4)
+     CALL "BE5-HEART-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-FA
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FA) * 10000
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 60 TO BE-XI(WS-IDX, 4)
+     CALL "BE5-HEART-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-FA
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FA) * 10000
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 30 TO BE-XI(WS-IDX, 4)
+     CALL "BE5-HEART-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-FA
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FA) * 10000
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     MOVE 10 TO BE-XI(WS-IDX, 4)
+     CALL "BE5-HEART-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-FA
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FA) * 10000
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 1 TO BE-XI(WS-IDX, 4)
+     CALL "BE5-HEART-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-FA
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FA) * 10000
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO BE-XI(WS-IDX, 4)
+     CALL "BE5-HEART-TICK" USING WS-IDX WS-A WS-B WS-C WS-E WS-FA
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-SHOW ROUNDED = (WS-FA) * 10000
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0 0 0 0 0 1 1 0 0 0 23 0 2 0 2 1 8000 22 59 3 0 1 1 6500 21 29 4 0 1 1 5500 20 9 5 0 1 0 0 19 0 6 " &
+         "0 0 0 0 18 0 7" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§6 Creaking heart: link resolution (6.5): no link gives none; a live creaking is the protector; a removed one becomes a UUID with ticksExisted reset to 0; a UUID found in the world is the protector again; one" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE5-HEART-LINK" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 5 TO WS-E
+     CALL "BE5-HEART-LINK" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 5 TO WS-E
+     CALL "BE5-HEART-LINK" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 5 TO WS-E
+     CALL "BE5-HEART-LINK" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 5 TO WS-E
+     CALL "BE5-HEART-LINK" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 29 TO WS-E
+     CALL "BE5-HEART-LINK" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 30 TO WS-E
+     CALL "BE5-HEART-LINK" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 40 TO WS-E
+     CALL "BE5-HEART-LINK" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0 1 5 1 0 0 0 1 5 0 29 2 30 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§6 Creaking heart: losing the protector (6.3 step 6): the link is removed when the attribute is false and the creaking does not require persistence, when it is farther than 34, or when a player is stuck in it" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     COMPUTE WS-FA = 10.0
+     CALL "BE5-HEART-DROP" USING WS-A WS-B WS-FA WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     COMPUTE WS-FA = 10.0
+     CALL "BE5-HEART-DROP" USING WS-A WS-B WS-FA WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     COMPUTE WS-FA = 10.0
+     CALL "BE5-HEART-DROP" USING WS-A WS-B WS-FA WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     COMPUTE WS-FA = 34.0
+     CALL "BE5-HEART-DROP" USING WS-A WS-B WS-FA WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     COMPUTE WS-FA = 34.5
+     CALL "BE5-HEART-DROP" USING WS-A WS-B WS-FA WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     COMPUTE WS-FA = 5.0
+     CALL "BE5-HEART-DROP" USING WS-A WS-B WS-FA WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     COMPUTE WS-FA = 40.0
+     CALL "BE5-HEART-DROP" USING WS-A WS-B WS-FA WS-C WS-E
+     MOVE WS-E TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 1 0 0 1 1 1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§6 Creaking heart: spawn conditions (6.3 step 7): an awake heart without a link spawns a protector only when monsters spawn, the difficulty is not peaceful and a player is within 32" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE5-HEART-SPAWN" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE5-HEART-SPAWN" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE5-HEART-SPAWN" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE5-HEART-SPAWN" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 0 TO WS-E
+     CALL "BE5-HEART-SPAWN" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     CALL "BE5-HEART-SPAWN" USING WS-A WS-B WS-C WS-E WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 0 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§6 Creaking heart: creakingHurt (6.6): with a protector and no emitter running: 20 particles, 2 or 3 resin spreads when awake (the draw) and the emitter starts at 100; otherwise nothing (particles, resin," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 2 TO WS-E
+     CALL "BE5-HEART-HURT" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 3 TO WS-E
+     CALL "BE5-HEART-HURT" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 3 TO WS-E
+     CALL "BE5-HEART-HURT" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 2 TO WS-E
+     CALL "BE5-HEART-HURT" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 2 TO WS-E
+     CALL "BE5-HEART-HURT" USING WS-A WS-B WS-C WS-E WS-F WS-G WS-H
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "20 2 100 20 3 100 20 0 100 0 0 5 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§6 Creaking heart: experience (6.1): breaking a natural heart on a server pops 20 + nextInt(5) experience unless the player prevents block drops or is a spectator" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 0 TO WS-F
+     CALL "BE5-HEART-XP" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 4 TO WS-F
+     CALL "BE5-HEART-XP" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 2 TO WS-F
+     CALL "BE5-HEART-XP" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 2 TO WS-F
+     CALL "BE5-HEART-XP" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 2 TO WS-F
+     CALL "BE5-HEART-XP" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 2 TO WS-F
+     CALL "BE5-HEART-XP" USING WS-A WS-B WS-C WS-E WS-F WS-G
+     MOVE WS-G TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "20 24 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-5§6 Creaking heart: saved key (6.2): creaking is the UUID of the protector as 4 ints, written only when linked; a present key sets the link (ticksExisted reset to 0), an absent key clears it" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 10 TO WS-A
+     MOVE "minecraft:creaking_heart" TO WS-KEY
+     MOVE 24 TO WS-SVL
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-A WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE 9 TO BE-XI(WS-IDX, 2)
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "creaking" TO WS-NM
+     MOVE 8 TO WS-NML
+     MOVE 5 TO WS-IAV(1)
+     MOVE 6 TO WS-IAV(2)
+     MOVE 7 TO WS-IAV(3)
+     MOVE 8 TO WS-IAV(4)
+     MOVE 4 TO WS-LC
+     PERFORM NB-IA
+     PERFORM LOAD-BUFFER
+     PERFORM SAVE-RENDER
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     PERFORM LOAD-BUFFER
+     PERFORM SAVE-RENDER
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "{} {creaking:I[5,6,7,8]} 0 1 {} 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ ADD-N.
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> Saves entity WS-IDX in form WS-FORM, renders the compound and appends it to TL-OBSERVED.
+ SAVE-RENDER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-IDX WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> The NBT builders of the cases (name WS-NM and length WS-NML, text WS-SV and length WS-SVL, number WS-NV, list type WS-LT and count WS-LC).
+ NB-S.
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NM WS-NML WS-SV WS-SVL
+     .
+ NB-I.
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-LONG.
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WS-NM WS-NML WS-LV
+     .
+ NB-IA.
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WS-NM WS-NML WS-LC WS-IA
+     .
+ NB-B.
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-C.
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NM WS-NML
+     .
+ NB-E.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     .
+ NB-STACK.
+     MOVE 0 TO WS-KP
+     CALL "PNBT-STACK-WRITE" USING PB-BUFFER WS-ITEM WS-NV WS-KP
+     .
+ NB-L.
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NM WS-NML WS-LT WS-LC
+     .
+
+*> Loads entity WS-IDX from the compound the case built in PB-BUFFER (the closing End tag is written here).
+ LOAD-BUFFER.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-IDX PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     .
+ END PROGRAM TEST-BE-31-5-6.
+
+ COPY CORETEST.

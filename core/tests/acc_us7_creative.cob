@@ -27,9 +27,15 @@
  01 WS-YAW                 FLOAT-SHORT VALUE 0.
  01 WS-PITCH               FLOAT-SHORT VALUE 0.
  01 WS-FLAGS               BINARY-LONG.
+ 01 WS-FLOOR-DIM           BINARY-LONG VALUE 1.
+ 01 WS-FLOOR-X             BINARY-LONG VALUE 20.
+ 01 WS-FLOOR-Y             BINARY-LONG VALUE 100.
+ 01 WS-FLOOR-Z             BINARY-LONG VALUE 20.
+ 01 WS-FLOOR-STATE         BINARY-LONG VALUE 2.
  01 WS-SLOT                BINARY-LONG VALUE 8.
  01 WS-CAUSE               BINARY-LONG.
  01 WS-AMOUNT              BINARY-LONG VALUE 3.
+ 01 WS-VOID-AMOUNT         BINARY-LONG.
  01 WS-NO-ENTITY           BINARY-LONG VALUE 0.
  01 WS-NO-ATTACKER         BINARY-LONG VALUE 0.
  01 WS-TICKS               BINARY-LONG.
@@ -44,6 +50,8 @@
      MOVE "Bobby" TO WS-NAME
      CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-BOB
      MOVE CN-PLAYER(WS-ALICE) TO WS-ROW
+*>   Greystone under Alice: a claim of the ground counts only with support (core/src/move-check.cob).
+     CALL "WORLD-SET-BLOCK" USING WS-FLOOR-DIM WS-FLOOR-X WS-FLOOR-Y WS-FLOOR-Z WS-FLOOR-STATE
      MOVE 101 TO WS-FY
      MOVE 1 TO WS-FLAGS
      CALL "TEST-MOVE" USING WS-ALICE WS-MOVE WS-FX WS-FY WS-FZ WS-YAW WS-PITCH WS-FLAGS
@@ -69,16 +77,19 @@
      PERFORM CHECK
 
      MOVE "acceptance US7-6 given a creative player when every cause of §10.3 would damage them "
-         & "then their health stays 30 and nothing is sent" TO TL-CASE
+         & "then their health stays 20 and nothing is sent" TO TL-CASE
+*>   The void is the one cause that hurts a creative player (bypasses_invulnerability, 17 section 4.12; the Nether and End lane): it is left out.
      PERFORM VARYING WS-CAUSE FROM 1 BY 1 UNTIL WS-CAUSE > CAUSE-COUNT
-         CALL "HEALTH-DAMAGE" USING WS-ROW WS-AMOUNT WS-CAUSE WS-NO-ENTITY WS-NO-ATTACKER
+         IF WS-CAUSE NOT = CAUSE-VOID
+             CALL "HEALTH-DAMAGE" USING WS-ROW WS-AMOUNT WS-CAUSE WS-NO-ENTITY WS-NO-ATTACKER
+         END-IF
      END-PERFORM
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE 30 TO WS-E1
+     MOVE 20 TO WS-E1
      PERFORM CHECK-QUIET
 
-     MOVE "US7 edge given a survival player hurt to 18 when they switch to creative and 100 "
-         & "ticks pass then the stored health stays 18 (no recovery, nothing sent)" TO TL-CASE
+     MOVE "US7 edge given a survival player hurt to 13 when they switch to creative and 100 "
+         & "ticks pass then the stored health stays 13 (no recovery, nothing sent)" TO TL-CASE
      MOVE 0 TO PL-MODE(WS-ROW)
      MOVE 12 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
@@ -88,17 +99,42 @@
      MOVE 100 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE 18 TO WS-E1
+     MOVE 13 TO WS-E1
      PERFORM CHECK-QUIET
 
      MOVE "US7 edge given a hurt player in creative when they switch back to survival then the "
-         & "health is the one they had, 18, and recovers again after 50 ticks" TO TL-CASE
+         & "health is the one they had, 13, and recovers again after 80 ticks (food 18)" TO TL-CASE
      MOVE 0 TO PL-MODE(WS-ROW)
-     MOVE 50 TO WS-TICKS
+     MOVE 18 TO PL-FOOD(WS-ROW)
+     MOVE 0 TO PL-SATURATION(WS-ROW)
+     MOVE 0 TO PL-RECOVER-TICKS(WS-ROW)
+     MOVE 80 TO WS-TICKS
      CALL "TEST-TICKS" USING WS-TICKS
      CALL "TEST-DRAIN-HEALTH" USING WS-ALICE WS-TEXT
-     MOVE "health 19 food 24" TO TL-EXPECTED
+     MOVE "health 14 food 18" TO TL-EXPECTED
      PERFORM CHECK
+
+*>   The void hurts a creative player (bypasses_invulnerability, 17 section 4.12): 4 hurt it, 100 kill it (death.attack.outOfWorld), and a dead
+*>   player is not hurt again.
+     MOVE "US7 edge given a creative player when the void hurts them for 4 then their health is 10 (14 less 4)" TO TL-CASE
+     MOVE 1 TO PL-MODE(WS-ROW)
+     MOVE 4 TO WS-VOID-AMOUNT
+     CALL "HEALTH-DAMAGE" USING WS-ROW WS-VOID-AMOUNT CAUSE-VOID WS-NO-ENTITY WS-NO-ATTACKER
+     MOVE 10 TO TL-EXPECTED-N
+     MOVE PL-HEALTH(WS-ROW) TO TL-OBSERVED-N
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "US7 edge given a creative player when the void hurts them for 100 then they are dead" TO TL-CASE
+     MOVE 100 TO WS-VOID-AMOUNT
+     CALL "HEALTH-DAMAGE" USING WS-ROW WS-VOID-AMOUNT CAUSE-VOID WS-NO-ENTITY WS-NO-ATTACKER
+     MOVE PS-DEAD TO TL-EXPECTED-N
+     MOVE PL-STATE(WS-ROW) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "US7 edge given a dead creative player when the void hurts them again then nothing changes (still dead, health 0)" TO TL-CASE
+     CALL "HEALTH-DAMAGE" USING WS-ROW WS-VOID-AMOUNT CAUSE-VOID WS-NO-ENTITY WS-NO-ATTACKER
+     COMPUTE TL-OBSERVED-N = PL-STATE(WS-ROW) * 100 + PL-HEALTH(WS-ROW)
+     MOVE 200 TO TL-EXPECTED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
 *> Alice rises 10 blocks (on-ground false) and lands back at feet y 101 (on-ground true).

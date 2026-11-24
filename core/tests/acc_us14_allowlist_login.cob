@@ -60,7 +60,7 @@
      MOVE "contract/fixtures/wire/login-s2c-00-login-disconnect-not-allow-listed.hex"
          TO WS-PATH
      CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
-     MOVE "guestlist add Stranger" TO WS-LINE
+     MOVE "whitelist add Stranger" TO WS-LINE
      PERFORM OPAL-RUN
      CALL "TEST-HELLO" USING WS-NAME WS-NAME-LENGTH WS-ID
      PERFORM FIRST-PACKET
@@ -82,7 +82,7 @@
      MOVE FUNCTION TRIM(WS-EDIT) TO TL-OBSERVED
      MOVE "2" TO TL-EXPECTED
      PERFORM ASSERT-TEXT
-     MOVE "guestlist on" TO WS-LINE
+     MOVE "whitelist on" TO WS-LINE
      PERFORM OPAL-RUN
      MOVE "Runner" TO WS-NAME
      CALL "TEST-HELLO" USING WS-NAME WS-NAME-LENGTH WS-ID

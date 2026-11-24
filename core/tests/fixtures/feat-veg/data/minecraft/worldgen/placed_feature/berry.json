@@ -1,0 +1,12 @@
+{
+ "feature": {
+  "type": "minecraft:simple_block",
+  "to_place": {
+   "Name": "minecraft:sweet_berry_bush",
+   "Properties": {
+    "age": "3"
+   }
+  }
+ },
+ "placement": []
+}

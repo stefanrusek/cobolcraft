@@ -3,6 +3,8 @@
 *> Player in a single-player world (the client's in-process core over a memory connection) uses
 *> the client's controls (hotbar keys, the place and break buttons aimed at blocks, the inventory
 *> screen), and the world itself (the core) and the client's replica show the outcome.
+*> Updated for feature 002: creative through the standard gamemode command, the 46-slot inventory menu (US9-3) and
+*> flight only in creative (US7-1, US7-2).
 *> Spawn (4.5, 54, 8.5) facing east; turf tops: (6, 53, 8), (5, 53, 7).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US4-CONTROLS-TO-WORLD.
@@ -78,6 +80,20 @@
      MOVE SPACES TO TL-OBSERVED
      STRING "client " FUNCTION TRIM(WS-TEXT) " held " FUNCTION TRIM(WS-E1) " | core "
          FUNCTION TRIM(WS-TEXT2) " held " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   US7-2: in survival a double Space does not make the Player fly.
+     MOVE CC-KEY-SPACE TO WS-KEY
+     CALL "CV-KEY" USING CONVH WS-ALICE WS-KEY
+     CALL "CV-KEY" USING CONVH WS-ALICE WS-KEY
+     MOVE 20 TO WS-N
+     CALL "CV-STEPS" USING CONVH WS-N
+     CALL "F2C4-CORE-FLYING" USING WS-NAME WS-E1
+     MOVE "acceptance US7-2 given the Player is in survival mode when they press Space twice quickly "
+         & "then they do not fly, in the client and in the world" TO TL-CASE
+     MOVE "client 0 core 0" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING "client " PL-FLYING " core " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   US4-2: greystone (slot 0) placed on the turf top at (6, 53, 8).
@@ -164,6 +180,19 @@
      MOVE SPACES TO TL-OBSERVED
      STRING "screen " FUNCTION TRIM(WS-E4) " client " FUNCTION TRIM(WS-TEXT) " | core "
          FUNCTION TRIM(WS-TEXT2) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-I
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > SM-WIDGET-COUNT
+         IF SM-W-KIND(WS-N) = WK-SLOT AND SM-W-ACTION(WS-N) = ACT-SLOT AND SM-W-ARG(WS-N) NOT = 36
+             ADD 1 TO WS-I
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US4-6 given the inventory screen is open then it is the 46-slot inventory menu "
+         & "(hotbar 9, main 27, armour 4, result, 2 x 2 grid, off hand)" TO TL-CASE
+     MOVE "46 slots" TO TL-EXPECTED
+     MOVE WS-I TO WS-E1
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " slots" DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE CC-KEY-ESCAPE TO WS-KEY
      CALL "CV-KEY" USING CONVH WS-ALICE WS-KEY
@@ -275,10 +304,10 @@
          FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   US4-4: in creative (the mode command; the host is an operator) a break is instant and no item
+*>   US4-4: in creative (the standard gamemode command; the host is an operator) a break is instant and no item
 *>   appears: the greystone at (6, 54, 8).
-     MOVE "/mode Alice creative" TO WS-SAY
-     MOVE 20 TO WS-SAY-LENGTH
+     MOVE "/gamemode creative" TO WS-SAY
+     MOVE 18 TO WS-SAY-LENGTH
      CALL "CV-SAY" USING CONVH WS-ALICE WS-SAY WS-SAY-LENGTH
      MOVE 5 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
@@ -312,6 +341,21 @@
      STRING "mode " FUNCTION TRIM(WS-E1) " core " FUNCTION TRIM(WS-E2) " client "
          FUNCTION TRIM(WS-E3) " new ground greystones " FUNCTION TRIM(WS-E4)
          DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   US7-1 and US7-2 (13 section 1.4): in creative a double Space (two frames apart) turns flying on in the
+*>   client and in the world; the survival Player's double Space (before) did not.
+     MOVE CC-KEY-SPACE TO WS-KEY
+     CALL "CV-KEY" USING CONVH WS-ALICE WS-KEY
+     CALL "CV-KEY" USING CONVH WS-ALICE WS-KEY
+     MOVE 5 TO WS-N
+     CALL "CV-STEPS" USING CONVH WS-N
+     CALL "F2C4-CORE-FLYING" USING WS-NAME WS-E1
+     MOVE "acceptance US7-1 given the Player is in creative mode when they press Space twice quickly "
+         & "then they fly, in the client and in the world" TO TL-CASE
+     MOVE "client 1 core 1" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING "client " PL-FLYING " core " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
 
@@ -502,3 +546,29 @@
      END-IF
      GOBACK.
  END PROGRAM CORE-PLAYER-SLOTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. F2C4-CORE-FLYING.
+*> USING name (PIC X(16)), flying out (PIC -(9)9): the world's flying flag of that online player.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ LINKAGE SECTION.
+ 01 L-NAME                 PIC X(16).
+ 01 L-FLYING               PIC -(9)9.
+ PROCEDURE DIVISION USING L-NAME L-FLYING.
+     MOVE 0 TO WS-P
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > 64 OR WS-P > 0
+         IF PL-USED(WS-R) = 1 AND PL-NAME(WS-R) = L-NAME
+             MOVE WS-R TO WS-P
+         END-IF
+     END-PERFORM
+     MOVE -1 TO L-FLYING
+     IF WS-P > 0
+         MOVE PL-FLYING(WS-P) TO L-FLYING
+     END-IF
+     GOBACK.
+ END PROGRAM F2C4-CORE-FLYING.

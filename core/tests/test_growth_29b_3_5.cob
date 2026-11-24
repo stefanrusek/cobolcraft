@@ -1,0 +1,698 @@
+*> Test of 29b part 3 section 5, Leaves (core/src/growth-29b-3.cob; T0569): distance, triggers, decay and drops (5.1 to 5.4), the variants (5.5), client behaviour (5.6), mangrove leaves (5.7), leaf litter (5.8).
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-I as integers and WS-FX as doubles), calls the program
+*> and shows the outputs WS-R(1..WS-N) joined by "/", one group per call; expected values come from the rules and tables of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-GROWTH-29B-3-5.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY INTERACT.
+ 01 WS-ISG.
+    05 WS-I1 BINARY-LONG.
+    05 WS-I2 BINARY-LONG.
+    05 WS-I3 BINARY-LONG.
+    05 WS-I4 BINARY-LONG.
+    05 WS-I5 BINARY-LONG.
+    05 WS-I6 BINARY-LONG.
+    05 WS-I7 BINARY-LONG.
+    05 WS-I8 BINARY-LONG.
+    05 WS-I9 BINARY-LONG.
+    05 WS-I10 BINARY-LONG.
+    05 WS-I11 BINARY-LONG.
+    05 WS-I12 BINARY-LONG.
+    05 WS-I13 BINARY-LONG.
+    05 WS-I14 BINARY-LONG.
+    05 WS-I15 BINARY-LONG.
+    05 WS-I16 BINARY-LONG.
+ 01 WS-IST REDEFINES WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-FXSG.
+    05 WS-FX1 FLOAT-LONG.
+    05 WS-FX2 FLOAT-LONG.
+    05 WS-FX3 FLOAT-LONG.
+    05 WS-FX4 FLOAT-LONG.
+    05 WS-FX5 FLOAT-LONG.
+    05 WS-FX6 FLOAT-LONG.
+    05 WS-FX7 FLOAT-LONG.
+    05 WS-FX8 FLOAT-LONG.
+    05 WS-FX9 FLOAT-LONG.
+    05 WS-FX10 FLOAT-LONG.
+    05 WS-FX11 FLOAT-LONG.
+    05 WS-FX12 FLOAT-LONG.
+    05 WS-FX13 FLOAT-LONG.
+    05 WS-FX14 FLOAT-LONG.
+    05 WS-FX15 FLOAT-LONG.
+    05 WS-FX16 FLOAT-LONG.
+ 01 WS-FXST REDEFINES WS-FXSG.
+    05 WS-FX FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R1 BINARY-LONG.
+    05 WS-R2 BINARY-LONG.
+    05 WS-R3 BINARY-LONG.
+    05 WS-R4 BINARY-LONG.
+    05 WS-R5 BINARY-LONG.
+    05 WS-R6 BINARY-LONG.
+    05 WS-R7 BINARY-LONG.
+    05 WS-R8 BINARY-LONG.
+    05 WS-R9 BINARY-LONG.
+    05 WS-R10 BINARY-LONG.
+    05 WS-R11 BINARY-LONG.
+    05 WS-R12 BINARY-LONG.
+    05 WS-R13 BINARY-LONG.
+    05 WS-R14 BINARY-LONG.
+    05 WS-R15 BINARY-LONG.
+    05 WS-R16 BINARY-LONG.
+ 01 WS-RST REDEFINES WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RFSG.
+    05 WS-RF1 FLOAT-LONG.
+    05 WS-RF2 FLOAT-LONG.
+    05 WS-RF3 FLOAT-LONG.
+    05 WS-RF4 FLOAT-LONG.
+    05 WS-RF5 FLOAT-LONG.
+    05 WS-RF6 FLOAT-LONG.
+    05 WS-RF7 FLOAT-LONG.
+    05 WS-RF8 FLOAT-LONG.
+ 01 WS-RFST REDEFINES WS-RFSG.
+    05 WS-RF FLOAT-LONG OCCURS 8 TIMES.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(9)9.
+ 01 WS-TEXTS.
+    05 WS-T1               PIC X(96).
+    05 WS-T2               PIC X(96).
+ 01 WS-NBRS.
+    05 WS-NB BINARY-LONG OCCURS 6 TIMES.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 29b-3§5 Leaves: leaf state (5.1): distance 1 to 7, persistent and waterlogged give 28 states; light dampening 1" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-STATES" USING WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "28/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-3§5 Leaves: getOptionalDistanceAt (5.2): a log state is 0, else the distance of a leaves state, else empty (-1), which getDistanceAt reads as 7" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-DIST-AT" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-DIST-AT" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-DIST-AT" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 7" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-DIST-AT" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-DIST-AT" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0 0/0 4/4 7/7 -1/7" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-3§5 Leaves: updateDistance (5.2): 1 + the smallest neighbour distance over Direction.values() capped at 7, the loop ending early at 1 (distance, neighbours examined)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "7 7 7 7 7 7" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-I1 TO WS-NB(1)
+     MOVE WS-I2 TO WS-NB(2)
+     MOVE WS-I3 TO WS-NB(3)
+     MOVE WS-I4 TO WS-NB(4)
+     MOVE WS-I5 TO WS-NB(5)
+     MOVE WS-I6 TO WS-NB(6)
+     CALL "GC3-LEAF-UPDATE" USING WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 7 7 7 7 7" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-I1 TO WS-NB(1)
+     MOVE WS-I2 TO WS-NB(2)
+     MOVE WS-I3 TO WS-NB(3)
+     MOVE WS-I4 TO WS-NB(4)
+     MOVE WS-I5 TO WS-NB(5)
+     MOVE WS-I6 TO WS-NB(6)
+     CALL "GC3-LEAF-UPDATE" USING WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "7 0 7 7 7 7" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-I1 TO WS-NB(1)
+     MOVE WS-I2 TO WS-NB(2)
+     MOVE WS-I3 TO WS-NB(3)
+     MOVE WS-I4 TO WS-NB(4)
+     MOVE WS-I5 TO WS-NB(5)
+     MOVE WS-I6 TO WS-NB(6)
+     CALL "GC3-LEAF-UPDATE" USING WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 7 7 7 7 7" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-I1 TO WS-NB(1)
+     MOVE WS-I2 TO WS-NB(2)
+     MOVE WS-I3 TO WS-NB(3)
+     MOVE WS-I4 TO WS-NB(4)
+     MOVE WS-I5 TO WS-NB(5)
+     MOVE WS-I6 TO WS-NB(6)
+     CALL "GC3-LEAF-UPDATE" USING WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "7 7 7 7 7 5" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-I1 TO WS-NB(1)
+     MOVE WS-I2 TO WS-NB(2)
+     MOVE WS-I3 TO WS-NB(3)
+     MOVE WS-I4 TO WS-NB(4)
+     MOVE WS-I5 TO WS-NB(5)
+     MOVE WS-I6 TO WS-NB(6)
+     CALL "GC3-LEAF-UPDATE" USING WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "6 7 7 7 7 7" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-I1 TO WS-NB(1)
+     MOVE WS-I2 TO WS-NB(2)
+     MOVE WS-I3 TO WS-NB(3)
+     MOVE WS-I4 TO WS-NB(4)
+     MOVE WS-I5 TO WS-NB(5)
+     MOVE WS-I6 TO WS-NB(6)
+     CALL "GC3-LEAF-UPDATE" USING WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "6 6 6 6 6 6" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-I1 TO WS-NB(1)
+     MOVE WS-I2 TO WS-NB(2)
+     MOVE WS-I3 TO WS-NB(3)
+     MOVE WS-I4 TO WS-NB(4)
+     MOVE WS-I5 TO WS-NB(5)
+     MOVE WS-I6 TO WS-NB(6)
+     CALL "GC3-LEAF-UPDATE" USING WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "2 1 0 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-I1 TO WS-NB(1)
+     MOVE WS-I2 TO WS-NB(2)
+     MOVE WS-I3 TO WS-NB(3)
+     MOVE WS-I4 TO WS-NB(4)
+     MOVE WS-I5 TO WS-NB(5)
+     MOVE WS-I6 TO WS-NB(6)
+     CALL "GC3-LEAF-UPDATE" USING WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "7 7 7 7 7 0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE WS-I1 TO WS-NB(1)
+     MOVE WS-I2 TO WS-NB(2)
+     MOVE WS-I3 TO WS-NB(3)
+     MOVE WS-I4 TO WS-NB(4)
+     MOVE WS-I5 TO WS-NB(5)
+     MOVE WS-I6 TO WS-NB(6)
+     CALL "GC3-LEAF-UPDATE" USING WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "7/6 1/1 1/2 4/6 6/6 7/6 7/6 1/3 1/6" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-3§5 Leaves: leaf placement (5.3 PL): persistent true, waterlogged from the fluid at the clicked position, then the updated distance" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-PLACE" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-PLACE" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 7" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-PLACE" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/3 1/1/1 1/1/7" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-3§5 Leaves: leaf shape update (5.3 SU): waterlogged schedules the water tick; only the sender is read: d = its distance + 1, and a block tick of delay 1 is scheduled unless d" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-SU" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-SU" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-SU" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-SU" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 7 7" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-SU" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 6 7" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-SU" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 7" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-SU" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0 0/1/1 0/1/1 1/0/0 1/1/1 0/1/1 0/1/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-3§5 Leaves: leaf random ticks (5.3, 5.4): ticking only at distance 7 and not persistent; then the loot table with no tool is dropped and the block removed without a game" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "7 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-RANDOM" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "7 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-RANDOM" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "6 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-RANDOM" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-RANDOM" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-RANDOM" USING WS-I1 WS-I2 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/1/0 0/0/0/0 0/0/0/0 0/0/0/0 0/0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-3§5 Leaves: decay drops with no tool (5.4, fortune 0): the leaves item never; sapling 5% (50000 per million), sticks 2% and 1 to 2 of them, apple 0.5%: kind 1 leaves item, 2" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-DROP" USING WS-I1 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-DROP" USING WS-I1 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "3" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-DROP" USING WS-I1 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-DROP" USING WS-I1 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0/0 50000/1/1 20000/1/2 5000/1/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-3§5 Leaves: variants (5.5, a): class (1 tinted particle, 2 plain, 3 untinted, 4 mangrove), leafParticleChance x 10000, particle (1 tinted_leaves, 2 cherry, 3 pale_oak, 4" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:oak_leaves" TO WS-T1
+     CALL "GC3-LEAF-VARIANT" USING WS-T1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:birch_leaves" TO WS-T1
+     CALL "GC3-LEAF-VARIANT" USING WS-T1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:jungle_leaves" TO WS-T1
+     CALL "GC3-LEAF-VARIANT" USING WS-T1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:acacia_leaves" TO WS-T1
+     CALL "GC3-LEAF-VARIANT" USING WS-T1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:dark_oak_leaves" TO WS-T1
+     CALL "GC3-LEAF-VARIANT" USING WS-T1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:spruce_leaves" TO WS-T1
+     CALL "GC3-LEAF-VARIANT" USING WS-T1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:mangrove_leaves" TO WS-T1
+     CALL "GC3-LEAF-VARIANT" USING WS-T1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/100/1/0/0 1/100/1/0/0 1/100/1/0/0 1/100/1/0/0 1/100/1/0/0 2/0/0/0/0 4/100/1/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-3§5 Leaves: variants (5.5, b): class (1 tinted particle, 2 plain, 3 untinted, 4 mangrove), leafParticleChance x 10000, particle (1 tinted_leaves, 2 cherry, 3 pale_oak, 4" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:cherry_leaves" TO WS-T1
+     CALL "GC3-LEAF-VARIANT" USING WS-T1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:pale_oak_leaves" TO WS-T1
+     CALL "GC3-LEAF-VARIANT" USING WS-T1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:red_poplar_leaves" TO WS-T1
+     CALL "GC3-LEAF-VARIANT" USING WS-T1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:orange_poplar_leaves" TO WS-T1
+     CALL "GC3-LEAF-VARIANT" USING WS-T1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:yellow_poplar_leaves" TO WS-T1
+     CALL "GC3-LEAF-VARIANT" USING WS-T1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:azalea_leaves" TO WS-T1
+     CALL "GC3-LEAF-VARIANT" USING WS-T1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE "minecraft:flowering_azalea_leaves" TO WS-T1
+     CALL "GC3-LEAF-VARIANT" USING WS-T1 WS-R1 WS-R2 WS-R3 WS-R4 WS-R5
+     MOVE 5 TO WS-N
+     PERFORM ADD-N
+     MOVE "3/1000/2/0/0 3/200/3/0/0 3/100/4/0/1 3/100/5/0/1 3/100/6/0/1 3/100/1/-9399763/0 3/100/1/-9399763/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-3§5 Leaves: rain drip (5.6 step 2): raining draws nextInt(15) (not drawn when dry); a 1 spawns dripping_water unless the block below occludes with a sturdy UP face (spawn," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-DRIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-DRIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-DRIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 14 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-DRIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-DRIP" USING WS-I1 WS-I2 WS-I3 WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1 0/1 0/1 0/1 0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-3§5 Leaves: ambient sound (5.6 step 3): only a variant with a sound draws nextInt(300); a 0 walks the four neighbours counting the satisfying tag (bit 1) and the same block" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-NB(1)
+     MOVE 2 TO WS-NB(2)
+     MOVE 2 TO WS-NB(3)
+     MOVE 2 TO WS-NB(4)
+     MOVE 0 TO WS-I15
+     MOVE 0 TO WS-I16
+     CALL "GC3-LEAF-AMBIENT" USING WS-I15 WS-I16 WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-NB(1)
+     MOVE 2 TO WS-NB(2)
+     MOVE 2 TO WS-NB(3)
+     MOVE 2 TO WS-NB(4)
+     MOVE 1 TO WS-I15
+     MOVE 5 TO WS-I16
+     CALL "GC3-LEAF-AMBIENT" USING WS-I15 WS-I16 WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-NB(1)
+     MOVE 2 TO WS-NB(2)
+     MOVE 2 TO WS-NB(3)
+     MOVE 2 TO WS-NB(4)
+     MOVE 1 TO WS-I15
+     MOVE 0 TO WS-I16
+     CALL "GC3-LEAF-AMBIENT" USING WS-I15 WS-I16 WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 2 TO WS-NB(1)
+     MOVE 2 TO WS-NB(2)
+     MOVE 2 TO WS-NB(3)
+     MOVE 1 TO WS-NB(4)
+     MOVE 1 TO WS-I15
+     MOVE 0 TO WS-I16
+     CALL "GC3-LEAF-AMBIENT" USING WS-I15 WS-I16 WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 2 TO WS-NB(1)
+     MOVE 2 TO WS-NB(2)
+     MOVE 2 TO WS-NB(3)
+     MOVE 2 TO WS-NB(4)
+     MOVE 1 TO WS-I15
+     MOVE 0 TO WS-I16
+     CALL "GC3-LEAF-AMBIENT" USING WS-I15 WS-I16 WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-NB(1)
+     MOVE 1 TO WS-NB(2)
+     MOVE 2 TO WS-NB(3)
+     MOVE 2 TO WS-NB(4)
+     MOVE 1 TO WS-I15
+     MOVE 0 TO WS-I16
+     CALL "GC3-LEAF-AMBIENT" USING WS-I15 WS-I16 WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 0 TO WS-NB(1)
+     MOVE 2 TO WS-NB(2)
+     MOVE 2 TO WS-NB(3)
+     MOVE 2 TO WS-NB(4)
+     MOVE 1 TO WS-I15
+     MOVE 0 TO WS-I16
+     CALL "GC3-LEAF-AMBIENT" USING WS-I15 WS-I16 WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-NB(1)
+     MOVE 0 TO WS-NB(2)
+     MOVE 2 TO WS-NB(3)
+     MOVE 2 TO WS-NB(4)
+     MOVE 1 TO WS-I15
+     MOVE 0 TO WS-I16
+     CALL "GC3-LEAF-AMBIENT" USING WS-I15 WS-I16 WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     MOVE 1 TO WS-NB(1)
+     MOVE 2 TO WS-NB(2)
+     MOVE 2 TO WS-NB(3)
+     MOVE 3 TO WS-NB(4)
+     MOVE 1 TO WS-I15
+     MOVE 0 TO WS-I16
+     CALL "GC3-LEAF-AMBIENT" USING WS-I15 WS-I16 WS-NBRS WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "0/0 0/1 1/1 1/1 0/1 0/1 0/1 0/1 0/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-3§5 Leaves: falling leaves (5.6 step 4): nextFloat() >= chance stops, a full UP collision face below stops, else the particle spawns" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0.5 0.01 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-FALL" USING WS-FX1 WS-FX2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0.005 0.01 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-FALL" USING WS-FX1 WS-FX2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0.01 0.01 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-FALL" USING WS-FX1 WS-FX2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0.0 0.01 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-FALL" USING WS-FX1 WS-FX2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0.0 0.01 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-FALL" USING WS-FX1 WS-FX2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0.05 0.1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-FALL" USING WS-FX1 WS-FX2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0.099 0.1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-FALL" USING WS-FX1 WS-FX2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0.1 0.1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-FALL" USING WS-FX1 WS-FX2 WS-I3 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1 0 0 1 1 1 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-3§5 Leaves: face culling (5.6): with cutoutLeaves false a neighbour that is any leaves block skips the face (1), otherwise the generic rule applies (0); cutout on is the" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-CULL" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-CULL" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-CULL" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LEAF-CULL" USING WS-I1 WS-I2 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "0 0 1 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-3§5 Leaves: mangrove leaves bone meal (5.7): valid when the block below is air, no height test, success always; performs setBlock of a hanging propagule age 0 below with" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-MANGROVE-BONE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-MANGROVE-BONE" USING WS-I1 WS-R1 WS-R2 WS-R3 WS-R4
+     MOVE 4 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1/2/0 0/1/2/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 29b-3§5 Leaves: leaf litter (5.8): survives on a block with a sturdy UP face; no random tick, scheduled tick or decay (survive, random tick, scheduled tick)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LITTER" USING WS-I1 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "GC3-LITTER" USING WS-I1 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/0/0 0/0/0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-FX(WS-K) = FUNCTION NUMVAL(WS-TOK)
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-T1) "|" FUNCTION TRIM(WS-T2) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-GROWTH-29B-3-5.

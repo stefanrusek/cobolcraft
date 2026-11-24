@@ -1,5 +1,5 @@
 *> Implementation test of the time of day (core/src/world.cob WORLD-TIME-TICK through CORE-TICK; tasks
-*> T425; US3-6; standin-content §4.8: Time 0..29999, +1 per tick, wrapping to 0; 09 §3.2 Set Time
+*> T425; US3-6; standin-content §4.8: Time 0..23999, +1 per tick, wrapping to 0; 09 §3.2 Set Time
 *> row: sent every 20 ticks).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-TIME.
@@ -46,8 +46,8 @@
      MOVE "0 5" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE "test time (US3-6): the time wraps from 29999 to 0 (day length 30000 ticks)" TO TL-CASE
-     MOVE 29998 TO CW-TIME
+     MOVE "test time (US3-6): the time wraps from 23999 to 0 (day length 24000 ticks)" TO TL-CASE
+     MOVE 23998 TO CW-TIME
      CALL "CORE-TICK"
      MOVE CW-TIME TO WS-EDIT
      CALL "CORE-TICK"
@@ -55,7 +55,7 @@
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
          INTO TL-OBSERVED
-     MOVE "29999 0" TO TL-EXPECTED
+     MOVE "23999 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE "test time (US3-6): a player in the world is sent Set Time once a second: 2 in 40 ticks, "

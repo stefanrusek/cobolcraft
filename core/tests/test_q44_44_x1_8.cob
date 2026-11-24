@@ -1,0 +1,974 @@
+*> Acceptance test of docs/protocol/44-residual-mob-questions-x1-continuation.md sections 8 and 10 (second pass) as rule functions (lane 002-lane-p49j-b, T24300 range): TargetingConditions
+*> range, the MobEffectInstance.update merge table with the three worked examples, BackUpIfTooClose, BecomePassive, BabyFollowAdult (distance bands), the look-target timer, the fox goals, the village
+*> stroll, the isAbove epsilon and the goat unihorn, screaming and horn rules. No brain engine: not called by a tick (lane task list).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-Q44-44-X1-8.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ 01 WS-CASE                PIC X(160).
+ 01 WS-EXP                 BINARY-LONG.
+ 01 WS-OBS                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-A                  FLOAT-LONG.
+ 01 WS-B                  FLOAT-LONG.
+ 01 WS-C                  FLOAT-LONG.
+ 01 WS-D                  FLOAT-LONG.
+ 01 WS-E                  FLOAT-LONG.
+ 01 WS-F                  FLOAT-LONG.
+ 01 WS-G                  FLOAT-LONG.
+ 01 WS-H                  FLOAT-LONG.
+ 01 WS-J                  FLOAT-LONG.
+ 01 WS-K                  FLOAT-LONG.
+ 01 WS-N1                 BINARY-LONG.
+ 01 WS-N2                 BINARY-LONG.
+ 01 WS-N3                 BINARY-LONG.
+ 01 WS-N4                 BINARY-LONG.
+ 01 WS-N5                 BINARY-LONG.
+ 01 WS-N6                 BINARY-LONG.
+ 01 WS-N7                 BINARY-LONG.
+ 01 WS-N8                 BINARY-LONG.
+ 01 WS-N9                 BINARY-LONG.
+ 01 WS-N10                 BINARY-LONG.
+ 01 WS-N11                 BINARY-LONG.
+ 01 WS-N12                 BINARY-LONG.
+ 01 WS-CHAIN.
+    05 WS-LEVEL OCCURS 5 TIMES.
+       10 WS-AMP            BINARY-LONG.
+       10 WS-DUR            BINARY-LONG.
+       10 WS-ACTIVE         BINARY-LONG.
+ 01 WS-TAB.
+    05 WS-TN                BINARY-LONG.
+    05 WS-TC OCCURS 6 TIMES.
+       10 WS-TA             BINARY-LONG.
+       10 WS-TB             BINARY-LONG.
+       10 WS-TD             BINARY-LONG.
+ 01 WS-COL.
+    05 WS-CELL OCCURS 14 TIMES.
+       10 WS-CE             BINARY-LONG.
+       10 WS-CF             BINARY-LONG.
+ 01 WS-S1                  PIC X(32).
+ 01 WS-S2                  PIC X(32).
+ 01 WS-S3                  PIC X(32).
+ 01 WS-S4                  PIC X(32).
+ 01 WS-S5                  PIC X(32).
+ 01 WS-S6                  PIC X(32).
+ PROCEDURE DIVISION.
+     MOVE -1 TO WS-A
+     CALL "X1-TC-RANGE-APPLIES" USING WS-A WS-N1
+     MOVE "acceptance US15 44-x1§8.1 TargetingConditions range -1 applies: 0" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-A
+     CALL "X1-TC-RANGE-APPLIES" USING WS-A WS-N1
+     MOVE "acceptance US15 44-x1§8.1 TargetingConditions range 0 applies: 0" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 16 TO WS-A
+     CALL "X1-TC-RANGE-APPLIES" USING WS-A WS-N1
+     MOVE "acceptance US15 44-x1§8.1 TargetingConditions range 16 applies: 1" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 0 TO WS-AMP(1)
+     MOVE 600 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 1 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 1 200 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 higher and shorter: the active effect takes the new amplifier 1" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-AMP(1)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.2 higher and shorter: and its duration 200" TO WS-CASE
+     MOVE 200 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-DUR(1)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.2 higher and shorter: the old (0, 600) is hidden underneath (amplifier)" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-AMP(2)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.2 higher and shorter: hidden duration 600" TO WS-CASE
+     MOVE 600 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-DUR(2)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.2 higher and shorter: the hidden level is present" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-ACTIVE(2)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.2 higher and shorter: changed" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N7
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 1 TO WS-AMP(1)
+     MOVE 200 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 1 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 0 600 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 lower and longer: the active (1, 200) is kept" TO WS-CASE
+     MOVE 200 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-DUR(1)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.2 lower and longer: (0, 600) becomes hidden (amplifier)" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-AMP(2)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.2 lower and longer: hidden duration 600" TO WS-CASE
+     MOVE 600 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-DUR(2)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 0 TO WS-AMP(1)
+     MOVE 100 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 1 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 0 300 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 equal amplifier, longer: the duration becomes 300" TO WS-CASE
+     MOVE 300 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-DUR(1)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.2 equal amplifier, longer: changed" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N7
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 0 TO WS-AMP(1)
+     MOVE 600 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 1 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 1 1000 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 higher and longer: no hidden effect (duration 1000)" TO WS-CASE
+     MOVE 1000 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-DUR(1)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.2 higher and longer: nothing hidden" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-ACTIVE(2)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 1 TO WS-AMP(1)
+     MOVE 600 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 1 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 0 200 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 lower and not shorter: nothing changes" TO WS-CASE
+     MOVE 600 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-DUR(1)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.2 lower and not shorter: changed is 0" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N7
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 0 TO WS-AMP(1)
+     MOVE 600 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 1 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 0 200 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 equal amplifier and not longer: nothing changes" TO WS-CASE
+     MOVE 600 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-DUR(1)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 1 TO WS-AMP(1)
+     MOVE 200 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 0 TO WS-AMP(2)
+     MOVE 300 TO WS-DUR(2)
+     MOVE 1 TO WS-ACTIVE(2)
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 1 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 0 900 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 a hidden effect is itself updated: (0, 300) under (1, 200) takes (0, 900)" TO WS-CASE
+     MOVE 900 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-DUR(2)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.2 the active effect is untouched by that" TO WS-CASE
+     MOVE 200 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-DUR(1)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 0 TO WS-AMP(1)
+     MOVE -1 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 1 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 0 100 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 an infinite active effect is not shorter: other 0 for 100 against infinite leaves it" TO WS-CASE
+     MOVE -1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-DUR(1)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 0 TO WS-AMP(1)
+     MOVE 600 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 1 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 1 -1 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 an infinite other that is higher is not shorter: amplifier taken without a hidden effect" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-ACTIVE(2)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 0 TO WS-AMP(1)
+     MOVE 600 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 1 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 0 -1 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 an infinite other of equal amplifier makes a finite effect infinite" TO WS-CASE
+     MOVE -1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-DUR(1)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 0 TO WS-AMP(1)
+     MOVE -1 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 1 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 1 100 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 a shorter higher other against an infinite active effect: the infinite one goes hidden" TO WS-CASE
+     MOVE -1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-DUR(2)
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 0 TO WS-AMP(1)
+     MOVE 600 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 1 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 1 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 0 600 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 ambient flag: an ambient effect refreshed by a non-ambient one loses it" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.2 ambient flag: changed" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N7
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 0 TO WS-AMP(1)
+     MOVE 600 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 1 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 0 600 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 ambient flag: a non-ambient effect stays non-ambient when nothing changed" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.2 ambient flag: and nothing changed" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N7
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 0 TO WS-AMP(1)
+     MOVE 100 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 1 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 0 300 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 ambient flag: after another change the ambient flag is copied from the other" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 0 TO WS-AMP(1)
+     MOVE 600 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 0 TO WS-N5
+     MOVE 1 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 0 600 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 visible flag differs: copied" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N2
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.2 visible flag: changed" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N7
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     INITIALIZE WS-CHAIN
+     MOVE 0 TO WS-AMP(1)
+     MOVE 600 TO WS-DUR(1)
+     MOVE 1 TO WS-ACTIVE(1)
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     MOVE 0 TO WS-N6
+     CALL "X1-EFFECT-UPDATE" USING WS-CHAIN WS-N1 WS-N2 WS-N3 0 600 WS-N4 WS-N5 WS-N6 WS-N7
+     MOVE "acceptance US15 44-x1§8.2 showIcon differs: copied" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.2 showIcon: changed" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N7
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 3.9 TO WS-A
+     MOVE 4 TO WS-B
+     CALL "X1-BACKUP-TEST" USING WS-N1 WS-N2 WS-N3 WS-A WS-B WS-N4
+     MOVE "acceptance US15 44-x1§8.3 BackUpIfTooClose triggers: target at 3.9, distance 4" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 4 TO WS-A
+     MOVE 4 TO WS-B
+     CALL "X1-BACKUP-TEST" USING WS-N1 WS-N2 WS-N3 WS-A WS-B WS-N4
+     MOVE "acceptance US15 44-x1§8.3 not at exactly the distance (strict)" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 1 TO WS-A
+     MOVE 4 TO WS-B
+     CALL "X1-BACKUP-TEST" USING WS-N1 WS-N2 WS-N3 WS-A WS-B WS-N4
+     MOVE "acceptance US15 44-x1§8.3 not without an attack target" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 1 TO WS-A
+     MOVE 4 TO WS-B
+     CALL "X1-BACKUP-TEST" USING WS-N1 WS-N2 WS-N3 WS-A WS-B WS-N4
+     MOVE "acceptance US15 44-x1§8.3 not with a walk target" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 1 TO WS-A
+     MOVE 4 TO WS-B
+     CALL "X1-BACKUP-TEST" USING WS-N1 WS-N2 WS-N3 WS-A WS-B WS-N4
+     MOVE "acceptance US15 44-x1§8.3 not when the target is not in the visible entities" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 10 TO WS-A
+     MOVE 50 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "X1-ROTATE-IF-NECESSARY" USING WS-A WS-B WS-C WS-D
+     MOVE "acceptance US15 44-x1§8.3 rotateIfNecessary with m = 0 is the head yaw" TO WS-CASE
+     MOVE 50 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-D
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 10 TO WS-A
+     MOVE 50 TO WS-B
+     MOVE 5 TO WS-C
+     CALL "X1-ROTATE-IF-NECESSARY" USING WS-A WS-B WS-C WS-D
+     MOVE "acceptance US15 44-x1§8.3 rotateIfNecessary with m = 5: the head minus the clamped difference 5" TO WS-CASE
+     MOVE 45 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-D
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 170 TO WS-A
+     MOVE -170 TO WS-B
+     MOVE 30 TO WS-C
+     CALL "X1-ROTATE-IF-NECESSARY" USING WS-A WS-B WS-C WS-D
+     MOVE "acceptance US15 44-x1§8.3 rotateIfNecessary wraps the difference (170 to -170 is 20; m 30 gives head - 20 = -190)" TO WS-CASE
+     MOVE -190 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-D
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     CALL "X1-PASSIVE-TEST" USING WS-N1 WS-N2 WS-N3 WS-N4
+     MOVE "acceptance US15 44-x1§8.4 BecomePassive: attack target, not pacified, memory present" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     CALL "X1-PASSIVE-TEST" USING WS-N1 WS-N2 WS-N3 WS-N4
+     MOVE "acceptance US15 44-x1§8.4 not when already pacified" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     CALL "X1-PASSIVE-TEST" USING WS-N1 WS-N2 WS-N3 WS-N4
+     MOVE "acceptance US15 44-x1§8.4 not without the memory" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     CALL "X1-PASSIVE-TEST" USING WS-N1 WS-N2 WS-N3 WS-N4
+     MOVE "acceptance US15 44-x1§8.4 not without an attack target" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 10 TO WS-A
+     MOVE 5 TO WS-N2
+     MOVE 16 TO WS-N3
+     CALL "X1-BABY-FOLLOW" USING WS-N1 WS-A WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.5 a baby 10 blocks from the adult follows" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.5 completion radius min - 1 = 4" TO WS-CASE
+     MOVE 4 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N5
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 4.9 TO WS-A
+     MOVE 5 TO WS-N2
+     MOVE 16 TO WS-N3
+     CALL "X1-BABY-FOLLOW" USING WS-N1 WS-A WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.5 at 4.9 blocks it stops" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 5 TO WS-A
+     MOVE 5 TO WS-N2
+     MOVE 16 TO WS-N3
+     CALL "X1-BABY-FOLLOW" USING WS-N1 WS-A WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.5 at exactly 5 it still acts" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 16.9 TO WS-A
+     MOVE 5 TO WS-N2
+     MOVE 16 TO WS-N3
+     CALL "X1-BABY-FOLLOW" USING WS-N1 WS-A WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.5 at 16.9 it still starts" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 17 TO WS-A
+     MOVE 5 TO WS-N2
+     MOVE 16 TO WS-N3
+     CALL "X1-BABY-FOLLOW" USING WS-N1 WS-A WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.5 at 17.0 it does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 10 TO WS-A
+     MOVE 5 TO WS-N2
+     MOVE 16 TO WS-N3
+     CALL "X1-BABY-FOLLOW" USING WS-N1 WS-A WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.5 an adult never follows" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 45 TO WS-N2
+     CALL "X1-LOOK-TIMER" USING WS-N1 WS-N2 WS-N3
+     MOVE "acceptance US15 44-x1§8.6 timer: the first run sets the counter to sample - 1 = 44 and fails" TO WS-CASE
+     MOVE 44 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.6 timer: the first run fails" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N4
+     PERFORM 43 TIMES
+         CALL "X1-LOOK-TIMER" USING WS-N1 WS-N2 WS-N3
+         ADD WS-N3 TO WS-N4
+     END-PERFORM
+     MOVE "acceptance US15 44-x1§8.6 timer: after 43 more runs the counter is 1 and none passed" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1 + WS-N4 * 100
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     CALL "X1-LOOK-TIMER" USING WS-N1 WS-N2 WS-N3
+     MOVE "acceptance US15 44-x1§8.6 timer: the 44th following run passes" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.6 timer: and the counter is 0" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 64 TO WS-A
+     MOVE 8 TO WS-B
+     CALL "X1-LOOK-CANDIDATE" USING WS-A WS-B WS-N1
+     MOVE "acceptance US15 44-x1§8.6 candidate at squared distance 64 with maxDistance 8" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 64.5 TO WS-A
+     MOVE 8 TO WS-B
+     CALL "X1-LOOK-CANDIDATE" USING WS-A WS-B WS-N1
+     MOVE "acceptance US15 44-x1§8.6 candidate at squared distance 64.5 is too far" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0.26 TO WS-A
+     MOVE 0 TO WS-N1
+     CALL "X1-FOX-FLOAT" USING WS-A WS-N1 WS-N2
+     MOVE "acceptance US15 44-x1§8.7 fox float: fluid 0.26 deep" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N2
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0.25 TO WS-A
+     MOVE 0 TO WS-N1
+     CALL "X1-FOX-FLOAT" USING WS-A WS-N1 WS-N2
+     MOVE "acceptance US15 44-x1§8.7 fox float: exactly 0.25 does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N2
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-N1
+     CALL "X1-FOX-FLOAT" USING WS-A WS-N1 WS-N2
+     MOVE "acceptance US15 44-x1§8.7 fox float: in lava" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N2
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 40 TO WS-N2
+     CALL "X1-FACEPLANT" USING WS-N1 WS-N2 WS-N3
+     MOVE "acceptance US15 44-x1§8.7 faceplant continues while faceplanted with a countdown" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     CALL "X1-FACEPLANT" USING WS-N1 WS-N2 WS-N3
+     MOVE "acceptance US15 44-x1§8.7 faceplant stops at countdown 0" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 10 TO WS-N2
+     CALL "X1-FACEPLANT" USING WS-N1 WS-N2 WS-N3
+     MOVE "acceptance US15 44-x1§8.7 faceplant stops when no longer faceplanted" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 0 TO WS-N5
+     CALL "X1-FOX-STROLL" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6
+     MOVE "acceptance US15 44-x1§8.7 fox stroll: the base goal and a calm fox" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 0 TO WS-N5
+     CALL "X1-FOX-STROLL" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6
+     MOVE "acceptance US15 44-x1§8.7 fox stroll: not when the base goal says no" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 0 TO WS-N5
+     CALL "X1-FOX-STROLL" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6
+     MOVE "acceptance US15 44-x1§8.7 fox stroll: not sleeping" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 0 TO WS-N5
+     CALL "X1-FOX-STROLL" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6
+     MOVE "acceptance US15 44-x1§8.7 fox stroll: not sitting" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 0 TO WS-N5
+     CALL "X1-FOX-STROLL" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6
+     MOVE "acceptance US15 44-x1§8.7 fox stroll: not defending" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     CALL "X1-FOX-STROLL" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6
+     MOVE "acceptance US15 44-x1§8.7 fox stroll: no attack target" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 1 TO WS-N5
+     CALL "X1-STROLL-CAN" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6
+     MOVE "acceptance US15 44-x1§8.8 canUse: dark, rolled 0, near a village, a position found" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 1 TO WS-N5
+     CALL "X1-STROLL-CAN" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6
+     MOVE "acceptance US15 44-x1§8.8 canUse: not with a controlling passenger" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 1 TO WS-N5
+     CALL "X1-STROLL-CAN" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6
+     MOVE "acceptance US15 44-x1§8.8 canUse: not when bright outside" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 3 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 1 TO WS-N5
+     CALL "X1-STROLL-CAN" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6
+     MOVE "acceptance US15 44-x1§8.8 canUse: not when nextInt(interval) is not 0" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 0 TO WS-N4
+     MOVE 1 TO WS-N5
+     CALL "X1-STROLL-CAN" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6
+     MOVE "acceptance US15 44-x1§8.8 canUse: not far from a village" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 1 TO WS-N4
+     MOVE 0 TO WS-N5
+     CALL "X1-STROLL-CAN" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5 WS-N6
+     MOVE "acceptance US15 44-x1§8.8 canUse: not without a found position" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N6
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 15 TO WS-N2
+     CALL "X1-STROLL-RANDOM" USING WS-N1 WS-N2 WS-N3 WS-N4
+     MOVE "acceptance US15 44-x1§8.8 moveRandomly offsets x: nextInt 0 gives -8" TO WS-CASE
+     MOVE -8 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.8 moveRandomly offsets z: nextInt 15 gives +7" TO WS-CASE
+     MOVE 7 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 64.5 TO WS-A
+     MOVE 64 TO WS-B
+     MOVE 0.5 TO WS-C
+     CALL "X1-ABOVE" USING WS-A WS-B WS-C WS-N1
+     MOVE "acceptance US15 44-x1§8.9 isAbove: bottom 64.5 over a shape of max 0.5 at y 64" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 64.49999 TO WS-A
+     MOVE 64 TO WS-B
+     MOVE 0.5 TO WS-C
+     CALL "X1-ABOVE" USING WS-A WS-B WS-C WS-N1
+     MOVE "acceptance US15 44-x1§8.9 isAbove: 64.49999 exactly is not above (worked example)" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 64.4 TO WS-A
+     MOVE 64 TO WS-B
+     MOVE 0.5 TO WS-C
+     CALL "X1-ABOVE" USING WS-A WS-B WS-C WS-N1
+     MOVE "acceptance US15 44-x1§8.9 isAbove: 64.4 is not above" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N1
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0.019 TO WS-A
+     MOVE 0 TO WS-N1
+     MOVE 0.5 TO WS-B
+     MOVE 1 TO WS-N2
+     CALL "X1-GOAT-FINALIZE" USING WS-A WS-N1 WS-B WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.10 goat finalizeSpawn: nextDouble 0.019 is screaming" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0.02 TO WS-A
+     MOVE 0 TO WS-N1
+     MOVE 0.5 TO WS-B
+     MOVE 1 TO WS-N2
+     CALL "X1-GOAT-FINALIZE" USING WS-A WS-N1 WS-B WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.10 nextDouble 0.02 is not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0.5 TO WS-A
+     MOVE 0 TO WS-N1
+     MOVE 0.09 TO WS-B
+     MOVE 1 TO WS-N2
+     CALL "X1-GOAT-FINALIZE" USING WS-A WS-N1 WS-B WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.10 an adult with nextFloat 0.09 and nextBoolean true loses the left horn" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.10 and keeps the right horn" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N5
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0.5 TO WS-A
+     MOVE 0 TO WS-N1
+     MOVE 0.09 TO WS-B
+     MOVE 0 TO WS-N2
+     CALL "X1-GOAT-FINALIZE" USING WS-A WS-N1 WS-B WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.10 nextBoolean false removes the right horn" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N5
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.10 and keeps the left" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0.5 TO WS-A
+     MOVE 0 TO WS-N1
+     MOVE 0.1 TO WS-B
+     MOVE 1 TO WS-N2
+     CALL "X1-GOAT-FINALIZE" USING WS-A WS-N1 WS-B WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.10 nextFloat 0.1 keeps both horns" TO WS-CASE
+     MOVE 2 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4 + WS-N5
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0.5 TO WS-A
+     MOVE 1 TO WS-N1
+     MOVE 0.01 TO WS-B
+     MOVE 1 TO WS-N2
+     CALL "X1-GOAT-FINALIZE" USING WS-A WS-N1 WS-B WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.10 a baby keeps both horns" TO WS-CASE
+     MOVE 2 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N4 + WS-N5
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 0.9 TO WS-A
+     CALL "X1-GOAT-BREED" USING WS-N1 WS-A WS-N2
+     MOVE "acceptance US15 44-x1§8.10 breeding: a screaming parent gives a screaming kid" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N2
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0.01 TO WS-A
+     CALL "X1-GOAT-BREED" USING WS-N1 WS-A WS-N2
+     MOVE "acceptance US15 44-x1§8.10 breeding: otherwise nextDouble 0.01 does" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N2
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0.02 TO WS-A
+     CALL "X1-GOAT-BREED" USING WS-N1 WS-A WS-N2
+     MOVE "acceptance US15 44-x1§8.10 breeding: nextDouble 0.02 does not" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N2
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 1 TO WS-N4
+     CALL "X1-GOAT-DROP" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.10 dropHorn: a baby drops nothing" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N5
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 1 TO WS-N4
+     CALL "X1-GOAT-DROP" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.10 dropHorn: with both horns gone nothing" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N5
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 0 TO WS-N3
+     MOVE 1 TO WS-N4
+     CALL "X1-GOAT-DROP" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.10 dropHorn: only the left horn left is the one removed" TO WS-CASE
+     MOVE 1 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N5
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.10 only left: the left flag is cleared" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N2
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 0 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     CALL "X1-GOAT-DROP" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.10 only the right horn left is removed" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 1 TO WS-N4
+     CALL "X1-GOAT-DROP" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.10 both horns, nextBoolean true: the left one goes" TO WS-CASE
+     MOVE 101 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N5 * 100 + WS-N2 * 10 + WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-N1
+     MOVE 1 TO WS-N2
+     MOVE 1 TO WS-N3
+     MOVE 0 TO WS-N4
+     CALL "X1-GOAT-DROP" USING WS-N1 WS-N2 WS-N3 WS-N4 WS-N5
+     MOVE "acceptance US15 44-x1§8.10 both horns, nextBoolean false: the right one goes" TO WS-CASE
+     MOVE 110 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-N5 * 100 + WS-N2 * 10 + WS-N3
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "X1-GOAT-HORN-VEL" USING WS-A WS-B WS-C WS-D WS-E WS-F
+     MOVE "acceptance US15 44-x1§8.10 horn velocity at draws 0: x -0.2" TO WS-CASE
+     MOVE -200 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-D * 1000
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.10 horn velocity at draws 0: y 0.3" TO WS-CASE
+     MOVE 300 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-E * 1000
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     CALL "X1-GOAT-HORN-VEL" USING WS-A WS-B WS-C WS-D WS-E WS-F
+     MOVE "acceptance US15 44-x1§8.10 horn velocity at draws 1: y 0.7" TO WS-CASE
+     MOVE 700 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-E * 1000
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE "acceptance US15 44-x1§8.10 horn velocity at draws 1: z 0.2" TO WS-CASE
+     MOVE 200 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-F * 1000
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     MOVE 0.5 TO WS-A
+     MOVE 0.5 TO WS-B
+     MOVE 0.5 TO WS-C
+     CALL "X1-GOAT-HORN-VEL" USING WS-A WS-B WS-C WS-D WS-E WS-F
+     MOVE "acceptance US15 44-x1§8.10 horn velocity at draws 0.5: x 0" TO WS-CASE
+     MOVE 0 TO WS-EXP
+     COMPUTE WS-OBS ROUNDED = WS-D * 1000
+     CALL "TEST-CHK" USING WS-CASE WS-EXP WS-OBS
+     STOP RUN.
+ END PROGRAM TEST-Q44-44-X1-8.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CHK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ LINKAGE SECTION.
+ 01 L-CASE                 PIC X(160).
+ 01 L-EXPECTED             BINARY-LONG.
+ 01 L-OBSERVED             BINARY-LONG.
+ PROCEDURE DIVISION USING L-CASE L-EXPECTED L-OBSERVED.
+     MOVE "N" TO TL-MODE
+     MOVE L-CASE TO TL-CASE
+     MOVE L-EXPECTED TO TL-EXPECTED-N
+     MOVE L-OBSERVED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     GOBACK.
+ END PROGRAM TEST-CHK.

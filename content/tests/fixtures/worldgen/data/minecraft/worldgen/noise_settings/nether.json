@@ -1,0 +1,6 @@
+{"sea_level": 32, "legacy_random_source": true,
+ "noise": {"min_y": 0, "height": 128},
+ "default_block": {"id": "minecraft:netherrack"}, "default_fluid": {"id": "minecraft:lava", "properties": {"level": "0"}},
+ "material_rule": "minecraft:nether",
+ "noise_router": {"temperature": 0, "vegetation": 0, "continents": 0, "erosion": 0, "depth": 0, "ridges": 0,
+   "chunk_surface_level": 0, "final_density": "minecraft:nether/base_3d_noise"}}

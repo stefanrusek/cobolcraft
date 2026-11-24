@@ -1,0 +1,6 @@
+{"type": "minecraft:interval_select",
+ "input": {"type": "minecraft:gradient", "axis": "x", "from_coordinate": 0, "to_coordinate": 4, "from_value": -1.0, "to_value": 1.0},
+ "thresholds": [-0.5, 0.0, 0.5],
+ "functions": [10.0, 20.0,
+   {"type": "minecraft:gradient", "axis": "y", "from_coordinate": 0, "to_coordinate": 10, "from_value": 0.0, "to_value": 100.0},
+   40.0]}

@@ -1,0 +1,8 @@
+{
+ "processors": [
+  {
+   "processor_type": "minecraft:gravity",
+   "heightmap": "NOT_A_MAP"
+  }
+ ]
+}

@@ -1,0 +1,147 @@
+*> Armor trim texture in the entity atlas (docs/protocol/54 section 18.4 rule 4): a zombie in an iron helmet with a gold, wild trim draws its head trim layer (texture
+*> code 100518) from the pack's textures/trims/entity/humanoid/wild.png ("trimtex" fixture pack, 64 x 32, every texel A0A0A0) recoloured with the gold palette, so
+*> the atlas pixel of that slot is DEB12D (222, 177, 45), not the pack's grey.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTITY-TRIM-TEXTURE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY CLMODELS.
+ COPY TESTLIB.
+ 01 WS-DIR                 PIC X(64) VALUE "build/client-test-trim-tex".
+ 01 WS-DIR-LENGTH          BINARY-LONG VALUE 26.
+ 01 WS-NAMES               PIC X(256) VALUE "trimtex".
+ 01 WS-IDS                 PIC X(256) VALUE "file/trimtex".
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ROW-AREA            PIC X(66).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG VALUE 10.5.
+ 01 WS-Y                   FLOAT-LONG VALUE 64.
+ 01 WS-Z                   FLOAT-LONG VALUE 10.5.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-E1                  PIC ZZ9.
+ 01 WS-E2                  PIC ZZ9.
+ 01 WS-E3                  PIC ZZ9.
+ 01 WS-E4                  PIC ZZ9.
+ 01 WS-EYE-TABLE.
+    05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
+ 01 B-ATLAS                PIC X(1073741824) BASED.
+ PROCEDURE DIVISION.
+     CALL "TEST-PACK-START" USING CLIENT-STATE WS-DIR WS-DIR-LENGTH WS-NAMES
+     CALL "TEST-PACK-ENABLE" USING CLIENT-STATE WS-IDS
+     MOVE 1 TO CT-OPEN
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     MOVE "zombie" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 1 TO WS-ID
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     MOVE "iron_helmet" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE WS-ITEM TO EN-EQ(1, 6)
+     MOVE 5 TO EN-EQ-TRIM-MAT(1, 6)
+     MOVE 18 TO EN-EQ-TRIM-PAT(1, 6)
+     MOVE 10 TO WS-EYE(1) WS-EYE(3)
+     MOVE 64 TO WS-EYE(2)
+     MOVE 256 TO PL-HEIGHT
+     MOVE 0 TO EA-MT-COUNT
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE 0 TO WS-SLOT
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > EA-MT-COUNT
+         IF EA-MT-TEX(WS-S) = 100518
+             MOVE WS-S TO WS-SLOT
+         END-IF
+     END-PERFORM
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance trim texture the head trim has its own atlas slot" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-SLOT > 0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance trim texture the slot holds the pack's 64 x 32 image" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "64 32" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     IF WS-SLOT > 0
+         MOVE EA-MT-W(WS-SLOT) TO WS-E1
+         MOVE EA-MT-H(WS-SLOT) TO WS-E2
+         STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The texel (5, 7) of the slot is A0A0A0 in the pack and (222, 177, 45) after the gold palette.
+     IF WS-SLOT > 0
+         SET ADDRESS OF B-ATLAS TO EA-ADDR
+         COMPUTE WS-POS = ((EA-MT-Y(WS-SLOT) + 7) * EA-W + 5) * 4 + 1
+         SUBTRACT 1 FROM FUNCTION ORD(B-ATLAS(WS-POS:1)) GIVING WS-E1
+         SUBTRACT 1 FROM FUNCTION ORD(B-ATLAS(WS-POS + 1:1)) GIVING WS-E2
+         SUBTRACT 1 FROM FUNCTION ORD(B-ATLAS(WS-POS + 2:1)) GIVING WS-E3
+         SUBTRACT 1 FROM FUNCTION ORD(B-ATLAS(WS-POS + 3:1)) GIVING WS-E4
+     ELSE
+         MOVE 0 TO WS-E1 WS-E2 WS-E3 WS-E4
+     END-IF
+     MOVE "acceptance trim texture the atlas pixel is recoloured with the gold palette" TO TL-CASE
+     MOVE "222,177,45,255" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) "," FUNCTION TRIM(WS-E2) "," FUNCTION TRIM(WS-E3) "," FUNCTION TRIM(WS-E4)
+         DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-ENTITY-TRIM-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MM-SPAWN.
+*> USING CLIENT-STATE, entity id, type (registry id), x y z (FLOAT-LONG), yaw (FLOAT-SHORT, also the head yaw): Add Entity.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-ADD                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-UUID                PIC X(16) VALUE LOW-VALUES.
+ 01 WS-V0                  FLOAT-LONG VALUE 0.
+ 01 WS-V1                  FLOAT-LONG VALUE 0.
+ 01 WS-V2                  FLOAT-LONG VALUE 0.
+ 01 WS-A0                  FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ID L-TYPE L-X L-Y L-Z L-YAW.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-V0 WS-V1 WS-V2
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER WS-A0
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-PACKET" USING CLIENT-STATE PB-BUFFER WS-ADD
+     GOBACK.
+ END PROGRAM MM-SPAWN.
+
+ COPY CLTEST.
+ COPY PACKTEST.

@@ -9,39 +9,24 @@
 *> block leave every viewer with the last one (US4 edge case).
 *>
 *> Use Item On (BLOCK-USE-ON): on a goto_pad, with either hand, nothing is placed whatever is held
-*> and, after the Block Changed Ack, travel starts (DIM-USE-PAD, core/src/dimensions.cob); otherwise
+*> and, after the Block Changed Ack, travel starts (DIM-USE-PAD, core/src/dimensions.cob); on a crafting bench
+*> block, with either hand, nothing is placed whatever is held and, after the Ack, the bench menu opens
+*> (MENU-BENCH-OPEN, core/src/menu-bench.cob); otherwise
 *> the main hand only (the off hand does nothing): with a held block item (ITEMS.cpy IT-PLACES-STATE) the
 *> block is placed in the position next to the clicked face (face 0 down, 1 up, 2 north, 3 south,
 *> 4 west, 5 east) in its default state, a cardstack with the axis of the face (up/down y,
 *> north/south z, west/east x; punched false); otherwise a glowtube toggles lit, and anything else
 *> does nothing. A placement is refused, with Block Update of the target's real state to the player
-*> when the target is in the height range, when the target is not void, lies outside the dimension's
-*> height range or would overlap a player's or a mob's box (standin §3, the movement.cob rule:
-*> positive volume, 1e-7 tolerance). In survival a placed block uses up one item of the held stack (Container Set
+*> when the target is in the height range, when the target is neither void nor replaceable (tag minecraft:replaceable), lies outside the dimension's
+*> height range or its state's collision shape would overlap the box of a player or a mob (standin §3, the movement.cob rule:
+*> positive volume, 1e-7 tolerance; a block with no collision shape, such as a torch, never does: 29 section 9.6). In survival a placed block uses up one item of the held stack (Container Set
 *> Slot echo, the state id raised); creative uses nothing up (FR-007).
 *>
-*> Player Action (BLOCK-ACTION; actions 0, 2, 3; play.cob sends 4 and 5 to GI-THROW and 6 to
-*> HUNGER-CANCEL, and BLOCK-ACTION ignores the others). Creative: START breaks at once (no item appears, FR-007). Survival: START records
-*> the break (position, start tick, the number of ticks it takes: the §1.1 hand break time, divided
-*> by 4 when the held item is the tool of the block's class (§2), at 50 ms per tick rounded down);
-*> STOP breaks the block when the same position has been broken for at least that many ticks, and
-*> otherwise leaves it (Block Update of the real state to the player); ABORT ends the break. A block
-*> without a break time (void, and the baseplate, which nobody may break) is never broken: Block
-*> Update of its real state to the player. Each answered action and every Use Item On end with Block
-*> Changed Ack of their sequence. A survival break leaves the block's item on the ground
-*> (GI-BLOCK-YIELD, core/src/ground-items.cob; standin §1.3) and adds 0.025 exhaustion to the
-*> breaker (HUNGER-EXHAUST, standin §11.2); a creative break leaves nothing.
-*>
-*> Break progress (BLOCKS-TICK, every tick): while a survival break lasts, the other players who see
-*> the block get Block Destruction (the breaker's entity id, the position, stage = elapsed ticks x 10
-*> / break ticks, at most 9) whenever the stage changes; when the break ends (abort, finish, early
-*> stop, a new start) after a stage was sent they get stage 255, outside 0 to 9, which removes the
-*> overlay (05a 0x05).
+*> Player Action, the break progress (BLOCK-ACTION, BLOCKS-TICK, BLOCK-BREAK-END) and the stage broadcast are
+*> in core/src/breaking.cob (13 section 2).
 *>
 *> Entry points:
 *>   BLOCK-USE-ON USING connection id, PLAY-SERVERBOUND        Use Item On
-*>   BLOCK-ACTION USING connection id, PLAY-SERVERBOUND        Player Action
-*>   BLOCKS-TICK                                               break progress (CORE-TICK)
 *>   BLOCK-CHANGE USING dim, x, y, z, state                    set a block, tell the viewers
 *>   VIEWERS-SEND USING dim, chunk x, chunk z, except player row (0 none), PB-BUFFER
 *> Builders (append id + body to the caller's PB-BUFFER):
@@ -137,16 +122,15 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCK-CHANGE.
-*> USING dimension row, x, y, z, state (BINARY-LONG): Block Update to the viewers of the block's
-*> chunk, then the block is set and its light changes are sent (LIGHT-SET-BLOCK).
+*> USING dimension row, x, y, z, state (BINARY-LONG): Level.setBlock with flags 3 (LEVEL-SET-BLOCK, 29 section 2): the block is written, its light
+*> changes are sent at once (LIGHT-SET-BLOCK), the neighbours are told, and the position joins the tick's change set (BC-MARK, flag 2). The Block
+*> Update (or the Section Blocks Update of several changes in one section) reaches the viewers when the tick broadcasts its changes (BC-BROADCAST,
+*> 29 section 7.2; WORLDSIM-TICK and WORLDSIM-FLUSH), not here.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- COPY PROTO.
- 01 WS-READY               PIC 9 VALUE 0.
- 01 WS-CAPACITY            BINARY-LONG VALUE 64.
- 01 WS-NONE                BINARY-LONG VALUE 0.
- 01 WS-CX                  BINARY-LONG.
- 01 WS-CZ                  BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG VALUE 3.
+ 01 WS-BUDGET              BINARY-LONG VALUE 512.
+ 01 WS-RESULT              BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -154,18 +138,25 @@
  01 L-Z                    BINARY-LONG.
  01 L-STATE                BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE.
-     IF WS-READY = 0
-         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-         MOVE 1 TO WS-READY
-     END-IF
-     COMPUTE WS-CX = (L-X - FUNCTION MOD(L-X, 16)) / 16
-     COMPUTE WS-CZ = (L-Z - FUNCTION MOD(L-Z, 16)) / 16
-     CALL "PB-RESET" USING PB-BUFFER
-     CALL "BLOCK-UPDATE-BUILD" USING L-X L-Y L-Z L-STATE PB-BUFFER
-     CALL "VIEWERS-SEND" USING L-DIM WS-CX WS-CZ WS-NONE PB-BUFFER
-     CALL "LIGHT-SET-BLOCK" USING L-DIM L-X L-Y L-Z L-STATE
+     CALL "WORLDSIM-ENSURE"
+     CALL "LEVEL-SET-BLOCK" USING L-DIM L-X L-Y L-Z L-STATE WS-FLAGS WS-BUDGET WS-RESULT
      GOBACK.
  END PROGRAM BLOCK-CHANGE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BLOCK-ACK-QUEUE.
+*> USING connection id, sequence (BINARY-LONG): ackBlockChangesUpTo (29 section 7.3): the highest sequence of the tick is kept (BC-ACK-SET); the
+*> Block Changed Ack is sent at the start of the connection's next tick (BC-ACK-TICK, WORLDSIM-ACKS).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-ACCEPTED            BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-SEQUENCE             BINARY-LONG.
+ PROCEDURE DIVISION USING L-ID L-SEQUENCE.
+     CALL "BC-ACK-SET" USING L-ID L-SEQUENCE WS-ACCEPTED
+     GOBACK.
+ END PROGRAM BLOCK-ACK-QUEUE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCK-TELL.
@@ -210,51 +201,150 @@
  END PROGRAM BLOCK-ACK.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BLOCK-ENTITY-KIND.
+*> USING entity type (BINARY-LONG), kind out: the UI-BLOCKS-BUILDING kind (29 section 9.6) of an entity type that is not a mob: 2 a boat or raft (every wood, with or without a chest), 3 a minecart of any
+*> kind, 4 an end crystal, 5 a primed TNT (the entity type tnt), 6 a falling block, 7 an armor stand, 0 any other (BLOCK-OVERLAPS-BODY reads the marker and small flags of a stand itself).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CITEMS.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-BARE                PIC X(48).
+ 01 WS-LEN                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-KIND.
+     MOVE 0 TO L-KIND
+     MOVE ET-KEY(L-TYPE + 1) TO WS-KEY
+     CALL "KEY-BARE" USING WS-KEY WS-BARE
+     COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(WS-BARE))
+     EVALUATE TRUE
+         WHEN WS-LEN >= 5 AND (WS-BARE(WS-LEN - 4:5) = "_boat" OR WS-BARE(WS-LEN - 4:5) = "_raft")
+             MOVE 2 TO L-KIND
+         WHEN WS-LEN >= 8 AND WS-BARE(WS-LEN - 7:8) = "minecart"
+             MOVE 3 TO L-KIND
+         WHEN WS-BARE = "end_crystal"
+             MOVE 4 TO L-KIND
+         WHEN WS-BARE = "tnt"
+             MOVE 5 TO L-KIND
+         WHEN WS-BARE = "falling_block"
+             MOVE 6 TO L-KIND
+         WHEN WS-BARE = "armor_stand"
+             MOVE 7 TO L-KIND
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BLOCK-ENTITY-KIND.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BLOCK-OVERLAPS-BODY.
-*> USING dimension row, x, y, z (BINARY-LONG block position), hit out (BINARY-LONG 1 or 0): 1 when
-*> the cell overlaps with positive volume the box of a player or of a mob in that dimension (standin
-*> §3 sizes; faces within 1e-7 of each other only touch).
+*> USING dimension row, x, y, z (BINARY-LONG block position), state (BINARY-LONG, the block state that would be placed there), hit out (BINARY-LONG 1 or 0): 1 when the
+*> collision shape of the state, moved to the cell, overlaps with positive volume the box of a blocking entity in that dimension (29 section 9.6, Level.isUnobstructed:
+*> the shape is empty = nothing obstructs; the entities are the players that are not spectators, the mobs, stand-in and standard, all living entities, and the other classes that set
+*> blocksBuilding (UI-BLOCKS-BUILDING through BLOCK-ENTITY-KIND: boats, minecarts, end crystals, primed TNT, falling blocks, armor stands); item entities
+*> and the like never block; standin §3 sizes; faces within 1e-7 of each other only touch). The shape is the state's collision shape (BSH-COLL, 51-block-shapes; a full cube
+*> or the void in the cobolcraft stand-in set, as MOVE-COLLIDES-BOX reads it), so a torch, sign, ladder, button, lever, flower or rail never obstructs and a full block, slab,
+*> stair, fence or carpet obstructs when its boxes meet the entity's.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY ENTITYTYPES.
- COPY MOBS.
+ COPY CITEMS.
+ COPY CBLOCKS.
+ COPY CONTENT.
+ COPY PROJSTATE.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-E                   BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-STD                 BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-MARKER              BINARY-LONG VALUE 0.
+ 01 WS-SMALL               BINARY-LONG VALUE 0.
+ 01 WS-PJ                  BINARY-LONG.
+ 01 WS-BIT-SMALL           BINARY-LONG VALUE 0.
+ 01 WS-BIT-MARKER          BINARY-LONG VALUE 4.
+ 01 WS-BUILDS              BINARY-LONG.
+ 01 WS-BLK                 BINARY-LONG.
+ 01 WS-SHAPE               BINARY-LONG.
+ 01 WS-ONE                 BINARY-LONG.
  01 WS-HALF                FLOAT-LONG.
  01 WS-HEIGHT              FLOAT-LONG.
- 01 WS-EPSILON             FLOAT-LONG VALUE 0.0000001.
+ 01 WS-BOX.
+    05 WS-B                FLOAT-LONG OCCURS 6 TIMES.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
  01 L-Y                    BINARY-LONG.
  01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
  01 L-HIT                  BINARY-LONG.
- PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-HIT.
+ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE L-HIT.
      MOVE 0 TO L-HIT
-     COMPUTE WS-HALF = ET-WIDTH-MILLI(ET-OPERATOR + 1) / 2000
-     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(ET-OPERATOR + 1) / 1000
+*>   The collision shape of the state (the cobolcraft stand-in set has no shapes: its blocks are full cubes or empty by CB-SOLID, as in movement.cob).
+     IF CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+         MOVE CB-S-BLOCK(L-STATE + 1) TO WS-BLK
+         MOVE CB-SOLID(WS-BLK + 1) TO WS-SHAPE
+         IF WS-SHAPE = 1
+             CALL "BSH-ENSURE-CUBE"
+         END-IF
+     ELSE
+         CALL "BSH-COLL-ID" USING L-STATE WS-SHAPE
+     END-IF
+     IF WS-SHAPE = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-HALF = ET-WIDTH-MILLI(CR-OPERATOR + 1) / 2000
+     COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(CR-OPERATOR + 1) / 1000
      PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
-         IF PL-USED(WS-PLAYER) = 1 AND PL-DIM(WS-PLAYER) = L-DIM
-                 AND L-X < PL-X(WS-PLAYER) + WS-HALF - WS-EPSILON
-                 AND L-X + 1 > PL-X(WS-PLAYER) - WS-HALF + WS-EPSILON
-                 AND L-Y < PL-Y(WS-PLAYER) + WS-HEIGHT - WS-EPSILON
-                 AND L-Y + 1 > PL-Y(WS-PLAYER) + WS-EPSILON
-                 AND L-Z < PL-Z(WS-PLAYER) + WS-HALF - WS-EPSILON
-                 AND L-Z + 1 > PL-Z(WS-PLAYER) - WS-HALF + WS-EPSILON
-             MOVE 1 TO L-HIT
+         IF PL-USED(WS-PLAYER) = 1 AND PL-DIM(WS-PLAYER) = L-DIM AND PL-MODE(WS-PLAYER) NOT = 3
+             COMPUTE WS-B(1) = PL-X(WS-PLAYER) - WS-HALF
+             MOVE PL-Y(WS-PLAYER) TO WS-B(2)
+             COMPUTE WS-B(3) = PL-Z(WS-PLAYER) - WS-HALF
+             COMPUTE WS-B(4) = PL-X(WS-PLAYER) + WS-HALF
+             COMPUTE WS-B(5) = PL-Y(WS-PLAYER) + WS-HEIGHT
+             COMPUTE WS-B(6) = PL-Z(WS-PLAYER) + WS-HALF
+             CALL "BSH-OVERLAPS" USING WS-SHAPE L-X L-Y L-Z WS-BOX WS-ONE
+             IF WS-ONE = 1
+                 MOVE 1 TO L-HIT
+             END-IF
          END-IF
      END-PERFORM
      PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > EN-COUNT
-         IF EN-USED(WS-E) = 1 AND EN-TYPE(WS-E) >= MOB-FIRST-TYPE AND EN-DIM(WS-E) = L-DIM
+         MOVE 0 TO WS-M
+         MOVE 0 TO WS-STD
+         MOVE 0 TO WS-BUILDS
+         MOVE 0 TO WS-MARKER WS-SMALL
+         IF EN-USED(WS-E) = 1 AND EN-DIM(WS-E) = L-DIM AND EN-TYPE(WS-E) NOT = CR-LOOSE-ITEM
+             CALL "MOB-INDEX" USING EN-TYPE(WS-E) WS-M
+             CALL "STDMOB-INDEX" USING EN-TYPE(WS-E) WS-STD
+             IF WS-M > 0 OR WS-STD > 0
+                 MOVE 1 TO WS-BUILDS
+             ELSE
+                 CALL "BLOCK-ENTITY-KIND" USING EN-TYPE(WS-E) WS-KIND
+*>               an armor stand's flags (decor-44.cob PJ-I1: bit 0 small, bit 4 marker): a marker does not block building (ArmorStand.blocksBuilding = not marker), a small stand has half the box
+                 IF WS-KIND = 7
+                     CALL "PJ-FIND" USING EN-ID(WS-E) WS-PJ
+                     IF WS-PJ > 0
+                         CALL "DECOR-BIT" USING PJ-I1(WS-PJ) WS-BIT-MARKER WS-MARKER
+                         CALL "DECOR-BIT" USING PJ-I1(WS-PJ) WS-BIT-SMALL WS-SMALL
+                     END-IF
+                 END-IF
+                 CALL "UI-BLOCKS-BUILDING" USING WS-KIND WS-MARKER WS-BUILDS
+             END-IF
+         END-IF
+         IF WS-BUILDS = 1
              COMPUTE WS-HALF = ET-WIDTH-MILLI(EN-TYPE(WS-E) + 1) / 2000
              COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(EN-TYPE(WS-E) + 1) / 1000
-             IF L-X < EN-X(WS-E) + WS-HALF - WS-EPSILON
-                     AND L-X + 1 > EN-X(WS-E) - WS-HALF + WS-EPSILON
-                     AND L-Y < EN-Y(WS-E) + WS-HEIGHT - WS-EPSILON
-                     AND L-Y + 1 > EN-Y(WS-E) + WS-EPSILON
-                     AND L-Z < EN-Z(WS-E) + WS-HALF - WS-EPSILON
-                     AND L-Z + 1 > EN-Z(WS-E) - WS-HALF + WS-EPSILON
+             IF WS-SMALL = 1
+                 COMPUTE WS-HALF = WS-HALF / 2
+                 COMPUTE WS-HEIGHT = WS-HEIGHT / 2
+             END-IF
+             COMPUTE WS-B(1) = EN-X(WS-E) - WS-HALF
+             MOVE EN-Y(WS-E) TO WS-B(2)
+             COMPUTE WS-B(3) = EN-Z(WS-E) - WS-HALF
+             COMPUTE WS-B(4) = EN-X(WS-E) + WS-HALF
+             COMPUTE WS-B(5) = EN-Y(WS-E) + WS-HEIGHT
+             COMPUTE WS-B(6) = EN-Z(WS-E) + WS-HALF
+             CALL "BSH-OVERLAPS" USING WS-SHAPE L-X L-Y L-Z WS-BOX WS-ONE
+             IF WS-ONE = 1
                  MOVE 1 TO L-HIT
              END-IF
          END-IF
@@ -269,15 +359,9 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY BLOCKS.
+ COPY CBLOCKS.
  COPY DIMENSIONS.
- 01 WS-OFFSETS.
-    05 FILLER PIC X(18) VALUE "101121110112011211".
- 01 WS-OFFSET-TABLE REDEFINES WS-OFFSETS.
-    05 WS-OFFSET OCCURS 6 TIMES.
-       10 WS-OFF-X         PIC 9.
-       10 WS-OFF-Y         PIC 9.
-       10 WS-OFF-Z         PIC 9.
+ COPY PLACECTX.
  01 WS-DIM                 BINARY-LONG.
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
@@ -285,6 +369,22 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-OLD                 BINARY-LONG.
  01 WS-HIT                 BINARY-LONG.
+ 01 WS-REGISTRY            PIC X(48) VALUE "block".
+ 01 WS-TAG                 PIC X(112) VALUE "minecraft:replaceable".
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-REPLACEABLE         BINARY-LONG.
+ 01 WS-FITS                BINARY-LONG.
+ 01 WS-FOUND-STATE         BINARY-LONG.
+ 01 WS-OLD-FLUID           BINARY-LONG.
+ 01 WS-OLD-KIND            BINARY-LONG.
+ 01 WS-OLD-AMOUNT          BINARY-LONG.
+ 01 WS-OLD-FALLING         BINARY-LONG.
+ 01 WS-WL-NAME             PIC X(24) VALUE "waterlogged".
+ 01 WS-WL-TEXT             PIC X(32).
+ 01 WS-WL-MODE             BINARY-LONG VALUE 2.
+ 01 WS-STACKED             BINARY-LONG.
+ 01 WS-MERGES              BINARY-LONG.
+ 01 WS-EVENT-PLACE         PIC X(32) VALUE "block_place".
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -293,35 +393,99 @@
  PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND L-PLACED-STATE L-PLACED.
      MOVE 0 TO L-PLACED
      MOVE PL-DIM(CN-PLAYER(L-ID)) TO WS-DIM
-*>   Face offsets, each digit minus 1: down (0,-1,0), up (0,1,0), north (0,0,-1), south (0,0,1),
-*>   west (-1,0,0), east (1,0,0).
-     COMPUTE WS-X = PSB-BX + WS-OFF-X(PSB-FACE + 1) - 1
-     COMPUTE WS-Y = PSB-BY + WS-OFF-Y(PSB-FACE + 1) - 1
-     COMPUTE WS-Z = PSB-BZ + WS-OFF-Z(PSB-FACE + 1) - 1
+*>   A segmented block (petals, wildflowers, leaf litter) clicked with its own item gains a segment instead (segment-place.cob).
+     CALL "SEG-STACK" USING L-ID PLAY-SERVERBOUND L-PLACED-STATE WS-STACKED
+     IF WS-STACKED = 1
+         MOVE 1 TO L-PLACED
+         GOBACK
+     END-IF
      MOVE L-PLACED-STATE TO WS-STATE
-     IF SB-BLOCK(WS-STATE + 1) = BLK-CARDSTACK
+     IF CB-S-BLOCK(WS-STATE + 1) = CR-CARDSTACK
          EVALUATE PSB-FACE
              WHEN 0 THRU 1
-                 MOVE ST-CARDSTACK-Y TO WS-STATE
+                 MOVE CR-CARDSTACK-Y TO WS-STATE
              WHEN 2 THRU 3
-                 MOVE ST-CARDSTACK-Z TO WS-STATE
+                 MOVE CR-CARDSTACK-Z TO WS-STATE
              WHEN OTHER
-                 MOVE ST-CARDSTACK-X TO WS-STATE
+                 MOVE CR-CARDSTACK-X TO WS-STATE
          END-EVALUATE
      END-IF
+     CALL "SEG-FACING" USING L-ID WS-STATE
+*>   The placement context: the cell the block goes to (the clicked cell when the item replaces the clicked block, else the cell on the clicked face), the click and the player's view (place-state.cob).
+     CALL "PLACE-CONTEXT-BUILD" USING L-ID PLAY-SERVERBOUND WS-STATE PLACE-CONTEXT
+     MOVE PC-X TO WS-X
+     MOVE PC-Y TO WS-Y
+     MOVE PC-Z TO WS-Z
      IF WS-Y < DM-MIN-Y(WS-DIM) OR WS-Y >= DM-MIN-Y(WS-DIM) + DM-HEIGHT(WS-DIM)
          GOBACK
      END-IF
      CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-OLD
      MOVE 1 TO WS-HIT
-     IF WS-OLD = ST-VOID
-         CALL "BLOCK-OVERLAPS-BODY" USING WS-DIM WS-X WS-Y WS-Z WS-HIT
+*>   A target in the block tag minecraft:replaceable (water, lava, grass, snow; 29 section 9.5) is replaced like the void.
+     MOVE 0 TO WS-REPLACEABLE
+     IF WS-OLD > 0
+         MOVE CB-S-BLOCK(WS-OLD + 1) TO WS-BLOCK
+         CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG WS-BLOCK WS-REPLACEABLE
+     END-IF
+     IF WS-OLD = 0 OR WS-REPLACEABLE = 1
+         MOVE 0 TO WS-HIT
+     END-IF
+*>   A slab onto a slab that is not double and a multiface block onto one with a free face add to the block that is there.
+     CALL "PS-MERGES" USING PLACE-CONTEXT WS-OLD WS-MERGES
+     IF WS-MERGES = 1
+         MOVE 0 TO WS-HIT
      END-IF
      IF WS-HIT = 1
          CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
          GOBACK
      END-IF
+*>   The state the block takes from the click and the player's view (place-state.cob: standing-and-wall items, attached blocks, pillars, slabs, stairs, doors and the facing blocks); nothing fits: nothing is placed.
+     CALL "PLACE-STATE" USING PLACE-CONTEXT
+     IF PC-FITS = 0
+         CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
+         GOBACK
+     END-IF
+     MOVE PC-STATE TO WS-STATE
+*>   A door or tall plant needs its upper half's cell (empty or replaceable) too, and places both halves.
+     CALL "DOUBLE-PLACE-FITS" USING WS-DIM WS-X WS-Y WS-Z WS-STATE WS-FITS
+*>   BlockItem.canPlace: the block must survive where it is placed (a plant on its ground, kelp and seagrass in a water source only; support-29.cob).
+     IF WS-FITS = 1
+         CALL "SUP-PLACE-OK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE WS-FITS
+     END-IF
+     IF WS-FITS = 0
+         CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
+         GOBACK
+     END-IF
+*>   BlockItem.canPlace, second half: the state's collision shape must not meet a blocking entity (29 section 9.6, isUnobstructed with the placement context): a torch, sign,
+*>   ladder, button, lever, flower or rail goes into the cell the player's body is in, a full block, slab, stair, fence or carpet does not.
+     CALL "BLOCK-OVERLAPS-BODY" USING WS-DIM WS-X WS-Y WS-Z WS-STATE WS-HIT
+     IF WS-HIT = 1
+         CALL "BLOCK-TELL" USING L-ID WS-X WS-Y WS-Z
+         GOBACK
+     END-IF
+*>   A block with the waterlogged property placed into a water source is waterlogged, and in anything else it is not (29a 5.1: FluidState.is(WATER), a source only).
+     MOVE 0 TO WS-OLD-KIND
+     IF WS-OLD > 0
+         CALL "FLUID-OF-STATE" USING WS-OLD WS-OLD-FLUID WS-OLD-KIND WS-OLD-AMOUNT WS-OLD-FALLING
+     END-IF
+     MOVE "false" TO WS-WL-TEXT
+     IF WS-OLD-KIND = 2
+         MOVE "true" TO WS-WL-TEXT
+     END-IF
+     CALL "BLOCK-STATE-PROP" USING WS-WL-MODE WS-STATE WS-WL-NAME WS-WL-TEXT WS-FOUND-STATE
+     MOVE WS-FOUND-STATE TO WS-STATE
+     CALL "BE-PLACE-STATE" USING L-ID PLAY-SERVERBOUND WS-DIM WS-X WS-Y WS-Z WS-STATE
+*>   A redstone lamp, trapdoor, fence gate or door starts with the signal around its position (30 part 7 sections 3.3, 4.2, 5.2 and 6).
+     CALL "REDSTONE-PLACE-STATE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
      CALL "BLOCK-CHANGE" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     CALL "SIGN-PLACED" USING L-ID WS-DIM WS-X WS-Y WS-Z WS-STATE
+*>   The game event block_place at the block centre with the player and the placed state as context (29 section 8 step 8): the warden hears it unless the state is wool.
+     CALL "GAME-EVENT-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-EVENT-PLACE CN-PLAYER(L-ID) WS-STATE
+     CALL "DOUBLE-PLACE-UPPER" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+*>   A bed places its head half one cell along its facing (BedBlock.setPlacedBy).
+     CALL "BED-PLACE-HEAD" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     CALL "GOLEM-BUILD" USING WS-DIM WS-X WS-Y WS-Z
+     CALL "WITHER-BUILD" USING WS-DIM WS-X WS-Y WS-Z
      MOVE 1 TO L-PLACED
      GOBACK.
  END PROGRAM BLOCK-PLACE.
@@ -333,8 +497,8 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY BLOCKS.
- COPY ITEMS.
+ COPY CBLOCKS.
+ COPY CITEMS.
  01 WS-ROW                 BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
@@ -343,7 +507,27 @@
  01 WS-PLACES              BINARY-LONG.
  01 WS-PLACED              BINARY-LONG.
  01 WS-TRAVEL              BINARY-LONG.
+ 01 WS-BENCH               BINARY-LONG.
+ 01 WS-STATION             BINARY-LONG.
+ 01 WS-BED                 BINARY-LONG.
+ 01 WS-BONE                BINARY-LONG.
+ 01 WS-BONE-USED           BINARY-LONG.
+ 01 WS-EYE                 BINARY-LONG.
+ 01 WS-DECOR               BINARY-LONG.
+ 01 WS-CONT                BINARY-LONG.
+ 01 WS-SHELF               BINARY-LONG.
+ 01 WS-OPENED              BINARY-LONG.
+ 01 WS-SPENT-KEY           PIC X(48).
+ 01 WS-SPENT-BARE          PIC X(48).
+ 01 WS-SPENT-ID            BINARY-LONG.
  01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-TOOL                BINARY-LONG.
+ 01 WS-SWITCH              BINARY-LONG.
+ 01 WS-KNOT                BINARY-LONG.
+ 01 WS-NOTE                BINARY-LONG.
+ 01 WS-ROCKET              BINARY-LONG.
+ 01 WS-BELL                BINARY-LONG.
+ 01 WS-SIGN                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -359,169 +543,114 @@
      MOVE IT-PLACES-STATE(WS-ITEM + 1) TO WS-PLACES
      CALL "WORLD-GET-BLOCK" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE
      MOVE 0 TO WS-TRAVEL
+     CALL "MENU-IS-BENCH" USING WS-STATE WS-BENCH
+     CALL "WORLDSIM-BED-KEY" USING WS-STATE WS-BED
+*>   An axe, shovel or hoe changes the block it is used on (17 section 3.1; tools-wire.cob).
+     MOVE 0 TO WS-TOOL
+     IF WS-ITEM > 0 AND WS-BENCH = 0 AND WS-BED = 0
+         CALL "TOOLUSE-ON" USING L-ID PLAY-SERVERBOUND WS-TOOL
+     END-IF
+     CALL "GB-HELD-BONEMEAL" USING WS-ITEM WS-BONE
+     MOVE 0 TO WS-BONE-USED
+     CALL "MENU-IS-CONT" USING WS-STATE WS-CONT
+     CALL "MENU-STATION-KIND" USING WS-STATE WS-STATION
+     CALL "END-EYE-USE" USING L-ID WS-STATE WS-ITEM PSB-BX PSB-BY PSB-BZ WS-EYE
+     CALL "DECOR-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-ITEM WS-DECOR
+     MOVE 0 TO WS-SHELF
+*>   A sneaking player holding an item uses the item on the block (places it) instead of using the block (31-1 section 10.2).
+     IF PL-SNEAKING(WS-ROW) = 1 AND WS-ITEM > 0
+         MOVE 0 TO WS-CONT WS-STATION
+     ELSE
+         CALL "BE2-SHELF-USE" USING L-ID PLAY-SERVERBOUND WS-STATE WS-SHELF
+     END-IF
+*>   A lever, button, door, trapdoor or fence gate takes the click (core/src/use-switch.cob).
+     CALL "SW-USE" USING L-ID PLAY-SERVERBOUND WS-SWITCH
+*>   A fence takes the lead of the player's mobs (a leash knot, 24 section 6.3).
+     CALL "MOB-FENCE-USE" USING WS-ROW WS-STATE PSB-BX PSB-BY PSB-BZ WS-KNOT
+*>   A note block is tuned by a right click (M44-NOTE-USE).
+     MOVE 0 TO WS-NOTE
+     IF NOT (PL-SNEAKING(WS-ROW) = 1 AND WS-ITEM > 0)
+         CALL "M44-NOTE-USE" USING WS-ROW WS-STATE PSB-BX PSB-BY PSB-BZ PSB-FACE WS-NOTE
+     END-IF
+*>   A bell rings when it is hit as 31-4 section 4.5 says (core/src/bell-use.cob); the villagers within 32 blocks hear it (VL-BELL-RING, called from BELL-USE).
+     CALL "BELL-USE" USING WS-ROW WS-STATE PSB-BX PSB-BY PSB-BZ PSB-FACE PSB-CURSOR-Y WS-BELL
+*>   A sign takes the click: the editor opens, or a dye, ink sac or honeycomb is applied (core/src/sign-edit.cob).
+     CALL "SIGN-USE" USING L-ID PLAY-SERVERBOUND WS-STATE WS-SIGN
      EVALUATE TRUE
-         WHEN SB-BLOCK(WS-STATE + 1) = BLK-GOTO-PAD
+         WHEN WS-SIGN = 1
+             CONTINUE
+         WHEN WS-KNOT = 1
+             CONTINUE
+         WHEN WS-NOTE = 1
+             CONTINUE
+         WHEN WS-BELL = 1
+             CONTINUE
+         WHEN WS-TOOL = 1
+             CONTINUE
+         WHEN WS-SWITCH = 1
+             CONTINUE
+         WHEN WS-EYE = 1
+             CONTINUE
+         WHEN WS-DECOR = 1
+             CONTINUE
+         WHEN CB-S-BLOCK(WS-STATE + 1) = CR-GOTO-PAD
              MOVE 1 TO WS-TRAVEL
+         WHEN WS-BENCH = 1
+             CONTINUE
+         WHEN WS-STATION > 0
+             CONTINUE
+         WHEN WS-BED = 1
+             CONTINUE
+         WHEN WS-CONT > 0
+             CONTINUE
+         WHEN WS-SHELF = 1
+             CONTINUE
          WHEN PSB-HAND NOT = 0
              CONTINUE
-         WHEN WS-PLACES >= 0
+         WHEN WS-ITEM > 0 AND IT-KEY(WS-ITEM + 1) = "firework_rocket"
+             CALL "RANGED-ROCKET-ON" USING L-ID PLAY-SERVERBOUND WS-ROCKET
+         WHEN WS-BONE = 1
+             CALL "GB-BONEMEAL-USE" USING L-ID PSB-BX PSB-BY PSB-BZ WS-BONE-USED
+*>       A hand with nothing in it holds no block item: the air item's row names the air block (IT-PLACES-STATE 0), which must never be placed (it would clear a replaceable cell and post block_place).
+         WHEN WS-ITEM > 0 AND WS-PLACES >= 0
              CALL "BLOCK-PLACE" USING L-ID PLAY-SERVERBOUND WS-PLACES WS-PLACED
-         WHEN SB-BLOCK(WS-STATE + 1) = BLK-GLOWTUBE
-             COMPUTE WS-STATE = ST-GLOWTUBE-LIT + ST-GLOWTUBE-UNLIT - WS-STATE
+         WHEN CB-S-BLOCK(WS-STATE + 1) = CR-GLOWTUBE
+             COMPUTE WS-STATE = CR-GLOWTUBE-LIT + CR-GLOWTUBE-UNLIT - WS-STATE
              CALL "BLOCK-CHANGE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE
      END-EVALUATE
-     CALL "BLOCK-ACK" USING L-ID PSB-SEQUENCE
+     CALL "BLOCK-ACK-QUEUE" USING L-ID PSB-SEQUENCE
      IF WS-TRAVEL = 1
          CALL "DIM-USE-PAD" USING L-ID PSB-BX PSB-BY PSB-BZ
      END-IF
+     IF WS-BENCH = 1
+         CALL "MENU-BENCH-OPEN" USING L-ID PSB-BX PSB-BY PSB-BZ
+     END-IF
+     IF WS-STATION > 0
+         CALL "MENU-STATION-OPEN" USING L-ID PSB-BX PSB-BY PSB-BZ WS-STATION
+     END-IF
+     IF WS-BED = 1 AND PSB-HAND = 0
+         CALL "WORLDSIM-SLEEP-USE" USING L-ID PSB-BX PSB-BY PSB-BZ
+     END-IF
+     IF WS-CONT > 0
+         CALL "MENU-CONT-OPEN" USING L-ID PSB-BX PSB-BY PSB-BZ WS-OPENED
+     END-IF
      IF WS-PLACED = 1 AND PL-MODE(WS-ROW) = 0
+         MOVE IT-KEY(PL-SLOT-ITEM(WS-ROW, WS-HELD + 1) + 1) TO WS-SPENT-KEY
+         CALL "KEY-BARE" USING WS-SPENT-KEY WS-SPENT-BARE
          CALL "INV-REMOVE" USING WS-ROW WS-HELD WS-ONE
+*>       a SolidBucketItem (25-5 5.3): the held stack is replaced by an empty bucket
+         IF WS-SPENT-BARE = "powder_snow_bucket"
+             MOVE "bucket" TO WS-SPENT-BARE
+             CALL "RL-ITEM-ID-OF" USING WS-SPENT-BARE WS-SPENT-ID
+             MOVE WS-SPENT-ID TO PL-SLOT-ITEM(WS-ROW, WS-HELD + 1)
+             MOVE 1 TO PL-SLOT-COUNT(WS-ROW, WS-HELD + 1)
+             MOVE 0 TO PL-SLOT-VAR(WS-ROW, WS-HELD + 1)
+         END-IF
          COMPUTE PL-STATE-ID(WS-ROW) = FUNCTION MOD(PL-STATE-ID(WS-ROW) + 1, 32768)
          CALL "INV-SLOT-SEND" USING L-ID WS-HELD
      END-IF
      GOBACK.
  END PROGRAM BLOCK-USE-ON.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. BLOCK-BREAK-END.
-*> USING player row (BINARY-LONG): ends the player's survival break, if any; when a stage was sent,
-*> the viewers get stage 255 (overlay removed).
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CORESTATE.
- COPY PROTO.
- 01 WS-CAPACITY            BINARY-LONG VALUE 64.
- 01 WS-CLEAR               BINARY-LONG VALUE 255.
- 01 WS-ROW                 BINARY-LONG.
- 01 WS-CX                  BINARY-LONG.
- 01 WS-CZ                  BINARY-LONG.
- LINKAGE SECTION.
- 01 L-ROW                  BINARY-LONG.
- PROCEDURE DIVISION USING L-ROW.
-     MOVE L-ROW TO WS-ROW
-     IF PL-BREAKING(WS-ROW) = 1 AND PL-BREAK-STAGE(WS-ROW) >= 0
-         COMPUTE WS-CX = (PL-BREAK-X(WS-ROW) - FUNCTION MOD(PL-BREAK-X(WS-ROW), 16)) / 16
-         COMPUTE WS-CZ = (PL-BREAK-Z(WS-ROW) - FUNCTION MOD(PL-BREAK-Z(WS-ROW), 16)) / 16
-         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-         CALL "BLOCK-DESTRUCTION-BUILD" USING PL-ENTITY-ID(WS-ROW) PL-BREAK-X(WS-ROW)
-             PL-BREAK-Y(WS-ROW) PL-BREAK-Z(WS-ROW) WS-CLEAR PB-BUFFER
-         CALL "VIEWERS-SEND" USING PL-DIM(WS-ROW) WS-CX WS-CZ WS-ROW PB-BUFFER
-         CALL "PB-FREE" USING PB-BUFFER
-     END-IF
-     MOVE 0 TO PL-BREAKING(WS-ROW)
-     MOVE -1 TO PL-BREAK-STAGE(WS-ROW)
-     GOBACK.
- END PROGRAM BLOCK-BREAK-END.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. BLOCK-ACTION.
-*> USING connection id, PLAY-SERVERBOUND (a decoded Player Action): the break rules above.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CORESTATE.
- COPY RULES.
- COPY BLOCKS.
- COPY ITEMS.
- 01 WS-ROW                 BINARY-LONG.
- 01 WS-DIM                 BINARY-LONG.
- 01 WS-STATE               BINARY-LONG.
- 01 WS-BLOCK               BINARY-LONG.
- 01 WS-ITEM                BINARY-LONG.
- 01 WS-MS                  BINARY-LONG.
- 01 WS-VOID                BINARY-LONG VALUE 0.
- 01 WS-EXHAUST             FLOAT-LONG.
- LINKAGE SECTION.
- COPY PLAYPKT.
- 01 L-ID                   BINARY-LONG.
- PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND.
-     IF PSB-ACTION NOT = 0 AND PSB-ACTION NOT = 2 AND PSB-ACTION NOT = 3
-         GOBACK
-     END-IF
-     MOVE CN-PLAYER(L-ID) TO WS-ROW
-     MOVE PL-DIM(WS-ROW) TO WS-DIM
-     CALL "WORLD-GET-BLOCK" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE
-     COMPUTE WS-BLOCK = SB-BLOCK(WS-STATE + 1) + 1
-     EVALUATE TRUE
-         WHEN PSB-ACTION = 2
-             CALL "BLOCK-BREAK-END" USING WS-ROW
-         WHEN BL-BREAK-MS(WS-BLOCK) <= 0
-             CALL "BLOCK-TELL" USING L-ID PSB-BX PSB-BY PSB-BZ
-         WHEN PSB-ACTION = 0 AND PL-MODE(WS-ROW) = 1
-             CALL "BLOCK-CHANGE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-VOID
-         WHEN PSB-ACTION = 0
-             CALL "BLOCK-BREAK-END" USING WS-ROW
-             MOVE BL-BREAK-MS(WS-BLOCK) TO WS-MS
-             MOVE 0 TO WS-ITEM
-             IF PL-SLOT-COUNT(WS-ROW, PL-HELD(WS-ROW) + 1) > 0
-                 MOVE PL-SLOT-ITEM(WS-ROW, PL-HELD(WS-ROW) + 1) TO WS-ITEM
-             END-IF
-             IF BL-CLASS(WS-BLOCK) NOT = BLOCK-CLASS-NONE
-                     AND IT-TOOL-CLASS(WS-ITEM + 1) = BL-CLASS(WS-BLOCK)
-                 COMPUTE WS-MS = WS-MS / TOOL-BREAK-DIVISOR
-             END-IF
-             MOVE 1 TO PL-BREAKING(WS-ROW)
-             MOVE PSB-BX TO PL-BREAK-X(WS-ROW)
-             MOVE PSB-BY TO PL-BREAK-Y(WS-ROW)
-             MOVE PSB-BZ TO PL-BREAK-Z(WS-ROW)
-             MOVE CW-TICKS TO PL-BREAK-START(WS-ROW)
-             COMPUTE PL-BREAK-TICKS(WS-ROW) = WS-MS / CORE-TICK-MS
-             MOVE -1 TO PL-BREAK-STAGE(WS-ROW)
-         WHEN PL-MODE(WS-ROW) = 0 AND PL-BREAKING(WS-ROW) = 1 AND PSB-BX = PL-BREAK-X(WS-ROW)
-                 AND PSB-BY = PL-BREAK-Y(WS-ROW) AND PSB-BZ = PL-BREAK-Z(WS-ROW)
-                 AND CW-TICKS - PL-BREAK-START(WS-ROW) >= PL-BREAK-TICKS(WS-ROW)
-             CALL "BLOCK-BREAK-END" USING WS-ROW
-             CALL "BLOCK-CHANGE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-VOID
-             COMPUTE WS-BLOCK = WS-BLOCK - 1
-             CALL "GI-BLOCK-YIELD" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-BLOCK
-             COMPUTE WS-EXHAUST = RULE-EXHAUST-BREAK-MILLI / 1000
-             CALL "HUNGER-EXHAUST" USING WS-ROW WS-EXHAUST
-         WHEN OTHER
-             CALL "BLOCK-BREAK-END" USING WS-ROW
-             CALL "BLOCK-TELL" USING L-ID PSB-BX PSB-BY PSB-BZ
-     END-EVALUATE
-     CALL "BLOCK-ACK" USING L-ID PSB-SEQUENCE
-     GOBACK.
- END PROGRAM BLOCK-ACTION.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. BLOCKS-TICK.
-*> No parameters; called once per tick after CW-TICKS is raised: break progress (above).
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CORESTATE.
- COPY PROTO.
- 01 WS-READY               PIC 9 VALUE 0.
- 01 WS-CAPACITY            BINARY-LONG VALUE 64.
- 01 WS-PLAYER              BINARY-LONG.
- 01 WS-STAGE               BINARY-LONG.
- 01 WS-CX                  BINARY-LONG.
- 01 WS-CZ                  BINARY-LONG.
- PROCEDURE DIVISION.
-     PERFORM VARYING WS-PLAYER FROM 1 BY 1 UNTIL WS-PLAYER > CORE-MAX-PLAYERS
-         IF PL-USED(WS-PLAYER) = 1 AND PL-BREAKING(WS-PLAYER) = 1
-                 AND PL-BREAK-TICKS(WS-PLAYER) > 0
-             COMPUTE WS-STAGE = FUNCTION MIN(9, (CW-TICKS - PL-BREAK-START(WS-PLAYER)) * 10
-                 / PL-BREAK-TICKS(WS-PLAYER))
-             IF WS-STAGE NOT = PL-BREAK-STAGE(WS-PLAYER)
-                 IF WS-READY = 0
-                     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
-                     MOVE 1 TO WS-READY
-                 END-IF
-                 MOVE WS-STAGE TO PL-BREAK-STAGE(WS-PLAYER)
-                 COMPUTE WS-CX = (PL-BREAK-X(WS-PLAYER)
-                     - FUNCTION MOD(PL-BREAK-X(WS-PLAYER), 16)) / 16
-                 COMPUTE WS-CZ = (PL-BREAK-Z(WS-PLAYER)
-                     - FUNCTION MOD(PL-BREAK-Z(WS-PLAYER), 16)) / 16
-                 CALL "PB-RESET" USING PB-BUFFER
-                 CALL "BLOCK-DESTRUCTION-BUILD" USING PL-ENTITY-ID(WS-PLAYER)
-                     PL-BREAK-X(WS-PLAYER) PL-BREAK-Y(WS-PLAYER) PL-BREAK-Z(WS-PLAYER)
-                     WS-STAGE PB-BUFFER
-                 CALL "VIEWERS-SEND" USING PL-DIM(WS-PLAYER) WS-CX WS-CZ WS-PLAYER PB-BUFFER
-             END-IF
-         END-IF
-     END-PERFORM
-     GOBACK.
- END PROGRAM BLOCKS-TICK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SECTION-BLOCKS-UPDATE-BUILD.

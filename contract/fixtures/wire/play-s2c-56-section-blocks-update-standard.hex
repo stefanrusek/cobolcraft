@@ -1,0 +1,13 @@
+# Fixture: Section Blocks Update, standard state ids
+# Phase: play. Direction: clientbound (S->C). Packet id 0x56 (86).
+# Doc refs: 06 section 9 (entries (state << 12) | localPos), Composite SectionPos; 24 part 1 (state ids)
+# Stated inputs:
+#   section (0, -4, 0) (the lowest overworld section), 3 changes: (x 1, y 0, z 2) -> bedrock 88; (x 15, y 15, z 15) -> cobblestone 14;
+#   (x 0, y 7, z 0) -> state 35722 (the last state id: 35723 states)
+
+56                                               # packet id: VarInt 0x56
+00 00 00 00 00 0f ff fc                          # Section position: SectionPos Long (x 0, z 0, y -4)
+03                                               # Count: VarInt 3
+a0 82 16                                         # change (1, 0, 2) state 88: VarLong (state << 12) | 0x120
+ff df 03                                         # change (15, 15, 15) state 14: VarLong (state << 12) | 0xfff
+87 c0 e2 45                                      # change (0, 7, 0) state 35722: VarLong (state << 12) | 0x007

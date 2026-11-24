@@ -2,16 +2,18 @@
 spile: ticket
 id: CC-0003
 type: bug
-status: draft
+status: closed
 owner: stefanrusek
-resolution:
+resolution: done
 blocked_by: []
 created: 2026-11-06
 relations:
   depends_on: []
   relates_to: []
   supersedes: []
-implementation: []
+implementation:
+  branch: 002-client-polish
+  pr: 2
 ---
 
 # CC-0003: Weather atlas stays small with any pack image sizes
@@ -37,3 +39,6 @@ any valid pack.
 > [!NOTE]
 > The current code is `client/src/weather-render.cob` and `client/src/submit.cob` (T1080). Only two 16-pixel images
 > are tested. A separate texture per image avoids the least common multiple altogether.
+
+> [!NOTE]
+> Closed by feature 002 tasks T2991 (client/tests/test_weather_atlas.cob: co-prime heights 17 and 19 give a bounded weather atlas); recorded by task T3611.

@@ -1,0 +1,9 @@
+{
+  "chat": {
+    "translation_key": "chat.type.text",
+    "parameters": [
+      "sender",
+      "content"
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 # Built-in UI art, fallback UI texts, world type selection and missing-data screens
 
-Status: design, round RS29 (closes GAP-34 of [README.md](README.md) Part 5 for the art, the font, the fallback texts of the new screens and the text-colour rules; the options screen texts are not supplied and stay open, Open question 13). Written from documents only: no artifact was
+Status: design, round RS29 (closes GAP-34 of [README.md](README.md) Part 5 for the art, the font, the fallback texts of the new screens and the text-colour rules; the options screen texts are supplied in section 6.2 by round OPT, which closes Open question 13). Written from documents only: no artifact was
 opened and no repository code was read. Every pixel value in this document comes from a recipe, and every check value of
 section 9 was produced by running that recipe with a script written from this document's own rules (the groups of sections
 4.1 to 4.9, 4.11 and 4.12 when they were written; the 40 effect icons of section 4.10 in the fix pass of the same round, which
@@ -28,7 +28,7 @@ world types. So the built-in pack (08 section 10) has to draw all of that with o
 
 README Part 4, C11 also names "options" and "a fallback font and language set". The art for the options screen widgets
 (sliders, checkboxes, buttons, section 4.5) and the font are supplied here. The **texts of the options screen** (13
-section 7) are not: they are out of scope of this document and GAP-34 stays open for them (Open question 13). **GAP-34 and README C11 also stay open for the standard language keys** that the
+section 7) are supplied by section 6.2 (round OPT; Open question 13 is closed). **GAP-34 and README C11 also stay open for the standard language keys** that the
 cobolcraft world type needs and that no generated pack supplies there: the bench title, the experience level number, chat,
 command feedback and death messages (Open question 23). Until a
 later round supplies those keys in the built-in `lang/en_us.json`, the lookup rule of 08 section 10.8 shows an unknown key as
@@ -843,9 +843,9 @@ Worked examples (the base colours are results of step 1; the counts are in the s
 The three sheets are 256 x 256 RGBA images read as whole images with the logical size 256 x 256 (14 section 6.2). Outside the screen's image area they stay transparent.
 **Decision UI-10.** The built-in sheets are drawn at the logical size (no 2x), and the recipe book panel is at (0, 0) of its sheet. Reason: the built-in pack
 needs no more resolution than the logical one, and a user pack at 512 x 512 works unchanged (14 section 6.2). The origin of
-the recipe-book panel inside the vanilla sheet is not documented (Open question 2). The origin (rbX, rbY) is therefore a
+the recipe-book panel inside the vanilla sheet was read in round GUI as (1, 1) (section 4.13.4). The origin (rbX, rbY) is therefore a
 **parameter of the client** (the point of the sheet where the client reads the 147 x 166 panel), not a constant of the recipe:
-the recipe below pastes the panel at (rbX, rbY), whose value is (0, 0) until Open question 2 is closed. The check values of the
+the recipe below pastes the panel at (rbX, rbY), with rbX = rbY = 0 for the built-in sheet and its check values; the client's read rule is in 4.13.8. The check values of the
 `recipe_book` sheet and the Sheets group manifest of section 9.2 hold for (0, 0) only; if the origin changes they change with it
 and must be recomputed.
 
@@ -878,7 +878,7 @@ art. The 1-pixel margin of an item cell inside its 18 x 18 slot well follows 12 
 |---|---|---|---|---|
 | `container/inventory` | 256 x 256 | stretch (none) | 29212 | `5f2c1695278c2442740905e00fcc2d694b53a63e97df56cedf9098c22e5bdd7e` |
 | `container/crafting_table` | 256 x 256 | stretch (none) | 29212 | `01e90ebb452e902775db939381a925ed45b2eae701972f2afd1de88b7e6fa60a` |
-| `recipe_book` (origin (0, 0); depends on the unread origin, Open question 2) | 256 x 256 | stretch (none) | 24398 | `b5debe5d431df026cb369fa0d80d9696ccdfbe5cc71f5a21aa379662dbf7f841` |
+| `recipe_book` (origin (0, 0); the vanilla sheet's is (1, 1), section 4.13.4, interim rule in 4.13.8) | 256 x 256 | stretch (none) | 24398 | `b5debe5d431df026cb369fa0d80d9696ccdfbe5cc71f5a21aa379662dbf7f841` |
 
 ### 4.12 Font image
 
@@ -932,6 +932,215 @@ Reason: 14 section 10 shows that the standard `accented` and `nonlatin_european`
 many original glyphs is outside GAP-34, and the standard world type always has the generated resource pack above this
 one (README Part 4, C10), which carries them: its `minecraft:default` definitions replace the four built-in files by path
 (08 section 10.10), so the accented and non-Latin providers apply (this closes the old Open question 15).
+
+### 4.13 Values read from the shipped client (US6 round, "GUI reader")
+
+Source: the artifact already recorded in docs/protocol/README.md, `minecraft-26.3-client.jar` (version 26.3, SHA-256
+`4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`); static reading (`javap`, `unzip`, PNG header and pixel
+reads), with no execution. Everything below was read in this round. It replaces the "chosen" and "not read" values named in each
+subsection; where it differs from a recipe of sections 4.1 to 4.9 the difference is listed in 4.13.8 and the recipe is not
+changed by this round (no check value of section 9 changes). Class names are cited as references only. "Vanilla sprite" means the
+file in the artifact; the built-in art stays original (Decision UI-3).
+
+#### 4.13.1 Sprite sizes (vanilla PNG sizes; under `textures/gui/sprites/` except the `mob_effect` icons, which are under `textures/mob_effect/`)
+
+| Sprite id | Vanilla size | Built-in size (this document) | Note |
+|---|---|---|---|
+| `hud/hotbar` | 182 x 22 | 182 x 22 | same |
+| `hud/hotbar_selection` | 24 x 23 | 24 x 23 | same |
+| `hud/hotbar_offhand_left`, `_right` | 29 x 24 | 29 x 24 | same |
+| `hud/hotbar_attack_indicator_background`, `_progress` | 18 x 18 | 18 x 18 | read, closes the size part of Open question 1 |
+| `hud/crosshair` | 15 x 15 | 15 x 15 | same |
+| `hud/crosshair_attack_indicator_background`, `_progress` | **16 x 4** | 16 x 16 (chosen) | differs (4.13.8) |
+| `hud/crosshair_attack_indicator_full` | 16 x 16 | 16 x 16 | same |
+| `hud/effect_background`, `_ambient` | 24 x 24 | 24 x 24 | read, closes Open question 1 for them |
+| `container/inventory/effect_background`, `_ambient` | 32 x 32, nine-slice border 4 | not supplied | the inventory-screen effect list; not in section 1 |
+| `hud/experience_bar_background`, `_progress` | 182 x 5 | 182 x 5 | same |
+| hearts (all variants), food, armour, air | 9 x 9 | 9 x 9 | same |
+| `mob_effect/<name>` (under `textures/mob_effect/`, not `gui/sprites/`; atlas source of 08 section 10.2) | 18 x 18 (checked on `speed`; 40 files in the archive) | 18 x 18 | same; the 40 names are in section 4.10 |
+| `container/slot` | 18 x 18 | see 4.4 | same |
+| `container/slot_highlight_back`, `_front` | 24 x 24, nine-slice 24 x 24 border 4 | 24 x 24 | same size; vanilla has a nine-slice file, the built-in sprite has none (drawn 1:1) |
+| `container/slot/<name>` (empty-slot icons) | 16 x 16 | see 4.4 | read |
+| `widget/button`, `_highlighted`, `_disabled` | 200 x 20 | 200 x 20 | same |
+| `widget/text_field`, `_highlighted` | 200 x 20 | 200 x 20 | same |
+| `widget/slider`, `_highlighted` | 200 x 20 | 200 x 20 | same |
+| `widget/slider_handle`, `_highlighted` | 8 x 20 | 8 x 20 | same |
+| `widget/checkbox` (4 sprites) | **20 x 20** | 17 x 17 | drawn at 17 x 17 by the client (4.13.3), so the built-in 17 x 17 is consistent |
+| `widget/scroller`, `widget/scroller_background` | 6 x 32 | 6 x 32 | same |
+| `tooltip/background`, `tooltip/frame` | 100 x 100 | 100 x 100 | same |
+| `popup/background` | **236 x 34**, nine-slice border 6 | 32 x 32, border 4 | no cobolcraft screen draws it (section 1); a free choice, not changed |
+| `toast/recipe` | 160 x 32, no `.mcmeta` (stretch) | 160 x 32 | same |
+| `recipe_book/button`, `_highlighted` | 20 x 18 | 20 x 18 | same |
+| `recipe_book/tab`, `_selected` | **35 x 27** | 32 x 27 | the client draws the tab at 35 x 27 (4.13.4) |
+| `recipe_book/slot_craftable`, `_many_craftable`, `_uncraftable`, `_many_uncraftable` | 25 x 25 | 25 x 25 | same |
+| `recipe_book/page_forward`, `_backward` (and `_highlighted`) | 12 x 17 | 12 x 17 | same |
+| `recipe_book/filter_*` (and `furnace_filter_*`) | 26 x 16 | 26 x 16 | same |
+| `recipe_book/overlay_recipe` | 32 x 32, nine-slice border 4 | 32 x 32, border 4 | same |
+| `recipe_book/crafting_overlay*` | **24 x 24** | 25 x 25 | differs; the overlay button's drawn size was not read (Open question 32) |
+
+The artifact has 522 files under `textures/gui/sprites/` (`unzip -Z1 | grep -v '/$'`), 53 of them `.mcmeta`. Whole-image textures
+`textures/gui/container/inventory.png`, `crafting_table.png`, `generic_54.png` and `textures/gui/recipe_book.png` are all 256 x 256.
+
+#### 4.13.2 Nine-slice metadata (vanilla `.mcmeta`, every one of type `nine_slice`; 47 of the 53 files; the other 6 are animations)
+
+The vanilla values for the widgets this document supplies (the built-in values stay those of section 5.3 and Decision UI-21;
+a pack above the built-in pack brings its own):
+
+| Sprite id | Width x height | Border | Note |
+|---|---|---|---|
+| `widget/button`, `_highlighted` | 200 x 20 | 3 | as 12 section 5.9 |
+| `widget/button_disabled` | 200 x 20 | 1 | as 12 section 5.9 |
+| `widget/text_field`, `_highlighted` | 200 x 20 | 1 | read (closes Open question 19 for the field) |
+| `widget/slider`, `_highlighted` | 200 x 20 | 1 | built-in uses 2 |
+| `widget/slider_handle`, `_highlighted` | 8 x 20 | left 2, top 2, right 2, **bottom 3** | per-side object; built-in uses 2 uniform |
+| `widget/scroller`, `widget/scroller_background` | 6 x 32 | 1 | built-in `scroller` uses 2 |
+| `tooltip/background` | 100 x 100 | 9 | as 12 section 5.8 |
+| `tooltip/frame` | 100 x 100 | **10**, `stretch_inner` **true** | built-in uses 9 and no `stretch_inner` |
+| `popup/background` | 236 x 34 | 6 | |
+| `recipe_book/overlay_recipe` | 32 x 32 | 4 | |
+| `container/slot_highlight_back`, `_front` | 24 x 24 | 4 | |
+| `container/inventory/effect_background`, `_ambient` | 32 x 32 | 4 | |
+| `widget/tab`, `_selected`, `_highlighted`, `_selected_highlighted` | 130 x 24 | left 2, top 2, right 2, bottom 0 | the tab bar of the options and world screens; not supplied here |
+| `toast/tutorial`, `toast/now_playing` | 160 x 32 | 3 and 4 | other toasts; not supplied |
+| `toast/system` | 160 x 64 | left 17, top 30, right 4, bottom 4 | not supplied |
+| `hud/locator_bar_background` | 12 x 5 | left 5, right 5, top 1, bottom 1 | not supplied |
+
+Consequences for the client: the nine-slice reader must accept both the single-integer and the four-side object forms of `border`
+and the Boolean `stretch_inner` (08 section 7.3 already lists them; this round confirms all three occur in the artifact). The
+vanilla checkbox and recipe-book sprites other than `overlay_recipe` carry no `.mcmeta` (stretch).
+
+#### 4.13.3 Widget geometry and colours (closes the widget part of Open questions 14 and 19)
+
+| Widget | Read value |
+|---|---|
+| Button | default size 150 x 20; the constants of the builder are 120 (small), 150 (default), 200 (big), height 20, spacing 8. The sprite is drawn at the widget rectangle (nine-slice scaled); the label is a scrolling string over the rectangle with a 2-pixel margin each side, centred. Pressed, disabled and hovered or focused choose `button_disabled`, `button_highlighted`, `button`; the highlighted sprite shows for hover or keyboard focus. |
+| Text field (`EditBox`) | default size 150 x 20; the sprite is drawn at the widget rectangle (`text_field`, `_highlighted` while focused). Text colours: enabled `#E0E0E0` (constant `DEFAULT_TEXT_COLOR`), disabled `#707070`, hint `#808080`. The recipe-book search box sets its text colour to white (`#FFFFFF`) and is 81 x 14 at (25, 13) of the panel with a maximum length of 50 characters (4.13.4). |
+| Slider | default height 20; handle 8 wide (half 4); the track is `slider` or `slider_highlighted`, the handle is `slider_handle` or `_highlighted`, drawn at the widget's own height; text margin 2. |
+| Checkbox | box size = the font's line height + 8 = 17 for the 9-pixel font (the vanilla sprite is 20 x 20 and is drawn scaled to 17 x 17); spacing between box and label 4 (read constants `BOX_PADDING` 8, `SPACING` 4). The four sprites are `checkbox`, `_highlighted`, `_selected`, `_selected_highlighted`. |
+| Scroll bar | width 6, minimum knob height 32 (the knob sprite is `scroller`, the track `scroller_background`). |
+| Container labels | colour `#404040`, no shadow (read: integer -12566464); the slot hover overlay colour is white at 50 % (`0x80FFFFFF`, ARGB integer -2130706433). Inventory title at label x 97, crafting-table title at label x 29 (read). |
+| Named colour constants (`CommonColors`) | WHITE `#FFFFFF`, BLACK `#000000`, GRAY `#808080`, DARK_GRAY `#404040`, LIGHT_GRAY `#A0A0A0`, LIGHTER_GRAY `#BABABA`, RED `#FF0000`, SOFT_RED `#DF5050`, GREEN `#00FF00`, BLUE `#0000FF`, YELLOW `#FFFF00`, SOFT_YELLOW `#FFFF55`, DARK_PURPLE `#500050`, HIGH_CONTRAST_DIAMOND `#57FFE1`, COSMOS_PINK `#FFCCCC`, TEXT_GRAY `#E0E0E0` (all with alpha `FF`; read as signed 32-bit constants and converted) |
+
+The colour a disabled button label is drawn in was not found: the label is drawn through the widget's text collector, whose
+parameters carry only a pose, an opacity (the widget's alpha) and a scissor, and the label's colour comes from the component's
+style (white when none is given). Where the greying of a disabled label happens was not traced (Open question 33); the
+choice of Decision UI-12 (`#A0A0A0`, which equals `LIGHT_GRAY`) stays. `#A0A0A0` and `#404040` are both vanilla named constants,
+which supports the chosen secondary and label colours; `#FFC857` (warning) has no counterpart and remains a choice.
+
+#### 4.13.4 Recipe book: panel, tabs, grid, toast (closes Open questions 2, 4 and 30 for the standard layout)
+
+Panel (class `RecipeBookComponent`):
+
+| Item | Read value |
+|---|---|
+| Panel size | 147 x 166, blitted from `recipe_book.png` with the source origin **(1, 1)** (not (0, 0)) of the 256 x 256 texture |
+| Panel origin | x = (screen width - 147) div 2 - xOffset; y = (screen height - 166) div 2. xOffset is 86, or 0 when the screen is "too narrow" |
+| Too narrow | GUI width < 379 (class `AbstractRecipeBookScreen`) |
+| Screen image left edge while the book is open and not too narrow | 177 + (GUI width - image width - 200) div 2; otherwise (GUI width - image width) div 2. Image size of inventory and crafting table: 176 x 166, blitted from (0, 0) of a 256 x 256 sheet (closes the region part of Open question 2) |
+| Book button | 20 x 18; inventory at (left + 104, GUI height div 2 - 22); crafting table at (left + 5, GUI height div 2 - 49) |
+| Search box | (panel + 25, panel + 13), 81 x 14, hint `gui.recipebook.search_hint` ("Search..."), text white |
+| Filter button | (panel + 110, panel + 12), 26 x 16 |
+| Tabs | each 35 x 27; x = panel x - 30, y = panel y + 3 + 27 x n (n counts the visible tabs in order, the Search tab always visible); the selected tab is drawn 2 pixels further left (x - 2) |
+| Tab icon | one item at (tabX + 9, tabY + 5) (+ x offset -2 when selected); a tab with two icons draws the first at tabX + 3 and the second at tabX + 14 (same y) |
+| Result grid | 5 columns, 20 results per page; cell (i) at (panel + 11 + 25 x (i mod 5), panel + 31 + 25 x (i div 5)); cells are 25 x 25 |
+| Page arrows | forward at (panel + 93, panel + 137), backward at (panel + 38, panel + 137), each 12 x 17; tooltips `gui.recipebook.next_page`, `gui.recipebook.previous_page` |
+| Page label | shown only when there is more than one page; text `gui.recipebook.page` ("%s/%s", current page from 1, total); centred on x = panel + 73, top y = panel + 141; colour white (integer -1) |
+
+Texts read from the vanilla language file: `gui.recipebook.search_hint` = "Search...", `gui.recipebook.page` = "%s/%s",
+`gui.recipebook.next_page` = "Next Page", `gui.recipebook.previous_page` = "Previous Page", `itemGroup.search` = "Search Items".
+
+Toast (class `RecipeToast`): sprite `toast/recipe` drawn at the toast's origin over its full size (160 x 32); title `recipe.toast.title`
+("New Recipe(s) Unlocked!") at (30, 7) in colour `#500050` (DARK_PURPLE) with no shadow; description `recipe.toast.description` ("Check your
+recipe book") at (30, 18) in black `#000000`, no shadow; the category item at (3, 3) scaled to 0.6 and the unlocked item at (8, 8);
+display time 5000 ms (the item changes over time when several recipes arrive).
+
+For the cobolcraft world type (Decisions UI-22, UI-23): use the read geometry above where it is not a design choice. Specifically
+(**Decision UI-28**): the tab rectangle is 35 x 27 and the built-in 32 x 27 sprite is stretched over it; the tab letter of Decision UI-22 is
+centred in 35 pixels, x = tabX + (35 - a) div 2, y = tabY + 9 (unchanged), minus 2 on x when selected, as the item would be; the
+page label is centred on panel x + 73 at y + 141 (replacing the chosen 50 to 92 box of Decision UI-23; the arrows' mid-point 71.5
+is not where the vanilla label is); the toast title is at (toastX + 30, toastY + 7) and the description at (toastX + 30, toastY + 18) with
+the new colours; texts "New Recipe(s) Unlocked!" and "Check your recipe book" replace `cobolcraft.screen.recipe_book.toast`
+("New Recipe", chosen) for the standard keys, and the cobolcraft keys keep whatever English the built-in `lang` gives (state the same
+wording there). The label colour on the real panel is white because the real `recipe_book.png` panel is dark; on the built-in
+parchment panel the dark-text rule of section 6 still applies (the vanilla panel's face colours were not sampled). Reason: the
+positions are read values and the contrast rule is why the colour stays the built-in one.
+
+#### 4.13.5 Tooltip layout and frame
+
+Read from `TooltipRenderUtil`: the tooltip box is the text block grown by 3 pixels of padding on every side (constants
+`PADDING_LEFT/RIGHT/TOP/BOTTOM` 3) and then by the sprite margin 9 on every side; so both sprites are drawn at (textX - 12, textY - 12)
+with size (textWidth + 24, textHeight + 24). The mouse offset is 12 (`MOUSE_OFFSET`). Both sprites are drawn with the same rectangle,
+background first, frame over it. Two sprite ids per tooltip (the defaults `tooltip/background`, `tooltip/frame`) can be replaced by a
+per-item style id; the replacement path is the same name with the item's namespace and path.
+
+Vanilla `tooltip/background`: the opaque area is pixels 8 to 91 on both axes (84 x 84), every pixel `#100010` at alpha 240 (94 %),
+with the four corner pixels (8, 8), (91, 8), (8, 91), (91, 91) transparent (7052 opaque pixels). Vanilla `tooltip/frame`: a
+one-pixel ring at pixels 9 to 90 (320 opaque pixels, corners (9, 9) and the other three transparent, so each side runs from 10 to 89),
+alpha 80 (31 %), a vertical gradient from `#5000FF` at the top edge to `#28007F` at the bottom edge (the side columns go through the
+intermediate values), and everything inside the ring transparent. The border is 10 with `stretch_inner`, so the ring stays one
+pixel wide and straight when the middle is stretched. Frame position: the ring lies at sprite pixel 9, which is 3 pixels outside the
+text, i.e. exactly at the padding edge (rectangle edge 12 minus 9). **Decision UI-13 is confirmed in effect, not in number**: the
+built-in frame at pixels 7 and 8 (outer edge 5 from the text, inner edge 3) is 1 to 2 pixels further out than the vanilla ring; this is
+accepted, because a pack above the built-in pack brings its own frame and `.mcmeta`. Closes Open question 16.
+
+#### 4.13.6 Window size and GUI scale (closes Open question 29's window part)
+
+| Rule | Read value |
+|---|---|
+| Minimum window size | 320 x 240 window units, set as the window manager's minimum (`SDL_SetWindowMinimumSize`) and also as the floor of the requested start size |
+| GUI scale option | 0 means Auto; 1 up to a maximum that is the Auto result for the current window; the option is clamped into [0, that maximum] when set; displayed as "Auto" (`options.guiScale.auto`) for 0 and as the decimal number otherwise; the caption key is `options.guiScale` ("GUI Scale") |
+| Scale applied | start with 1; while the scale is not the requested value (the requested value 0 never matches) and the scale is below both framebuffer sizes and (framebuffer width div (scale + 1)) >= 320 and (framebuffer height div (scale + 1)) >= 240: add 1. If the "force unicode font" option is on and the result is odd, add 1. This is evaluated on every window resize with the stored option value, so a manual scale larger than fits is lowered to the fitting one without changing the stored option |
+| GUI size | width = ceil(framebuffer width / scale), height = ceil(framebuffer height / scale) |
+
+Worked examples (framebuffer size, requested scale, force-unicode flag, result; computed by following the rule above):
+1920 x 1080 Auto: 4, GUI 480 x 270 (1080 div 5 = 216 < 240 stops at 4); 854 x 480 Auto: 2, GUI 427 x 240; 640 x 480 Auto: 2, GUI 320 x 240;
+960 x 540 Auto: 2, GUI 480 x 270; 1280 x 720 Auto: 3, GUI 427 x 240 (ceil(1280/3) = 427) and with force-unicode on 4, GUI 320 x 180;
+320 x 240 Auto: 1, GUI 320 x 240, and with force-unicode on 2, GUI 160 x 120; 1920 x 1080 manual 3: 3, GUI 640 x 360 (with
+force-unicode on: 4); 1920 x 1080 manual 9: 4 (lowered to fit). Force-unicode is the option that makes the font
+draw the Unicode providers; the cobolcraft client has no such option, so the flag is off and the odd-to-even step never applies
+(inferred from the content list; the standard world type never needs it for the built-in font).
+
+Consequence for layouts: with the flag off the smallest GUI an Auto or a manual scale gives, on a framebuffer of at least 320 x 240
+pixels, has width >= 320 and height >= 240 (every step to a larger scale is refused below that), so the layouts of section 7.2 may
+assume 320 x 240 as the minimum GUI size. A window smaller than 320 x 240 can only occur where the window manager ignores the minimum-size
+hint; it then runs at scale 1 and the GUI is smaller (inferred: no other clamp was found). Open question 29 keeps that case.
+
+#### 4.13.7 Contrast values
+
+Recomputed in this round (WCAG relative luminance, sRGB, ratio (L1 + 0.05) / (L2 + 0.05)); they replace the unchecked values of section 6
+where they differ:
+
+| Pair | Ratio |
+|---|---|
+| `#A0A0A0` on `#1E1E26` (menu tile) / `#101016` / `#3A3F45` (disabled button) | 6.33 / 7.25 / 4.06 |
+| `#FFC857` on `#1E1E26` / `#101016` / `#3A3F45` | 10.76 / 12.32 / 6.91 |
+| `#FFFFFF` on `#3A3F45` | 10.62 |
+| `#404040` on `#D8D0B4` / `#A39A7A` | 6.72 / 3.68 |
+| `#1A1A1A` on `#A39A7A` | 6.18 |
+| `#FFFFFF` on `#D8D0B4` / `#A39A7A` | 1.54 / 2.81 |
+
+These agree with the figures of section 6 (6.3 to 7.2, 4.1, 10.8, 12.3, 6.9, 10.6, 6.7, 3.7, 6.2, 1.54, 2.8); the values were computed
+by script from the section 2.1 colours, not read from the artifact. Pairs below 4.5: `#404040` on the tab face `#A39A7A`
+(3.68; why tab letters use `#1A1A1A`), `#A0A0A0` on the disabled button face (4.06, above the large-text threshold of 3), and the two white-on-parchment pairs (1.54, 2.81), which are never drawn (section 6). The
+shadow colour `#3F3F3F` stays an assumption: the shadow rule was not re-read in this round (Open question 31).
+
+#### 4.13.8 Differences between this document's recipes and the read values
+
+Recipes and check values are unchanged by this round. The client must follow the rule in the right column; an implementer who
+wants the built-in art to match the vanilla sizes must change the recipe and recompute section 9 in the same edit.
+
+| Sprite | Built-in | Read | Rule for the client |
+|---|---|---|---|
+| `hud/crosshair_attack_indicator_background`, `_progress` | 16 x 16 | 16 x 4 | **Interim choice (Open questions 3 and 32):** for the built-in 16 x 16 sprites draw the source sub-rectangle rows 6 to 9 (the 16 x 4 band that holds the bar, section 4.1: background `R(0, 6, 15, 9)`, progress rows 7 and 8 inside it) 1:1 at a 16 x 4 destination (never squash the 16 rows to 4); a vanilla-style sprite that is already 16 x 4 is stretched to the destination, which is the same size. Horizontally centred on the crosshair centre (x = GUI width div 2 - 8) at y = GUI height div 2 - 7 + 16 (inferred position, not read); `_progress` is clipped from the left to 16 x cooldown fraction pixels wide, not scaled (the clipping direction is inferred, Open question 3). A recipe change to 16 x 4 would retire this rule. |
+| `recipe_book/tab`, `_selected` | 32 x 27 | 35 x 27 | draw at 35 x 27 (4.13.4) |
+| `recipe_book/crafting_overlay*` | 25 x 25 | 24 x 24 | **Interim choice (Open question 32):** draw at 25 x 25 (the built-in size, 1:1) in the 25-pixel cell of the overlay; the vanilla 24 x 24 draw size is not adopted because the overlay layout was not read |
+| `recipe_book` sheet panel origin | (0, 0) (4.11, Decision UI-10) | (1, 1) in the vanilla sheet | **Rule:** the client blits the 147 x 166 panel from a source origin that depends on where `textures/gui/recipe_book.png` resolves: (1, 1) when a pack above the built-in pack supplies it (vanilla and user layouts), (0, 0) when the built-in file is used. The destination origin is unchanged (4.13.4). The origin is in logical sheet units and is multiplied by the sheet's resolution factor for a higher-resolution sheet (inferred for user layouts such as a 512 x 512 sheet: 1 logical unit = 2 pixels). The client learns which file resolved from the pack-stack lookup result (the pack that supplied the file, 08 section 3). Moving the built-in panel to (1, 1) is **optional**; the rule above stands until it is done, and then the origin collapses to (1, 1) and the `recipe_book` check value and the Sheets manifest of section 9.2 are recomputed (rbX = rbY = 1). Not done in this round. |
+| `widget/slider`, `_highlighted` | border 2 | border 1 | none (built-in only) |
+| `widget/slider_handle*` | border 2 | 2, 2, 2, 3 | none |
+| `widget/scroller` | border 2 | border 1 | none |
+| `tooltip/frame` | border 9, frame at 7 and 8 | border 10, `stretch_inner`, ring at 9 | none (4.13.5) |
+
+New Open questions 32 and 33 are in section 12.
 
 
 
@@ -1122,7 +1331,524 @@ documents word them (checked against 13 section 3.9 for the search hint, the fil
 drawn for them. The exception is the **toast text** `cobolcraft.screen.recipe_book.toast` ("New Recipe"), which 13 does not
 give: it is chosen here (Decision UI-23), as is the position of the page label (13 gives the arrows and the existence of the label only). The existing `cobolcraft.screen.*` keys of 08 section
 10.8.6 are unchanged and are reused (for example `cobolcraft.screen.common.back`, `cobolcraft.screen.create_world.create`).
-The options screen texts are not supplied (Open question 13); GAP-34 is not closed for them (section 0).
+The options screen texts are supplied in section 6.2 (Open question 13 is closed).
+
+### 6.2 Options screen texts (round OPT)
+
+Source: the vanilla client jar `minecraft-26.3-client.jar` (the artifact already recorded in docs/protocol/README.md; SHA-256
+`4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d`), file `assets/minecraft/lang/en_us.json` (8559 keys), read statically in a clean-room
+round together with the option and screen classes. The Faithful 32x pack has no `lang` directory, so it changes none of these texts. **Every value in the tables
+below is read, none is chosen.** The behaviour behind them (option names, defaults, ranges, persisted keys, stored forms, label formats, screen order) is in
+13 section 7.2 and sections 7.4 to 7.6, which this section is the text companion of. This closes Open question 13 and the options-screen part of GAP-34.
+
+**Decision UI-29 (keys of the options screens).** The options screens use the **standard key names** exactly as the artifact has them (`options.*`,
+`controls.*`, `key.*`, `soundCategory.*`, `narrator.*`), not `cobolcraft.` keys. Reason: these are the keys a generated pack's language file also defines
+with the same values (so the generated file can replace the built-in text by the lookup rule of 08 section 10.8 with no visible change), the key tables of
+13 are written in them, and mapping about 430 keys to a second namespace would add a table with no gain; the collision concern of Decision UI-14 (a client-only key being
+overridden by accident) does not arise because the standard values are the same. The built-in `lang/en_us.json` (08 section 10.8.6) therefore carries every row of the tables of this section
+plus the `key.keyboard.*` and `key.mouse.*` rows of 13 section 7.5. Texts use Java-style placeholders: `%s` in order, `%1$s` positional, and `%%` for a literal percent
+sign (for example `Language translations may not be 100%% accurate.` is shown with one `%`). A literal `\n` in a value is a line break. The only non-ASCII value in the keys of this section is in 13 section 7.5 (`Keypad ±`, the plus-minus sign); Decision UI-11 (ASCII built-in texts) means the
+built-in file draws it as `+-` unless the font has the glyph (a choice, Open question 35).
+
+Rows are grouped by screen. The captions are formatted by the rules of 13 section 7.4 (`%s: %s`, percent, pixels, ON/OFF, special values). Enum values and
+tooltips are shown with the option; keys that appear in two groups are listed once.
+
+**Generic value formats and common words**
+
+| Key | Text |
+|---|---|
+| `options.generic_value` | %s: %s |
+| `options.percent_value` | %s: %s%% |
+| `options.pixel_value` | %s: %spx |
+| `options.value` | %s |
+| `options.on` | ON |
+| `options.off` | OFF |
+| `options.on.composed` | %s: ON |
+| `options.off.composed` | %s: OFF |
+| `options.multiplier` | %sx |
+| `options.framerate` | %s fps |
+| `options.blocks` | %s Blocks |
+| `options.chunks` | %s Chunks |
+| `options.hidden` | Hidden |
+| `options.visible` | Shown |
+| `gui.done` | Done |
+| `gui.back` | Back |
+| `gui.cancel` | Cancel |
+| `gui.yes` | Yes |
+| `gui.no` | No |
+| `gui.none` | None |
+| `gui.up` | Up |
+| `gui.down` | Down |
+| `options.needsRestart` | Requires a game restart to take effect. |
+| `options.restartRequired` | Some of your changes require a game restart to be applied. |
+
+**Options screen (OptionsScreen)**
+
+| Key | Text |
+|---|---|
+| `options.title` | Options |
+| `options.fov` | FOV |
+| `options.fov.min` | Normal |
+| `options.fov.max` | Quake Pro |
+| `options.skinCustomisation` | Skin Customization... |
+| `options.sounds` | Music & Sounds... |
+| `options.video` | Video Settings... |
+| `options.controls` | Controls... |
+| `options.language` | Language... |
+| `options.chat` | Chat Settings... |
+| `options.resourcepack` | Resource Packs... |
+| `options.accessibility` | Accessibility Settings... |
+| `resourcePack.title` | Select Resource Packs |
+| `menu.options` | Options... |
+
+**Video Settings screen**
+
+| Key | Text |
+|---|---|
+| `options.videoTitle` | Video Settings |
+| `options.video.display.header` | Display |
+| `options.video.interface.header` | Interface |
+| `options.video.preferences.header` | Preferences |
+| `options.video.quality.header` | Quality & Performance |
+| `options.graphics` | Graphics |
+| `options.graphics.preset` | Preset |
+| `options.graphics.preset.tooltip` | Sets "Quality & Performance" settings to reasonable defaults corresponding to the desired quality. |
+| `options.graphics.fast` | Fast |
+| `options.graphics.fast.tooltip` | Fast graphics reduces the amount of visible rain and snow.\nTransparency effects are disabled for various blocks such as leaves. |
+| `options.graphics.fancy` | Fancy |
+| `options.graphics.fancy.tooltip` | Fancy graphics balances performance and quality for the majority of machines.\nWeather, clouds, and particles may not appear behind translucent blocks or water. |
+| `options.graphics.fabulous` | Fabulous! |
+| `options.graphics.fabulous.tooltip` | %s graphics uses screen shaders for drawing weather, clouds, and particles behind translucent blocks and water.\nThis may severely impact performance for portable devices and 4K displays. |
+| `options.graphics.custom` | Custom |
+| `options.graphicsApi` | Graphics API |
+| `options.graphicsApi.default` | Default |
+| `options.graphicsApi.opengl` | Prefer OpenGL |
+| `options.graphicsApi.restart` | You must restart your game to change the graphics API. |
+| `options.graphicsApi.tooltip` | Which graphics API to use for rendering. Leave as Default unless you have a specific need to change this! |
+| `options.graphicsApi.tooltip.vulkan` | Experimental. Might reduce performance or cause instability on some systems. |
+| `options.graphicsApi.vulkan` | Prefer Vulkan (Experimental) |
+| `options.framerateLimit` | Max Framerate |
+| `options.framerateLimit.max` | Unlimited |
+| `options.vsync` | VSync |
+| `options.inactivityFpsLimit` | Reduce fps when |
+| `options.inactivityFpsLimit.afk` | AFK |
+| `options.inactivityFpsLimit.afk.tooltip` | Limits framerate to 30 when the game is not getting any player input for more than a minute. Further limits it to 10 after 9 more minutes. |
+| `options.inactivityFpsLimit.minimized` | Minimized |
+| `options.inactivityFpsLimit.minimized.tooltip` | Limits framerate only when the game window is minimized. |
+| `options.debugGuiScale.tooltip` | Overrides the debug overlay with a different GUI scale than the rest of the game |
+| `options.debugGuiScale.unchanged` | Unchanged |
+| `options.guiScale` | GUI Scale |
+| `options.guiScale.auto` | Auto |
+| `options.exclusiveFullscreen` | Exclusive Fullscreen |
+| `options.exclusiveFullscreen.off.tooltip` | All input methods are expected to work in this fullscreen mode, but adaptive sync (Nvidia G-Sync, AMD FreeSync) will not work. |
+| `options.exclusiveFullscreen.on.tooltip` | This fullscreen mode might prevent some input methods from working, but adaptive sync (Nvidia G-Sync, AMD FreeSync) should work. |
+| `options.exclusiveFullscreen.warningTooltip` | This option might prevent some input methods from working. |
+| `options.fullscreen` | Fullscreen |
+| `options.fullscreen.current` | Current |
+| `options.fullscreen.entry` | %sx%s@%s (%sbit) |
+| `options.fullscreen.exclusive.mode` | Exclusive Fullscreen Mode |
+| `options.fullscreen.exclusive.mode.tooltip` | This setting only takes effect when Exclusive Fullscreen is enabled. |
+| `options.fullscreen.resolution` | Fullscreen Resolution |
+| `options.fullscreen.unavailable` | Setting unavailable |
+| `options.macFullscreenMenuVisibility` | Menu/Dock Visibility |
+| `options.macFullscreenMenuVisibility.tooltip` | Whether the macOS Menu bar and Dock can be revealed by moving the mouse to the edge of the screen while in non-exclusive fullscreen. |
+| `options.gamma` | Brightness |
+| `options.gamma.default` | Default |
+| `options.gamma.max` | Bright |
+| `options.gamma.min` | Moody |
+| `options.ao` | Smooth Lighting |
+| `options.ao.max` | Maximum |
+| `options.ao.min` | Minimum |
+| `options.ao.off` | OFF |
+| `options.biomeBlendRadius` | Biome Blend |
+| `options.biomeBlendRadius.1` | OFF (Fastest) |
+| `options.biomeBlendRadius.3` | 3x3 (Fast) |
+| `options.biomeBlendRadius.5` | 5x5 (Normal) |
+| `options.biomeBlendRadius.7` | 7x7 (High) |
+| `options.biomeBlendRadius.9` | 9x9 (Very High) |
+| `options.biomeBlendRadius.11` | 11x11 (Extreme) |
+| `options.biomeBlendRadius.13` | 13x13 (Showoff) |
+| `options.biomeBlendRadius.15` | 15x15 (Maximum) |
+| `options.prioritizeChunkUpdates` | Chunk Builder |
+| `options.prioritizeChunkUpdates.byPlayer` | Semi Blocking |
+| `options.prioritizeChunkUpdates.byPlayer.tooltip` | Some actions within a chunk will recompile the chunk immediately. This includes block placing and destroying. |
+| `options.prioritizeChunkUpdates.nearby` | Fully Blocking |
+| `options.prioritizeChunkUpdates.nearby.tooltip` | Nearby chunks are always compiled immediately. This may impact game performance when blocks are placed or destroyed. |
+| `options.prioritizeChunkUpdates.none` | Threaded |
+| `options.prioritizeChunkUpdates.none.tooltip` | Nearby chunks are compiled in parallel threads. This may result in brief visual holes when blocks are destroyed. |
+| `options.renderDistance` | Render Distance |
+| `options.simulationDistance` | Simulation Distance |
+| `options.renderClouds` | Clouds |
+| `options.clouds.fast` | Fast |
+| `options.clouds.fancy` | Fancy |
+| `options.renderCloudsDistance` | Cloud Distance |
+| `options.attack.crosshair` | Crosshair |
+| `options.attack.hotbar` | Hotbar |
+| `options.attackIndicator` | Attack Indicator |
+| `options.autosaveIndicator` | Autosave Indicator |
+| `options.chunkFade` | Chunk Fade Time |
+| `options.chunkFade.none` | Chunk Fade: None |
+| `options.chunkFade.seconds` | Chunk Fade: %s second(s) |
+| `options.chunkFade.tooltip` | How long in seconds chunks should fade in when they're first rendered, if at all. |
+| `options.cutoutLeaves` | See-Through Leaves |
+| `options.cutoutLeaves.tooltip` | Allows you to see through gaps in leaves. Disabling improves performance. |
+| `options.entityDistanceScaling` | Entity Distance |
+| `options.entityShadows` | Entity Shadows |
+| `options.improvedTransparency` | Improved Transparency |
+| `options.improvedTransparency.oit.tooltip` | An experimental approach that uses an order-independent transparency algorithm to avoid graphical issues normally present when looking through multiple layers of translucent objects.\nThis will impact performance. |
+| `options.improvedTransparency.tooltip` | An experimental approach that uses screen shaders for drawing weather, clouds, and particles behind translucent blocks and water.\nThis will impact GPU performance. |
+| `options.maxAnisotropy` | Anisotropic Filtering |
+| `options.maxAnisotropy.tooltip` | Each level significantly improves how smooth textures look, but impacts performance and significantly impacts video memory usage. Requires Texture Filtering to be set to Anisotropic. |
+| `options.mipmapLevels` | Mipmap Levels |
+| `options.particles` | Particles |
+| `options.particles.all` | All |
+| `options.particles.decreased` | Decreased |
+| `options.particles.minimal` | Minimal |
+| `options.textureFiltering` | Texture Filtering |
+| `options.textureFiltering.anisotropic` | Anisotropic |
+| `options.textureFiltering.anisotropic.tooltip` | A hardware-based filtering method, but impacts performance and significantly impacts video memory usage. May not be supported on all hardware. |
+| `options.textureFiltering.none` | None |
+| `options.textureFiltering.none.tooltip` | Textures are displayed without any filtering. Blocks may look blurry when viewed at an angle. |
+| `options.textureFiltering.rgss` | RGSS |
+| `options.textureFiltering.rgss.tooltip` | (Rotated Grid Super Sampling)\nA shader-based filtering method that improves texture quality with a moderate performance impact. |
+| `options.vignette` | Show Vignette |
+| `options.vignette.tooltip` | This is a subtle texture over the game screen used for reducing brightness towards the edges of the screen and warning about the world border. |
+| `options.weatherRadius` | Weather Effect Radius |
+| `options.weatherRadius.tooltip` | Radius of the area where rain and snow effects are visible. Very low performance impact. |
+| `options.accessibility.menu_background_blurriness` | Menu Background Blur |
+| `options.accessibility.menu_background_blurriness.tooltip` | Changes the blurriness of menu backgrounds. |
+
+**Unsupported-graphics warning screen (Fabulous preset)**
+
+| Key | Text |
+|---|---|
+| `options.graphics.warning.accept` | Continue Without Support |
+| `options.graphics.warning.cancel` | Take Me Back |
+| `options.graphics.warning.message` | Your graphics device is detected as unsupported for the %s graphics option.\n\nYou may ignore this and continue, however support will not be provided for your device if you choose to use %s graphics. |
+| `options.graphics.warning.renderer` | Renderer detected: [%s] |
+| `options.graphics.warning.title` | Graphics Device Unsupported |
+| `options.graphics.warning.vendor` | Vendor detected: [%s] |
+| `options.graphics.warning.version` | OpenGL Version detected: [%s] |
+
+**Controls screen, Mouse Settings, Key Binds**
+
+| Key | Text |
+|---|---|
+| `controls.keybinds` | Key Binds... |
+| `controls.keybinds.duplicateKeybinds` | This key is also used for:\n%s |
+| `controls.keybinds.title` | Key Binds |
+| `controls.reset` | Reset |
+| `controls.resetAll` | Reset Keys |
+| `controls.title` | Controls |
+| `options.allowCursorChanges` | Allow Cursor Changes |
+| `options.allowCursorChanges.tooltip` | Allows the mouse cursor to change shape when over certain UI elements. |
+| `options.autoJump` | Auto-Jump |
+| `options.ctrlClickEmulatesRightClick` | Right Click Emulation |
+| `options.ctrlClickEmulatesRightClick.tooltip` | When enabled, Control + left-click is treated as a right-click. Only applies on macOS. |
+| `options.discrete_mouse_scroll` | Discrete Scrolling |
+| `options.invertMouse` | Invert Mouse |
+| `options.invertMouseX` | Invert Mouse X |
+| `options.invertMouseY` | Invert Mouse Y |
+| `options.key.hold` | Hold |
+| `options.key.toggle` | Toggle |
+| `options.mouse_settings` | Mouse Settings... |
+| `options.mouse_settings.title` | Mouse Settings |
+| `options.mouseWheelSensitivity` | Scroll Sensitivity |
+| `options.operatorItemsTab` | Operator Items Tab |
+| `options.quitShortcuts` | Quit Shortcuts |
+| `options.quitShortcuts.tooltip` | Whether keyboard shortcuts can close the game. When off, Alt + F4 on Windows and Linux, and Cmd + Q on macOS, will no longer quit the game. |
+| `options.rotateWithMinecart` | Rotate with Minecarts |
+| `options.rotateWithMinecart.tooltip` | Whether the player's view should rotate with a turning Minecart. Only available in worlds with the 'Minecart Improvements' experimental setting turned on. |
+| `options.sensitivity` | Sensitivity |
+| `options.sensitivity.max` | HYPERSPEED!!! |
+| `options.sensitivity.min` | *yawn* |
+| `options.sprintWindow` | Sprint Window |
+| `options.sprintWindow.tooltip` | Time window in ticks where double-tapping the forward key activates sprint. |
+| `key.sneak` | Sneak |
+| `key.sprint` | Sprint |
+| `key.attack` | Attack/Destroy |
+| `key.use` | Use Item/Place Block |
+| `key.categories.creative` | Creative Mode |
+| `key.categories.gameplay` | Gameplay |
+| `key.categories.inventory` | Inventory |
+| `key.categories.misc` | Miscellaneous |
+| `key.categories.movement` | Movement |
+| `key.categories.multiplayer` | Multiplayer |
+| `key.categories.spectator` | Spectator |
+| `key.categories.ui` | Game Interface |
+| `key.category.minecraft.creative` | Creative Mode |
+| `key.category.minecraft.debug` | Debug |
+| `key.category.minecraft.gameplay` | Gameplay |
+| `key.category.minecraft.inventory` | Inventory |
+| `key.category.minecraft.misc` | Miscellaneous |
+| `key.category.minecraft.movement` | Movement |
+| `key.category.minecraft.multiplayer` | Multiplayer |
+| `key.category.minecraft.spectator` | Spectator |
+| `narrator.controls.bound` | %s is bound to %s |
+| `narrator.controls.reset` | Reset %s button |
+| `narrator.controls.unbound` | %s is not bound |
+
+**Key binding names (all bindable actions)**
+
+| Key | Text |
+|---|---|
+| `key.advancements` | Advancements |
+| `key.back` | Walk Backward |
+| `key.chat` | Open Chat |
+| `key.command` | Open Command |
+| `key.debug.clearChat` | Clear Chat |
+| `key.debug.copyLocation` | Copy Location |
+| `key.debug.copyRecreateCommand` | Copy Data |
+| `key.debug.crash` | Debug Crash |
+| `key.debug.debugOptions` | Debug Options |
+| `key.debug.dumpDynamicTextures` | Dump Dynamic Textures |
+| `key.debug.dumpVersion` | Dump Version Info |
+| `key.debug.focusPause` | Toggle Lost Focus Pause |
+| `key.debug.fpsCharts` | Fps Charts |
+| `key.debug.improvedTransparency` | Toggle Improved Transparency |
+| `key.debug.lightmapTexture` | Lightmap Texture |
+| `key.debug.modifier` | Debug Modifier Key |
+| `key.debug.networkCharts` | Network Charts |
+| `key.debug.overlay` | Toggle Overlay |
+| `key.debug.profiling` | Start/Stop Profiling |
+| `key.debug.profilingChart` | Profiling Chart |
+| `key.debug.reloadChunk` | Reload Chunks |
+| `key.debug.reloadResourcePacks` | Reload Resource Packs |
+| `key.debug.showAdvancedTooltips` | Show Advanced Tooltips |
+| `key.debug.showChunkBorders` | Show Chunk Boundaries |
+| `key.debug.showHitboxes` | Show Hitboxes |
+| `key.debug.spectate` | Cycle Spectator |
+| `key.debug.switchGameMode` | Game Mode Switcher |
+| `key.drop` | Drop Selected Item |
+| `key.forward` | Walk Forward |
+| `key.friends` | Friends Screen |
+| `key.fullscreen` | Toggle Fullscreen |
+| `key.hotbar.1` | Hotbar Slot 1 |
+| `key.hotbar.2` | Hotbar Slot 2 |
+| `key.hotbar.3` | Hotbar Slot 3 |
+| `key.hotbar.4` | Hotbar Slot 4 |
+| `key.hotbar.5` | Hotbar Slot 5 |
+| `key.hotbar.6` | Hotbar Slot 6 |
+| `key.hotbar.7` | Hotbar Slot 7 |
+| `key.hotbar.8` | Hotbar Slot 8 |
+| `key.hotbar.9` | Hotbar Slot 9 |
+| `key.inventory` | Open/Close Inventory |
+| `key.jump` | Jump |
+| `key.left` | Strafe Left |
+| `key.loadToolbarActivator` | Load Hotbar Activator |
+| `key.pickItem` | Pick Block |
+| `key.playerlist` | List Players |
+| `key.quickActions` | Quick Actions |
+| `key.right` | Strafe Right |
+| `key.saveToolbarActivator` | Save Hotbar Activator |
+| `key.screenshot` | Take Screenshot |
+| `key.smoothCamera` | Toggle Cinematic Camera |
+| `key.socialInteractions` | Social Interactions Screen |
+| `key.spectatorHotbar` | Select On Hotbar |
+| `key.spectatorOutlines` | Highlight Players |
+| `key.swapOffhand` | Swap Item With Off Hand |
+| `key.toggleGui` | Toggle GUI |
+| `key.togglePerspective` | Toggle Perspective |
+| `key.toggleSpectatorShaderEffects` | Toggle Spectator Shader Effects |
+
+**Music & Sounds screen**
+
+| Key | Text |
+|---|---|
+| `options.sounds.title` | Music & Sound Options |
+| `soundCategory.ambient` | Ambient/Environment |
+| `soundCategory.block` | Blocks |
+| `soundCategory.hostile` | Hostile Mobs |
+| `soundCategory.master` | Master Volume |
+| `soundCategory.music` | Music |
+| `soundCategory.neutral` | Friendly Mobs |
+| `soundCategory.player` | Players |
+| `soundCategory.record` | Jukebox/Note Blocks |
+| `soundCategory.ui` | UI |
+| `soundCategory.voice` | Narrator/Voice |
+| `soundCategory.weather` | Weather |
+| `options.audioDevice` | Device |
+| `options.audioDevice.default` | System Default |
+| `options.directionalAudio` | Directional Audio |
+| `options.directionalAudio.off.tooltip` | Classic Stereo sound. |
+| `options.directionalAudio.on.tooltip` | Uses HRTF-based directional audio to improve the simulation of 3D sound. Requires HRTF-compatible audio hardware, and is best experienced with headphones. |
+| `options.music_frequency` | Music Frequency |
+| `options.music_frequency.constant` | Constant |
+| `options.music_frequency.default` | Default |
+| `options.music_frequency.frequent` | Frequent |
+| `options.music_frequency.tooltip` | Changes how frequently music plays while in a game world. |
+| `options.musicToast` | Music Toast |
+| `options.musicToast.never` | Never |
+| `options.musicToast.never.tooltip` | No music toast is shown. |
+| `options.musicToast.pauseMenu` | Pause Menu |
+| `options.musicToast.pauseMenu.tooltip` | A music toast is constantly displayed in the in-game pause menu while a song is playing. |
+| `options.musicToast.pauseMenuAndToast` | Pause Menu and Toast |
+| `options.musicToast.pauseMenuAndToast.tooltip` | Displays a toast when a song starts playing. The same toast is constantly displayed in the in-game pause menu while a song is playing. |
+| `options.showSubtitles` | Closed Captions |
+| `options.showSubtitles.tooltip` | Enables captions for sounds played in the game. |
+
+**Accessibility Settings screen**
+
+| Key | Text |
+|---|---|
+| `options.accessibility.high_contrast` | High Contrast |
+| `options.accessibility.high_contrast_block_outline` | High Contrast Block Outlines |
+| `options.accessibility.high_contrast_block_outline.tooltip` | Enhances the block outline contrast of the targeted block. |
+| `options.accessibility.high_contrast.error.tooltip` | High Contrast resource pack is not available. |
+| `options.accessibility.high_contrast.tooltip` | Enhances the contrast of UI elements. |
+| `options.accessibility.link` | Accessibility Guide |
+| `options.accessibility.narrator_hotkey` | Narrator Hotkey |
+| `options.accessibility.narrator_hotkey.mac.tooltip` | Allows the Narrator to be toggled on and off with 'Cmd + B'. |
+| `options.accessibility.narrator_hotkey.tooltip` | Allows the Narrator to be toggled on and off with 'Ctrl + B'. |
+| `options.accessibility.panorama_speed` | Panorama Scroll Speed |
+| `options.accessibility.text_background` | Text Background |
+| `options.accessibility.text_background_opacity` | Text Background Opacity |
+| `options.accessibility.text_background.chat` | Chat |
+| `options.accessibility.text_background.everywhere` | Everywhere |
+| `options.accessibility.title` | Accessibility Settings |
+| `options.accessibility.tooltip` | Accessibility Settings |
+| `options.damageTiltStrength` | Damage Tilt |
+| `options.damageTiltStrength.tooltip` | The amount of camera shake caused by being hurt. |
+| `options.darkMojangStudiosBackgroundColor` | Monochrome Logo |
+| `options.darkMojangStudiosBackgroundColor.tooltip` | Changes the Mojang Studios loading screen background color to black. |
+| `options.darknessEffectScale` | Darkness Pulsing |
+| `options.darknessEffectScale.tooltip` | Controls how much the Darkness effect pulses when a Warden or Sculk Shrieker gives it to you. |
+| `options.fovEffectScale` | FOV Effects |
+| `options.fovEffectScale.tooltip` | Controls how much the field of view can change with gameplay effects. |
+| `options.glintSpeed` | Glint Speed |
+| `options.glintSpeed.tooltip` | Controls how fast the visual glint shimmers across enchanted items. |
+| `options.glintStrength` | Glint Strength |
+| `options.glintStrength.tooltip` | Controls how transparent the visual glint is on enchanted items. |
+| `options.hideLightningFlashes` | Hide Sky Flashes |
+| `options.hideLightningFlashes.tooltip` | Prevents Lightning Bolts or other environmental effects from making the sky flash. The sources of flashes themselves will still be visible. |
+| `options.hideSplashTexts` | Hide Splash Texts |
+| `options.hideSplashTexts.tooltip` | Hides the yellow splash text in the main menu. |
+| `options.narrator` | Narrator |
+| `options.narrator.all` | Narrates All |
+| `options.narrator.chat` | Narrates Chat |
+| `options.narrator.notavailable` | Not Available |
+| `options.narrator.off` | OFF |
+| `options.narrator.system` | Narrates System |
+| `options.screenEffectScale` | Distortion Effects |
+| `options.screenEffectScale.tooltip` | Strength of Nausea and Nether Portal screen distortion effects.\nAt lower values, the Nausea effect is replaced with a green overlay. |
+| `options.viewBobbing` | View Bobbing |
+| `narrator.button.accessibility` | Accessibility |
+
+**Chat Settings screen**
+
+| Key | Text |
+|---|---|
+| `options.chat.color` | Colors |
+| `options.chat.delay` | Chat Delay: %s second(s) |
+| `options.chat.delay_none` | Chat Delay: None |
+| `options.chat.drafts` | Save Unsent Chats |
+| `options.chat.drafts.tooltip` | Unsent messages will be saved and can be sent the next time chat is opened. |
+| `options.chat.height.focused` | Focused Height |
+| `options.chat.height.unfocused` | Unfocused Height |
+| `options.chat.line_spacing` | Line Spacing |
+| `options.chat.links` | Web Links |
+| `options.chat.links.prompt` | Prompt on Links |
+| `options.chat.opacity` | Chat Text Opacity |
+| `options.chat.scale` | Chat Text Size |
+| `options.chat.title` | Chat Settings |
+| `options.chat.visibility` | Chat |
+| `options.chat.visibility.full` | Shown |
+| `options.chat.visibility.hidden` | Hidden |
+| `options.chat.visibility.system` | Commands Only |
+| `options.chat.width` | Width |
+| `options.autoSuggestCommands` | Command Suggestions |
+| `options.hideMatchedNames` | Hide Matched Names |
+| `options.hideMatchedNames.tooltip` | 3rd-party Servers may send chat messages in non-standard formats.\nWith this option on, hidden players will be matched based on chat sender names. |
+| `options.reducedDebugInfo` | Reduced Debug Info |
+| `options.onlyShowSecureChat` | Only Show Secure Chat |
+| `options.onlyShowSecureChat.tooltip` | Only display messages from other players that can be verified to have been sent by that player, and have not been modified. |
+| `options.notifications.display_time` | Notification Time |
+| `options.notifications.display_time.tooltip` | Affects the length of time that all notifications stay visible on the screen. |
+
+**Skin Customization screen**
+
+| Key | Text |
+|---|---|
+| `options.mainHand` | Main Hand |
+| `options.mainHand.left` | Left |
+| `options.mainHand.right` | Right |
+| `options.modelPart.cape` | Cape |
+| `options.modelPart.hat` | Hat |
+| `options.modelPart.jacket` | Jacket |
+| `options.modelPart.left_pants_leg` | Left Pant Leg |
+| `options.modelPart.left_sleeve` | Left Sleeve |
+| `options.modelPart.right_pants_leg` | Right Pant Leg |
+| `options.modelPart.right_sleeve` | Right Sleeve |
+| `options.skinCustomisation.title` | Skin Customization |
+
+**Language screen**
+
+| Key | Text |
+|---|---|
+| `options.language.empty_or_missing_translation` | Translation file for %s was empty or missing. Restart your game and launcher, then try again. |
+| `options.language.load_translations_failed` | Loading translations failed |
+| `options.language.narration` | Change Language |
+| `options.language.title` | Language |
+| `options.language.tooltip` | Change Language |
+| `options.languageAccuracyWarning` | (Language translations may not be 100%% accurate) |
+| `options.languageWarning` | Language translations may not be 100%% accurate. |
+| `narrator.button.language` | Language |
+| `gui.language.search` | Search... |
+
+**Entries that exist on the real screens but need no behaviour in CobolCraft (not built)**
+
+| Key | Text |
+|---|---|
+| `options.allowFriendRequests` | Allow Requests |
+| `options.allowFriendRequests.tooltip` | Allow other players to send you friend requests |
+| `options.allowServerListing` | Allow Server Listings |
+| `options.allowServerListing.tooltip` | Servers may list online players as part of their public status.\nWith this option off, your name will not show up in such lists. |
+| `options.credits_and_attribution` | Credits & Attribution... |
+| `options.font` | Font Settings... |
+| `options.font.title` | Font Settings |
+| `options.forceUnicodeFont` | Force Unicode Font |
+| `options.friendsList` | Friends List |
+| `options.friendsList.confirm.message` | Use your Friends List to send and receive friend requests.\n\nManage online safety settings with your %s. |
+| `options.friendsList.confirm.message.link` | Microsoft account |
+| `options.friendsList.confirm.title` | Friends List |
+| `options.friendsList.confirm.turnOff` | Turn OFF |
+| `options.friendsList.confirm.turnOn` | Turn ON |
+| `options.inGameNotification` | In-Game Notification |
+| `options.inGameNotification.tooltip` | Show Friend notifications in-game |
+| `options.japaneseGlyphVariants` | Japanese Glyph Variants |
+| `options.japaneseGlyphVariants.tooltip` | Uses Japanese variants of CJK characters in the default font. |
+| `options.multiplayer.title` | Open to LAN |
+| `options.online` | Online... |
+| `options.online.friends.header` | Friends List |
+| `options.online.realms.header` | Realms |
+| `options.online.servers.header` | Servers |
+| `options.online.title` | Online Options |
+| `options.online.xboxSettings` | Xbox Settings... |
+| `options.rawMouseInput` | Raw Input |
+| `options.realmsNotifications` | Realms News & Invites |
+| `options.realmsNotifications.button` | News & Invites |
+| `options.realmsNotifications.tooltip` | Fetches Realms news and invites in the title screen and displays their respective icon on the Realms button. |
+| `options.sharePresence` | Visibility |
+| `options.sharePresence.all` | Full |
+| `options.sharePresence.all.tooltip` | Friends can see what you're playing. |
+| `options.sharePresence.limited` | Limited |
+| `options.sharePresence.limited.tooltip` | Friends can see when you're online, but not what you're playing. |
+| `options.sharePresence.none` | Hidden |
+| `options.sharePresence.none.tooltip` | Friends will always see you as offline. |
+| `options.telemetry` | Telemetry Data... |
+| `options.telemetry.button` | Data Collection |
+| `options.telemetry.button.tooltip` | "%s" includes only the required data.\n"%s" includes optional, as well as the required data. |
+| `options.telemetry.disabled` | Telemetry is disabled. |
+| `options.telemetry.state.all` | All |
+| `options.telemetry.state.minimal` | Minimal |
+| `options.telemetry.state.none` | None |
+| `options.touchscreen` | Touchscreen Mode |
+| `options.worldOptions.button` | World Options... |
+| `options.worldOptions.title` | World Options |
+
+Not supplied here, with the reason: `key.keyboard.*` and `key.mouse.*` (13 section 7.5 has them with their codes); the resource-pack screen texts (`pack.*`,
+`resourcePack.*`, 13 section 8); the difficulty and world-option texts (`options.difficulty*`, `options.worldOptions.*`), which belong to the in-world options of a
+world's owner and not to the Options screens of the title or pause menu in this client; `options.showNowPlayingToast*` (a legacy key that no option uses).
 
 ## 7. World type selection
 
@@ -1462,7 +2188,7 @@ Spot checks (pixel colours; `transparent` is RGBA 0, 0, 0, 0):
 | UI-7 | Effect icons are generated from the effect's name, for a fixed list of 40 names, as virtual files of the built-in pack | 4.10 |
 | UI-8 | Slot highlights are 24 x 24 | 4.4 |
 | UI-9 | The second crack set is a copy of the first | 4.9 |
-| UI-10 | Built-in sheets are at logical size; the recipe book panel is at (0, 0) | 4.11 |
+| UI-10 | Built-in sheets are at logical size; the built-in recipe book panel is at (0, 0) (built-in sheet only; the client's source origin follows 4.13.8) | 4.11, 4.13.8 |
 | UI-11 | The built-in font is ASCII only; the definitions are the 4 `minecraft:default` files of 08 section 10.10 | 4.12 |
 | UI-12 | Text colours | 6 |
 | UI-13 | The tooltip frame sits at pixels 7 and 8 of the border | 4.6 |
@@ -1480,6 +2206,8 @@ Spot checks (pixel colours; `transparent` is RGBA 0, 0, 0, 0):
 | UI-25 | The type button has an auto and an explicit state; an auto choice that fails at Create falls back to cobolcraft with a visible notice | 7.2 |
 | UI-26 | A world with an unknown or missing type, no level.dat or no seed shows a warning line and a disabled Play | 7.3 |
 | UI-27 | Placement and use of the empty-slot icons and of `container/slot` | 4.4 |
+| UI-29 | The options screens use the standard key names (`options.*`, `controls.*`, `key.*`, `soundCategory.*`) with the values read from the artifact | 6.2 |
+| UI-28 | Recipe-book tab rectangle 35 x 27 with the built-in sprite stretched, tab letter centred in 35, page label centred on panel x + 73, toast text positions and colours read from the client | 4.13.4 |
 
 ## 12. Open questions
 
@@ -1490,13 +2218,13 @@ has a stated working choice.
    crosshair indicator sprites (16 x 16), `hud/effect_background` and `_ambient` (24 x 24), the recipe-book tab (32 x 27),
    the recipe slots and overlay buttons (25 x 25), `popup/background` (32 x 32), `recipe_book/overlay_recipe` (32 x 32) and
    `toast/recipe` (160 x 32) are choices. A round that reads the sprite sizes or the draw calls of 14 section 6.1's classes should confirm or
-   replace them. A pack's own sizes already work (14 section 6.3).
+   replace them. A pack's own sizes already work (14 section 6.3). **Mostly closed by section 4.13.1**: read sizes are the same except the crosshair attack-indicator bar (16 x 4, not 16 x 16), the tab (35 x 27), the crafting overlay (24 x 24) and `popup/background` (236 x 34); client rules in 4.13.8.
 2. **Sheet regions.** 14 section 6.2 and 12 section 5.6 give the region of the inventory and crafting-table sheets, (0, 0, 176, 166).
    The region of `recipe_book.png` that the 147 x 166 panel uses is not given (13 section 3.9 says only that the texture is 256 x 256). If
    the real sheet has the panel at another origin, the client must use that origin and the built-in sheet of section 4.11 must
-   move the panel to it.
+   move the panel to it. **Closed by section 4.13.4**: the panel is blitted from (1, 1) of the 256 x 256 sheet, size 147 x 166; the inventory and crafting-table sheets are (0, 0, 176, 166). Moving the built-in panel to (1, 1) is optional: the interim rule of 4.13.8 stands (origin (1, 1) for a sheet from a pack above the built-in pack, (0, 0) for the built-in sheet); doing it means recomputing the section 9 check value (not done in this round).
 3. **Attack indicator drawing.** Whether the `_progress` sprites are clipped horizontally or vertically by the cooldown,
-   and whether the hotbar indicator is 18 x 18 (12 section 5.2 says only "not detailed here").
+   and whether the hotbar indicator is 18 x 18 (12 section 5.2 says only "not detailed here"). **Partly closed**: the hotbar indicator sprites are 18 x 18 (section 4.13.1); the clipping direction is still unread (interim choice in 4.13.8).
 4. **Recipe-book tab and toast details.** Original tab icons (new sprite ids with recipes) are not drawn; Decision UI-22 uses
    letters in the cobolcraft world type, and the real icon offsets in the standard type are still unread. Also the tab sprite width, the id
    of the toast sprite (`toast/recipe` is a working name from 14 section 6.1's `toast/*`) and the toast's texts. The page-label and toast-text rectangles and the toast text are chosen (Decision UI-23); no document
@@ -1521,20 +2249,20 @@ has a stated working choice.
     Still open: whether a pre-login notice is wanted.
 12. **Dedicated server.** Closed by 22 sections 8.6 and 9.2: it prints the reason text and `cobolcraft-extract --jar <file>`
     and exits non-zero.
-13. **Options screen texts.** The labels and value formats of the options of 13 section 7 (view distance, sensitivity, field of view, GUI
-    scale, "Auto") are not in 08 section 10.8.6.
+13. **Closed: options screen texts.** Supplied by section 6.2 (texts, read from the artifact's `en_us.json`) and 13 sections 7.2 and 7.4 to 7.6 (names,
+    defaults, ranges, persisted keys, stored forms, label formats, screen order, key codes and key labels). Remaining details are Open questions 35 to 37 (34 is closed).
 14. **Disabled and hovered label colours.** 12 section 5.9 says the disabled colour was not traced; `#A0A0A0` is a choice.
 15. **Generated font definitions.** Closed by 08 section 10.10: both world types use `minecraft:default`, the generated pack's
     files replace the built-in four by path, and no `cobolcraft:default` exists (section 4.12).
 16. **Tooltip frame offset.** The real frame offset inside the 9-pixel border (Decision UI-13) is not verifiable from the documents; a
-    read of the real `tooltip/frame` metrics would.
+    read of the real `tooltip/frame` metrics would. **Closed by section 4.13.5** (vanilla ring at pixel 9, border 10, `stretch_inner`).
 17. **Existing screen layouts.** The positions of the title, name label, name field and game mode button on the Create New
     World screen, and of the world list rows, are not in a document; section 7.2 fixes them. If another document (spec
     data model section 13) has them, that one wins and the rows of the type control follow the game mode row.
 18. **Banner focus and keyboard.** The tab order of the banner and the Create screen's extra button, and whether Enter on the
     banner activates it (the text of section 8.3 says Enter activates the first button of that screen only).
 19. **Button borders.** 12 section 5.9 reports border 3 (disabled 1); the built-in art uses 3 (disabled 2, Decision UI-21). A read of the
-    real `.mcmeta` values for the other widgets (text field, sliders, handles, scrollers) would confirm or replace the rest.
+    real `.mcmeta` values for the other widgets (text field, sliders, handles, scrollers) would confirm or replace the rest. **Closed by section 4.13.2** (values listed there; the built-in values stay as chosen).
 20. **Selectable or disabled standard choice (needs a ruling; this fix pass could not settle it).** 22 section 9.2 disables the standard choice on the world-creation screen; this
     document keeps it selectable and explains on Create (Decision UI-15, UI-16). README Part 4, C10 ("the game offers only the
     cobolcraft world type" without a valid jar) and README decision 2 ("a missing or wrong jar disables the standard type") say
@@ -1558,8 +2286,8 @@ has a stated working choice.
     With no generated pack the cobolcraft world type has no language file for any of these, so by the lookup rule of 08
     section 10.8 each is shown as the key itself. **This document supplies none of these texts** (it supplies the level
     colour, section 6, and the bench sheet, section 4.11, but not the words), so GAP-34 and README C11 stay open for the
-    bench title, the experience level number, chat messages, command feedback and death messages, as well as for the options
-    screen (Open question 13). Searched: sections 6 and 6.1 of this document, and the key tables of 08 section 10.8.6; none
+    bench title, the experience level number, chat messages, command feedback and death messages, (the options screen texts are
+    supplied in section 6.2). Searched: sections 6 and 6.1 of this document, and the key tables of 08 section 10.8.6; none
     holds them. The next round must write the English texts (and mark which are read from the vanilla language file and
     which are chosen).
 24. **Rows and widths of the world list and the notice.** The row width of the world list and the room for the second line
@@ -1590,12 +2318,27 @@ has a stated working choice.
     listed in section 1 draws them (not verified against client code). Until a round decides, such a request draws the stripes;
     the server list should draw no icon rather than request one.
 29. **Minimum window size and text widths.** Section 7.2 assumes the smallest automatic GUI is 320 x 240; 12 section 5.1 derives the
-    GUI size from the framebuffer, so a window below 320 x 240 at GUI scale 1 overflows the rows. The text widths in the worked
+    GUI size from the framebuffer, so a window below 320 x 240 at GUI scale 1 overflows the rows. **Window part closed by section 4.13.6** (minimum window 320 x 240; the GUI is never smaller while the framebuffer is at least that size); the text-width part stays open. The text widths in the worked
     examples of sections 7.2 and 8.3 (90, 95, 111, 121, 209 and so on) were computed from standin section 18 advances and not
     re-verified by a second reader; section 10 step 5 depends on them.
 30. **Recipe-book panel origin and tab overlap.** The origin (rbX, rbY) of the panel in `recipe_book.png` is a parameter that holds
     only at (0, 0) (Open question 2, Decision UI-10); the Sheets manifest changes if it moves, and in the standard world type the
     client must use the real sheet's origin, which no document gives. Also, 13 section 3.9 places a tab at x = panel - offset - 30,
-    so a 32-wide tab overlaps the panel by 2 pixels; the tab sprite is drawn over the panel edge there.
+    so a 32-wide tab overlaps the panel by 2 pixels; the tab sprite is drawn over the panel edge there. **Closed by section 4.13.4**: tabs are 35 wide at panel x - 30 (the selected one 2 further left); the origin (1, 1) is read.
 31. **Contrast values and shadow colour.** The contrast ratios of section 6 and the shadow `#3F3F3F` are chosen or assumed as
-    stated; the ratios were not recomputed in the fix pass.
+    stated; the ratios were not recomputed in the fix pass. **Ratios recomputed in section 4.13.7**; the shadow colour is still unread.
+32. **Recipe overlay button size and indicator placement.** The vanilla `recipe_book/crafting_overlay*` sprites are 24 x 24 while the recipe
+    slots are 25 x 25; the size at which the "more recipes" overlay (`OverlayRecipeComponent`) draws its buttons, and its layout, were not
+    read in this round. Likewise the position of the 16 x 4 attack-indicator bar under the crosshair was not read.
+33. **Disabled button label colour and text shadow.** The button classes draw the label through a collector that carries only pose,
+    opacity and scissor; where a disabled label becomes grey (if it does) and the shadow rule (offset, colour) were not traced
+    (section 4.13.3). Decision UI-12 stays a choice.
+34. **Closed: preset values.** Read in the second pass of round OPT: the full per-preset table, what `Custom` leaves alone and the device conditions are in 13 section 7.6.
+35. **Plus-minus glyph.** The label of the keypad key code 215 is `Keypad ±` (13 section 7.5), the only non-ASCII value among the options
+    texts; whether the built-in font (section 4.12) carries the glyph is a choice (`+-` is the fallback).
+36. **Legacy `options.dat`.** The artifact has no reader or writer of an `options.dat`; round OPT found only `options.txt` (13 section 7.1). The format of
+    a legacy `options.dat` (US16) is not documented here and must come from another source (the operator's description or a document, not the artifact).
+37. **Untraced screen details.** (a) Closed: the two-column offset is read (150-wide widgets, second column 160 to the right, 13 section 7.6); (b) the interval during which a click right after binding a key is ignored; (c) the mouse-button label formatter for
+    buttons 4 to 8 (taken as `Button N`) and the layout-dependent label of printable keys (the client asks the windowing library; the table gives the US-layout
+    upper-case letter); (d) the in-world difficulty control next to the FOV slider; (e) the list of languages and their display names for the Language
+    screen (the jar's `lang` folder holds `en_us.json` and `deprecated.json` only); (f) the platform-dependent Windows/Meta/Command/Option key texts.

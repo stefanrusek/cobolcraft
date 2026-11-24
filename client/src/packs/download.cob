@@ -346,6 +346,7 @@
  COPY CLCONST.
  01 WS-FOUND               BINARY-LONG.
  01 WS-ACTION              BINARY-LONG.
+ 01 WS-STORED              BINARY-LONG.
  01 WS-BYTES               BINARY-LONG.
  01 WS-HEADERS             PIC X(1024).
  01 WS-HEADERS-LENGTH      BINARY-LONG.
@@ -387,12 +388,18 @@
              IF RP-HASH(L-ROW) NOT = SPACES AND RP-HASH(L-ROW) NOT = WS-HEX
                  MOVE L-ROW TO L-FAILED
              ELSE
-                 CALL "PACK-CACHE-STORE" USING CLIENT-STATE L-ROW B-BODY HR-BODY-LENGTH WS-HEX
-                 CALL "HTTP-RELEASE" USING HTTP-REQUEST
-                 FREE RP-HTTP(L-ROW)
-                 MOVE RPS-READY TO RP-STEP(L-ROW)
-                 MOVE 4 TO WS-ACTION
-                 CALL "PACK-RESPOND" USING CLIENT-STATE RP-UUID(L-ROW) WS-ACTION
+                 CALL "PACK-CACHE-STORE" USING CLIENT-STATE L-ROW B-BODY HR-BODY-LENGTH WS-HEX WS-STORED
+*>               a pack that could not be kept whole (a full disk) fails the download like a bad hash: nothing truncated is applied
+                 IF WS-STORED NOT = 0
+                     MOVE L-ROW TO L-FAILED
+                 END-IF
+                 IF WS-STORED = 0
+                     CALL "HTTP-RELEASE" USING HTTP-REQUEST
+                     FREE RP-HTTP(L-ROW)
+                     MOVE RPS-READY TO RP-STEP(L-ROW)
+                     MOVE 4 TO WS-ACTION
+                     CALL "PACK-RESPOND" USING CLIENT-STATE RP-UUID(L-ROW) WS-ACTION
+                 END-IF
              END-IF
      END-EVALUATE
      GOBACK.

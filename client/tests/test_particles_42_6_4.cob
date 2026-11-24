@@ -1,0 +1,544 @@
+*> Acceptance test of docs/protocol/42-particles-6-emitters-blocks.md section 4: the emitter rules.
+*> Expected texts are computed independently by a script from the document's formulas; each case injects the draws in the documented order and
+*> compares the emission list (5 decimals), the sounds and the count of draws consumed.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PARTICLES-42-6-4.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLP6EM.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(160).
+ 01 WS-CLASS               PIC X(24).
+ 01 WS-PT                  PIC X(80).
+ 01 WS-PRT                 PIC X(80).
+ 01 WS-DRT                 PIC X(4000).
+ 01 WS-EXP                 PIC X(4000).
+ 01 WS-OBS                 PIC X(12000).
+ 01 WS-OBS2                PIC X(12000).
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-BLOCK.
+    05 WS-BP               BINARY-LONG OCCURS 3 TIMES.
+ 01 WS-PROPS.
+    05 WS-PR               BINARY-LONG OCCURS 12 TIMES.
+ 01 WS-LIST.
+    05 WS-NUM              FLOAT-LONG OCCURS 2100 TIMES.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-TEXT                PIC X(4000).
+ 01 WS-TOK                 PIC X(40).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-PTR2                BINARY-LONG.
+ 01 WS-ED                  PIC -(5)9.99999.
+ 01 WS-EDC                 PIC -(10)9.
+ 01 WS-EDS                 PIC 9.99.
+ 01 WS-EDR                 PIC 9.99999.
+ 01 WS-V                   FLOAT-LONG.
+ 01 WS-NSA.
+    05 WS-NS              BINARY-LONG OCCURS 5 TIMES.
+ 01 WS-NPA.
+    05 WS-NP              BINARY-LONG OCCURS 5 TIMES.
+ 01 WS-DY                 BINARY-LONG.
+ 01 WS-OBSX               PIC X(2000).
+ 01 WS-KHA.
+    05 WS-KH              FLOAT-LONG OCCURS 3 TIMES.
+ 01 WS-TGA.
+    05 WS-TG              FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION.
+     MOVE "campfire ticker idle" TO WS-NAME
+     MOVE "campfire_entity" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0 0 0 0 0 0" TO WS-PRT
+     MOVE "0.5" TO WS-DRT
+     MOVE " (1)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "campfire cosy" TO WS-NAME
+     MOVE "campfire_entity" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0 0 0 0 0 0" TO WS-PRT
+     MOVE "0.05 0.1 0.2 0.7 0.3 0.4 0.6 0.9 0.1 0.3 0.1 0.6 0.1 0.2 0.7 0.3 0.4 0.6 0.2" TO WS-DRT
+     MOVE "campfire_cosy_smoke 10.56667 64.70000 -2.30000 0.00000 0.07000 0.00000 | campfire_cosy_smo"
+         & "ke 10.40000 64.70000 -2.43333 0.00000 0.07000 0.00000 (16)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "campfire signal four passes" TO WS-NAME
+     MOVE "campfire_entity" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "1 0 0 0 0 0" TO WS-PRT
+     MOVE "0.05 0.9 0.2 0.7 0.3 0.4 0.6 0.5 0.1 0.3 0.9 0.5" TO WS-DRT
+     MOVE "campfire_signal_smoke 10.56667 64.70000 -2.30000 0.00000 0.07000 0.00000 | campfire_signal"
+         & "_smoke 10.60000 65.00000 -2.33333 0.00000 0.07000 0.00000 | campfire_signal_smoke 10.66667"
+         & " 65.00000 -2.33333 0.00000 0.07000 0.00000 (23)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "campfire food east of start" TO WS-NAME
+     MOVE "campfire_entity" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0 1 1 0 1 0" TO WS-PRT
+     MOVE "0.5 0.1 0.5 0.1" TO WS-DRT
+     MOVE "smoke 10.81250 64.50000 -2.81250 0.00000 0.00050 0.00000 | smoke 10.81250 64.50000 -2.8125"
+         & "0 0.00000 0.00050 0.00000 | smoke 10.81250 64.50000 -2.81250 0.00000 0.00050 0.00000 | smo"
+         & "ke 10.81250 64.50000 -2.81250 0.00000 0.00050 0.00000 (3)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "campfire four slots facing north" TO WS-NAME
+     MOVE "campfire_entity" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0 2 1 1 1 1" TO WS-PRT
+     MOVE "0.5 0.1 0.5 0.1 0.5 0.1 0.5 0.1" TO WS-DRT
+     MOVE "smoke 10.81250 64.50000 -2.18750 0.00000 0.00050 0.00000 | smoke 10.81250 64.50000 -2.1875"
+         & "0 0.00000 0.00050 0.00000 | smoke 10.81250 64.50000 -2.18750 0.00000 0.00050 0.00000 | smo"
+         & "ke 10.81250 64.50000 -2.18750 0.00000 0.00050 0.00000 | smoke 10.18750 64.50000 -2.81250 0"
+         & ".00000 0.00050 0.00000 | smoke 10.18750 64.50000 -2.81250 0.00000 0.00050 0.00000 | smoke "
+         & "10.18750 64.50000 -2.81250 0.00000 0.00050 0.00000 | smoke 10.18750 64.50000 -2.81250 0.00"
+         & "000 0.00050 0.00000 (5)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "campfire facing east" TO WS-NAME
+     MOVE "campfire_entity" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0 3 1 0 0 1" TO WS-PRT
+     MOVE "0.5 0.1 0.5 0.1" TO WS-DRT
+     MOVE "smoke 10.18750 64.50000 -2.18750 0.00000 0.00050 0.00000 | smoke 10.18750 64.50000 -2.1875"
+         & "0 0.00000 0.00050 0.00000 | smoke 10.18750 64.50000 -2.18750 0.00000 0.00050 0.00000 | smo"
+         & "ke 10.18750 64.50000 -2.18750 0.00000 0.00050 0.00000 (3)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "campfire food miss" TO WS-NAME
+     MOVE "campfire_entity" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0 0 1 0 0 0" TO WS-PRT
+     MOVE "0.5 0.3" TO WS-DRT
+     MOVE " (2)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "trial inactive" TO WS-NAME
+     MOVE "trial_spawner" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0 0 0" TO WS-PRT
+     MOVE SPACES TO WS-DRT
+     MOVE " (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "trial small flames" TO WS-NAME
+     MOVE "trial_spawner" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "1 0 5" TO WS-PRT
+     MOVE "0.2 0.6 0.7 0.4" TO WS-DRT
+     MOVE "small_flame 10.59000 64.68000 -2.59000 0.00000 0.00000 0.00000 (4)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "trial small flames ominous" TO WS-NAME
+     MOVE "trial_spawner" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "1 1 5" TO WS-PRT
+     MOVE "0.2 0.6 0.7 0.4" TO WS-DRT
+     MOVE "soul_fire_flame 10.59000 64.68000 -2.59000 0.00000 0.00000 0.00000 (4)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "trial small flames miss" TO WS-NAME
+     MOVE "trial_spawner" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "1 0 5" TO WS-PRT
+     MOVE "0.9" TO WS-DRT
+     MOVE " (1)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "trial active" TO WS-NAME
+     MOVE "trial_spawner" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "2 0 5" TO WS-PRT
+     MOVE "0.6 0.7 0.4" TO WS-DRT
+     MOVE "smoke 10.60000 64.70000 -2.60000 0.00000 0.00000 0.00000 | flame 10.60000 64.70000 -2.6000"
+         & "0 0.00000 0.00000 0.00000 (3)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "trial active ominous" TO WS-NAME
+     MOVE "trial_spawner" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "2 1 5" TO WS-PRT
+     MOVE "0.6 0.7 0.4" TO WS-DRT
+     MOVE "smoke 10.60000 64.70000 -2.60000 0.00000 0.00000 0.00000 | soul_fire_flame 10.60000 64.700"
+         & "00 -2.60000 0.00000 0.00000 0.00000 (3)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "trial cooldown smoke" TO WS-NAME
+     MOVE "trial_spawner" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "3 0 7" TO WS-PRT
+     MOVE "0.6 0.7 0.4 0.1" TO WS-DRT
+     MOVE "smoke 10.59000 64.68000 -2.59000 0.00000 0.00000 0.00000 (4)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "trial cooldown miss" TO WS-NAME
+     MOVE "trial_spawner" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "3 0 7" TO WS-PRT
+     MOVE "0.6 0.7 0.4 0.9" TO WS-DRT
+     MOVE " (4)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "trial cooldown burst" TO WS-NAME
+     MOVE "trial_spawner" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "3 0 40" TO WS-PRT
+     MOVE "0.6 0.7 0.4 0.9 0.5" TO WS-DRT
+     MOVE "smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000 | smoke 10.50000 65.00000 -2.5000"
+         & "0 0.00000 0.00000 0.00000 | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000 | smo"
+         & "ke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000 | smoke 10.50000 65.00000 -2.50000 0"
+         & ".00000 0.00000 0.00000 | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000 | smoke "
+         & "10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000 | smoke 10.50000 65.00000 -2.50000 0.00"
+         & "000 0.00000 0.00000 | smoke 10...0000 | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0"
+         & ".00000 | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000 | smoke 10.50000 65.0000"
+         & "0 -2.50000 0.00000 0.00000 0.00000 | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00"
+         & "000 | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000 | smoke 10.50000 65.00000 -"
+         & "2.50000 0.00000 0.00000 0.00000 | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000"
+         & " | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000 (5)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "trial cooldown burst and smoke" TO WS-NAME
+     MOVE "trial_spawner" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "3 0 40" TO WS-PRT
+     MOVE "0.6 0.7 0.4 0.1 0.9" TO WS-DRT
+     MOVE "smoke 10.59000 64.68000 -2.59000 0.00000 0.00000 0.00000 | smoke 10.50000 65.00000 -2.5000"
+         & "0 0.00000 0.00000 0.00000 | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000 | smo"
+         & "ke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000 | smoke 10.50000 65.00000 -2.50000 0"
+         & ".00000 0.00000 0.00000 | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000 | smoke "
+         & "10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000 | smoke 10.50000 65.00000 -2.50000 0.00"
+         & "000 0.00000 0.00000 | smoke 10...0000 | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0"
+         & ".00000 | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000 | smoke 10.50000 65.0000"
+         & "0 -2.50000 0.00000 0.00000 0.00000 | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00"
+         & "000 | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000 | smoke 10.50000 65.00000 -"
+         & "2.50000 0.00000 0.00000 0.00000 | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000"
+         & " | smoke 10.50000 65.00000 -2.50000 0.00000 0.00000 0.00000 (5)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "spawner near" TO WS-NAME
+     MOVE "monster_spawner" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "1" TO WS-PRT
+     MOVE "0.1 0.2 0.3" TO WS-DRT
+     MOVE "smoke 10.10000 64.20000 -2.70000 0.00000 0.00000 0.00000 | flame 10.10000 64.20000 -2.7000"
+         & "0 0.00000 0.00000 0.00000 (3)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "spawner far" TO WS-NAME
+     MOVE "monster_spawner" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0" TO WS-PRT
+     MOVE SPACES TO WS-DRT
+     MOVE " (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "vault idle with item" TO WS-NAME
+     MOVE "vault" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0 1 0" TO WS-PRT
+     MOVE "0.3 0.1 0.5 0.9" TO WS-DRT
+     MOVE "smoke 10.18000 64.50000 -2.18000 0.00000 0.00000 0.00000 | small_flame 10.18000 64.50000 -"
+         & "2.18000 0.00000 0.00000 0.00000 (4)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "vault idle without item" TO WS-NAME
+     MOVE "vault" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0 0 0" TO WS-PRT
+     MOVE "0.3 0.1 0.5 0.9" TO WS-DRT
+     MOVE "smoke 10.18000 64.50000 -2.18000 0.00000 0.00000 0.00000 (4)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "vault idle miss" TO WS-NAME
+     MOVE "vault" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0 1 0" TO WS-PRT
+     MOVE "0.9" TO WS-DRT
+     MOVE " (1)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "vault idle ominous" TO WS-NAME
+     MOVE "vault" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "0 1 1" TO WS-PRT
+     MOVE "0.3 0.1 0.5 0.9" TO WS-DRT
+     MOVE "smoke 10.18000 64.50000 -2.18000 0.00000 0.00000 0.00000 | soul_fire_flame 10.18000 64.500"
+         & "00 -2.18000 0.00000 0.00000 0.00000 (4)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "vault activation" TO WS-NAME
+     MOVE "vault" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "1 0 0" TO WS-PRT
+     MOVE "0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0."
+         & "2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 "
+         & "0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3" TO WS-DRT
+     MOVE "smoke 10.18000 64.35000 -2.66000 0.00000 0.00000 0.00000 | small_flame 10.18000 64.35000 -"
+         & "2.66000 0.00000 0.00000 0.00000 | smoke 10.18000 64.35000 -2.66000 0.00000 0.00000 0.00000"
+         & " | small_flame 10.18000 64.35000 -2.66000 0.00000 0.00000 0.00000 | smoke 10.18000 64.3500"
+         & "0 -2.66000 0.00000 0.00000 0.00000 | small_flame 10.18000 64.35000 -2.66000 0.00000 0.0000"
+         & "0 0.00000 | smoke 10.18000 64.35000 -2.66000 0.00000 0.00000 0.00000 | small_flame 10.1800"
+         & "0 64.35000 -2.66000 0.00000 0....35000 -2.66000 0.00000 0.00000 0.00000 | small_flame 10.1"
+         & "8000 64.35000 -2.66000 0.00000 0.00000 0.00000 | smoke 10.18000 64.35000 -2.66000 0.00000 "
+         & "0.00000 0.00000 | small_flame 10.18000 64.35000 -2.66000 0.00000 0.00000 0.00000 | smoke 1"
+         & "0.18000 64.35000 -2.66000 0.00000 0.00000 0.00000 | small_flame 10.18000 64.35000 -2.66000"
+         & " 0.00000 0.00000 0.00000 | smoke 10.18000 64.35000 -2.66000 0.00000 0.00000 0.00000 | smal"
+         & "l_flame 10.18000 64.35000 -2.66000 0.00000 0.00000 0.00000 (60)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "vault deactivation ominous" TO WS-NAME
+     MOVE "vault" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "2 0 1" TO WS-PRT
+     MOVE "0.1 0.2 0.3 0.4 0.5 0.6 0.1 0.2 0.3 0.4 0.5 0.6 0.1 0.2 0.3 0.4 0.5 0.6 0.1 0.2 0.3 0.4 0."
+         & "5 0.6 0.1 0.2 0.3 0.4 0.5 0.6 0.1 0.2 0.3 0.4 0.5 0.6 0.1 0.2 0.3 0.4 0.5 0.6 0.1 0.2 0.3 "
+         & "0.4 0.5 0.6 0.1 0.2 0.3 0.4 0.5 0.6 0.1 0.2 0.3 0.4 0.5 0.6 0.1 0.2 0.3 0.4 0.5 0.6 0.1 0."
+         & "2 0.3 0.4 0.5 0.6 0.1 0.2 0.3 0.4 0.5 0.6 0.1 0.2 0.3 0.4 0.5 0.6 0.1 0.2 0.3 0.4 0.5 0.6 "
+         & "0.1 0.2 0.3 0.4 0.5 0.6 0.1 0.2 0.3 0.4 0.5 0.6 0.1 0.2 0.3 0.4 0.5 0.6 0.1 0.2 0.3 0.4 0."
+         & "5 0.6 0.1 0.2 0.3 0.4 0.5 0.6" TO WS-DRT
+     MOVE "soul_fire_flame 10.42000 64.44000 -2.54000 0.00800 0.01000 0.01200 | soul_fire_flame 10.42"
+         & "000 64.44000 -2.54000 0.00800 0.01000 0.01200 | soul_fire_flame 10.42000 64.44000 -2.54000"
+         & " 0.00800 0.01000 0.01200 | soul_fire_flame 10.42000 64.44000 -2.54000 0.00800 0.01000 0.01"
+         & "200 | soul_fire_flame 10.42000 64.44000 -2.54000 0.00800 0.01000 0.01200 | soul_fire_flame"
+         & " 10.42000 64.44000 -2.54000 0.00800 0.01000 0.01200 | soul_fire_flame 10.42000 64.44000 -2"
+         & ".54000 0.00800 0.01000 0.01200...ire_flame 10.42000 64.44000 -2.54000 0.00800 0.01000 0.01"
+         & "200 | soul_fire_flame 10.42000 64.44000 -2.54000 0.00800 0.01000 0.01200 | soul_fire_flame"
+         & " 10.42000 64.44000 -2.54000 0.00800 0.01000 0.01200 | soul_fire_flame 10.42000 64.44000 -2"
+         & ".54000 0.00800 0.01000 0.01200 | soul_fire_flame 10.42000 64.44000 -2.54000 0.00800 0.0100"
+         & "0 0.01200 | soul_fire_flame 10.42000 64.44000 -2.54000 0.00800 0.01000 0.01200 | soul_fire"
+         & "_flame 10.42000 64.44000 -2.54000 0.00800 0.01000 0.01200 (120)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "noxious gas" TO WS-NAME
+     MOVE "noxious_gas" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "40 1 12 66 -1" TO WS-PRT
+     MOVE SPACES TO WS-DRT
+     MOVE "noxious_gas_cloud 12.50000 66.50000 -0.50000 0.00000 0.00000 0.00000 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "noxious gas off beat" TO WS-NAME
+     MOVE "noxious_gas" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "41 1 12 66 -1" TO WS-PRT
+     MOVE SPACES TO WS-DRT
+     MOVE " (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "noxious gas no source" TO WS-NAME
+     MOVE "noxious_gas" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "40 0 12 66 -1" TO WS-PRT
+     MOVE SPACES TO WS-DRT
+     MOVE " (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "geyser at t 60" TO WS-NAME
+     MOVE "geyser_plume" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "100 40 1 10 68 -3 0" TO WS-PRT
+     MOVE SPACES TO WS-DRT
+     MOVE "geyser 10.50000 68.00000 -2.50000 0.00000 0.00000 0.00000 st=3 (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "geyser active sound at t 40" TO WS-NAME
+     MOVE "geyser_plume" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "100 60 1 10 68 -3 0" TO WS-PRT
+     MOVE SPACES TO WS-DRT
+     MOVE "geyser 10.50000 68.00000 -2.50000 0.00000 0.00000 0.00000 st=3 # geyser_eruption_active (0"
+         & ")" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "geyser continuous at t 40" TO WS-NAME
+     MOVE "geyser_plume" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "100 60 1 10 68 -3 1" TO WS-PRT
+     MOVE SPACES TO WS-DRT
+     MOVE "geyser 10.50000 68.00000 -2.50000 0.00000 0.00000 0.00000 st=3 # geyser_eruption_continuou"
+         & "s (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "geyser off beat" TO WS-NAME
+     MOVE "geyser_plume" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "101 60 1 10 68 -3 0" TO WS-PRT
+     MOVE SPACES TO WS-DRT
+     MOVE " (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "geyser no source" TO WS-NAME
+     MOVE "geyser_plume" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "100 40 0 10 68 -3 0" TO WS-PRT
+     MOVE SPACES TO WS-DRT
+     MOVE " (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "geyser at t 50 emits nothing" TO WS-NAME
+     MOVE "geyser_plume" TO WS-CLASS
+     MOVE "10 64 -3" TO WS-PT
+     MOVE "110 60 1 10 68 -3 0" TO WS-PRT
+     MOVE SPACES TO WS-DRT
+     MOVE " (0)" TO WS-EXP
+     PERFORM RUN-CASE
+     MOVE "10 64 -3" TO WS-PT
+     MOVE 1 TO WS-NS(1) WS-NS(2) WS-NS(3) WS-NS(4) WS-NS(5)
+     MOVE 1 TO WS-NP(1) WS-NP(2) WS-NP(3) WS-NP(4) WS-NP(5)
+     CALL "P6-NOXIOUS-SOURCE" USING WS-NSA WS-NPA WS-DY
+     MOVE "gas source: water everywhere within reach gives none" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-DY TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-NS(2)
+     CALL "P6-NOXIOUS-SOURCE" USING WS-NSA WS-NPA WS-DY
+     MOVE "gas source: the second cell is air above water" TO WS-NAME
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE WS-DY TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-NS(1)
+     CALL "P6-NOXIOUS-SOURCE" USING WS-NSA WS-NPA WS-DY
+     MOVE "gas source: the first cell is air" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-DY TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-NS(1)
+     MOVE 0 TO WS-NP(1)
+     CALL "P6-NOXIOUS-SOURCE" USING WS-NSA WS-NPA WS-DY
+     MOVE "gas source: a water source with a solid block ends the scan" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-DY TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-NS(1)
+     CALL "P6-NOXIOUS-SOURCE" USING WS-NSA WS-NPA WS-DY
+     MOVE "gas source: a solid non-water cell ends the scan" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-DY TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 1 TO WS-NP(1) WS-NS(1) WS-NS(2) WS-NP(2) WS-NS(3) WS-NP(3) WS-NS(4) WS-NP(4) WS-NS(5)
+     MOVE 0 TO WS-NP(5)
+     CALL "P6-NOXIOUS-SOURCE" USING WS-NSA WS-NPA WS-DY
+     MOVE "gas source: a water source with a solid block at the fifth cell ends the scan" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-DY TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     MOVE 0 TO WS-NS(5)
+     MOVE 1 TO WS-NP(5)
+     CALL "P6-NOXIOUS-SOURCE" USING WS-NSA WS-NPA WS-DY
+     MOVE "gas source: the fifth cell is air" TO WS-NAME
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE WS-DY TO TL-OBSERVED-N
+     PERFORM ASSERT-NUMBER
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 128
+         MOVE 0.5 TO EM-DRAW(WS-I)
+     END-PERFORM
+     MOVE 0.0 TO EM-DRAW(1)
+     MOVE 0.75 TO EM-DRAW(2)
+     MOVE 0.25 TO EM-DRAW(3)
+     MOVE 0.5 TO EM-DRAW(4)
+     MOVE 0.9 TO EM-DRAW(7)
+     MOVE 0 TO EM-COUNT EM-CUR EM-SOUND-COUNT
+     MOVE 10.5 TO WS-KH(1)
+     MOVE 65.75 TO WS-KH(2)
+     MOVE -2.5 TO WS-KH(3)
+     MOVE 12.5 TO WS-TG(1)
+     MOVE 66.0 TO WS-TG(2)
+     MOVE -0.5 TO WS-TG(3)
+     CALL "P6-VAULT-CONNECT" USING WS-KHA WS-TGA P6-EMITS
+     PERFORM RENDER
+     MOVE "vault connection: two particles toward the player with jitter" TO WS-NAME
+     MOVE "vault_connection 10.50000 65.75000 -2.50000 2.25000 0.00000 2.00000 | vault_connection 10.50000 65.75000 -2.50000 2.00000 0.25000 2.40000 (7)" TO WS-EXP
+     MOVE WS-OBS TO WS-OBSX
+     PERFORM ASSERT-RENDER
+     MOVE 0.99 TO EM-DRAW(1)
+     MOVE 0 TO EM-COUNT EM-CUR EM-SOUND-COUNT
+     CALL "P6-VAULT-CONNECT" USING WS-KHA WS-TGA P6-EMITS
+     MOVE "vault connection: a draw near 1 gives five particles" TO WS-NAME
+     COMPUTE TL-EXPECTED-N = 5
+     COMPUTE TL-OBSERVED-N = EM-COUNT
+     PERFORM ASSERT-NUMBER
+     STOP RUN.
+
+ RUN-CASE.
+     MOVE WS-PT TO WS-TEXT
+     PERFORM PARSE-LIST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         MOVE WS-NUM(WS-I) TO WS-BP(WS-I)
+     END-PERFORM
+     MOVE WS-PRT TO WS-TEXT
+     PERFORM PARSE-LIST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 12
+         MOVE 0 TO WS-PR(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         MOVE WS-NUM(WS-I) TO WS-PR(WS-I)
+     END-PERFORM
+     MOVE WS-DRT TO WS-TEXT
+     PERFORM PARSE-LIST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2048
+         MOVE 0.5 TO EM-DRAW(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         MOVE WS-NUM(WS-I) TO EM-DRAW(WS-I)
+     END-PERFORM
+     CALL "P6-BE-TICK" USING WS-CLASS WS-BLOCK WS-PROPS P6-EMITS
+     PERFORM RENDER
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-OBS)) TO WS-LEN
+     IF WS-LEN > 1000
+         MOVE WS-OBS(1:480) TO WS-OBS2(1:480)
+         MOVE "..." TO WS-OBS2(481:3)
+         COMPUTE WS-START = WS-LEN - 479
+         MOVE WS-OBS(WS-START:480) TO WS-OBS2(484:480)
+         MOVE WS-OBS2 TO WS-OBS
+     END-IF
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-6§4 Block-entity client tickers: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE WS-EXP TO TL-EXPECTED
+     MOVE WS-OBS TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ASSERT-RENDER.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-6§4 Block-entity client tickers: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE WS-EXP TO TL-EXPECTED
+     MOVE WS-OBSX TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ASSERT-NUMBER.
+     MOVE SPACES TO TL-CASE
+     STRING "acceptance US12 42-6§4 Block-entity client tickers: " FUNCTION TRIM(WS-NAME)
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ PARSE-LIST.
+     MOVE 0 TO WS-COUNT
+     MOVE 1 TO WS-PTR
+     PERFORM UNTIL WS-PTR > 4000 OR WS-TEXT(WS-PTR:) = SPACES
+         MOVE SPACES TO WS-TOK
+         UNSTRING WS-TEXT DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-PTR
+         IF WS-TOK NOT = SPACES
+             ADD 1 TO WS-COUNT
+             COMPUTE WS-NUM(WS-COUNT) = FUNCTION NUMVAL(WS-TOK)
+         END-IF
+     END-PERFORM.
+
+ RENDER.
+     MOVE SPACES TO WS-OBS
+     MOVE 1 TO WS-PTR2
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EM-COUNT
+         IF WS-I > 1
+             STRING " | " DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         END-IF
+         STRING FUNCTION TRIM(EM-NAME(WS-I)) " " DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         MOVE EM-X(WS-I) TO WS-V
+         PERFORM ADD-NUMBER
+         MOVE EM-Y(WS-I) TO WS-V
+         PERFORM ADD-NUMBER
+         MOVE EM-Z(WS-I) TO WS-V
+         PERFORM ADD-NUMBER
+         MOVE EM-VX(WS-I) TO WS-V
+         PERFORM ADD-NUMBER
+         MOVE EM-VY(WS-I) TO WS-V
+         PERFORM ADD-NUMBER
+         MOVE EM-VZ(WS-I) TO WS-V
+         PERFORM ADD-LAST-NUMBER
+         IF EM-COLOR(WS-I) NOT = 0
+             MOVE EM-COLOR(WS-I) TO WS-EDC
+             COMPUTE WS-EDS ROUNDED = EM-SCALE(WS-I)
+             STRING " c=" FUNCTION TRIM(WS-EDC) " s=" WS-EDS DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         END-IF
+         IF EM-COLOR(WS-I) = 0 AND EM-SCALE(WS-I) NOT = 0
+             COMPUTE WS-EDR ROUNDED = EM-SCALE(WS-I)
+             STRING " r=" WS-EDR DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         END-IF
+         IF EM-STATE(WS-I) NOT = 0
+             MOVE EM-STATE(WS-I) TO WS-EDC
+             STRING " st=" FUNCTION TRIM(WS-EDC) DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EM-SOUND-COUNT
+         STRING " # " FUNCTION TRIM(EM-SOUND(WS-I)) DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2
+     END-PERFORM
+     MOVE EM-CUR TO WS-EDC
+     STRING " (" FUNCTION TRIM(WS-EDC) ")" DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2.
+
+ ADD-NUMBER.
+     PERFORM ADD-LAST-NUMBER
+     STRING " " DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2.
+
+ ADD-LAST-NUMBER.
+     COMPUTE WS-ED ROUNDED = WS-V
+     STRING FUNCTION TRIM(WS-ED) DELIMITED BY SIZE INTO WS-OBS WITH POINTER WS-PTR2.
+ END PROGRAM TEST-PARTICLES-42-6-4.

@@ -1,0 +1,1 @@
+{"type": "minecraft:mul", "left": {"type": "minecraft:sub", "left": "minecraft:y", "right": 40.0}, "right": 0.05}

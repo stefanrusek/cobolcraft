@@ -1,0 +1,364 @@
+*> The jar check (22 §4.2, C1 to C5). EX-CHECK USING jar path (PIC X(1100)), status out (BINARY-LONG: 0 when the
+*> jar is identified, otherwise the CCX number whose message EX-SAY has printed: 11, 20, 21, 30 or 31). It opens
+*> the jar with ZIP-OPEN (the whole file in memory), rejects zip64, several disks, encrypted entries and methods
+*> other than 0 and 8 (assumption A3), computes size and SHA-256 (C1, C2), reads version.json (C3), decides
+*> (C4, the table of 22 §4.2) and cross-checks the identified row (C5, EX-CROSS-CHECK). It leaves in EX-CHK the
+*> size, the digest, the id and the facts of version.json; on success the archive stays open in EXC-ZIP (the
+*> caller closes it), on a failure it is closed and EXC-ZIP is NULL.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EX-CHECK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY EXSTATE.
+ COPY FORMATS.
+ COPY CONTENT.
+ COPY FMZIP.
+ 01 WS-PATH                PIC X(1024).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ 01 WS-ZIP-STATUS          BINARY-LONG.
+ 01 WS-CODE                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-NAME                PIC X(256).
+ 01 WS-NAME-LENGTH         BINARY-LONG.
+ 01 WS-NUMBER              BINARY-DOUBLE.
+ 01 WS-NUMBER-TEXT         PIC X(20).
+ 01 WS-HEAD                PIC X(22).
+ 01 WS-HEAD-LENGTH         BINARY-LONG.
+ 01 WS-HEAD-STATUS         BINARY-LONG.
+ 01 WS-OFFSET              BINARY-DOUBLE VALUE 0.
+ 01 WS-DUMMY               PIC X.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-DIGEST              PIC X(32).
+ 01 WS-JSON                PIC X(1048576).
+ 01 WS-JSON-LENGTH         BINARY-LONG.
+ 01 WS-JSON-CAPACITY       BINARY-LONG VALUE 1048576.
+ 01 B-DATA                 PIC X(1073741824) BASED.
+ 01 WS-JSON-STATUS         BINARY-LONG.
+ 01 WS-ENTRY               BINARY-LONG.
+ 01 WS-ROW-NUMBER          BINARY-LONG.
+ 01 WS-ROW-STATUS          BINARY-LONG.
+ 01 WS-ROW.
+    05 WS-ROW-VERSION      PIC X(4).
+    05 WS-ROW-SIZE         PIC X(8).
+    05 WS-ROW-SHA          PIC X(64).
+    05 WS-ROW-REST         PIC X(16).
+ 01 WS-IDENT-ROW           PIC X(92).
+ 01 WS-IDENTIFIED          BINARY-LONG.
+ 01 WS-DIGEST-KNOWN        BINARY-LONG.
+ 01 WS-ID-KNOWN            BINARY-LONG.
+ 01 WS-ROW-SIZE-NUMBER     BINARY-DOUBLE.
+ 01 WS-IDS                 PIC X(200).
+ 01 WS-IDS-LENGTH          BINARY-LONG.
+ 01 WS-UNKNOWN-ID          PIC X(7) VALUE "unknown".
+ 01 WS-IDS-POINTER         BINARY-LONG.
+ 01 WS-EXPECTED-ROW        PIC X(92).
+ LINKAGE SECTION.
+ 01 L-JAR                  PIC X(1100).
+ 01 L-STATUS               BINARY-LONG.
+ PROCEDURE DIVISION USING L-JAR L-STATUS.
+     SET EXC-ZIP TO NULL
+     MOVE L-JAR TO EXC-PATH
+     MOVE 0 TO EXC-SIZE
+     MOVE SPACES TO EXC-SHA EXC-ROW
+     MOVE WS-UNKNOWN-ID TO EXC-ID
+     MOVE -1 TO EXC-WORLD EXC-PROTOCOL EXC-RES-MAJOR EXC-RES-MINOR EXC-DATA-MAJOR EXC-DATA-MINOR
+     MOVE 0 TO L-STATUS
+     MOVE SPACES TO EXM-ARG(1) EXM-ARG(2) EXM-ARG(3) EXM-ARG(4) EXM-ARG(5)
+     MOVE L-JAR TO EXM-ARG(1)
+*>   Open the archive. Anything ZIP-OPEN refuses is CCX-011, 020 or 021.
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-JAR)) TO WS-PATH-LENGTH
+     IF WS-PATH-LENGTH > 1024
+         MOVE 1 TO WS-ZIP-STATUS
+     ELSE
+         MOVE SPACES TO WS-PATH
+         MOVE L-JAR(1:WS-PATH-LENGTH) TO WS-PATH
+         CALL "ZIP-OPEN" USING WS-PATH WS-PATH-LENGTH EXC-ZIP WS-ZIP-STATUS
+     END-IF
+     EVALUATE WS-ZIP-STATUS
+         WHEN FM-ZIP-OK
+             CONTINUE
+         WHEN FM-ZIP-UNREADABLE
+             MOVE "cannot be opened or read" TO EXM-ARG(2)
+             MOVE 11 TO WS-CODE
+         WHEN FM-ZIP-ZIP64
+             MOVE "zip64" TO EXM-ARG(2)
+             MOVE 21 TO WS-CODE
+         WHEN FM-ZIP-MULTI-DISK
+             MOVE "several disks" TO EXM-ARG(2)
+             MOVE 21 TO WS-CODE
+         WHEN OTHER
+             MOVE 22 TO WS-HEAD-LENGTH
+             CALL "FILE-READ-AT" USING L-JAR WS-OFFSET WS-HEAD WS-HEAD-LENGTH WS-HEAD-STATUS
+             MOVE "no end record or the central directory does not match the end record" TO EXM-ARG(2)
+             MOVE 20 TO WS-CODE
+             IF WS-HEAD-LENGTH < 22
+                 MOVE "too short" TO EXM-ARG(2)
+             END-IF
+     END-EVALUATE
+     IF WS-ZIP-STATUS NOT = FM-ZIP-OK
+         SET EXC-ZIP TO NULL
+         MOVE WS-CODE TO L-STATUS
+         CALL "EX-SAY" USING WS-CODE
+         GOBACK
+     END-IF
+     SET ADDRESS OF ZIP-ARCHIVE TO EXC-ZIP
+     SET ADDRESS OF ZIP-TABLE TO ZA-TABLE-ADDR
+     MOVE ZA-DATA-SIZE TO EXC-SIZE
+*>   Every entry: encrypted, an unsupported method and a zip64 entry are CCX-021 (A3); an unusable one that is
+*>   not zip64 is a bad central record (CCX-020).
+     MOVE 0 TO WS-CODE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > ZA-COUNT OR WS-CODE NOT = 0
+         MOVE WS-I TO WS-ENTRY
+         IF FUNCTION MOD(ZE-FLAGS(WS-ENTRY), 2) = 1
+             CALL "ZIP-NAME" USING EXC-ZIP WS-ENTRY WS-NAME WS-NAME-LENGTH
+             STRING "encrypted entry " WS-NAME(1:WS-NAME-LENGTH) DELIMITED BY SIZE INTO EXM-ARG(2)
+             MOVE 21 TO WS-CODE
+         END-IF
+         IF WS-CODE = 0 AND ZE-METHOD(WS-ENTRY) NOT = 0 AND ZE-METHOD(WS-ENTRY) NOT = 8
+             CALL "ZIP-NAME" USING EXC-ZIP WS-ENTRY WS-NAME WS-NAME-LENGTH
+             MOVE ZE-METHOD(WS-ENTRY) TO WS-NUMBER
+             CALL "EX-NUM" USING WS-NUMBER WS-NUMBER-TEXT
+             STRING "compression method " FUNCTION TRIM(WS-NUMBER-TEXT) " in entry " WS-NAME(1:WS-NAME-LENGTH)
+                 DELIMITED BY SIZE INTO EXM-ARG(2)
+             MOVE 21 TO WS-CODE
+         END-IF
+         IF WS-CODE = 0 AND ZE-USABLE(WS-ENTRY) = 0
+             CALL "ZIP-READ-RANGE" USING EXC-ZIP WS-ENTRY WS-DUMMY WS-ZERO WS-HEAD-LENGTH WS-HEAD-STATUS
+             MOVE "zip64" TO EXM-ARG(2)
+             MOVE 21 TO WS-CODE
+             IF WS-HEAD-STATUS NOT = FM-ZIP-ZIP64
+                 COMPUTE WS-NUMBER = WS-ENTRY - 1
+                 CALL "EX-NUM" USING WS-NUMBER WS-NUMBER-TEXT
+                 MOVE 20 TO WS-CODE
+                 MOVE SPACES TO EXM-ARG(2)
+                 STRING "bad central record at entry " FUNCTION TRIM(WS-NUMBER-TEXT) DELIMITED BY SIZE
+                     INTO EXM-ARG(2)
+             END-IF
+         END-IF
+     END-PERFORM
+     IF WS-CODE NOT = 0
+         CALL "ZIP-CLOSE" USING EXC-ZIP
+         SET EXC-ZIP TO NULL
+         MOVE WS-CODE TO L-STATUS
+         CALL "EX-SAY" USING WS-CODE
+         GOBACK
+     END-IF
+*>   C2: the SHA-256 of the whole file, as lower-case hex.
+     SET ADDRESS OF B-DATA TO ZA-DATA-ADDR
+     CALL "SHA256-INIT" USING FMSHA
+     CALL "SHA256-UPDATE" USING FMSHA B-DATA ZA-DATA-SIZE
+     CALL "SHA256-FINAL" USING FMSHA WS-DIGEST
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 32
+         COMPUTE WS-POS = WS-I * 2 - 1
+         MOVE FUNCTION LOWER-CASE(FUNCTION HEX-OF(WS-DIGEST(WS-I:1))) TO EXC-SHA(WS-POS:2)
+     END-PERFORM
+*>   C3: version.json, whatever C1 and C2 said. A missing, damaged or invalid file leaves the id unknown.
+     MOVE "version.json" TO WS-NAME
+     MOVE 12 TO WS-NAME-LENGTH
+     CALL "ZIP-FIND" USING EXC-ZIP WS-NAME WS-NAME-LENGTH WS-ENTRY
+     IF WS-ENTRY > 0
+         CALL "ZIP-READ-RANGE" USING EXC-ZIP WS-ENTRY WS-JSON WS-JSON-CAPACITY WS-JSON-LENGTH WS-JSON-STATUS
+         IF WS-JSON-STATUS = FM-ZIP-OK
+             CALL "EX-VERSION-FACTS" USING WS-JSON WS-JSON-LENGTH
+         END-IF
+     END-IF
+*>   C1 and C4: the rows of the accepted-jar table.
+     MOVE 0 TO WS-IDENTIFIED WS-DIGEST-KNOWN WS-ID-KNOWN
+     MOVE SPACES TO WS-IDENT-ROW WS-EXPECTED-ROW WS-IDS
+     MOVE 1 TO WS-IDS-POINTER
+     MOVE 1 TO WS-ROW-NUMBER
+     CALL "CONTENT-ACCEPTED-JAR" USING WS-ROW-NUMBER WS-ROW WS-ROW-STATUS
+     PERFORM UNTIL WS-ROW-STATUS NOT = CT-OK
+         COMPUTE WS-ROW-SIZE-NUMBER = FUNCTION NUMVAL(WS-ROW-SIZE)
+         IF WS-ROW-SHA = EXC-SHA
+             MOVE 1 TO WS-DIGEST-KNOWN
+             MOVE WS-ROW TO WS-EXPECTED-ROW
+             IF WS-ROW-SIZE-NUMBER = EXC-SIZE
+                 MOVE 1 TO WS-IDENTIFIED
+                 MOVE WS-ROW TO WS-IDENT-ROW
+             END-IF
+         END-IF
+         IF FUNCTION TRIM(WS-ROW-VERSION) = FUNCTION TRIM(EXC-ID)
+             MOVE 1 TO WS-ID-KNOWN
+             MOVE WS-ROW TO WS-EXPECTED-ROW
+         END-IF
+         STRING FUNCTION TRIM(WS-ROW-VERSION) ", " DELIMITED BY SIZE INTO WS-IDS POINTER WS-IDS-POINTER
+         ADD 1 TO WS-ROW-NUMBER
+         CALL "CONTENT-ACCEPTED-JAR" USING WS-ROW-NUMBER WS-ROW WS-ROW-STATUS
+     END-PERFORM
+     IF WS-IDENTIFIED = 1
+         MOVE WS-IDENT-ROW TO EXC-ROW
+         CALL "EX-CROSS-CHECK" USING EXC-ROW L-STATUS
+     END-IF
+*>   Not identified: the id decides between CCX-030 (not a supported version) and CCX-031 (damaged or another build).
+     IF WS-IDENTIFIED = 0
+         MOVE SPACES TO EXM-ARG(1) EXM-ARG(2) EXM-ARG(3) EXM-ARG(4) EXM-ARG(5)
+         MOVE EXC-ID TO EXM-ARG(1)
+         MOVE EXC-SHA TO EXM-ARG(2)
+         MOVE EXC-SIZE TO WS-NUMBER
+         CALL "EX-NUM" USING WS-NUMBER WS-NUMBER-TEXT
+         MOVE 30 TO WS-CODE
+         MOVE WS-NUMBER-TEXT TO EXM-ARG(3)
+         COMPUTE WS-IDS-LENGTH = WS-IDS-POINTER - 3
+         MOVE WS-IDS(1:WS-IDS-LENGTH) TO EXM-ARG(4)
+         IF WS-DIGEST-KNOWN = 1 OR WS-ID-KNOWN = 1
+             MOVE 31 TO WS-CODE
+             MOVE WS-EXPECTED-ROW(13:64) TO EXM-ARG(3)
+             MOVE WS-NUMBER-TEXT TO EXM-ARG(4)
+             MOVE FUNCTION TRIM(WS-EXPECTED-ROW(5:8)) TO EXM-ARG(5)
+         END-IF
+         MOVE WS-CODE TO L-STATUS
+         CALL "EX-SAY" USING WS-CODE
+     END-IF
+*>   A jar that was not identified, or failed C5, is closed; an identified one stays open for the caller.
+     IF L-STATUS NOT = 0
+         CALL "ZIP-CLOSE" USING EXC-ZIP
+         SET EXC-ZIP TO NULL
+     END-IF
+     GOBACK.
+
+ END PROGRAM EX-CHECK.
+
+*> EX-VERSION-FACTS USING version.json text (PIC X, any size), length (BINARY-LONG): parses it and stores the id and the
+*> numbers of 22 §2.3 in EX-CHK; what is missing or invalid stays as EX-CHECK set it (unknown, -1).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EX-VERSION-FACTS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY EXSTATE.
+ COPY JSONDOC.
+ 01 WS-KEYS.
+    05 FILLER              PIC X(32) VALUE "world_version".
+    05 FILLER              PIC X(32) VALUE "protocol_version".
+    05 FILLER              PIC X(32) VALUE "pack_version.resource_major".
+    05 FILLER              PIC X(32) VALUE "pack_version.resource_minor".
+    05 FILLER              PIC X(32) VALUE "pack_version.data_major".
+    05 FILLER              PIC X(32) VALUE "pack_version.data_minor".
+ 01 WS-KEY-TABLE REDEFINES WS-KEYS.
+    05 WS-KEY-NAME         PIC X(32) OCCURS 6 TIMES.
+ 01 WS-VALUES.
+    05 WS-VALUE            BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-ID-KEY              PIC X(32) VALUE "id".
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-ID-LENGTH           BINARY-LONG.
+ 01 WS-ID-CAPACITY         BINARY-LONG.
+ 01 WS-ID                  PIC X(32).
+ LINKAGE SECTION.
+ 01 L-TEXT                 PIC X.
+ 01 L-LENGTH               BINARY-LONG.
+ PROCEDURE DIVISION USING L-TEXT L-LENGTH.
+     CALL "JSON-PARSE" USING JSON-DOC L-TEXT L-LENGTH
+     IF JD-ERROR NOT = 0
+         GOBACK
+     END-IF
+     MOVE 2 TO WS-KEY-LENGTH
+     CALL "JSON-FIND" USING JSON-DOC WS-ID-KEY WS-KEY-LENGTH WS-NODE
+     IF WS-NODE > 0
+         MOVE SPACES TO WS-ID
+         MOVE 32 TO WS-ID-CAPACITY
+         CALL "JSON-STRING" USING JSON-DOC WS-NODE WS-ID WS-ID-CAPACITY WS-ID-LENGTH
+         IF WS-ID-LENGTH > 0
+             MOVE WS-ID TO EXC-ID
+         END-IF
+     END-IF
+     MOVE EXC-WORLD TO WS-VALUE(1)
+     MOVE EXC-PROTOCOL TO WS-VALUE(2)
+     MOVE EXC-RES-MAJOR TO WS-VALUE(3)
+     MOVE EXC-RES-MINOR TO WS-VALUE(4)
+     MOVE EXC-DATA-MAJOR TO WS-VALUE(5)
+     MOVE EXC-DATA-MINOR TO WS-VALUE(6)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6
+         MOVE 0 TO WS-KEY-LENGTH
+         INSPECT WS-KEY-NAME(WS-I) TALLYING WS-KEY-LENGTH FOR CHARACTERS BEFORE INITIAL SPACE
+         CALL "JSON-FIND" USING JSON-DOC WS-KEY-NAME(WS-I) WS-KEY-LENGTH WS-NODE
+         IF WS-NODE > 0
+             IF JN-TYPE(WS-NODE) = JT-NUMBER
+                 COMPUTE WS-VALUE(WS-I) = JN-NUM(WS-NODE)
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE WS-VALUE(1) TO EXC-WORLD
+     MOVE WS-VALUE(2) TO EXC-PROTOCOL
+     MOVE WS-VALUE(3) TO EXC-RES-MAJOR
+     MOVE WS-VALUE(4) TO EXC-RES-MINOR
+     MOVE WS-VALUE(5) TO EXC-DATA-MAJOR
+     MOVE WS-VALUE(6) TO EXC-DATA-MINOR
+     GOBACK.
+ END PROGRAM EX-VERSION-FACTS.
+
+*> EX-CROSS-CHECK USING identified row (PIC X(92)), status out (BINARY-LONG): C5 of 22 §4.2. The id and the numbers
+*> of version.json (EX-CHK) must equal the row; the first difference is CCX-045 ("<name> <found>, expected <row>")
+*> and status 45, otherwise status 0.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. EX-CROSS-CHECK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY EXSTATE.
+ 01 WS-NAMES.
+    05 FILLER              PIC X(20) VALUE "world_version".
+    05 FILLER              PIC X(20) VALUE "protocol_version".
+    05 FILLER              PIC X(20) VALUE "resource_major".
+    05 FILLER              PIC X(20) VALUE "resource_minor".
+    05 FILLER              PIC X(20) VALUE "data_major".
+    05 FILLER              PIC X(20) VALUE "data_minor".
+ 01 WS-NAME-TABLE REDEFINES WS-NAMES.
+    05 WS-NAME             PIC X(20) OCCURS 6 TIMES.
+ 01 WS-FOUND-TABLE.
+    05 WS-FOUND            BINARY-DOUBLE OCCURS 6 TIMES.
+ 01 WS-WANTED-TABLE.
+    05 WS-WANTED           BINARY-DOUBLE OCCURS 6 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-CODE                BINARY-LONG.
+ 01 WS-FOUND-TEXT          PIC X(20).
+ 01 WS-WANTED-TEXT         PIC X(20).
+ 01 WS-RESOURCE            PIC X(4).
+ 01 WS-DATA                PIC X(5).
+ 01 WS-MAJOR               PIC X(5).
+ 01 WS-MINOR               PIC X(5).
+ LINKAGE SECTION.
+ 01 L-ROW                  PIC X(92).
+ 01 L-STATUS               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-STATUS.
+     MOVE 0 TO L-STATUS
+     MOVE SPACES TO EXM-ARG(1)
+     IF FUNCTION TRIM(EXC-ID) NOT = FUNCTION TRIM(L-ROW(1:4))
+         STRING "id " FUNCTION TRIM(EXC-ID) ", expected " FUNCTION TRIM(L-ROW(1:4)) DELIMITED BY SIZE
+             INTO EXM-ARG(1)
+         MOVE 45 TO L-STATUS
+     END-IF
+     MOVE EXC-WORLD TO WS-FOUND(1)
+     MOVE EXC-PROTOCOL TO WS-FOUND(2)
+     MOVE EXC-RES-MAJOR TO WS-FOUND(3)
+     MOVE EXC-RES-MINOR TO WS-FOUND(4)
+     MOVE EXC-DATA-MAJOR TO WS-FOUND(5)
+     MOVE EXC-DATA-MINOR TO WS-FOUND(6)
+     COMPUTE WS-WANTED(1) = FUNCTION NUMVAL(L-ROW(77:4))
+     COMPUTE WS-WANTED(2) = FUNCTION NUMVAL(L-ROW(81:3))
+     MOVE SPACES TO WS-MAJOR WS-MINOR
+     MOVE L-ROW(84:4) TO WS-RESOURCE
+     UNSTRING WS-RESOURCE DELIMITED BY "." INTO WS-MAJOR WS-MINOR
+     COMPUTE WS-WANTED(3) = FUNCTION NUMVAL(WS-MAJOR)
+     COMPUTE WS-WANTED(4) = FUNCTION NUMVAL(WS-MINOR)
+     MOVE SPACES TO WS-MAJOR WS-MINOR
+     MOVE L-ROW(88:5) TO WS-DATA
+     UNSTRING WS-DATA DELIMITED BY "." INTO WS-MAJOR WS-MINOR
+     COMPUTE WS-WANTED(5) = FUNCTION NUMVAL(WS-MAJOR)
+     COMPUTE WS-WANTED(6) = FUNCTION NUMVAL(WS-MINOR)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 6 OR L-STATUS NOT = 0
+         IF WS-FOUND(WS-I) NOT = WS-WANTED(WS-I)
+             CALL "EX-NUM" USING WS-FOUND(WS-I) WS-FOUND-TEXT
+             CALL "EX-NUM" USING WS-WANTED(WS-I) WS-WANTED-TEXT
+             STRING FUNCTION TRIM(WS-NAME(WS-I)) " " FUNCTION TRIM(WS-FOUND-TEXT) ", expected "
+                 FUNCTION TRIM(WS-WANTED-TEXT) DELIMITED BY SIZE INTO EXM-ARG(1)
+             MOVE 45 TO L-STATUS
+         END-IF
+     END-PERFORM
+     IF L-STATUS NOT = 0
+         MOVE 45 TO WS-CODE
+         CALL "EX-SAY" USING WS-CODE
+     END-IF
+     GOBACK.
+ END PROGRAM EX-CROSS-CHECK.

@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:speleothem",
+  "base_block": "minecraft:dripstone_block",
+  "pointed_block": "minecraft:pointed_dripstone",
+  "replaceable_blocks": "#minecraft:no_such_tag"
+}

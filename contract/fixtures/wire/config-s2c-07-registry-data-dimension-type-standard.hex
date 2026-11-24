@@ -1,0 +1,147 @@
+# Fixture: Registry Data (minecraft:dimension_type), standard world type
+# Phase: configuration. Direction: clientbound (S->C). Packet id 0x07 (7).
+# Doc refs: 04 Registry Data, section 4 (ids in packet order), section 6 dimension_type; 37 section 2.1 (values of the three dimension types); 23 section 7.1 (IntProvider forms)
+# Stated inputs:
+#   registry minecraft:dimension_type, 3 entries in id order: 0 minecraft:overworld, 1 minecraft:the_nether, 2 minecraft:the_end
+#   values of 37 section 2.1 (min_y -64/0/0, height 384/256/256, logical 384/128/256); optional fields not listed there are absent
+#   monster_spawn_light_level: overworld uniform 0..7 (compound form), nether constant 7, end constant 15 (bare Int)
+#   no known packs, so every entry has Data present
+
+07                                               # packet id: VarInt 0x07
+18 6d 69 6e 65 63 72 61 66 74 3a 64 69 6d 65 6e  # Registry: Identifier
+73 69 6f 6e 5f 74 79 70 65                       #   (continued)
+03                                               # Entries: VarInt count 3
+# ---- entry 0: minecraft:overworld ----
+13 6d 69 6e 65 63 72 61 66 74 3a 6f 76 65 72 77  # Entry[0].Id: Identifier
+6f 72 6c 64                                      #   (continued)
+01                                               # Entry[0].Data present: Boolean true
+0a                                               # Entry[0].Data: root Compound (type 0a), unnamed
+01 00 0c 68 61 73 5f 73 6b 79 6c 69 67 68 74     #   NBT Byte (type 01) name "has_skylight"
+01                                               #     Byte 1
+01 00 0b 68 61 73 5f 63 65 69 6c 69 6e 67        #   NBT Byte (type 01) name "has_ceiling"
+00                                               #     Byte 0
+01 00 16 68 61 73 5f 65 6e 64 65 72 5f 64 72 61  #   NBT Byte (type 01) name "has_ender_dragon_fight"
+67 6f 6e 5f 66 69 67 68 74                       #   (continued)
+00                                               #     Byte 0
+06 00 10 63 6f 6f 72 64 69 6e 61 74 65 5f 73 63  #   NBT Double (type 06) name "coordinate_scale"
+61 6c 65                                         #   (continued)
+3f f0 00 00 00 00 00 00                          #     Double 1.0
+03 00 05 6d 69 6e 5f 79                          #   NBT Int (type 03) name "min_y"
+ff ff ff c0                                      #     Int -64
+03 00 06 68 65 69 67 68 74                       #   NBT Int (type 03) name "height"
+00 00 01 80                                      #     Int 384
+03 00 0e 6c 6f 67 69 63 61 6c 5f 68 65 69 67 68  #   NBT Int (type 03) name "logical_height"
+74                                               #   (continued)
+00 00 01 80                                      #     Int 384
+08 00 0a 69 6e 66 69 6e 69 62 75 72 6e           #   NBT String (type 08) name "infiniburn"
+00 1f 23 6d 69 6e 65 63 72 61 66 74 3a 69 6e 66  #     String '#minecraft:infiniburn_overworld'
+69 6e 69 62 75 72 6e 5f 6f 76 65 72 77 6f 72 6c  #   (continued)
+64                                               #   (continued)
+05 00 0d 61 6d 62 69 65 6e 74 5f 6c 69 67 68 74  #   NBT Float (type 05) name "ambient_light"
+00 00 00 00                                      #     Float 0.0
+0a 00 19 6d 6f 6e 73 74 65 72 5f 73 70 61 77 6e  #   NBT Compound (type 0a) name "monster_spawn_light_level"
+5f 6c 69 67 68 74 5f 6c 65 76 65 6c              #   (continued)
+08 00 04 74 79 70 65                             #     NBT String (type 08) name "type"
+00 11 6d 69 6e 65 63 72 61 66 74 3a 75 6e 69 66  #       String 'minecraft:uniform'
+6f 72 6d                                         #   (continued)
+03 00 0d 6d 69 6e 5f 69 6e 63 6c 75 73 69 76 65  #     NBT Int (type 03) name "min_inclusive"
+00 00 00 00                                      #       Int 0
+03 00 0d 6d 61 78 5f 69 6e 63 6c 75 73 69 76 65  #     NBT Int (type 03) name "max_inclusive"
+00 00 00 07                                      #       Int 7
+00                                               #   NBT End: end of the compound
+03 00 1f 6d 6f 6e 73 74 65 72 5f 73 70 61 77 6e  #   NBT Int (type 03) name "monster_spawn_block_light_limit"
+5f 62 6c 6f 63 6b 5f 6c 69 67 68 74 5f 6c 69 6d  #   (continued)
+69 74                                            #   (continued)
+00 00 00 00                                      #     Int 0
+08 00 06 73 6b 79 62 6f 78                       #   NBT String (type 08) name "skybox"
+00 09 6f 76 65 72 77 6f 72 6c 64                 #     String 'overworld'
+08 00 0e 63 61 72 64 69 6e 61 6c 5f 6c 69 67 68  #   NBT String (type 08) name "cardinal_light"
+74                                               #   (continued)
+00 07 64 65 66 61 75 6c 74                       #     String 'default'
+00                                               # NBT End: end of the root compound
+# ---- entry 1: minecraft:the_nether ----
+14 6d 69 6e 65 63 72 61 66 74 3a 74 68 65 5f 6e  # Entry[1].Id: Identifier
+65 74 68 65 72                                   #   (continued)
+01                                               # Entry[1].Data present: Boolean true
+0a                                               # Entry[1].Data: root Compound (type 0a), unnamed
+01 00 0e 68 61 73 5f 66 69 78 65 64 5f 74 69 6d  #   NBT Byte (type 01) name "has_fixed_time"
+65                                               #   (continued)
+01                                               #     Byte 1
+01 00 0c 68 61 73 5f 73 6b 79 6c 69 67 68 74     #   NBT Byte (type 01) name "has_skylight"
+00                                               #     Byte 0
+01 00 0b 68 61 73 5f 63 65 69 6c 69 6e 67        #   NBT Byte (type 01) name "has_ceiling"
+01                                               #     Byte 1
+01 00 16 68 61 73 5f 65 6e 64 65 72 5f 64 72 61  #   NBT Byte (type 01) name "has_ender_dragon_fight"
+67 6f 6e 5f 66 69 67 68 74                       #   (continued)
+00                                               #     Byte 0
+06 00 10 63 6f 6f 72 64 69 6e 61 74 65 5f 73 63  #   NBT Double (type 06) name "coordinate_scale"
+61 6c 65                                         #   (continued)
+40 20 00 00 00 00 00 00                          #     Double 8.0
+03 00 05 6d 69 6e 5f 79                          #   NBT Int (type 03) name "min_y"
+00 00 00 00                                      #     Int 0
+03 00 06 68 65 69 67 68 74                       #   NBT Int (type 03) name "height"
+00 00 01 00                                      #     Int 256
+03 00 0e 6c 6f 67 69 63 61 6c 5f 68 65 69 67 68  #   NBT Int (type 03) name "logical_height"
+74                                               #   (continued)
+00 00 00 80                                      #     Int 128
+08 00 0a 69 6e 66 69 6e 69 62 75 72 6e           #   NBT String (type 08) name "infiniburn"
+00 1c 23 6d 69 6e 65 63 72 61 66 74 3a 69 6e 66  #     String '#minecraft:infiniburn_nether'
+69 6e 69 62 75 72 6e 5f 6e 65 74 68 65 72        #   (continued)
+05 00 0d 61 6d 62 69 65 6e 74 5f 6c 69 67 68 74  #   NBT Float (type 05) name "ambient_light"
+3d cc cc cd                                      #     Float 0.1
+03 00 19 6d 6f 6e 73 74 65 72 5f 73 70 61 77 6e  #   NBT Int (type 03) name "monster_spawn_light_level"
+5f 6c 69 67 68 74 5f 6c 65 76 65 6c              #   (continued)
+00 00 00 07                                      #     Int 7
+03 00 1f 6d 6f 6e 73 74 65 72 5f 73 70 61 77 6e  #   NBT Int (type 03) name "monster_spawn_block_light_limit"
+5f 62 6c 6f 63 6b 5f 6c 69 67 68 74 5f 6c 69 6d  #   (continued)
+69 74                                            #   (continued)
+00 00 00 0f                                      #     Int 15
+08 00 06 73 6b 79 62 6f 78                       #   NBT String (type 08) name "skybox"
+00 04 6e 6f 6e 65                                #     String 'none'
+08 00 0e 63 61 72 64 69 6e 61 6c 5f 6c 69 67 68  #   NBT String (type 08) name "cardinal_light"
+74                                               #   (continued)
+00 06 6e 65 74 68 65 72                          #     String 'nether'
+00                                               # NBT End: end of the root compound
+# ---- entry 2: minecraft:the_end ----
+11 6d 69 6e 65 63 72 61 66 74 3a 74 68 65 5f 65  # Entry[2].Id: Identifier
+6e 64                                            #   (continued)
+01                                               # Entry[2].Data present: Boolean true
+0a                                               # Entry[2].Data: root Compound (type 0a), unnamed
+01 00 0e 68 61 73 5f 66 69 78 65 64 5f 74 69 6d  #   NBT Byte (type 01) name "has_fixed_time"
+65                                               #   (continued)
+01                                               #     Byte 1
+01 00 0c 68 61 73 5f 73 6b 79 6c 69 67 68 74     #   NBT Byte (type 01) name "has_skylight"
+01                                               #     Byte 1
+01 00 0b 68 61 73 5f 63 65 69 6c 69 6e 67        #   NBT Byte (type 01) name "has_ceiling"
+00                                               #     Byte 0
+01 00 16 68 61 73 5f 65 6e 64 65 72 5f 64 72 61  #   NBT Byte (type 01) name "has_ender_dragon_fight"
+67 6f 6e 5f 66 69 67 68 74                       #   (continued)
+01                                               #     Byte 1
+06 00 10 63 6f 6f 72 64 69 6e 61 74 65 5f 73 63  #   NBT Double (type 06) name "coordinate_scale"
+61 6c 65                                         #   (continued)
+3f f0 00 00 00 00 00 00                          #     Double 1.0
+03 00 05 6d 69 6e 5f 79                          #   NBT Int (type 03) name "min_y"
+00 00 00 00                                      #     Int 0
+03 00 06 68 65 69 67 68 74                       #   NBT Int (type 03) name "height"
+00 00 01 00                                      #     Int 256
+03 00 0e 6c 6f 67 69 63 61 6c 5f 68 65 69 67 68  #   NBT Int (type 03) name "logical_height"
+74                                               #   (continued)
+00 00 01 00                                      #     Int 256
+08 00 0a 69 6e 66 69 6e 69 62 75 72 6e           #   NBT String (type 08) name "infiniburn"
+00 19 23 6d 69 6e 65 63 72 61 66 74 3a 69 6e 66  #     String '#minecraft:infiniburn_end'
+69 6e 69 62 75 72 6e 5f 65 6e 64                 #   (continued)
+05 00 0d 61 6d 62 69 65 6e 74 5f 6c 69 67 68 74  #   NBT Float (type 05) name "ambient_light"
+3e 80 00 00                                      #     Float 0.25
+03 00 19 6d 6f 6e 73 74 65 72 5f 73 70 61 77 6e  #   NBT Int (type 03) name "monster_spawn_light_level"
+5f 6c 69 67 68 74 5f 6c 65 76 65 6c              #   (continued)
+00 00 00 0f                                      #     Int 15
+03 00 1f 6d 6f 6e 73 74 65 72 5f 73 70 61 77 6e  #   NBT Int (type 03) name "monster_spawn_block_light_limit"
+5f 62 6c 6f 63 6b 5f 6c 69 67 68 74 5f 6c 69 6d  #   (continued)
+69 74                                            #   (continued)
+00 00 00 00                                      #     Int 0
+08 00 06 73 6b 79 62 6f 78                       #   NBT String (type 08) name "skybox"
+00 03 65 6e 64                                   #     String 'end'
+08 00 0e 63 61 72 64 69 6e 61 6c 5f 6c 69 67 68  #   NBT String (type 08) name "cardinal_light"
+74                                               #   (continued)
+00 07 64 65 66 61 75 6c 74                       #     String 'default'
+00                                               # NBT End: end of the root compound

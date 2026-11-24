@@ -4,7 +4,7 @@
 *> Join sequence (PLAY-JOIN, called by config-phase on the client's Finish Configuration). The
 *> order is the 09 §3.2 "Join sequence" paragraph:
 *>   1. Login (0x32), then Commands (0x10, the tree the player may use, CMD-TREE-SEND,
-*>      core/src/commands.cob) and Recipe Book Add (0x4B, CRAFT-BOOK-SEND, core/src/crafting.cob)
+*>      core/src/commands.cob), Update Recipes (0x88, RECIPES-UPDATE-SEND, core/src/recipes-update.cob) and Recipe Book Settings and Add (0x4D, 0x4B, RECBOOK-JOIN, core/src/recipe-unlock.cob)
 *>   2. Player Abilities (0x41) of the player's game mode
 *>   3. Set Held Slot (0x6B)
 *>   4. Container Set Content (0x12) of container 0, the 36 slots (09 §3.2 numbering), the state id
@@ -36,8 +36,8 @@
 *> Click, Container Close and Set Creative Mode Slot go to INV-HELD, INV-CLICK, INV-CLOSE and
 *> INV-CREATIVE-SET (core/src/inventory.cob); Attack goes to HEALTH-ATTACK and Client Command to HEALTH-RESPAWN
 *> (core/src/health.cob); Player Command goes to MOVE-SPRINT (core/src/movement.cob), Use Item to
-*> HUNGER-USE-ITEM and Player Action 6 RELEASE_USE_ITEM to HUNGER-CANCEL (core/src/hunger.cob);
-*> Place Recipe goes to CRAFT-PLACE (core/src/crafting.cob); Chat Command goes to CMD-RUN-PACKET and
+*> HUNGER-USE-ITEM and Player Action 6 RELEASE_USE_ITEM to HUNGER-CANCEL (core/src/hunger.cob) and 7 SWAP_ITEM_WITH_OFFHAND to MENU-OFFHAND-SWAP (core/src/menu-inventory.cob);
+*> Place Recipe goes to RECIPE-PLACE (core/src/recipe-unlock.cob); Chat Command goes to CMD-RUN-PACKET and
 *> Command Suggestion to CMD-SUGGEST (core/src/commands.cob). After every packet CRAFT-REFRESH-ALL
 *> re-sends the recipe book to each player whose inventory the packet changed.
 *> A Cookie Response is
@@ -56,8 +56,9 @@
 *>   PLAY-ARRIVE USING connection id         the arrival part of the join sequence (step 5)
 *> Builders (append id + body to the caller's PB-BUFFER):
 *>   PLAY-LOGIN-BUILD USING player row, PB-BUFFER
-*>   PLAY-SPAWN-INFO-BUILD USING dimension row, game mode (PIC 9), PB-BUFFER (no packet id)
-*>   PLAY-RESPAWN-BUILD USING dimension row, game mode (PIC 9), data to keep, PB-BUFFER
+*>   PLAY-SPAWN-INFO-ROW USING player row (0 none), dimension row, game mode (PIC 9), PB-BUFFER (no packet id; PLAY-SPAWN-INFO-BUILD is the same for no player)
+*>   PLAY-RESPAWN-ROW USING player row (0 none), dimension row, game mode (PIC 9), data to keep, PB-BUFFER (PLAY-RESPAWN-BUILD is the same for no player)
+*>   OBFUSCATE-SEED USING seed, hashed seed out (BINARY-DOUBLE each)
 *>   PLAY-ABILITIES-BUILD USING game mode, flying (PIC 9 each), PB-BUFFER
 *>   PLAY-HELD-SLOT-BUILD USING slot, PB-BUFFER
 *>   PLAY-CONTENT-BUILD USING player row, PB-BUFFER
@@ -93,7 +94,8 @@
      CALL "PLAY-LOGIN-BUILD" USING WS-ROW PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
      CALL "CMD-TREE-SEND" USING WS-ROW
-     CALL "CRAFT-BOOK-SEND" USING WS-ROW
+     CALL "RECIPES-UPDATE-SEND" USING L-ID
+     CALL "RECBOOK-JOIN" USING WS-ROW
      CALL "PB-RESET" USING PB-BUFFER
      CALL "PLAY-ABILITIES-BUILD" USING PL-MODE(WS-ROW) PL-FLYING(WS-ROW) PB-BUFFER
      CALL "CORE-SEND" USING L-ID PB-BUFFER
@@ -167,6 +169,9 @@
  COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-WORN                BINARY-LONG.
+ 01 WS-HAT-OLD             BINARY-LONG.
+ 01 WS-HAT-NEW             BINARY-LONG.
 *> Serverbound play ids 0 to 68 (05c): "1" where the packet is in the 09 §3 inventory and is
 *> discarded unread in play (0x32 Resource Pack Response).
  01 WS-LATER               PIC X(69) VALUE
@@ -207,6 +212,19 @@
              END-IF
          WHEN L-PACKET-ID = 14
              MOVE PSB-VIEW-DISTANCE TO PL-VIEW-DISTANCE(WS-ROW)
+*>           The displayed skin parts (47 section 5.3): a changed byte goes to the viewers as entry 16 of Set Entity Data (POSE-UPDATE), the main hand as entry 15, and
+*>           a changed hat bit to every player as Player Info Update UPDATE_HAT (PLAYER-HAT-SEND).
+             CALL "PARTS-HAT" USING PL-MODEL-PARTS(WS-ROW) WS-HAT-OLD
+             CALL "PARTS-HAT" USING PSB-MODEL-PARTS WS-HAT-NEW
+             MOVE PSB-MODEL-PARTS TO PL-MODEL-PARTS(WS-ROW)
+             MOVE 0 TO PL-LEFT-HAND(WS-ROW)
+             IF PSB-MAIN-HAND = 0
+                 MOVE 1 TO PL-LEFT-HAND(WS-ROW)
+             END-IF
+             CALL "POSE-UPDATE" USING WS-ROW
+             IF WS-HAT-OLD NOT = WS-HAT-NEW
+                 CALL "PLAYER-HAT-SEND" USING WS-ROW
+             END-IF
          WHEN L-PACKET-ID = 28
              CALL "CORE-KEEPALIVE-ANSWER" USING L-ID PSB-KEEPALIVE
          WHEN L-PACKET-ID = 44
@@ -222,6 +240,12 @@
              CALL "GI-THROW" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 41 AND PSB-ACTION = 6
              CALL "HUNGER-CANCEL" USING WS-ROW
+             CALL "COMBAT-BLOCK-LOWER" USING WS-ROW
+             CALL "RANGED-RELEASE" USING WS-ROW
+         WHEN L-PACKET-ID = 41 AND PSB-ACTION = 7
+             CALL "MENU-OFFHAND-SWAP" USING L-ID
+         WHEN L-PACKET-ID = 41 AND PSB-ACTION = 8
+             CALL "RANGED-STAB" USING WS-ROW
          WHEN L-PACKET-ID = 41
              CALL "BLOCK-ACTION" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 66
@@ -232,24 +256,68 @@
              CALL "INV-CLICK" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 19
              CALL "INV-CLOSE" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 17
+             CALL "STATION-BUTTON" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 49
+             CALL "ANVIL-RENAME" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 52
+             CALL "MERCHANT-SELECT" USING L-ID PSB-BUTTON
          WHEN L-PACKET-ID = 57
              CALL "INV-CREATIVE-SET" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 9
              CALL "CHAT-MESSAGE" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 1
              CALL "HEALTH-ATTACK" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 26
+             CALL "MOB-INTERACT" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 12
              CALL "HEALTH-RESPAWN" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 42
              CALL "MOVE-SPRINT" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 43
+             CALL "MOVE-SNEAK" USING L-ID PLAY-SERVERBOUND
+             CALL "MOB-RIDE-INPUT" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 34
+             CALL "MOB-RIDE-MOVE" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 35
+             CALL "BOAT-PADDLE" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 67
-             CALL "HUNGER-USE-ITEM" USING L-ID PLAY-SERVERBOUND
+             CALL "BUCKET-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
+             IF WS-WORN = 0
+                 CALL "BOAT-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
+             END-IF
+             IF WS-WORN = 0
+                 CALL "RANGED-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
+             END-IF
+             IF WS-WORN = 0
+                 CALL "THROWN-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
+             END-IF
+             IF WS-WORN = 0
+                 CALL "STRIDER-STICK-USE" USING L-ID WS-WORN
+             END-IF
+             IF WS-WORN = 0
+                 CALL "TOOLUSE-ITEM" USING L-ID WS-WORN
+             END-IF
+             IF WS-WORN = 0
+                 CALL "POTION-DRINK-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
+             END-IF
+             IF WS-WORN = 0
+                 CALL "HUNGER-USE-ITEM" USING L-ID PLAY-SERVERBOUND
+             END-IF
          WHEN L-PACKET-ID = 39
-             CALL "CRAFT-PLACE" USING L-ID PLAY-SERVERBOUND
+             CALL "RECIPE-PLACE" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 47
+             CALL "RECIPE-SETTINGS" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 48
+             CALL "RECIPE-SEEN" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 15
              CALL "CMD-SUGGEST" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 7
              CALL "CMD-RUN-PACKET" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 62
+             CALL "SIGN-UPDATE-PACKET" USING L-ID PLAY-SERVERBOUND
+         WHEN L-PACKET-ID = 27
+             CALL "BE6-JIGSAW-PACKET" USING L-ID PLAY-SERVERBOUND
      END-EVALUATE
      CALL "CRAFT-REFRESH-ALL"
      GOBACK.
@@ -274,7 +342,7 @@
 *> Chat 0x09 (String of at most 256 code units, Long timestamp, Long salt, Optional MessageSignature
 *> of 256 raw bytes, LastSeenMessagesUpdate: VarInt offset, FixedBitSet(20), Byte checksum); the
 *> signature and the last seen messages are not checked (09 §1: secure chat is not enforced).
-*> Attack 0x01 (VarInt entity id); Client Command 0x0C (VarInt action); Player Command 0x2A (VarInt
+*> Attack 0x01 (VarInt entity id); Interact 0x1A (VarInt entity id, VarInt hand, LpVec3 point, Boolean sneaking); Client Command 0x0C (VarInt action); Player Command 0x2A (VarInt
 *> entity id, VarInt action, VarInt data); Use Item 0x43 (VarInt hand, VarInt sequence, two Floats);
 *> Place Recipe 0x27 (VarInt container id, VarInt recipe display id, Boolean use max items).
 *> Outcome 1 when a read fails or bytes are left over.
@@ -288,9 +356,13 @@
  01 WS-MAX-MESSAGE         BINARY-LONG VALUE 256.
  01 WS-MAX-COMMAND         BINARY-LONG VALUE 32767.
  01 WS-MAX-SUGGESTION      BINARY-LONG VALUE 32500.
+ 01 WS-MAX-SIGN            BINARY-LONG VALUE 384.
+ 01 WS-SIGN-CAPACITY       BINARY-LONG VALUE 384.
  01 WS-MESSAGE-CAPACITY    BINARY-LONG VALUE 768.
  01 WS-LONG                BINARY-DOUBLE.
  01 WS-PRESENT             BINARY-LONG.
+ 01 WS-PADDLE-LEFT         BINARY-LONG.
+ 01 WS-PADDLE-RIGHT        BINARY-LONG.
  01 WS-SIGNATURE-BYTES     BINARY-LONG VALUE 256.
  01 WS-SEEN-BITS           BINARY-LONG VALUE 20.
  01 WS-SEEN                PIC X(3).
@@ -318,10 +390,26 @@
              CALL "CONFIG-DECODE" USING WS-CONFIG-ID PB-BUFFER CONFIG-SERVERBOUND
                  WS-CONFIG-OUTCOME
              MOVE CSB-VIEW-DISTANCE TO PSB-VIEW-DISTANCE
+             MOVE CSB-MODEL-PARTS TO PSB-MODEL-PARTS
+             MOVE CSB-MAIN-HAND TO PSB-MAIN-HAND
          WHEN 28
              CALL "PB-GET-LONG" USING PB-BUFFER PSB-KEEPALIVE
          WHEN 44
              CONTINUE
+         WHEN 43
+             CALL "PB-GET-UBYTE" USING PB-BUFFER PSB-FLAGS
+         WHEN 35
+*>           Paddle Boat (05c 0x23): left and right paddle as bits 1 and 2 of PSB-FLAGS.
+             CALL "PB-GET-BOOL" USING PB-BUFFER WS-PADDLE-LEFT
+             CALL "PB-GET-BOOL" USING PB-BUFFER WS-PADDLE-RIGHT
+             COMPUTE PSB-FLAGS = WS-PADDLE-LEFT + 2 * WS-PADDLE-RIGHT
+         WHEN 34
+             CALL "PB-GET-DOUBLE" USING PB-BUFFER PSB-X
+             CALL "PB-GET-DOUBLE" USING PB-BUFFER PSB-Y
+             CALL "PB-GET-DOUBLE" USING PB-BUFFER PSB-Z
+             CALL "PB-GET-FLOAT" USING PB-BUFFER PSB-YAW
+             CALL "PB-GET-FLOAT" USING PB-BUFFER PSB-PITCH
+             CALL "PB-GET-UBYTE" USING PB-BUFFER PSB-FLAGS
          WHEN 30
              CALL "PB-GET-DOUBLE" USING PB-BUFFER PSB-X
              CALL "PB-GET-DOUBLE" USING PB-BUFFER PSB-Y
@@ -383,13 +471,24 @@
              CALL "PLAY-GET-HASHED-STACK" USING PB-BUFFER PSB-CARRIED-ITEM PSB-CARRIED-COUNT
          WHEN 19
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-CONTAINER
+         WHEN 17
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-CONTAINER
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-BUTTON
+         WHEN 52
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-BUTTON
          WHEN 57
              CALL "PB-GET-SHORT" USING PB-BUFFER PSB-SLOT
-             CALL "PB-GET-ITEMSTACK" USING PB-BUFFER WK-ITEMSTACK
-             MOVE WK-IS-ITEM TO PSB-STACK-ITEM
-             MOVE WK-IS-COUNT TO PSB-STACK-COUNT
+             CALL "PB-GET-ITEM-STACK" USING PB-BUFFER WK-ITEMSTACK-X
+             MOVE WK-ISX-ITEM TO PSB-STACK-ITEM
+             MOVE WK-ISX-COUNT TO PSB-STACK-COUNT
+             CALL "SP-INTERN" USING WK-ITEMSTACK-X PSB-STACK-VAR
          WHEN 1
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-TARGET
+         WHEN 26
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-TARGET
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-HAND
+             CALL "PB-GET-LPVEC3" USING PB-BUFFER PSB-X PSB-Y PSB-Z
+             CALL "PB-GET-BOOL" USING PB-BUFFER PSB-INSIDE
          WHEN 12
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-ACTION
          WHEN 42
@@ -401,6 +500,10 @@
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-SEQUENCE
              CALL "PB-GET-FLOAT" USING PB-BUFFER PSB-YAW
              CALL "PB-GET-FLOAT" USING PB-BUFFER PSB-PITCH
+         WHEN 47
+             CALL "PB-GET-RECIPE-BOOK-CHANGE" USING PB-BUFFER PSB-BOOK-TYPE PSB-BOOK-OPEN PSB-BOOK-FILTER
+         WHEN 48
+             CALL "PB-GET-RECIPE-SEEN" USING PB-BUFFER PSB-RECIPE
          WHEN 39
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-CONTAINER
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-RECIPE
@@ -412,6 +515,20 @@
              CALL "PB-GET-VARINT" USING PB-BUFFER PSB-TRANSACTION
              CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-SUGGESTION PSB-MESSAGE
                  WS-MESSAGE-CAPACITY PSB-MESSAGE-LENGTH
+         WHEN 49
+             CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-MESSAGE PSB-MESSAGE WS-MESSAGE-CAPACITY
+                 PSB-MESSAGE-LENGTH
+         WHEN 27
+             CALL "PB-GET-POSITION" USING PB-BUFFER PSB-BX PSB-BY PSB-BZ
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-DATA
+             CALL "PB-GET-BOOL" USING PB-BUFFER PSB-KEEP-JIGSAWS
+         WHEN 62
+             CALL "PB-GET-POSITION" USING PB-BUFFER PSB-BX PSB-BY PSB-BZ
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+                 CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-SIGN PSB-SIGN-TEXT(WS-I) WS-SIGN-CAPACITY
+                     PSB-SIGN-LENGTH(WS-I)
+             END-PERFORM
+             CALL "PB-GET-VARINT" USING PB-BUFFER PSB-DATA
          WHEN 9
              CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-MESSAGE PSB-MESSAGE WS-MESSAGE-CAPACITY
                  PSB-MESSAGE-LENGTH
@@ -462,13 +579,43 @@
  END PROGRAM PLAY-GET-HASHED-STACK.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. OBFUSCATE-SEED.
+*> USING seed (BINARY-DOUBLE), hashed seed out (BINARY-DOUBLE): BiomeManager.obfuscateSeed (57-client-closures-3 section 10; 10 section 7.7): the
+*> first 8 bytes of SHA-256 of the 8 little-endian bytes of the seed, read as a little-endian 64-bit integer (the Login and Respawn seed field).
+*> The bytes of a BINARY-DOUBLE are little-endian on the platforms of the project, so the field is read and written as its own bytes.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-DATA                PIC X(8).
+ 01 WS-DATA-NUMBER REDEFINES WS-DATA BINARY-DOUBLE SIGNED.
+ 01 WS-DIGEST              PIC X(64).
+ 01 WS-DIGEST-LENGTH       BINARY-LONG UNSIGNED.
+ 01 WS-DATA-LENGTH         BINARY-DOUBLE UNSIGNED VALUE 8.
+ 01 WS-ALGORITHM           USAGE POINTER.
+ 01 WS-ENGINE              USAGE POINTER VALUE NULL.
+ 01 WS-RC                  BINARY-LONG.
+ 01 WS-RESULT              PIC X(8).
+ 01 WS-RESULT-NUMBER REDEFINES WS-RESULT BINARY-DOUBLE SIGNED.
+ LINKAGE SECTION.
+ 01 L-SEED                 BINARY-DOUBLE.
+ 01 L-HASHED               BINARY-DOUBLE.
+ PROCEDURE DIVISION USING L-SEED L-HASHED.
+     MOVE L-SEED TO WS-DATA-NUMBER
+     CALL STATIC "EVP_sha256" RETURNING WS-ALGORITHM
+     CALL STATIC "EVP_Digest" USING BY REFERENCE WS-DATA BY VALUE WS-DATA-LENGTH
+         BY REFERENCE WS-DIGEST BY REFERENCE WS-DIGEST-LENGTH BY VALUE WS-ALGORITHM
+         BY VALUE WS-ENGINE RETURNING WS-RC
+     MOVE WS-DIGEST(1:8) TO WS-RESULT
+     MOVE WS-RESULT-NUMBER TO L-HASHED
+     GOBACK.
+ END PROGRAM OBFUSCATE-SEED.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. PLAY-LOGIN-BUILD.
 *> USING player row, PB-BUFFER: Login 0x32 (05a; 09 §3.2): the player's entity id, hardcore false,
 *> dimension names = every enabled dimension (CW-DIM, in order), max players 20, view and
 *> simulation distance = the configured view distance, reduced debug info false, show death screen
-*> true, limited crafting false, CommonPlayerSpawnInfo of the player's dimension (type id, key,
-*> hashed seed 0, game mode, previous game mode absent, not debug, not flat, no last death
-*> location, portal cooldown 0, sea level), online mode false, enforces secure chat false.
+*> true, limited crafting false, CommonPlayerSpawnInfo of the player's dimension (PLAY-SPAWN-INFO-ROW),
+*> online mode false, enforces secure chat false.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -479,6 +626,15 @@
  01 WS-MAX-PLAYERS         BINARY-LONG VALUE 20.
  01 WS-DIM                 BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-REDUCED-RULE        PIC X(40) VALUE "reduced_debug_info".
+ 01 WS-IMMEDIATE-RULE      PIC X(40) VALUE "immediate_respawn".
+ 01 WS-LIMITED-RULE        PIC X(40) VALUE "limited_crafting".
+ 01 WS-REDUCED             BINARY-DOUBLE.
+ 01 WS-IMMEDIATE           BINARY-DOUBLE.
+ 01 WS-LIMITED             BINARY-DOUBLE.
+ 01 WS-SHOW-DEATH          BINARY-LONG.
+ 01 WS-REDUCED-FLAG        BINARY-LONG.
+ 01 WS-LIMITED-FLAG        BINARY-LONG.
  LINKAGE SECTION.
  COPY COREAPI.
  COPY PROTO.
@@ -496,73 +652,195 @@
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-MAX-PLAYERS
      CALL "PB-PUT-VARINT" USING PB-BUFFER CS-VIEW-DISTANCE
      CALL "PB-PUT-VARINT" USING PB-BUFFER CS-VIEW-DISTANCE
-     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
-     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ONE
-     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
-     CALL "PLAY-SPAWN-INFO-BUILD" USING PL-DIM(L-ROW) PL-MODE(L-ROW) PB-BUFFER
+*>   The flag rules of 33 section 8.1: reduced debug info, show death screen (not immediate_respawn) and limited crafting.
+     CALL "BR-RULE-GET" USING WS-REDUCED-RULE WS-REDUCED
+     CALL "BR-RULE-GET" USING WS-IMMEDIATE-RULE WS-IMMEDIATE
+     CALL "BR-RULE-GET" USING WS-LIMITED-RULE WS-LIMITED
+     MOVE 0 TO WS-REDUCED-FLAG WS-LIMITED-FLAG
+     MOVE 1 TO WS-SHOW-DEATH
+     IF WS-REDUCED NOT = 0
+         MOVE 1 TO WS-REDUCED-FLAG
+     END-IF
+     IF WS-IMMEDIATE NOT = 0
+         MOVE 0 TO WS-SHOW-DEATH
+     END-IF
+     IF WS-LIMITED NOT = 0
+         MOVE 1 TO WS-LIMITED-FLAG
+     END-IF
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-REDUCED-FLAG
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-SHOW-DEATH
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-LIMITED-FLAG
+     CALL "PLAY-SPAWN-INFO-ROW" USING L-ROW PL-DIM(L-ROW) PL-MODE(L-ROW) PB-BUFFER
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
      CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
      GOBACK.
  END PROGRAM PLAY-LOGIN-BUILD.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. PLAY-RESPAWN-BUILD.
-*> USING dimension row (BINARY-LONG), game mode (PIC 9), data to keep (BINARY-LONG), PB-BUFFER:
-*> Respawn 0x54 (05b; 09 §3.3): CommonPlayerSpawnInfo of the dimension, then the Byte data to keep
-*> (0x00 after a death, 0x03 for travel).
+ PROGRAM-ID. PLAY-RESPAWN-ROW.
+*> USING player row (0 none), dimension row (BINARY-LONG), game mode (PIC 9), data to keep (BINARY-LONG), PB-BUFFER:
+*> Respawn 0x54 (05b; 09 §3.3): CommonPlayerSpawnInfo of the dimension for that player (PLAY-SPAWN-INFO-ROW), then the Byte
+*> data to keep (0x00 after a death, 0x03 for travel).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-PACKET-ID           BINARY-LONG VALUE 84.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-MODE                 PIC 9.
+ 01 L-KEEP                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-DIM L-MODE L-KEEP PB-BUFFER.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PLAY-SPAWN-INFO-ROW" USING L-ROW L-DIM L-MODE PB-BUFFER
+     CALL "PB-PUT-BYTE" USING PB-BUFFER L-KEEP
+     GOBACK.
+ END PROGRAM PLAY-RESPAWN-ROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAY-RESPAWN-BUILD.
+*> USING dimension row (BINARY-LONG), game mode (PIC 9), data to keep (BINARY-LONG), PB-BUFFER:
+*> PLAY-RESPAWN-ROW of no player (previous game mode and last death location absent).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NO-PLAYER           BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-DIM                  BINARY-LONG.
  01 L-MODE                 PIC 9.
  01 L-KEEP                 BINARY-LONG.
  PROCEDURE DIVISION USING L-DIM L-MODE L-KEEP PB-BUFFER.
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
-     CALL "PLAY-SPAWN-INFO-BUILD" USING L-DIM L-MODE PB-BUFFER
-     CALL "PB-PUT-BYTE" USING PB-BUFFER L-KEEP
+     CALL "PLAY-RESPAWN-ROW" USING WS-NO-PLAYER L-DIM L-MODE L-KEEP PB-BUFFER
      GOBACK.
  END PROGRAM PLAY-RESPAWN-BUILD.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. PLAY-SPAWN-INFO-BUILD.
-*> USING dimension row (BINARY-LONG), game mode (PIC 9: 0 survival, 1 creative), PB-BUFFER: the
-*> CommonPlayerSpawnInfo of Login and Respawn (05a, 05b; 09 §3.2): dimension type id, dimension key,
-*> hashed seed 0, game mode, previous game mode absent, not debug, not flat, no last death location,
-*> portal cooldown 0, sea level.
+ PROGRAM-ID. DIM-TYPE-ID.
+*> USING dimension row (BINARY-LONG), dimension type id out (BINARY-LONG): the id the client knows the row's dimension type by, which is the
+*> position of its key in the Registry Data of minecraft:dimension_type that the open content set sends (04 section 4: ids follow the order received;
+*> a standard set sends its files in the order the pack lists them, so the Nether's id is not the table's DM-TYPE-ID). A type the registry does not
+*> hold (a content set without that registry) keeps the table's DM-TYPE-ID.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ COPY DIMENSIONS.
+ 01 WS-REGISTRY            PIC X(112) VALUE "minecraft:dimension_type".
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ENTRY               BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-KEY-LENGTH          BINARY-LONG.
+ 01 WS-WANT                PIC X(112).
+ 01 WS-PAYLOAD             PIC X(65536).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-LENGTH              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIM L-ID.
+     MOVE DM-TYPE-ID(L-DIM) TO L-ID
+     MOVE SPACES TO WS-WANT
+     MOVE DM-TYPE-KEY(L-DIM) TO WS-WANT
+     CALL "CONTENT-REGISTRY-COUNT" USING WS-REGISTRY WS-COUNT WS-STATUS
+     IF WS-STATUS NOT = CT-OK
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-ENTRY FROM 0 BY 1 UNTIL WS-ENTRY >= WS-COUNT
+         CALL "CONTENT-REGISTRY-ENTRY" USING WS-REGISTRY WS-ENTRY WS-KEY WS-KEY-LENGTH WS-PAYLOAD
+             WS-CAPACITY WS-LENGTH WS-STATUS
+         IF WS-KEY = WS-WANT
+             MOVE WS-ENTRY TO L-ID
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM DIM-TYPE-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAY-SPAWN-INFO-ROW.
+*> USING player row (0 none), dimension row (BINARY-LONG), game mode (PIC 9: 0 survival, 1 creative), PB-BUFFER: the
+*> CommonPlayerSpawnInfo of Login and Respawn (05a, 05b; 09 §3.2; 57-client-closures-3 sections 8 to 11): dimension type id, dimension key,
+*> hashed seed (obfuscateSeed of the world seed, 10; 0 in a cobolcraft world by decision, 09 §3.2), game mode, previous game mode (the
+*> player's PL-PREV-MODE1: 0 none, else mode + 1), not debug, is flat (true in every dimension of a superflat world, 56 section 5.1;
+*> false otherwise), last death location (the player's: present flag, dimension key, block position; absent until the first death),
+*> portal cooldown 0, sea level (-63 in the overworld of a superflat world, 56 section 4.1 and 5.2; the dimension's own otherwise: 63, 32, 0).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
  COPY DIMENSIONS.
  01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-FLAT                BINARY-LONG.
+ 01 WS-SEA                 BINARY-LONG.
  01 WS-SEED                BINARY-DOUBLE VALUE 0.
+ 01 WS-WORLD-SEED          BINARY-DOUBLE.
  01 WS-MODE                BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
+ 01 WS-TYPE-ID             BINARY-LONG.
+ 01 WS-PREVIOUS            BINARY-LONG.
+ 01 WS-DEATH               BINARY-LONG.
+ 01 WS-DEATH-DIM           BINARY-LONG.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-MODE                 PIC 9.
+ PROCEDURE DIVISION USING L-ROW L-DIM L-MODE PB-BUFFER.
+     MOVE L-DIM TO WS-DIM
+     CALL "DIM-TYPE-ID" USING WS-DIM WS-TYPE-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-TYPE-ID
+     CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER DM-KEY(WS-DIM) DM-KEY-LENGTH(WS-DIM)
+     MOVE 0 TO WS-SEED
+     IF CW-WORLD-TYPE NOT = "cobolcraft"
+         MOVE CW-SEED TO WS-WORLD-SEED
+         CALL "OBFUSCATE-SEED" USING WS-WORLD-SEED WS-SEED
+     END-IF
+     CALL "PB-PUT-LONG" USING PB-BUFFER WS-SEED
+     MOVE L-MODE TO WS-MODE
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-MODE
+     MOVE 0 TO WS-PREVIOUS WS-DEATH
+     IF L-ROW > 0
+         MOVE PL-PREV-MODE1(L-ROW) TO WS-PREVIOUS
+         MOVE PL-DEATH-HAS(L-ROW) TO WS-DEATH
+     END-IF
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PREVIOUS
+     MOVE 0 TO WS-FLAT
+     CALL "DIM-SEA-LEVEL-OF" USING WS-DIM WS-SEA
+     IF CW-WORLD-TYPE = "superflat"
+         MOVE 1 TO WS-FLAT
+     END-IF
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-FLAT
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-DEATH
+     IF WS-DEATH = 1
+         MOVE PL-DEATH-DIM(L-ROW) TO WS-DEATH-DIM
+         CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER DM-KEY(WS-DEATH-DIM) DM-KEY-LENGTH(WS-DEATH-DIM)
+         CALL "PB-PUT-POSITION" USING PB-BUFFER PL-DEATH-X(L-ROW) PL-DEATH-Y(L-ROW) PL-DEATH-Z(L-ROW)
+     END-IF
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SEA
+     GOBACK.
+ END PROGRAM PLAY-SPAWN-INFO-ROW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAY-SPAWN-INFO-BUILD.
+*> USING dimension row (BINARY-LONG), game mode (PIC 9), PB-BUFFER: PLAY-SPAWN-INFO-ROW of no player (previous game mode and
+*> last death location absent).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NO-PLAYER           BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-DIM                  BINARY-LONG.
  01 L-MODE                 PIC 9.
  PROCEDURE DIVISION USING L-DIM L-MODE PB-BUFFER.
-     MOVE L-DIM TO WS-DIM
-     CALL "PB-PUT-VARINT" USING PB-BUFFER DM-TYPE-ID(WS-DIM)
-     CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER DM-KEY(WS-DIM) DM-KEY-LENGTH(WS-DIM)
-     CALL "PB-PUT-LONG" USING PB-BUFFER WS-SEED
-     MOVE L-MODE TO WS-MODE
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-MODE
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
-     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
-     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
-     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-ZERO
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
-     CALL "PB-PUT-VARINT" USING PB-BUFFER DM-SEA-LEVEL(WS-DIM)
+     CALL "PLAY-SPAWN-INFO-ROW" USING WS-NO-PLAYER L-DIM L-MODE PB-BUFFER
      GOBACK.
  END PROGRAM PLAY-SPAWN-INFO-BUILD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PLAY-ABILITIES-BUILD.
-*> USING game mode (PIC 9: 0 survival, 1 creative), flying (PIC 9), PB-BUFFER: Player Abilities
-*> 0x41 (05a; 09 §3.2): creative flags 0x0D (invulnerable, can fly, instant build) plus 0x02 while
-*> flying, survival 0x00; flying speed 0.05, walking speed 0.1.
+*> USING game mode (PIC 9: 0 survival, 1 creative, 2 adventure, 3 spectator), flying (PIC 9), PB-BUFFER: Player Abilities
+*> 0x41 (05a; 09 §3.2; 13 §1.4): creative flags 0x0D (invulnerable, can fly, instant build) plus 0x02 while
+*> flying, spectator 0x07 (invulnerable, flying, can fly), survival and adventure 0x00; flying speed 0.05, walking speed 0.1.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-PACKET-ID           BINARY-LONG VALUE 65.
@@ -575,12 +853,15 @@
  01 L-FLYING               PIC 9.
  PROCEDURE DIVISION USING L-MODE L-FLYING PB-BUFFER.
      MOVE 0 TO WS-FLAGS
-     IF L-MODE = 1
-         MOVE 13 TO WS-FLAGS
-         IF L-FLYING = 1
-             ADD 2 TO WS-FLAGS
-         END-IF
-     END-IF
+     EVALUATE L-MODE
+         WHEN 1
+             MOVE 13 TO WS-FLAGS
+             IF L-FLYING = 1
+                 ADD 2 TO WS-FLAGS
+             END-IF
+         WHEN 3
+             MOVE 7 TO WS-FLAGS
+     END-EVALUATE
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PB-PUT-BYTE" USING PB-BUFFER WS-FLAGS
      CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-FLY-SPEED
@@ -605,33 +886,42 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PLAY-CONTENT-BUILD.
-*> USING player row, PB-BUFFER: Container Set Content 0x12 (05a; 09 §3.2): container 0, the
-*> player's state id, the 36 inventory slots in the 09 §3.2 numbering (PL-SLOT(n + 1) is slot n;
-*> count 0 = empty), then the item on the player's cursor (PL-CARRIED-*).
+*> USING player row, PB-BUFFER: Container Set Content 0x12 (05a; 09 §3.2; 40-1 §4.3): the container id and state id of the
+*> player's current menu, its 46 slots in the menu's numbering (menus.cob; count 0 = empty), then the item on the player's
+*> cursor (PL-CARRIED-*).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CMENU.
  COPY PROTO REPLACING LEADING ==PB-== BY ==WK-==.
  01 WS-PACKET-ID           BINARY-LONG VALUE 18.
- 01 WS-ZERO                BINARY-LONG VALUE 0.
- 01 WS-SLOTS               BINARY-LONG VALUE 36.
+ 01 WS-SLOTS               BINARY-LONG VALUE 46.
  01 WS-I                   BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW PB-BUFFER.
+     IF MN-WINDOW(L-ROW) = 0
+         MOVE PL-STATE-ID(L-ROW) TO WS-STATE
+     ELSE
+         MOVE MN-STATE-ID(L-ROW) TO WS-STATE
+     END-IF
+     CALL "MENU-SLOT-COUNT" USING L-ROW WS-SLOTS
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
-     CALL "PB-PUT-VARINT" USING PB-BUFFER PL-STATE-ID(L-ROW)
+     CALL "PB-PUT-VARINT" USING PB-BUFFER MN-WINDOW(L-ROW)
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-STATE
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SLOTS
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
-         MOVE PL-SLOT-COUNT(L-ROW, WS-I) TO WK-IS-COUNT
-         MOVE PL-SLOT-ITEM(L-ROW, WS-I) TO WK-IS-ITEM
-         CALL "PB-PUT-ITEMSTACK" USING PB-BUFFER WK-ITEMSTACK
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= WS-SLOTS
+         CALL "MENU-GET-X" USING L-ROW WS-I WS-ITEM WS-COUNT WS-VAR
+         CALL "SP-EXPORT" USING WS-ITEM WS-COUNT WS-VAR WK-ITEMSTACK-X
+         CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER WK-ITEMSTACK-X
      END-PERFORM
-     MOVE PL-CARRIED-COUNT(L-ROW) TO WK-IS-COUNT
-     MOVE PL-CARRIED-ITEM(L-ROW) TO WK-IS-ITEM
-     CALL "PB-PUT-ITEMSTACK" USING PB-BUFFER WK-ITEMSTACK
+     CALL "SP-EXPORT" USING PL-CARRIED-ITEM(L-ROW) PL-CARRIED-COUNT(L-ROW) PL-CARRIED-VAR(L-ROW) WK-ITEMSTACK-X
+     CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER WK-ITEMSTACK-X
      GOBACK.
  END PROGRAM PLAY-CONTENT-BUILD.
 
@@ -673,7 +963,7 @@
      COMPUTE WS-Y = FUNCTION INTEGER(CW-SPAWN-Y)
      COMPUTE WS-Z = FUNCTION INTEGER(CW-SPAWN-Z)
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
-     CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER DM-KEY(DIM-MAIN) DM-KEY-LENGTH(DIM-MAIN)
+     CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER DM-KEY(CW-DIM(1)) DM-KEY-LENGTH(CW-DIM(1))
      CALL "PB-PUT-POSITION" USING PB-BUFFER WS-X WS-Y WS-Z
      CALL "PB-PUT-FLOAT" USING PB-BUFFER CW-SPAWN-YAW
      CALL "PB-PUT-FLOAT" USING PB-BUFFER WS-PITCH
@@ -799,6 +1089,54 @@
  END PROGRAM PLAYER-INFO-REMOVE-BUILD.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. PARTS-HAT.
+*> USING the displayed skin parts byte (47 section 5.1), hat out: 1 when the hat bit (mask 0x40) is set, else 0.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-SHIFTED             BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PARTS                BINARY-LONG.
+ 01 L-HAT                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-PARTS L-HAT.
+     COMPUTE WS-SHIFTED = L-PARTS / 64
+     COMPUTE L-HAT = FUNCTION MOD(WS-SHIFTED, 2)
+     GOBACK.
+ END PROGRAM PARTS-HAT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. PLAYER-HAT-SEND.
+*> USING player row: Player Info Update 0x47 with the single action UPDATE_HAT (bit 7 of the action set, 05a ordinal 7; 47 section 5.3): one entry, the player's UUID and its
+*> hat bit, to every player in play (the face in the tab list).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 71.
+ 01 WS-ACTION              BINARY-LONG VALUE 128.
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-HAT                 BINARY-LONG.
+ 01 WS-OTHER               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "PARTS-HAT" USING PL-MODEL-PARTS(L-ROW) WS-HAT
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-ACTION
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ONE
+     CALL "PB-PUT-UUID" USING PB-BUFFER PL-UUID(L-ROW)
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-HAT
+     PERFORM VARYING WS-OTHER FROM 1 BY 1 UNTIL WS-OTHER > CORE-MAX-PLAYERS
+         IF PL-USED(WS-OTHER) = 1 AND PL-ENTITY-ROW(WS-OTHER) > 0
+             CALL "CORE-SEND" USING PL-CONN(WS-OTHER) PB-BUFFER
+         END-IF
+     END-PERFORM
+     CALL "PB-FREE" USING PB-BUFFER
+     GOBACK.
+ END PROGRAM PLAYER-HAT-SEND.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. OTHERS-JOIN.
 *> USING connection id of a player whose join sequence has just been sent (US3-5; 09 §3.2 Player
 *> Info Update and Add Entity rows, "Join sequence"): the player is sent Player Info Update for
@@ -810,7 +1148,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY ENTITYTYPES.
+ COPY CITEMS.
  COPY PROTO.
  01 WS-CAPACITY            BINARY-LONG VALUE 128.
  01 WS-ROW                 BINARY-LONG.
@@ -838,7 +1176,7 @@
      CALL "PB-FREE" USING PB-BUFFER
      CALL "ENTITY-ALLOC" USING WS-ENTITY
      MOVE PL-ENTITY-ID(WS-ROW) TO EN-ID(WS-ENTITY)
-     MOVE ET-OPERATOR TO EN-TYPE(WS-ENTITY)
+     MOVE CR-OPERATOR TO EN-TYPE(WS-ENTITY)
      MOVE PL-UUID(WS-ROW) TO EN-UUID(WS-ENTITY)
      MOVE WS-ROW TO EN-PLAYER(WS-ENTITY)
      MOVE PL-DIM(WS-ROW) TO EN-DIM(WS-ENTITY)

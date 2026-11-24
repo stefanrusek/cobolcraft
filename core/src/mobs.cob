@@ -23,6 +23,45 @@
 *> MOB-PHYSICS (one mob's tick).
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-INDEX.
+*> USING entity type id, index out (BINARY-LONG): the MOBS.cpy row (1 or 2) of a cobolcraft stand-in mob type, else 0.
+*> The table holds the stand-in ids of the cobolcraft set only; in a standard (or debug) world the type ids are vanilla
+*> ids, which no row describes (the player row alone has 158 and the like), so every type is no mob there until the
+*> mobs lane gives vanilla types their own table.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ COPY MOBS.
+ LINKAGE SECTION.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING L-TYPE L-INDEX.
+     MOVE 0 TO L-INDEX
+     IF CT-SET-TYPE = "1" AND L-TYPE >= MOB-FIRST-TYPE AND L-TYPE < MOB-FIRST-TYPE + MOB-TYPE-COUNT
+         COMPUTE L-INDEX = L-TYPE - MOB-FIRST-TYPE + 1
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-INDEX.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-TABLE-COUNT.
+*> USING count out (BINARY-LONG): the number of MOBS.cpy mob types the open world has: MOB-TYPE-COUNT in a cobolcraft
+*> world, 0 in a standard or debug one (see MOB-INDEX).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ COPY MOBS.
+ LINKAGE SECTION.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-COUNT.
+     MOVE 0 TO L-COUNT
+     IF CT-SET-TYPE = "1"
+         MOVE MOB-TYPE-COUNT TO L-COUNT
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-TABLE-COUNT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-SPAWN.
 *> USING dimension row, entity type, x, y, z, yaw, row out: a new mob of that type at that position
 *> with that yaw, full health (§12.1), no motion, standing still until its first wander decision
@@ -32,6 +71,7 @@
  COPY CORESTATE.
  COPY MOBS.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-TYPE                 BINARY-LONG.
@@ -45,12 +85,21 @@
      CALL "ENTITY-NEW-ID" USING EN-ID(WS-ROW)
      MOVE L-TYPE TO EN-TYPE(WS-ROW)
      CALL "ENTITY-SET-UUID" USING WS-ROW
+*>   INITIALIZE leaves the float fields of a reused row: the swimmers' (core/src/mob-21-4.cob) are cleared here.
+     MOVE 0 TO EN-SWIM-SPEED(WS-ROW) EN-SQ-MX(WS-ROW) EN-SQ-MY(WS-ROW) EN-SQ-MZ(WS-ROW) EN-SQ-PHASE(WS-ROW) EN-SQ-TSPEED(WS-ROW)
+     MOVE 0 TO EN-VX(WS-ROW) EN-VY(WS-ROW) EN-VZ(WS-ROW)
      MOVE L-DIM TO EN-DIM(WS-ROW)
      MOVE L-X TO EN-X(WS-ROW)
      MOVE L-Y TO EN-Y(WS-ROW)
      MOVE L-Z TO EN-Z(WS-ROW)
      MOVE L-YAW TO EN-YAW(WS-ROW)
-     MOVE MB-HEALTH(L-TYPE - MOB-FIRST-TYPE + 1) TO EN-HEALTH(WS-ROW)
+     CALL "MOB-INDEX" USING L-TYPE WS-M
+     IF WS-M > 0
+         MOVE MB-HEALTH(WS-M) TO EN-HEALTH(WS-ROW)
+     ELSE
+         CALL "STDMOB-HEALTH" USING L-TYPE EN-HEALTH(WS-ROW)
+     END-IF
+     CALL "MOB-BORN" USING WS-ROW
      CALL "ENTITY-TRACK" USING WS-ROW
      MOVE WS-ROW TO L-ROW
      GOBACK.
@@ -59,8 +108,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-DEFEAT.
 *> USING tracker row (BINARY-LONG) of a mob whose health reached 0 (§12.5): it is removed (Remove
-*> Entities to its viewers) and its yield (§12.1) appears as one ground item at its position with no
-*> motion and the mob-defeat pickup delay (§9.1, RULES.cpy RULE-GI-BREAK-DELAY).
+*> Entities to its viewers) and its yield (§12.1) appears as one ground item at its position (Entity.spawnAtLocation,
+*> 41 section 2: the constructor's random motion, pickup delay 10: IP-AT-LOCATION).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
@@ -71,27 +120,44 @@
  01 WS-X                   FLOAT-LONG.
  01 WS-Y                   FLOAT-LONG.
  01 WS-Z                   FLOAT-LONG.
- 01 WS-VX                  FLOAT-LONG VALUE 0.
- 01 WS-VY                  FLOAT-LONG VALUE 0.
- 01 WS-VZ                  FLOAT-LONG VALUE 0.
+ 01 WS-OFFSET              FLOAT-LONG VALUE 0.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
  01 WS-ITEM                BINARY-LONG.
  01 WS-COUNT               BINARY-LONG.
- 01 WS-DELAY               BINARY-LONG.
  01 WS-ITEM-ROW            BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-WD                  BINARY-LONG.
+ 01 WS-EVENT-DIE           PIC X(32) VALUE "entity_die".
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
-     COMPUTE WS-M = EN-TYPE(L-ROW) - MOB-FIRST-TYPE + 1
+     CALL "WITHER-DEATH" USING L-ROW WS-WD
+     IF WS-WD = 1
+         GOBACK
+     END-IF
+*>   LivingEntity.die: the game event entity_die at the mob before its loot (18 section 2).
+     CALL "GAME-EVENT-AT" USING WS-EVENT-DIE L-ROW
+     CALL "MOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+     IF WS-M = 0
+         CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-S
+         IF WS-S > 0
+             CALL "STDMOB-DIE" USING L-ROW
+             GOBACK
+         END-IF
+     END-IF
      MOVE EN-DIM(L-ROW) TO WS-DIM
      MOVE EN-X(L-ROW) TO WS-X
      MOVE EN-Y(L-ROW) TO WS-Y
      MOVE EN-Z(L-ROW) TO WS-Z
-     MOVE MB-YIELD-ITEM(WS-M) TO WS-ITEM
-     MOVE MB-YIELD-COUNT(WS-M) TO WS-COUNT
-     MOVE RULE-GI-BREAK-DELAY TO WS-DELAY
+     MOVE 0 TO WS-ITEM WS-COUNT
+     IF WS-M > 0
+         MOVE MB-YIELD-ITEM(WS-M) TO WS-ITEM
+         MOVE MB-YIELD-COUNT(WS-M) TO WS-COUNT
+     END-IF
      CALL "ENTITY-REMOVE" USING L-ROW
-     CALL "GI-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-VX WS-VY WS-VZ WS-ITEM WS-COUNT
-         WS-DELAY WS-ITEM-ROW
+     IF WS-M > 0
+         CALL "IP-AT-LOCATION" USING WS-DIM WS-X WS-Y WS-Z WS-OFFSET WS-ITEM WS-COUNT WS-NONE WS-ITEM-ROW
+     END-IF
      GOBACK.
  END PROGRAM MOB-DEFEAT.
 
@@ -103,15 +169,18 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
- COPY BLOCKS.
+ COPY CBLOCKS.
  COPY DIMENSIONS.
  COPY MOBS.
- COPY CHUNKMEM.
+ COPY CELLS.
  01 WS-STATE               BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-CHUNK               BINARY-LONG.
+ 01 WS-CELL                BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
+ 01 WS-LIGHT               BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
  01 WS-M                   BINARY-LONG.
  01 WS-E                   BINARY-LONG.
@@ -137,7 +206,7 @@
 *>   4. The ground block and the block light at top + 1.
      IF MS-GROUND(L-RULE) >= 0
          CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-TOP L-Z WS-STATE
-         IF SB-BLOCK(WS-STATE + 1) NOT = MS-GROUND(L-RULE)
+         IF CB-S-BLOCK(WS-STATE + 1) NOT = MS-GROUND(L-RULE)
              GOBACK
          END-IF
      END-IF
@@ -146,9 +215,17 @@
          COMPUTE WS-CX = (L-X - FUNCTION MOD(L-X, 16)) / 16
          COMPUTE WS-CZ = (L-Z - FUNCTION MOD(L-Z, 16)) / 16
          CALL "WORLD-CHUNK" USING L-DIM WS-CX WS-CZ WS-CHUNK
-         SET ADDRESS OF CM-CHUNK TO CK-ADDR(WS-CHUNK)
-         IF CM-BLOCK((WS-Y - DM-MIN-Y(L-DIM)) * 256 + (L-Z - WS-CZ * 16) * 16 + L-X - WS-CX * 16 + 1)
-                 > MS-LIGHT(L-RULE)
+         SET ADDRESS OF CE-CHUNK TO CK-ADDR(WS-CHUNK)
+         COMPUTE WS-CELL = (WS-Y - DM-MIN-Y(L-DIM)) * 256 + (L-Z - WS-CZ * 16) * 16
+             + L-X - WS-CX * 16 + 1
+         COMPUTE WS-BYTE = 2048 + (WS-CELL - 1) / 2 + 1
+         MOVE CE-BLOCK-LIGHT(WS-BYTE) TO WS-LIGHT
+         IF FUNCTION MOD(WS-CELL, 2) = 1
+             COMPUTE WS-LIGHT = FUNCTION MOD(WS-LIGHT, 16)
+         ELSE
+             COMPUTE WS-LIGHT = WS-LIGHT / 16
+         END-IF
+         IF WS-LIGHT > MS-LIGHT(L-RULE)
              GOBACK
          END-IF
      END-IF
@@ -288,6 +365,11 @@
  01 WS-ORDERS.
     05 WS-ORDER            BINARY-LONG OCCURS 64 TIMES.
  PROCEDURE DIVISION.
+     CALL "MOB-TABLE-COUNT" USING WS-N
+     IF WS-N = 0
+         CALL "STDMOB-SPAWN-TICK"
+         GOBACK
+     END-IF
      IF FUNCTION MOD(CW-TIME, MOB-SPAWN-TICKS) NOT = 0
          GOBACK
      END-IF
@@ -327,9 +409,15 @@
 *> the yaw facing that direction): yaw = atan2(-dx, dz) in degrees (protocol yaw: 0 faces +Z, 90
 *> faces -X), computed as 2 x atan(-dx / (sqrt(dx^2 + dz^2) + dz)), which is 180 when the direction
 *> is exactly -Z; a zero direction leaves the yaw.
+*> The arctangent is libm's atan2(t, 1) (cc_f64_atan2_lib) and the factor 180 / pi a double: FUNCTION ATAN is libcob's multiple precision series, 150 microseconds a call, and every
+*> walking mob asks for a yaw every tick (15 percent of a village's tick); the yaw is the same single precision value (test_mob_yaw_toward_equiv).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-DEN                 FLOAT-LONG.
+ 01 WS-T                   FLOAT-LONG.
+ 01 WS-ONE                 FLOAT-LONG VALUE 1.
+ 01 WS-ATAN                FLOAT-LONG.
+ 01 WS-DEGREES             FLOAT-LONG VALUE 57.29577951308232.
  LINKAGE SECTION.
  01 L-DX                   FLOAT-LONG.
  01 L-DZ                   FLOAT-LONG.
@@ -338,7 +426,9 @@
      COMPUTE WS-DEN = FUNCTION SQRT(L-DX * L-DX + L-DZ * L-DZ) + L-DZ
      EVALUATE TRUE
          WHEN WS-DEN NOT = 0
-             COMPUTE L-YAW = 2 * FUNCTION ATAN(- L-DX / WS-DEN) * 180 / FUNCTION PI
+             COMPUTE WS-T = - L-DX / WS-DEN
+             CALL STATIC "cc_f64_atan2_lib" USING WS-T WS-ONE WS-ATAN
+             COMPUTE L-YAW = 2 * WS-ATAN * WS-DEGREES
          WHEN L-DZ < 0
              MOVE 180 TO L-YAW
      END-EVALUATE
@@ -518,8 +608,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOB-PHYSICS.
 *> USING tracker row (BINARY-LONG) of a mob, hx, hz (FLOAT-LONG), yaw (FLOAT-SHORT): §12.2 for one
-*> tick. vy <- (vy - 0.05) x 0.96; the move along Y by vy is blocked when the mob's box
-*> (ENTITY-BOX-HITS) would overlap a solid cell: y then rests on top of the highest overlapped cell,
+*> tick (a standard mob: the move by the velocity it has comes first, then vy <- (vy - 0.08) x 0.98, 18 section 3.2). vy <- (vy - 0.05) x 0.96; the move along Y by vy is blocked when the mob's box
+*> (ENTITY-BOX-SURFACE) would overlap a collision shape: y then rests on top of the highest overlapped shape box (a slab's half cell, a carpet's pixel),
 *> vy 0, on the ground (vy is never positive: mobs do not jump, so a blocked move is downward);
 *> otherwise y moves and the mob is not on the ground. Then the moves along X by hx and along Z by
 *> hz: a blocked one is retried, for a mob on the ground, 1 block higher (step-up), else that
@@ -528,6 +618,7 @@
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
+ COPY CITEMS.
  COPY MOBS.
  01 WS-ROW                 BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
@@ -541,7 +632,27 @@
  01 WS-GROUND              BINARY-LONG.
  01 WS-HIT                 BINARY-LONG.
  01 WS-TOP                 BINARY-LONG.
+ 01 WS-TOP-Y               FLOAT-LONG.
+ 01 WS-SURF                FLOAT-LONG.
  01 WS-PITCH               FLOAT-SHORT VALUE 0.
+ 01 WS-WET                 BINARY-LONG.
+ 01 WS-DEEP                BINARY-LONG.
+ 01 WS-DEEP-Y              FLOAT-LONG.
+ 01 WS-LEGACY              BINARY-LONG.
+ 01 WS-KEY                 PIC X(24).
+ 01 WS-SINKS               BINARY-LONG.
+ 01 WS-HALF                FLOAT-LONG.
+ 01 WS-HEIGHT              FLOAT-LONG.
+ 01 WS-S-CACTUS            BINARY-LONG.
+ 01 WS-S-WEB               BINARY-LONG.
+ 01 WS-S-BERRY             BINARY-LONG.
+ 01 WS-S-MAGMA             BINARY-LONG.
+ 01 WS-S-POWDER            BINARY-LONG.
+ 01 WS-COLLIDED            BINARY-LONG.
+ 01 WS-MOVED               FLOAT-LONG.
+ 01 WS-OUT-X               FLOAT-LONG.
+ 01 WS-OUT-Z               FLOAT-LONG.
+ 01 WS-HCOLL               BINARY-LONG.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-HX                   FLOAT-LONG.
@@ -549,47 +660,133 @@
  01 L-YAW                  FLOAT-SHORT.
  PROCEDURE DIVISION USING L-ROW L-HX L-HZ L-YAW.
      MOVE L-ROW TO WS-ROW
+     MOVE 0 TO WS-HCOLL
      MOVE EN-DIM(WS-ROW) TO WS-DIM
      MOVE EN-TYPE(WS-ROW) TO WS-TYPE
      MOVE EN-X(WS-ROW) TO WS-X
      MOVE EN-Y(WS-ROW) TO WS-Y
      MOVE EN-Z(WS-ROW) TO WS-Z
-*>   1. and 2. Gravity, vertical drag, the move along Y.
-     COMPUTE WS-VY = (EN-VY(WS-ROW) - MOB-GRAVITY-MILLI / 1000) * MOB-DRAG-MILLI / 1000
-     COMPUTE WS-NEW = WS-Y + WS-VY
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-NEW WS-Z WS-HIT WS-TOP
-     IF WS-HIT = 0
-         MOVE WS-NEW TO WS-Y
-         MOVE 0 TO WS-GROUND
-     ELSE
-         COMPUTE WS-Y = WS-TOP + 1
-         MOVE 0 TO WS-VY
-         MOVE 1 TO WS-GROUND
+*>   1. and 2. Gravity, vertical drag, the move along Y. A mob whose box touches water (18 section 3.2 travelInWater, the FloatGoal): no gravity, the
+*>   vertical speed is (speed + 0.04 when the water is deeper than 0.4) x 0.8, less 0.005 while it is not rising; its horizontal step is halved.
+     CALL "FLUID-TOUCHES-WATER" USING WS-DIM WS-X WS-Y WS-Z WS-WET
+     CALL "MOB-INDEX" USING WS-TYPE WS-LEGACY
+*>   An undead land mob without a float goal (MOB-SINKS: zombie, skeleton and the like) never asks for the jump in water: it only sinks (20 section 4).
+     MOVE 0 TO WS-SINKS
+     IF WS-WET = 1 AND WS-LEGACY = 0
+         CALL "MOB-SPECIES-KEY" USING WS-ROW WS-KEY
+         CALL "MOB-SINKS" USING WS-KEY WS-TYPE WS-SINKS
      END-IF
+     IF WS-WET = 1
+         COMPUTE WS-DEEP-Y = WS-Y + 0.4
+         CALL "FLUID-TOUCHES-WATER" USING WS-DIM WS-X WS-DEEP-Y WS-Z WS-DEEP
+         MOVE EN-VY(WS-ROW) TO WS-VY
+         IF WS-DEEP = 1 AND WS-SINKS = 0
+             ADD 0.04 TO WS-VY
+         END-IF
+         COMPUTE WS-VY = WS-VY * 0.8
+         IF WS-VY <= 0
+             SUBTRACT 0.005 FROM WS-VY
+         END-IF
+         COMPUTE L-HX = L-HX / 2
+         COMPUTE L-HZ = L-HZ / 2
+     ELSE
+*>       A cobolcraft-set mob keeps the stand-in rule (standin 12.2: gravity, drag, then the move). A standard mob moves by the velocity it has and then
+*>       gravity 0.08 and the vertical drag 0.98 are applied (18 section 3.2 travelInAir), below after the move.
+         IF WS-LEGACY > 0
+             COMPUTE WS-VY = (EN-VY(WS-ROW) - MOB-GRAVITY-MILLI / 1000) * MOB-DRAG-MILLI / 1000
+         ELSE
+*>           LivingEntity.aiStep step 4: a velocity component of a mob below 0.003 in absolute value is set to 0.
+             MOVE EN-VY(WS-ROW) TO WS-VY
+             IF FUNCTION ABS(WS-VY) < 0.003
+                 MOVE 0 TO WS-VY
+             END-IF
+         END-IF
+     END-IF
+*>   A cobweb in the box (3.3 makeStuckInBlock (0.25, 0.05, 0.25)) scales the move of a standard mob.
+     IF WS-LEGACY = 0
+         COMPUTE WS-HALF = ET-WIDTH-MILLI(WS-TYPE + 1) / 2000
+         COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(WS-TYPE + 1) / 1000
+         CALL "M183-SCAN" USING WS-DIM WS-X WS-Y WS-Z WS-HALF WS-HEIGHT WS-S-CACTUS WS-S-WEB WS-S-BERRY WS-S-MAGMA WS-S-POWDER
+         IF WS-S-WEB = 1
+             COMPUTE WS-VY = WS-VY * 0.05
+             COMPUTE L-HX = L-HX * 0.25
+             COMPUTE L-HZ = L-HZ * 0.25
+         END-IF
+     END-IF
+     COMPUTE WS-NEW = WS-Y + WS-VY
+     CALL "ENTITY-BOX-HITS-Y" USING WS-DIM WS-TYPE WS-X WS-NEW WS-Z WS-HIT WS-TOP WS-TOP-Y
+     EVALUATE TRUE
+         WHEN WS-HIT = 0
+             MOVE WS-NEW TO WS-Y
+             MOVE 0 TO WS-GROUND
+         WHEN WS-VY > 0
+*>           Rising into a ceiling: stop, not on the ground.
+             MOVE 0 TO WS-VY WS-GROUND
+         WHEN OTHER
+             COMPUTE WS-MOVED = WS-TOP-Y - WS-Y
+             MOVE WS-TOP-Y TO WS-Y
+             MOVE 1 TO WS-GROUND
+*>           The landing: 0, or the bounce of a block with restitution (slime, a bed: 44-5 section 4.3) for a standard mob.
+             CALL "MOB-LAND-BOUNCE" USING WS-DIM WS-X WS-Y WS-Z WS-VY WS-MOVED WS-LEGACY
+     END-EVALUATE
 *>   3. The moves along X and Z, each with the step-up retry.
      COMPUTE WS-NEW = WS-X + L-HX
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-NEW WS-Y WS-Z WS-HIT WS-TOP
+     CALL "ENTITY-BOX-HITS-Y" USING WS-DIM WS-TYPE WS-NEW WS-Y WS-Z WS-HIT WS-TOP WS-TOP-Y
      COMPUTE WS-UP = WS-Y + MOB-STEP-UP
+*>   The step-up goes onto the obstacle when it is lower than the step (a bed, a slab, a path block), not a whole block above it.
+     IF WS-HIT = 1 AND WS-TOP-Y > WS-Y AND WS-TOP-Y < WS-UP
+         MOVE WS-TOP-Y TO WS-UP
+     END-IF
      IF WS-HIT = 1 AND WS-GROUND = 1
-         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-NEW WS-UP WS-Z WS-HIT WS-TOP
+         CALL "ENTITY-BOX-SURFACE" USING WS-DIM WS-TYPE WS-NEW WS-UP WS-Z WS-HIT WS-SURF
          IF WS-HIT = 0
              MOVE WS-UP TO WS-Y
          END-IF
      END-IF
+     MOVE WS-HIT TO WS-COLLIDED
      IF WS-HIT = 0
          MOVE WS-NEW TO WS-X
      END-IF
+     IF WS-HIT = 1 AND L-HX NOT = 0
+         MOVE 1 TO WS-HCOLL
+     END-IF
      COMPUTE WS-NEW = WS-Z + L-HZ
-     CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-Y WS-NEW WS-HIT WS-TOP
+     CALL "ENTITY-BOX-HITS-Y" USING WS-DIM WS-TYPE WS-X WS-Y WS-NEW WS-HIT WS-TOP WS-TOP-Y
      COMPUTE WS-UP = WS-Y + MOB-STEP-UP
+     IF WS-HIT = 1 AND WS-TOP-Y > WS-Y AND WS-TOP-Y < WS-UP
+         MOVE WS-TOP-Y TO WS-UP
+     END-IF
      IF WS-HIT = 1 AND WS-GROUND = 1
-         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-X WS-UP WS-NEW WS-HIT WS-TOP
+         CALL "ENTITY-BOX-SURFACE" USING WS-DIM WS-TYPE WS-X WS-UP WS-NEW WS-HIT WS-SURF
          IF WS-HIT = 0
              MOVE WS-UP TO WS-Y
          END-IF
      END-IF
+     IF WS-HIT = 1
+         MOVE 1 TO WS-COLLIDED
+     END-IF
      IF WS-HIT = 0
          MOVE WS-NEW TO WS-Z
+     END-IF
+     IF WS-HIT = 1 AND L-HZ NOT = 0
+         MOVE 1 TO WS-HCOLL
+     END-IF
+*>   The horizontal collision of this move (18 section 3.3); a climbing spider that collided rises at 0.2 (3.2).
+     IF WS-LEGACY = 0
+         CALL "PN-HCOLL-SET" USING WS-ROW WS-HCOLL WS-VY
+     END-IF
+     IF WS-WET = 0 AND WS-LEGACY = 0
+         COMPUTE WS-VY = (WS-VY - 0.08) * 0.98
+     END-IF
+*>   jumpOutOfFluid (18 section 3.2): a mob in water that ran into something and would find the cell 0.6 higher free jumps out of the water (vy 0.3).
+     IF WS-WET = 1 AND WS-LEGACY = 0 AND WS-COLLIDED = 1
+         COMPUTE WS-NEW = WS-Y + 0.6
+         COMPUTE WS-OUT-X = WS-X + L-HX
+         COMPUTE WS-OUT-Z = WS-Z + L-HZ
+         CALL "ENTITY-BOX-HITS" USING WS-DIM WS-TYPE WS-OUT-X WS-NEW WS-OUT-Z WS-HIT WS-TOP
+         IF WS-HIT = 0
+             MOVE 0.3 TO WS-VY
+         END-IF
      END-IF
      MOVE WS-VY TO EN-VY(WS-ROW)
      IF WS-X NOT = EN-X(WS-ROW) OR WS-Y NOT = EN-Y(WS-ROW) OR WS-Z NOT = EN-Z(WS-ROW)
@@ -609,6 +806,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
  01 WS-CX                  BINARY-LONG.
  01 WS-CZ                  BINARY-LONG.
  01 WS-CHUNK               BINARY-LONG.
@@ -619,6 +817,11 @@
  01 L-ROW                  BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW.
      MOVE L-ROW TO WS-ROW
+     CALL "MOB-INDEX" USING EN-TYPE(WS-ROW) WS-M
+     IF WS-M = 0
+         CALL "STDMOB-STEP" USING WS-ROW
+         GOBACK
+     END-IF
      COMPUTE WS-CX = FUNCTION INTEGER(EN-X(WS-ROW) / 16)
      COMPUTE WS-CZ = FUNCTION INTEGER(EN-Z(WS-ROW) / 16)
      CALL "WORLD-FIND" USING EN-DIM(WS-ROW) WS-CX WS-CZ WS-CHUNK
@@ -628,12 +831,54 @@
      IF EN-HURT(WS-ROW) > 0
          SUBTRACT 1 FROM EN-HURT(WS-ROW)
      END-IF
+*>   A no-AI mob (18 section 2.10) has no goals and no travel.
+     IF EN-NO-AI(WS-ROW) = 1
+         GOBACK
+     END-IF
      MOVE EN-YAW(WS-ROW) TO WS-YAW
      CALL "MOB-AI" USING WS-ROW WS-HX WS-HZ WS-YAW
      CALL "MOB-PHYSICS" USING WS-ROW WS-HX WS-HZ WS-YAW
      CALL "WEATHER-HAIL-MOB" USING WS-ROW
      GOBACK.
  END PROGRAM MOB-STEP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MOB-ACTIVE.
+*> USING tracker row (BINARY-LONG), active out (BINARY-LONG): 0 when the dimension has a player and every one of them is more than
+*> MOB-ACTIVE-RANGE blocks (3D) from the mob, else 1. A mob out of reach of every player is not stepped (MOBS-TICK): nothing in
+*> range sees it, hears it or is hunted by it (the notice and give-up ranges are all below the range), and a cave holding 70 of
+*> them cost 25 ms of every tick.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY MOBS.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-PLAYERS             BINARY-LONG.
+ 01 WS-NEAR                BINARY-LONG.
+ 01 WS-D2                  FLOAT-LONG.
+ 01 WS-LIMIT               FLOAT-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ACTIVE               BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ACTIVE.
+     MOVE 0 TO WS-PLAYERS WS-NEAR
+     COMPUTE WS-LIMIT = MOB-ACTIVE-RANGE * MOB-ACTIVE-RANGE
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS OR WS-NEAR = 1
+         IF PL-USED(WS-P) = 1 AND PL-DIM(WS-P) = EN-DIM(L-ROW)
+             ADD 1 TO WS-PLAYERS
+             COMPUTE WS-D2 = (PL-X(WS-P) - EN-X(L-ROW)) ** 2 + (PL-Y(WS-P) - EN-Y(L-ROW)) ** 2
+                 + (PL-Z(WS-P) - EN-Z(L-ROW)) ** 2
+             IF WS-D2 <= WS-LIMIT
+                 MOVE 1 TO WS-NEAR
+             END-IF
+         END-IF
+     END-PERFORM
+     MOVE 1 TO L-ACTIVE
+     IF WS-PLAYERS > 0 AND WS-NEAR = 0
+         MOVE 0 TO L-ACTIVE
+     END-IF
+     GOBACK.
+ END PROGRAM MOB-ACTIVE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. MOBS-TICK.
@@ -645,10 +890,13 @@
  COPY CORESTATE.
  COPY MOBS.
  01 WS-ROW                 BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
  01 WS-N                   BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
  01 WS-SHIFT               PIC 9.
+ 01 WS-ACTIVE              BINARY-LONG.
  01 WS-ORDERS.
     05 WS-ORDER            BINARY-LONG OCCURS 1024 TIMES.
  LINKAGE SECTION.
@@ -657,11 +905,24 @@
      SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
      MOVE 0 TO WS-N
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
-         IF EN-USED(WS-ROW) = 1 AND EN-TYPE(WS-ROW) >= MOB-FIRST-TYPE AND CS-HOSTILE-MOBS NOT = 1
-                 AND MB-KIND(EN-TYPE(WS-ROW) - MOB-FIRST-TYPE + 1) = MOB-HOSTILE
+         MOVE 0 TO WS-M WS-S
+         IF EN-USED(WS-ROW) = 1
+             CALL "MOB-INDEX" USING EN-TYPE(WS-ROW) WS-M
+             CALL "STDMOB-INDEX" USING EN-TYPE(WS-ROW) WS-S
+         END-IF
+         IF WS-M > 0 AND CS-HOSTILE-MOBS NOT = 1 AND MB-KIND(WS-M) = MOB-HOSTILE
              CALL "ENTITY-REMOVE" USING WS-ROW
          END-IF
-         IF EN-USED(WS-ROW) = 1 AND EN-TYPE(WS-ROW) >= MOB-FIRST-TYPE
+         MOVE 1 TO WS-ACTIVE
+         IF (WS-M > 0 OR WS-S > 0) AND EN-USED(WS-ROW) = 1
+             CALL "MOB-ACTIVE" USING WS-ROW WS-ACTIVE
+         END-IF
+*>       Entity.checkDespawn runs for every mob each tick, before the entity-ticking range test (18 section 6.11): a standard mob out of reach of every player
+*>       is not stepped but is still despawn-checked, else the mobs of an earlier night stand beyond 64 blocks for good and keep the monster cap (6.3) full.
+         IF WS-S > 0 AND EN-USED(WS-ROW) = 1 AND WS-ACTIVE = 0
+             CALL "MS6-DESPAWN-TICK" USING WS-ROW
+         END-IF
+         IF (WS-M > 0 OR WS-S > 0) AND EN-USED(WS-ROW) = 1 AND WS-ACTIVE = 1
              ADD 1 TO WS-N
              MOVE WS-N TO WS-I
              MOVE 1 TO WS-SHIFT
@@ -680,7 +941,11 @@
          END-IF
      END-PERFORM
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
-         CALL "MOB-STEP" USING WS-ORDER(WS-I)
+         CALL "MS6-DESPAWN-TICK" USING WS-ORDER(WS-I)
+         IF EN-USED(WS-ORDER(WS-I)) = 1
+             CALL "MOB-STEP" USING WS-ORDER(WS-I)
+         END-IF
      END-PERFORM
+     CALL "BEE-HIVES-TICK"
      GOBACK.
  END PROGRAM MOBS-TICK.

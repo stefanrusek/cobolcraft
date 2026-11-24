@@ -1,0 +1,183 @@
+*> Acceptance test, the effects of food (docs/protocol/54 section 24.3 and 24.5, 25-5 section 4.5; lane itemcomp, T9615): a golden apple is eaten at full food (can_always_eat) and gives regeneration 100 ticks
+*> amplifier 1 and absorption 2400 ticks; an enchanted golden apple its four effects; rotten flesh gives hunger 600 ticks with probability 0.8; a pufferfish poison, hunger and nausea; a suspicious
+*> stew applies the entries of its suspicious_stew_effects (55); an ordinary food gives none.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-ITEMCOMP-FOOD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY CITEMS.
+ COPY PLAYPKT.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-HANDLE              BINARY-LONG.
+ 01 WS-EFFECT              BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-T55                 BINARY-LONG VALUE 55.
+ 01 WS-VALUE               PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-WITH                BINARY-LONG.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(9)9.
+ 01 WS-E3                  PIC -(9)9.
+ 01 WS-E4                  PIC -(9)9.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "T" TO TL-MODE
+     MOVE 0 TO WS-CONN
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CORE-MAX-CONNS
+         IF CN-PLAYER(WS-I) = WS-PLAYER
+             MOVE WS-I TO WS-CONN
+         END-IF
+     END-PERFORM
+     COMPUTE WS-SLOT = PL-HELD(WS-PLAYER) + 1
+     MOVE 0 TO PSB-HAND
+
+     MOVE "acceptance itemcomp standard world: bread, golden apple and rotten flesh rows carry a food value (CONTENT-FOOD)" TO TL-CASE
+     MOVE SPACES TO TL-OBSERVED
+     MOVE "minecraft:bread" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE IT-FOOD(WS-ITEM + 1) TO WS-E1
+     MOVE "minecraft:golden_apple" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+     MOVE IT-FOOD(WS-ITEM + 1) TO WS-E2
+     MOVE IT-FOOD-ALWAYS(WS-ITEM + 1) TO WS-E3
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "5 4 1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance itemcomp 24-5 a golden apple eaten at full food gives regeneration II for 100 ticks and absorption for 2400" TO TL-CASE
+     MOVE "golden_apple" TO WS-KEY
+     MOVE 0 TO WS-HANDLE
+     PERFORM EAT
+     MOVE 9 TO WS-EFFECT
+     CALL "EFFECT-LEVEL" USING WS-PLAYER WS-EFFECT WS-LEVEL WS-TICKS
+     MOVE WS-LEVEL TO WS-E1
+     MOVE WS-TICKS TO WS-E2
+     MOVE 21 TO WS-EFFECT
+     CALL "EFFECT-LEVEL" USING WS-PLAYER WS-EFFECT WS-LEVEL WS-TICKS
+     MOVE WS-LEVEL TO WS-E3
+     MOVE WS-TICKS TO WS-E4
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) "/" FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) "/" FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "2/100 1/2400" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance itemcomp 24-5 an enchanted golden apple gives resistance and fire resistance for 6000 ticks and absorption IV" TO TL-CASE
+     CALL "EFFECT-CLEAR-ALL" USING WS-PLAYER
+     MOVE "enchanted_golden_apple" TO WS-KEY
+     PERFORM EAT
+     MOVE 10 TO WS-EFFECT
+     CALL "EFFECT-LEVEL" USING WS-PLAYER WS-EFFECT WS-LEVEL WS-TICKS
+     MOVE WS-TICKS TO WS-E1
+     MOVE 11 TO WS-EFFECT
+     CALL "EFFECT-LEVEL" USING WS-PLAYER WS-EFFECT WS-LEVEL WS-TICKS
+     MOVE WS-TICKS TO WS-E2
+     MOVE 21 TO WS-EFFECT
+     CALL "EFFECT-LEVEL" USING WS-PLAYER WS-EFFECT WS-LEVEL WS-TICKS
+     MOVE WS-LEVEL TO WS-E3
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "6000 6000 4" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance itemcomp 24-5 a pufferfish gives poison II, hunger III and nausea" TO TL-CASE
+     CALL "EFFECT-CLEAR-ALL" USING WS-PLAYER
+     MOVE 5 TO PL-FOOD(WS-PLAYER)
+     MOVE "pufferfish" TO WS-KEY
+     PERFORM EAT
+     MOVE 18 TO WS-EFFECT
+     CALL "EFFECT-LEVEL" USING WS-PLAYER WS-EFFECT WS-LEVEL WS-TICKS
+     MOVE WS-LEVEL TO WS-E1
+     MOVE 16 TO WS-EFFECT
+     CALL "EFFECT-LEVEL" USING WS-PLAYER WS-EFFECT WS-LEVEL WS-TICKS
+     MOVE WS-LEVEL TO WS-E2
+     MOVE 8 TO WS-EFFECT
+     CALL "EFFECT-LEVEL" USING WS-PLAYER WS-EFFECT WS-LEVEL WS-TICKS
+     MOVE WS-LEVEL TO WS-E3
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "2 3 1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance itemcomp 24-5 rotten flesh gives hunger in most of 30 meals (probability 0.8), never other effects; a bread gives none" TO TL-CASE
+     MOVE 0 TO WS-WITH
+     PERFORM 30 TIMES
+         CALL "EFFECT-CLEAR-ALL" USING WS-PLAYER
+         MOVE 5 TO PL-FOOD(WS-PLAYER)
+         MOVE "rotten_flesh" TO WS-KEY
+         PERFORM EAT
+         MOVE 16 TO WS-EFFECT
+         CALL "EFFECT-LEVEL" USING WS-PLAYER WS-EFFECT WS-LEVEL WS-TICKS
+         IF WS-LEVEL = 1 AND WS-TICKS = 600
+             ADD 1 TO WS-WITH
+         END-IF
+     END-PERFORM
+     CALL "EFFECT-CLEAR-ALL" USING WS-PLAYER
+     MOVE 5 TO PL-FOOD(WS-PLAYER)
+     MOVE "bread" TO WS-KEY
+     PERFORM EAT
+     MOVE 16 TO WS-EFFECT
+     CALL "EFFECT-LEVEL" USING WS-PLAYER WS-EFFECT WS-LEVEL WS-TICKS
+     MOVE SPACES TO TL-OBSERVED
+     IF WS-WITH >= 15 AND WS-WITH <= 30 AND WS-LEVEL = 0
+         MOVE "ok" TO TL-OBSERVED
+     ELSE
+         MOVE "bad" TO TL-OBSERVED
+     END-IF
+     MOVE "ok" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance itemcomp 24-3 a suspicious stew applies each entry of its suspicious_stew_effects at amplifier 0" TO TL-CASE
+     CALL "EFFECT-CLEAR-ALL" USING WS-PLAYER
+     MOVE 5 TO PL-FOOD(WS-PLAYER)
+     MOVE SPACES TO WS-VALUE
+     MOVE X"020FA00100" TO WS-VALUE(1:5)
+     MOVE X"0A" TO WS-VALUE(6:1)
+     MOVE 6 TO WS-LENGTH
+     MOVE 0 TO WS-HANDLE
+     CALL "SP-SET-COMPONENT" USING WS-HANDLE WS-T55 WS-VALUE WS-LENGTH
+     MOVE "suspicious_stew" TO WS-KEY
+     PERFORM EAT
+     MOVE 15 TO WS-EFFECT
+     CALL "EFFECT-LEVEL" USING WS-PLAYER WS-EFFECT WS-LEVEL WS-TICKS
+     MOVE WS-TICKS TO WS-E1
+     MOVE 0 TO WS-EFFECT
+     CALL "EFFECT-LEVEL" USING WS-PLAYER WS-EFFECT WS-LEVEL WS-TICKS
+     MOVE WS-TICKS TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     MOVE "160 10" TO TL-EXPECTED
+     PERFORM CHECK
+     STOP RUN.
+
+*> Puts the item named in WS-KEY (with the patch WS-HANDLE) in the held slot, uses it and ticks the eating through.
+ EAT.
+     MOVE SPACES TO WS-ITEM-ROW
+     STRING "minecraft:" FUNCTION TRIM(WS-KEY) DELIMITED BY SIZE INTO WS-ITEM-ROW
+     MOVE WS-ITEM-ROW TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM WS-ITEM-ROW WS-STATUS
+*>   Standard world: the nutrition comes from the content row (CONTENT-FOOD), the test gives the item nothing.
+     MOVE WS-ITEM TO PL-SLOT-ITEM(WS-PLAYER, WS-SLOT)
+     MOVE 2 TO PL-SLOT-COUNT(WS-PLAYER, WS-SLOT)
+     MOVE WS-HANDLE TO PL-SLOT-VAR(WS-PLAYER, WS-SLOT)
+     CALL "HUNGER-USE-ITEM" USING WS-CONN PLAY-SERVERBOUND
+     PERFORM 45 TIMES
+         ADD 1 TO CW-TICKS
+         CALL "HUNGER-TICK" USING WS-PLAYER
+     END-PERFORM
+     MOVE 0 TO WS-HANDLE.
+
+ CHECK.
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM ACC-ITEMCOMP-FOOD.
+ COPY MOBSPTEST.
+ COPY CORETEST.

@@ -1,0 +1,11 @@
+# Fixture: Disguised Chat, chat type minecraft:emote_command
+# Phase: play. Direction: clientbound (S->C). Packet id 0x21 (33).
+# Doc refs: 05a 0x21, ChatTypeBound; 16 section 8 (me); 09 section 3.5 (emote_command id 1 as id + 1)
+# Stated inputs:
+#   message plain String "waves"; chat type id 1 (Holder VarInt 2); sender name plain String "Alice"; no target
+
+21                                               # packet id: VarInt 0x21
+08 00 05 77 61 76 65 73                          # Message: TextComponent plain String "waves"
+02                                               # Chat type: Holder reference VarInt 2 (registry id 1 + 1)
+08 00 05 41 6c 69 63 65                          # Sender name: TextComponent plain String "Alice"
+00                                               # Target name: Optional absent

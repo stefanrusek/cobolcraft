@@ -1,0 +1,353 @@
+*> Acceptance test, lane bugsw (operator report: sheep cannot be sheared and drop no wool when they die; 19 section 2.4, 18 section 7.5, 26 section 10.8): a standard world opened
+*> from the generated vanilla data pack (CC_GENERATED_DIR, default /tmp/cc-test/generated; skipped as a pass without it). A lime sheep sheared with the real Interact packet gives 1 to 3
+*> lime wool and is sheared; a sheep that dies gives its wool (white wool for a white one, none when sheared) and mutton; an experience orb appears for a kill by a player.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-SHEEP-STANDARD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CONTENT.
+ COPY CITEMS.
+ COPY PROTO.
+ COPY BRWORLD.
+ COPY XORO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 65536.
+ 01 WS-NAME                PIC X(16) VALUE "Stefan".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 6.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-STATE-TEXT          PIC X(5).
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-FLOOR               BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-XLO                BINARY-LONG.
+ 01 WS-XHI                BINARY-LONG.
+ 01 WS-ZLO                BINARY-LONG.
+ 01 WS-ZHI                BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
+ 01 WS-FX                  FLOAT-LONG.
+ 01 WS-FY                  FLOAT-LONG.
+ 01 WS-FZ                  FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-TEXT                PIC X(4096).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-NEEDLE              PIC X(40).
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-COW-TYPE            BINARY-LONG.
+ 01 WS-WANT-KEY            PIC X(112).
+ 01 WS-WANT-TYPE           BINARY-LONG.
+ 01 WS-ITEM-ID             BINARY-LONG.
+ 01 WS-ITEM-KEY            PIC X(112).
+ 01 WS-GIVE-COUNT          BINARY-LONG.
+ 01 WS-DX                  FLOAT-LONG.
+ 01 WS-DZ                  FLOAT-LONG.
+ 01 WS-ROW-A               BINARY-LONG.
+ 01 WS-ROW-B               BINARY-LONG.
+ 01 WS-ROW-C               BINARY-LONG.
+ 01 WS-BABY                BINARY-LONG.
+ 01 WS-BABIES              BINARY-LONG.
+ 01 WS-ORBS                BINARY-LONG.
+ 01 WS-ORB-TYPE            BINARY-LONG.
+ 01 WS-COUNT-ITEM          BINARY-LONG.
+ 01 WS-COUNT-TOTAL         BINARY-LONG.
+ 01 WS-ID-A                BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-HAND0               BINARY-LONG VALUE 0.
+ 01 WS-SNEAK0              BINARY-LONG VALUE 0.
+ 01 WS-CASE                PIC X(240).
+ 01 WS-EXPECT              BINARY-DOUBLE.
+ 01 WS-OBSERVE             BINARY-DOUBLE.
+ 01 WS-SLOT-ITEM           BINARY-LONG.
+ 01 WS-WHEAT               BINARY-LONG.
+ 01 WS-HX                  FLOAT-LONG.
+ 01 WS-HZ                  FLOAT-LONG.
+ 01 WS-WALK                BINARY-LONG.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-COLOR               BINARY-LONG.
+ 01 WS-IDS                 PIC X(1024).
+ 01 WS-MOOSH-TYPE          BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-KEEP                BINARY-LONG.
+ 01 WS-DIR                 PIC X(1024).
+ 01 WS-ENV                 PIC X(1024).
+ 01 WS-FILE                PIC X(1100).
+ 01 WS-FILE-INFO           PIC X(16).
+ 01 WS-MUTTON-ID           BINARY-LONG.
+ 01 WS-WOOL-ID             BINARY-LONG.
+ 01 WS-WOOL-BEFORE         BINARY-LONG.
+ 01 WS-DELTA               BINARY-LONG.
+ 01 WS-PAIR                BINARY-LONG.
+ 01 WS-PAIRS.
+    05 FILLER              PIC X(32) VALUE "cow                 beef".
+    05 FILLER              PIC X(32) VALUE "pig                 porkchop".
+    05 FILLER              PIC X(32) VALUE "chicken             feather".
+    05 FILLER              PIC X(32) VALUE "zombie              rotten_flesh".
+    05 FILLER              PIC X(32) VALUE "skeleton            bone".
+    05 FILLER              PIC X(32) VALUE "creeper             gunpowder".
+    05 FILLER              PIC X(32) VALUE "spider              string".
+ 01 WS-PAIR-TABLE REDEFINES WS-PAIRS.
+    05 WS-PAIR-ROW         OCCURS 7 TIMES.
+       10 WS-PAIR-MOB      PIC X(20).
+       10 WS-PAIR-ITEM     PIC X(12).
+ 01 WS-ORBS-BEFORE         BINARY-LONG.
+
+ PROCEDURE DIVISION.
+     MOVE SPACES TO WS-ENV
+     ACCEPT WS-ENV FROM ENVIRONMENT "CC_GENERATED_DIR"
+     IF WS-ENV = SPACES
+         MOVE "/tmp/cc-test/generated" TO WS-DIR
+     ELSE
+         MOVE WS-ENV TO WS-DIR
+     END-IF
+     MOVE SPACES TO WS-FILE
+     STRING FUNCTION TRIM(WS-DIR TRAILING) "/vanilla-data/pack.mcmeta" X"00" DELIMITED BY SIZE INTO WS-FILE
+     CALL "CBL_CHECK_FILE_EXIST" USING WS-FILE WS-FILE-INFO
+     IF RETURN-CODE NOT = 0
+         MOVE "N" TO TL-MODE
+         MOVE "acceptance sheep standard no generated packs here, skipped" TO TL-CASE
+         MOVE 1 TO TL-EXPECTED-N
+         MOVE 1 TO TL-OBSERVED-N
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+         STOP RUN
+     END-IF
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE "standard" TO CS-WORLD-TYPE
+     MOVE WS-DIR TO CS-GENERATED-DIR
+     MOVE 0 TO CS-DEFAULT-MODE
+     MOVE 2 TO CS-VIEW-DISTANCE
+     MOVE 0 TO CS-HOSTILE-MOBS
+     MOVE "12345" TO CS-SEED-TEXT
+     MOVE "Sheep" TO CS-NEW-WORLD-NAME
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     MOVE CN-PLAYER(WS-CONN) TO WS-PLAYER
+     MOVE 0 TO PL-MODE(WS-PLAYER)
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE 0 TO PL-HELD(WS-PLAYER)
+     MOVE 6000 TO CW-TIME
+     MOVE "stone" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-STATE = FUNCTION NUMVAL(WS-STATE-TEXT)
+     COMPUTE WS-CX = FUNCTION INTEGER(PL-X(WS-PLAYER))
+     COMPUTE WS-CZ = FUNCTION INTEGER(PL-Z(WS-PLAYER))
+     COMPUTE WS-FLOOR = FUNCTION INTEGER(PL-Y(WS-PLAYER)) + 40
+     COMPUTE WS-XLO = WS-CX - 4
+     COMPUTE WS-XHI = WS-CX + 4
+     COMPUTE WS-ZLO = WS-CZ - 4
+     COMPUTE WS-ZHI = WS-CZ + 4
+     PERFORM VARYING WS-X FROM WS-XLO BY 1 UNTIL WS-X > WS-XHI
+         PERFORM VARYING WS-Z FROM WS-ZLO BY 1 UNTIL WS-Z > WS-ZHI
+             CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-FLOOR WS-Z WS-STATE
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+                 COMPUTE WS-E = WS-FLOOR + WS-I
+                 CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-E WS-Z WS-AIR
+             END-PERFORM
+         END-PERFORM
+     END-PERFORM
+     COMPUTE PL-X(WS-PLAYER) = WS-CX + 0.5
+     COMPUTE PL-Y(WS-PLAYER) = WS-FLOOR + 1
+     COMPUTE PL-Z(WS-PLAYER) = WS-CZ + 0.5
+     CALL "TEST-DRAIN-HUNGER" USING WS-CONN WS-TEXT
+
+*>   Shearing
+     MOVE "shears" TO WS-ITEM-KEY
+     MOVE 1 TO WS-GIVE-COUNT
+     PERFORM GIVE-HELD
+     MOVE "sheep" TO WS-WANT-KEY
+     MOVE 2 TO WS-DX
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-A
+     COMPUTE WS-COLOR = FUNCTION MOD(EN-WOOL(WS-ROW-A), 16)
+     MOVE "white_wool" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     MOVE EN-ID(WS-ROW-A) TO WS-ID-A
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
+     CALL "TEST-INTERACT" USING WS-CONN WS-ID-A WS-HAND0 WS-SNEAK0
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance sheep standard: a lime sheep sheared gives 1 to 3 lime wool" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF WS-COUNT-ITEM >= 1 AND WS-COUNT-ITEM <= 3
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     MOVE "acceptance sheep standard: the sheep is sheared, its colour kept (byte 16 + 0)" TO WS-CASE
+     MOVE 16 TO WS-EXPECT
+     MOVE EN-WOOL(WS-ROW-A) TO WS-OBSERVE
+     PERFORM CHECK-N
+
+*>   Death: a white sheep drops white wool and mutton, a sheared one only mutton
+     MOVE "white_wool" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     MOVE WS-ITEM-ID TO WS-WOOL-ID
+     MOVE "mutton" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     MOVE WS-ITEM-ID TO WS-MUTTON-ID
+     MOVE -2 TO WS-DX
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-B
+     MOVE 0 TO EN-WOOL(WS-ROW-B)
+     MOVE 0 TO EN-VARIANT(WS-ROW-B)
+     MOVE WS-WOOL-ID TO WS-ITEM-ID
+     PERFORM COUNT-ITEMS
+     MOVE WS-COUNT-ITEM TO WS-WOOL-BEFORE
+     CALL "STDMOB-DIE" USING WS-ROW-B
+     MOVE WS-WOOL-ID TO WS-ITEM-ID
+     PERFORM COUNT-ITEMS
+     COMPUTE WS-DELTA = WS-COUNT-ITEM - WS-WOOL-BEFORE
+     MOVE "acceptance sheep standard: a white sheep that dies drops one white wool" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-DELTA TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE WS-MUTTON-ID TO WS-ITEM-ID
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance sheep standard: a sheep that dies drops 1 to 2 mutton" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF WS-COUNT-ITEM >= 1 AND WS-COUNT-ITEM <= 2
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+*>   A sheared sheep drops no wool, a red one drops red wool
+     MOVE WS-WOOL-ID TO WS-ITEM-ID
+     PERFORM COUNT-ITEMS
+     MOVE WS-COUNT-ITEM TO WS-WOOL-BEFORE
+     MOVE -2 TO WS-DX
+     MOVE 1 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-B
+     MOVE 16 TO EN-WOOL(WS-ROW-B)
+     CALL "STDMOB-DIE" USING WS-ROW-B
+     PERFORM COUNT-ITEMS
+     COMPUTE WS-DELTA = WS-COUNT-ITEM - WS-WOOL-BEFORE
+     MOVE "acceptance sheep standard: a sheared sheep that dies drops no wool" TO WS-CASE
+     MOVE 0 TO WS-EXPECT
+     MOVE WS-DELTA TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "red_wool" TO WS-ITEM-KEY
+     PERFORM FIND-ITEM
+     PERFORM COUNT-ITEMS
+     MOVE WS-COUNT-ITEM TO WS-WOOL-BEFORE
+     MOVE 2 TO WS-DZ
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-B
+     MOVE 14 TO EN-WOOL(WS-ROW-B)
+     CALL "STDMOB-DIE" USING WS-ROW-B
+     PERFORM COUNT-ITEMS
+     COMPUTE WS-DELTA = WS-COUNT-ITEM - WS-WOOL-BEFORE
+     MOVE "acceptance sheep standard: a red sheep that dies drops one red wool" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-DELTA TO WS-OBSERVE
+     PERFORM CHECK-N
+*>   Killed by a player: an experience orb lands (18 section 7.5 dropExperience)
+     MOVE "experience_orb" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ORB-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE 0 TO WS-ORBS-BEFORE
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+         IF EN-USED(WS-N) = 1 AND EN-TYPE(WS-N) = WS-ORB-TYPE
+             ADD 1 TO WS-ORBS-BEFORE
+         END-IF
+     END-PERFORM
+     MOVE 3 TO WS-DZ
+     MOVE -2 TO WS-DX
+     MOVE "sheep" TO WS-WANT-KEY
+     PERFORM SPAWN-MOB
+     MOVE WS-E TO WS-ROW-B
+     MOVE WS-PLAYER TO EN-KILLER(WS-ROW-B)
+     CALL "STDMOB-DIE" USING WS-ROW-B
+     MOVE 0 TO WS-ORBS
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+         IF EN-USED(WS-N) = 1 AND EN-TYPE(WS-N) = WS-ORB-TYPE
+             ADD 1 TO WS-ORBS
+         END-IF
+     END-PERFORM
+     COMPUTE WS-DELTA = WS-ORBS - WS-ORBS-BEFORE
+     MOVE "acceptance sheep standard: a sheep killed by a player leaves an experience orb" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF WS-DELTA >= 1
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+*>   Other mobs' loot tables roll through the same path (the standard drops: 30 deaths each yield the item at least once)
+     MOVE 1 TO WS-PAIR
+     PERFORM UNTIL WS-PAIR > 7
+         MOVE WS-PAIR-MOB(WS-PAIR) TO WS-WANT-KEY
+         MOVE WS-PAIR-ITEM(WS-PAIR) TO WS-ITEM-KEY
+         PERFORM FIND-ITEM
+         PERFORM COUNT-ITEMS
+         MOVE WS-COUNT-ITEM TO WS-WOOL-BEFORE
+         PERFORM 30 TIMES
+             MOVE 0 TO WS-DX
+             MOVE 0 TO WS-DZ
+             PERFORM SPAWN-MOB
+             MOVE WS-E TO WS-ROW-B
+             MOVE WS-PLAYER TO EN-KILLER(WS-ROW-B)
+             CALL "STDMOB-DIE" USING WS-ROW-B
+         END-PERFORM
+         PERFORM COUNT-ITEMS
+         MOVE SPACES TO WS-CASE
+         STRING "acceptance sheep standard: 30 " FUNCTION TRIM(WS-PAIR-MOB(WS-PAIR)) " deaths drop " FUNCTION TRIM(WS-PAIR-ITEM(WS-PAIR))
+             DELIMITED BY SIZE INTO WS-CASE
+         MOVE 1 TO WS-EXPECT
+         MOVE 0 TO WS-OBSERVE
+         IF WS-COUNT-ITEM > WS-WOOL-BEFORE
+             MOVE 1 TO WS-OBSERVE
+         END-IF
+         PERFORM CHECK-N
+         ADD 1 TO WS-PAIR
+     END-PERFORM
+     STOP RUN.
+
+ SPAWN-MOB.
+     MOVE WS-WANT-KEY TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-WANT-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-FX = WS-CX + 0.5 + WS-DX
+     COMPUTE WS-FY = WS-FLOOR + 1
+     COMPUTE WS-FZ = WS-CZ + 0.5 + WS-DZ
+     CALL "MOB-SPAWN" USING WS-DIM WS-WANT-TYPE WS-FX WS-FY WS-FZ WS-YAW WS-E.
+
+ FIND-ITEM.
+     MOVE WS-ITEM-KEY TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ITEM-ID WS-ITEM-ROW WS-STATUS.
+
+ GIVE-HELD.
+     PERFORM FIND-ITEM
+     MOVE WS-ITEM-ID TO PL-SLOT-ITEM(WS-PLAYER, 1)
+     MOVE WS-GIVE-COUNT TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     MOVE 0 TO PL-SLOT-VAR(WS-PLAYER, 1).
+
+ COUNT-ITEMS.
+     MOVE 0 TO WS-COUNT-ITEM
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > EN-COUNT
+         IF EN-USED(WS-N) = 1 AND EN-TYPE(WS-N) = CR-LOOSE-ITEM AND EN-ITEM(WS-N) = WS-ITEM-ID
+             ADD EN-ITEM-COUNT(WS-N) TO WS-COUNT-ITEM
+         END-IF
+     END-PERFORM.
+
+ CHECK-N.
+     MOVE "N" TO TL-MODE
+     MOVE WS-CASE TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED-N
+     MOVE WS-OBSERVE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM ACC-SHEEP-STANDARD.
+ COPY CORETEST.
+ COPY CMDTEST.

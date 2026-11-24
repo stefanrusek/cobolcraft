@@ -10,8 +10,8 @@ PKG      := client
 LIBNAME  := libclient.a
 SRC      := $(shell find src -name '*.cob' 2>/dev/null | sort)
 TESTS    := $(wildcard tests/acc_*.cob tests/contract_*.cob tests/test_*.cob)
-INCLUDES := -I copy -I tests
-DEPLIBS   = $(BUILD)/core/libcore.a $(BUILD)/proto/libproto.a $(BUILD)/shim/libccshim.a
+INCLUDES := -I copy -I tests -I ../proto/copy
+DEPLIBS   = $(BUILD)/core/libcore.a $(BUILD)/content/libcontent.a $(BUILD)/formats/libformats.a $(BUILD)/proto/libproto.a $(BUILD)/shim/libccshim.a
 LDLIBS    = $(shell $(PKG_CONFIG) --libs glfw3 vulkan libssl libcrypto) -lz
 
 include ../tools/package.mk
@@ -21,9 +21,10 @@ PROGRAM := $(BUILD)/bin/cobolcraft
 .PHONY: bin
 bin: $(if $(wildcard src/main.cob),$(PROGRAM))
 
-$(OBJ)/main.o: src/main.cob $(COPYBOOKS)
+$(OBJ)/main.o: src/main.cob $(FPFAST_STAMP)
 	@mkdir -p $(dir $@)
-	cobc -c -x $(COBFLAGS) -o $@ $<
+	cobc -c -x $(COBFLAGS) -MF $(@:.o=.d) -MT $@ -o $@ $<
+-include $(OBJ)/main.d
 
 $(PROGRAM): $(OBJ)/main.o $(LIB) $(DEPLIBS)
 	@mkdir -p $(dir $@)

@@ -1,0 +1,41 @@
+*> Implementation test of the End's fixed values (core/src/end-38b.cob END-CONST; docs/protocol/38-end.md section 1, Overview): every value of the section's table.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-END-38-1.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ 01 WS-NAME                PIC X(32).
+ 01 WS-VALUE               BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "N" TO TL-MODE
+     MOVE "fill-min-y" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§1 Overview fill-min-y" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "fill-max-y" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§1 Overview fill-max-y" TO TL-CASE
+     MOVE 127 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "carvers" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§1 Overview carvers" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "surface-changes-blocks" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§1 Overview surface-changes-blocks" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "no-such-name" TO WS-NAME
+     CALL "END-CONST" USING WS-NAME WS-VALUE
+     MOVE "acceptance US12 38§1 Overview no-such-name" TO TL-CASE
+     MOVE -1 TO TL-EXPECTED-N
+     MOVE WS-VALUE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.

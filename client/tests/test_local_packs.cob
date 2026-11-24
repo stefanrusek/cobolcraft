@@ -56,7 +56,7 @@
      MOVE "local packs resourcepacks/ zips and folders are listed with id file/<name>, kind and "
          & "validity" TO TL-CASE
      MOVE "file/alpha 1 1|file/badmeta 1 0|file/beta.zip 2 1|file/bigicon 1 1|file/broken.zip 2 "
-         & "0|file/nometa.zip 2 0|file/old.zip 2 1|" TO TL-EXPECTED
+         & "0|file/nometa.zip 2 0|file/old.zip 2 1|cobolcraft_faithful_skin 3 1|" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE 1 TO WS-PTR
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > LP-COUNT
@@ -203,12 +203,12 @@
          DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   options.dat: EnabledPacks top first, kept across a load.
+*>   options.txt: resourcePacks (lowest first in the file), top first in memory, kept across a load.
      CALL "OPTIONS-SAVE" USING CLIENT-STATE
      MOVE 0 TO OP-COUNT
      MOVE SPACES TO OP-ENABLED(1) OP-ENABLED(2)
      CALL "OPTIONS-LOAD" USING CLIENT-STATE
-     MOVE "local packs options.dat EnabledPacks round-trips, top first" TO TL-CASE
+     MOVE "local packs options.txt resourcePacks round-trips, top first" TO TL-CASE
      MOVE "2 file/beta.zip file/alpha" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE OP-COUNT TO WS-E1
@@ -217,10 +217,10 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE SPACES TO WS-TEXT
-     STRING WS-DIR(1:WS-DIR-LENGTH) "/options.dat" DELIMITED BY SIZE INTO WS-TEXT
+     STRING WS-DIR(1:WS-DIR-LENGTH) "/options.txt" DELIMITED BY SIZE INTO WS-TEXT
      CALL "CBL_DELETE_FILE" USING WS-TEXT
      CALL "OPTIONS-LOAD" USING CLIENT-STATE
-     MOVE "local packs no options.dat: nothing is enabled" TO TL-CASE
+     MOVE "local packs no options.txt: nothing is enabled" TO TL-CASE
      MOVE "N" TO TL-MODE
      MOVE 0 TO TL-EXPECTED-N
      MOVE OP-COUNT TO TL-OBSERVED-N
@@ -244,14 +244,14 @@
      COMPUTE WS-OPT-LENGTH = WS-DIR-LENGTH + 12
      CALL "NBT-FILE-WRITE" USING WS-OPT-PATH WS-OPT-LENGTH PB-BUFFER WS-OUTCOME
      CALL "OPTIONS-LOAD" USING CLIENT-STATE
-     MOVE "local packs options.dat: other tags and a list of non-strings are skipped" TO TL-CASE
+     MOVE "local packs legacy options.dat (no options.txt): other tags and a list of non-strings are skipped" TO TL-CASE
      MOVE "N" TO TL-MODE
      MOVE 0 TO TL-EXPECTED-N
      MOVE OP-COUNT TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "T" TO TL-MODE
 
-*>   A start-up reads options.dat and builds the stack from it.
+*>   A start-up reads options.txt and builds the stack from it.
      CALL "OPTIONS-SAVE" USING CLIENT-STATE
      MOVE "file/alpha" TO WS-IDS
      CALL "TEST-PACK-ENABLE" USING CLIENT-STATE WS-IDS
@@ -262,7 +262,7 @@
      MOVE WS-DIR TO CL-GAME-DIR
      MOVE WS-DIR-LENGTH TO CL-GAME-DIR-LENGTH
      CALL "CL-START" USING CLIENT-STATE
-     MOVE "local packs a start-up builds the stack from options.dat" TO TL-CASE
+     MOVE "local packs a start-up builds the stack from options.txt" TO TL-CASE
      MOVE "2 file/alpha" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE PK-COUNT TO WS-E1

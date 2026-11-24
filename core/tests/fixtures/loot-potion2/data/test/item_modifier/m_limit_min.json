@@ -1,0 +1,6 @@
+{
+ "type": "minecraft:limit_count",
+ "limit": {
+  "min": 2
+ }
+}

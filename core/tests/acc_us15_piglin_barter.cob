@@ -1,0 +1,205 @@
+*> Acceptance test, piglin bartering through the live state (docs/protocol/21 section 5.5.1, 44-residual-mob-questions-6-nether.md E3; lane 002-lane-mobsb, T7103): a gold ingot handed to an
+*> adult piglin is used up and starts the 119 tick admiring; when it ends the piglin throws the items of one roll of the barter table (a drop entity appears); a piglin that is
+*> already admiring, a baby and other items are refused.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US15-PIGLIN-BARTER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY BRWORLD.
+ 01 WS-NAUSEA              BINARY-LONG.
+ 01 WS-LEVEL               BINARY-LONG.
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-NAME                PIC X(16).
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-ITEM-TYPE           BINARY-LONG.
+ 01 WS-INGOT               BINARY-LONG.
+ 01 WS-PROW                BINARY-LONG.
+ 01 WS-USED                BINARY-LONG.
+ 01 WS-HELD                PIC X(24).
+ 01 WS-BEFORE              BINARY-LONG.
+ 01 WS-AFTER               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-P2                  BINARY-LONG.
+ 01 WS-ZTYPE               BINARY-LONG.
+ 01 WS-HTYPE               BINARY-LONG.
+ 01 WS-ZGTYPE              BINARY-LONG.
+ 01 WS-HDONE               BINARY-LONG.
+ 01 WS-E1                  PIC -(9)9.
+ 01 WS-E2                  PIC -(9)9.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-HOSTILE-MOBS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE 16001 TO CW-TIME
+     MOVE "Alice" TO WS-NAME
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     CALL "TEST-STANDARD-TABLES"
+     MOVE CN-PLAYER(WS-CONN) TO WS-ROW
+     MOVE "piglin" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "item" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ITEM-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE PL-X(WS-ROW) TO WS-X
+     MOVE PL-Y(WS-ROW) TO WS-Y
+     MOVE PL-Z(WS-ROW) TO WS-Z
+     CALL "MOB-SPAWN" USING PL-DIM(WS-ROW) WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-PROW
+     MOVE "T" TO TL-MODE
+     MOVE "gold_ingot" TO WS-HELD
+     CALL "PIGLIN-USE" USING WS-ROW WS-PROW WS-HELD WS-USED
+     MOVE "acceptance US15 21§5.5.1 an adult piglin takes the gold ingot" TO TL-CASE
+     MOVE "1 119" TO TL-EXPECTED
+     MOVE WS-USED TO WS-E1
+     MOVE EN-ADMIRE(WS-PROW) TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK
+     CALL "PIGLIN-USE" USING WS-ROW WS-PROW WS-HELD WS-USED
+     MOVE "acceptance US15 21§5.5.1 an admiring piglin refuses a second ingot" TO TL-CASE
+     MOVE "0" TO TL-EXPECTED
+     MOVE WS-USED TO WS-E1
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     PERFORM CHECK
+     PERFORM COUNT-ITEMS
+     MOVE WS-N TO WS-BEFORE
+     PERFORM 118 TIMES
+         CALL "PIGLIN-TICK" USING WS-PROW
+     END-PERFORM
+     PERFORM COUNT-ITEMS
+     MOVE "acceptance US15 21§5.5.1 nothing is thrown while it still admires (1 tick left)" TO TL-CASE
+     MOVE "1" TO TL-EXPECTED
+     MOVE EN-ADMIRE(WS-PROW) TO WS-E1
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     PERFORM CHECK
+     CALL "PIGLIN-TICK" USING WS-PROW
+     PERFORM COUNT-ITEMS
+     MOVE WS-N TO WS-AFTER
+     MOVE "acceptance US15 21§5.5.1 when the admiring ends the piglin throws one barter drop" TO TL-CASE
+     MOVE "1" TO TL-EXPECTED
+     COMPUTE WS-I = WS-AFTER - WS-BEFORE
+     IF WS-I > 0
+         MOVE "1" TO TL-OBSERVED
+     ELSE
+         MOVE "0" TO TL-OBSERVED
+     END-IF
+     PERFORM CHECK
+     MOVE "acceptance US15 21§5.5.1 the admiring state is cleared" TO TL-CASE
+     MOVE "0" TO TL-EXPECTED
+     MOVE EN-ADMIRE(WS-PROW) TO WS-E1
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     PERFORM CHECK
+     MOVE "stick" TO WS-HELD
+     CALL "PIGLIN-USE" USING WS-ROW WS-PROW WS-HELD WS-USED
+     MOVE "acceptance US15 21§5.5.1 other items are refused" TO TL-CASE
+     MOVE "0" TO TL-EXPECTED
+     MOVE WS-USED TO WS-E1
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     PERFORM CHECK
+     MOVE -24000 TO EN-MOBAGE(WS-PROW)
+     MOVE "gold_ingot" TO WS-HELD
+     CALL "PIGLIN-USE" USING WS-ROW WS-PROW WS-HELD WS-USED
+     MOVE "acceptance US15 21§5.5.1 a baby piglin does not barter" TO TL-CASE
+     MOVE "0" TO TL-EXPECTED
+     MOVE WS-USED TO WS-E1
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     PERFORM CHECK
+*>   Zombification: a piglin in the overworld becomes a zombified piglin after 300 ticks (not peaceful).
+     MOVE 2 TO BW-DIFFICULTY
+     MOVE "zombified_piglin" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZTYPE WS-ENTITY-ROW WS-STATUS
+     CALL "MOB-SPAWN" USING PL-DIM(WS-ROW) WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-P2
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-ZTYPE
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     MOVE WS-N TO WS-BEFORE
+     PERFORM 300 TIMES
+         CALL "PIGLIN-TICK" USING WS-P2
+     END-PERFORM
+     MOVE "acceptance US15 21§5.5 300 ticks in the overworld: still a piglin" TO TL-CASE
+     MOVE "1" TO TL-EXPECTED
+     MOVE EN-USED(WS-P2) TO WS-E1
+     MOVE FUNCTION TRIM(WS-E1) TO TL-OBSERVED
+     PERFORM CHECK
+     CALL "PIGLIN-TICK" USING WS-P2
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-ZTYPE
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 21§5.5 the 301st tick turns it into a zombified piglin" TO TL-CASE
+     MOVE "0 1" TO TL-EXPECTED
+     MOVE EN-USED(WS-P2) TO WS-E1
+     COMPUTE WS-I = WS-N - WS-BEFORE
+     MOVE WS-I TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK
+*>   A hoglin becomes a zoglin by the same rule.
+     MOVE "hoglin" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-HTYPE WS-ENTITY-ROW WS-STATUS
+     MOVE "zoglin" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-ZGTYPE WS-ENTITY-ROW WS-STATUS
+     CALL "MOB-SPAWN" USING PL-DIM(WS-ROW) WS-HTYPE WS-X WS-Y WS-Z WS-YAW WS-P2
+     PERFORM 301 TIMES
+         CALL "PIGLIN-ZOMBIFY" USING WS-P2 WS-HDONE
+     END-PERFORM
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-ZGTYPE
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 21§5.6 a hoglin becomes a zoglin after 300 ticks in the overworld" TO TL-CASE
+     MOVE "1 1" TO TL-EXPECTED
+     MOVE WS-N TO WS-E1
+     MOVE WS-HDONE TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK
+*>   The converted mob has Nausea (effect 8) for 200 ticks, amplifier 0 (21 section 5.6).
+     MOVE 8 TO WS-NAUSEA
+     MOVE 0 TO WS-LEVEL
+     MOVE 0 TO WS-TICKS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-ZGTYPE
+             CALL "MEF-LEVEL" USING EN-ID(WS-I) WS-NAUSEA WS-LEVEL WS-TICKS
+         END-IF
+     END-PERFORM
+     MOVE "acceptance US15 21§5.6 the zoglin has nausea for 200 ticks" TO TL-CASE
+     MOVE "1 200" TO TL-EXPECTED
+     MOVE WS-LEVEL TO WS-E1
+     MOVE WS-TICKS TO WS-E2
+     MOVE SPACES TO TL-OBSERVED
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     PERFORM CHECK
+     STOP RUN.
+
+ COUNT-ITEMS.
+     MOVE 0 TO WS-N
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > EN-COUNT
+         IF EN-USED(WS-I) = 1 AND EN-TYPE(WS-I) = WS-ITEM-TYPE
+             ADD 1 TO WS-N
+         END-IF
+     END-PERFORM.
+
+ CHECK.
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM ACC-US15-PIGLIN-BARTER.
+ COPY CORETEST.

@@ -1,0 +1,4 @@
+{"type": "minecraft:conditional", "condition": {"type": "minecraft:weather_check", "raining": true},
+ "on_true": {"type": "minecraft:add", "inputs": [200, {"type": "minecraft:mul", "inputs": [2, 3]}, {"type": "minecraft:abs", "input": -4}]},
+ "on_false": {"type": "minecraft:number_dispatcher", "cases": [{"condition": {"type": "minecraft:killed_by_player"}, "value": 5}],
+  "default": {"type": "minecraft:weighted_list", "distribution": [{"data": 1, "weight": 2}, {"data": {"type": "minecraft:from_float", "input": 1.5}, "weight": 1}]}}}

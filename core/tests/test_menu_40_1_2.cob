@@ -1,0 +1,86 @@
+*> Test of 40-1 section 2 (Menu types; T0991): the 25 registry entries with ids 0 to 24 (crafting 12, hopper 16, shulker_box 20, generic_3x3 6),
+*> and the lookup by key.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MENU-40-1-2.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ 01 WS-TEXT                PIC X(8192).
+ 01 WS-EDIT                PIC -(9)9.
+ 01 WS-EDIT2               PIC -(9)9.
+ 01 WS-EDIT3               PIC -(9)9.
+ 01 WS-EDIT4               PIC -(9)9.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-TYPE10              BINARY-LONG VALUE 10.
+ 01 WS-E1 PIC -(9)9.
+ 01 WS-E2 PIC -(9)9.
+ 01 WS-E3 PIC -(9)9.
+ 01 WS-E4 PIC -(9)9.
+ 01 WS-E5 PIC -(9)9.
+ 01 WS-E6 PIC -(9)9.
+ 01 WS-E7 PIC -(9)9.
+ 01 WS-E8 PIC -(9)9.
+ 01 WS-E9 PIC -(9)9.
+ 01 WS-E10 PIC -(9)9.
+ 01 WS-E11 PIC -(9)9.
+ 01 WS-E12 PIC -(9)9.
+ 01 WS-A BINARY-LONG.
+ 01 WS-B BINARY-LONG.
+ 01 WS-C BINARY-LONG.
+ 01 WS-D BINARY-LONG.
+ 01 WS-F BINARY-LONG.
+ 01 WS-G BINARY-LONG.
+ 01 WS-H BINARY-LONG.
+ 01 WS-J BINARY-LONG.
+ 01 WS-K BINARY-LONG.
+ 01 WS-K32 PIC X(32).
+ 01 WS-KEY2 PIC X(32).
+ 01 WS-N BINARY-LONG.
+ 01 WS-PTR BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "acceptance US12 40-1§2 Menu types: keys of ids 0, 6, 12, 16, 20 and 24; id 25 is out of range" TO TL-CASE
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-A FROM 0 BY 1 UNTIL WS-A > 24
+         CALL "MENU-TYPE-INFO" USING WS-A WS-K32 WS-N
+         IF WS-A = 0 OR WS-A = 6 OR WS-A = 12 OR WS-A = 16 OR WS-A = 20 OR WS-A = 24
+             STRING WS-K32(1:WS-N) " " DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
+         END-IF
+     END-PERFORM
+     MOVE 25 TO WS-A
+     CALL "MENU-TYPE-INFO" USING WS-A WS-K32 WS-N
+     MOVE WS-N TO WS-E1
+     STRING "out " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO WS-TEXT WITH POINTER WS-PTR
+     MOVE "generic_9x1 generic_3x3 crafting hopper shulker_box stonecutter out 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance US12 40-1§2 Menu types: MENU-TYPE-ID finds a key and answers -1 for an unknown one" TO TL-CASE
+     MOVE "shulker_box" TO WS-K32
+     MOVE 11 TO WS-N
+     CALL "MENU-TYPE-ID" USING WS-K32 WS-N WS-A
+     MOVE "nonsense" TO WS-K32
+     MOVE 8 TO WS-N
+     CALL "MENU-TYPE-ID" USING WS-K32 WS-N WS-B
+     MOVE WS-A TO WS-E1
+     MOVE WS-B TO WS-E2
+     MOVE SPACES TO WS-TEXT
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "20 -1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     GOBACK.
+
+ CHECK.
+     MOVE "T" TO TL-MODE
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-MENU-40-1-2.
+
+ COPY CORETEST.

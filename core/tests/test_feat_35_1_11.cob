@@ -1,0 +1,99 @@
+*> Acceptance test of docs/protocol/35-worldgen-features-1 section 11 (test vectors): the decoration seeds of 11.1 (as the bits of the signed values),
+*> the feature seeds, and the positions of 11.2 for the modifiers [count 3, in_square, height_range uniform 0..64, biome] run through the evaluator of 8.2
+*> (F351-PLACE), a row each.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-FEAT-35-1-11.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY XORO.
+ COPY FEAT351.
+ 01 WS-WORLD               BINARY-DOUBLE UNSIGNED.
+ 01 WS-DECOR               BINARY-DOUBLE UNSIGNED.
+ 01 WS-FEATURE             BINARY-DOUBLE UNSIGNED.
+ 01 WS-CX                  BINARY-LONG.
+ 01 WS-CZ                  BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-STEP                BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-RESULT              BINARY-LONG.
+ 01 WS-EDIT                PIC -(19)9.
+ 01 WS-EDIT-U              PIC Z(19)9.
+ 01 WS-NUM                 PIC -(9)9.
+ 01 WS-TEXT                PIC X(240).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE 3 TO FP-COUNT
+     MOVE 1 TO FP-KIND(1)
+     MOVE 3 TO FP-A(1)
+     MOVE 2 TO FP-KIND(2)
+     MOVE 3 TO FP-KIND(3)
+     MOVE 0 TO FP-A(3)
+     MOVE 64 TO FP-B(3)
+     MOVE 4 TO FP-COUNT
+     MOVE 4 TO FP-KIND(4)
+     MOVE 1 TO FP-A(4)
+
+     MOVE 0 TO WS-WORLD
+     MOVE 0 TO WS-CX WS-CZ
+     MOVE 9 TO WS-STEP
+     MOVE 3 TO WS-INDEX
+     MOVE "acceptance US12 35-1§11 Test vectors: world 0, chunk (0, 0), step 9, index 3" TO TL-CASE
+     MOVE "15 43 11 15 54 10 11 40 14" TO TL-EXPECTED
+     PERFORM RUN-ROW
+
+     MOVE 6 TO WS-STEP
+     MOVE 11 TO WS-INDEX
+     MOVE "acceptance US12 35-1§11 Test vectors: world 0, chunk (0, 0), step 6, index 11" TO TL-CASE
+     MOVE "10 60 15 15 34 11 4 6 1" TO TL-EXPECTED
+     PERFORM RUN-ROW
+
+     MOVE 12345 TO WS-WORLD
+     MOVE 3 TO WS-CX
+     MOVE -2 TO WS-CZ
+     MOVE 9 TO WS-STEP
+     MOVE 3 TO WS-INDEX
+     MOVE "acceptance US12 35-1§11 Test vectors: world 12345, chunk (3, -2), step 9, index 3" TO TL-CASE
+     MOVE "48 39 -25 61 17 -24 61 46 -19" TO TL-EXPECTED
+     PERFORM RUN-ROW
+     MOVE WS-DECOR TO WS-EDIT-U
+     MOVE "acceptance US12 35-1§11 Test vectors: decorationSeed 12345 (3, -2) is -5778620028567011383 as bits" TO TL-CASE
+     MOVE FUNCTION TRIM(WS-EDIT-U) TO TL-OBSERVED
+     MOVE "12668124045142540233" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE 0 TO WS-WORLD
+     MOVE -1 TO WS-CX
+     MOVE 5 TO WS-CZ
+     MOVE "acceptance US12 35-1§11 Test vectors: world 0, chunk (-1, 5), step 9, index 3" TO TL-CASE
+     MOVE "-11 26 90 -16 34 93 -1 50 87" TO TL-EXPECTED
+     PERFORM RUN-ROW
+     MOVE WS-DECOR TO WS-EDIT-U
+     MOVE "acceptance US12 35-1§11 Test vectors: decorationSeed 0 (-1, 5) is 8481739403297134432" TO TL-CASE
+     MOVE FUNCTION TRIM(WS-EDIT-U) TO TL-OBSERVED
+     MOVE "8481739403297134432" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     GOBACK.
+
+ RUN-ROW.
+     COMPUTE WS-BX = 16 * WS-CX
+     COMPUTE WS-BZ = 16 * WS-CZ
+     CALL "ORE-DECOR-SEED" USING WS-WORLD WS-BX WS-BZ XR-STATE WS-DECOR
+     CALL "ORE-FEATURE-SEED" USING WS-DECOR WS-INDEX WS-STEP WS-FEATURE
+     CALL "WGR-SET-SEED" USING XR-STATE WS-FEATURE
+     CALL "F351-PLACE" USING XR-STATE WS-BX WS-I WS-BZ WS-RESULT
+     MOVE SPACES TO WS-TEXT
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > FO-COUNT
+         MOVE FO-X(WS-I) TO WS-NUM
+         STRING FUNCTION TRIM(WS-NUM) " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+         MOVE FO-Y(WS-I) TO WS-NUM
+         STRING FUNCTION TRIM(WS-NUM) " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+         MOVE FO-Z(WS-I) TO WS-NUM
+         STRING FUNCTION TRIM(WS-NUM) " " DELIMITED BY SIZE INTO WS-TEXT POINTER WS-PTR
+     END-PERFORM
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.

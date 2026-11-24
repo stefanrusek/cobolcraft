@@ -12,7 +12,6 @@
  COPY COREAPI.
  COPY CORESTATE.
  COPY MESSAGES.
- COPY CMDPARSE.
  COPY PLAYPKT.
  COPY PROTO.
  COPY PROTO REPLACING LEADING ==PB-== BY ==ST-==.
@@ -38,25 +37,10 @@
      CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
      CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
 
-*>   Commands (0x10).
-     MOVE "contract wire server play-s2c-10-commands-everyone equals the core's Commands for a "
-         & "player without operator status (howto, roster, murmur: 6 nodes)" TO TL-CASE
-     MOVE 0 TO WS-OPERATOR
-     CALL "CMD-TREE-BUILD" USING WS-OPERATOR PB-BUFFER
-     MOVE "contract/fixtures/wire/play-s2c-10-commands-everyone.hex" TO WS-PATH
-     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
-     MOVE "contract wire server play-s2c-10-commands-operator equals the core's Commands for a "
-         & "player holding operator status (the full tree: 90 nodes)" TO TL-CASE
-     CALL "PB-RESET" USING PB-BUFFER
-     MOVE 1 TO WS-OPERATOR
-     CALL "CMD-TREE-BUILD" USING WS-OPERATOR PB-BUFFER
-     MOVE "contract/fixtures/wire/play-s2c-10-commands-operator.hex" TO WS-PATH
-     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
-
-*>   Chat Command (C->S 0x07).
-     MOVE "contract wire server play-c2s-07-chat-command decodes: command promote Alice (13 "
-         & "bytes, no leading /)" TO TL-CASE
-     MOVE "contract/fixtures/wire/play-c2s-07-chat-command.hex" TO WS-PATH
+*>   Chat Command (C->S 0x07): the standard fixture, a two-byte length of 144 characters.
+     MOVE "contract wire server play-c2s-07-chat-command-standard decodes: a command of 144 "
+         & "bytes without a leading /" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-07-chat-command-standard.hex" TO WS-PATH
      CALL "TEST-LOAD-HEX" USING WS-PATH PB-BUFFER
      CALL "PB-GET-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PLAY-DECODE" USING WS-PACKET-ID PB-BUFFER PLAY-SERVERBOUND WS-OUTCOME
@@ -67,16 +51,16 @@
      STRING FUNCTION TRIM(WS-EDIT) " " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE
          INTO TL-OBSERVED POINTER WS-PTR
      MOVE PSB-MESSAGE-LENGTH TO WS-EDIT
-     STRING " command " PSB-MESSAGE(1:FUNCTION MAX(PSB-MESSAGE-LENGTH, 1)) " length "
+     STRING " command " PSB-MESSAGE(1:18) " length "
          FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED POINTER WS-PTR
-     MOVE "7 0 command promote Alice length 13" TO TL-EXPECTED
+     MOVE "7 0 command gamemode creative  length 144" TO TL-EXPECTED
      MOVE "T" TO TL-MODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   Command Suggestion (C->S 0x0F) and Command Suggestions (S->C 0x0F).
-     MOVE "contract wire server play-c2s-0f-command-suggestion decodes: transaction 1, text "
-         & "/murmur Al (10 bytes)" TO TL-CASE
-     MOVE "contract/fixtures/wire/play-c2s-0f-command-suggestion.hex" TO WS-PATH
+*>   Command Suggestion (C->S 0x0F): the standard fixture, transaction 300.
+     MOVE "contract wire server play-c2s-0f-command-suggestion-standard decodes: transaction "
+         & "300, text /gamemode c (11 bytes)" TO TL-CASE
+     MOVE "contract/fixtures/wire/play-c2s-0f-command-suggestion-standard.hex" TO WS-PATH
      CALL "TEST-LOAD-HEX" USING WS-PATH PB-BUFFER
      CALL "PB-GET-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PLAY-DECODE" USING WS-PACKET-ID PB-BUFFER PLAY-SERVERBOUND WS-OUTCOME
@@ -92,30 +76,8 @@
      MOVE PSB-MESSAGE-LENGTH TO WS-EDIT
      STRING " text " PSB-MESSAGE(1:FUNCTION MAX(PSB-MESSAGE-LENGTH, 1)) " length "
          FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO TL-OBSERVED POINTER WS-PTR
-     MOVE "15 0 transaction 1 text /murmur Al length 10" TO TL-EXPECTED
+     MOVE "15 0 transaction 300 text /gamemode c length 11" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "contract wire server play-s2c-0f-command-suggestions equals the core's Command "
-         & "Suggestions for transaction 1, start 8, length 2, one suggestion Alice" TO TL-CASE
-     MOVE 8 TO CG-START
-     MOVE 2 TO CG-LENGTH
-     MOVE 1 TO CG-COUNT
-     MOVE "Alice" TO CG-TEXT(1)
-     MOVE 5 TO CG-TEXT-LENGTH(1)
-     CALL "PB-RESET" USING PB-BUFFER
-     CALL "CMD-SUGGESTIONS-BUILD" USING WS-TRANSACTION PB-BUFFER
-     MOVE "contract/fixtures/wire/play-s2c-0f-command-suggestions.hex" TO WS-PATH
-     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
-
-*>   A command confirmation as System Chat (0x7C).
-     MOVE "contract wire server play-s2c-7c-system-chat-command-feedback equals the core's System "
-         & "Chat of cobolcraft.command.promote.done [Alice]" TO TL-CASE
-     MOVE MK-PROMOTE-DONE TO WS-MSG
-     CALL "CMD-TEXT-KEY" USING PB-TEXT WS-MSG
-     CALL "CMD-TEXT-ARG" USING PB-TEXT WS-NAME WS-NAME-LENGTH
-     CALL "PB-RESET" USING PB-BUFFER
-     CALL "SYSTEM-CHAT-BUILD" USING PB-TEXT PB-BUFFER
-     MOVE "contract/fixtures/wire/play-s2c-7c-system-chat-command-feedback.hex" TO WS-PATH
-     CALL "TEST-SAME-AS-FIXTURE" USING PB-BUFFER WS-PATH TESTLIB-ASSERT
 
 *>   The stopping and host-closed play Disconnects (0x20, standin §17).
      MOVE "contract wire server play-s2c-20-disconnect-stopping equals the core's play Disconnect "

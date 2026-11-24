@@ -25,7 +25,10 @@ artifact.
    `docs/protocol/README.md`, and read one existing document, such as `06-chunk-format.md`, as a model.
 3. **Files you may write:** only the target file(s) and `docs/protocol/README.md` (its Documents table, scope sentence
    and conventions). Keep working notes in your scratchpad directory, never in the repository.
-4. **Form:** prose, tables and formulas only.
+4. **Form:** prose, tables, formulas and data schemas only.
+   - Data schemas are allowed: JSON Schema, schema-style tables (member, kind, required or optional, allowed
+     values, nested forms), grammars and byte layouts describe an interface, not code. A few-line example of a data
+     file is fine; do not bulk-copy data files.
    - No source code, decompiled code, or pseudocode that follows the artifact's control flow line by line. Describe
      each algorithm in its own terms: inputs, outputs, steps, constants, invariants and ordering rules.
    - Class, method and field names may be cited in backticks to say where a fact was read. Never present them as

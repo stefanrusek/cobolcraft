@@ -1,0 +1,103 @@
+*> Acceptance test, projectile deflection (docs/protocol/44 part 8 section 6.3; lane 002-lane-mobsb6, T9007): a player's attack on a large fireball AIM_DEFLECTs it (velocity = the look direction x 1, the
+*> player the new owner), small fireballs and mobs are not redirected, REVERSE halves and reverses the velocity, and the attack path (Attack 0x01 through HEALTH-ATTACK) redirects.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US16-DEFLECT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-PIG-T               BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-DX                  FLOAT-LONG VALUE 1.
+ 01 WS-DY                  FLOAT-LONG VALUE 0.
+ 01 WS-DZ                  FLOAT-LONG VALUE 0.
+ 01 WS-FIRE                BINARY-LONG.
+ 01 WS-SMALL               BINARY-LONG.
+ 01 WS-PIG                 BINARY-LONG.
+ 01 WS-KIND1               BINARY-LONG VALUE 1.
+ 01 WS-KIND2               BINARY-LONG VALUE 2.
+ 01 WS-POWER               BINARY-LONG VALUE 1.
+ 01 WS-OWNER               BINARY-LONG VALUE 777.
+ 01 WS-DONE                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-REV                 BINARY-LONG VALUE 1.
+ 01 WS-TARGET              BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE "N" TO TL-MODE
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE 0 TO WS-CONN
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CORE-MAX-CONNS
+         IF CN-PLAYER(WS-I) = WS-PLAYER
+             MOVE WS-I TO WS-CONN
+         END-IF
+     END-PERFORM
+     MOVE "minecraft:pig" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-PIG-T WS-ENTITY-ROW WS-STATUS
+     MOVE 0 TO PL-YAW(WS-PLAYER) PL-PITCH(WS-PLAYER)
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     COMPUTE WS-Y = PL-Y(WS-PLAYER) + 1.0
+     COMPUTE WS-Z = PL-Z(WS-PLAYER) + 2.0
+     CALL "PROJ-SPAWN" USING WS-KIND1 WS-DIM WS-X WS-Y WS-Z WS-DX WS-DY WS-DZ WS-POWER WS-OWNER WS-FIRE
+     CALL "PROJ-SPAWN" USING WS-KIND2 WS-DIM WS-X WS-Y WS-Z WS-DX WS-DY WS-DZ WS-POWER WS-OWNER WS-SMALL
+     CALL "MOB-SPAWN" USING WS-DIM WS-PIG-T WS-X WS-Y WS-Z WS-YAW WS-PIG
+     CALL "PROJ-REDIRECT" USING WS-PLAYER WS-PIG WS-DONE
+     MOVE "acceptance US16 44-8 6.3 a pig is not redirectable" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-DONE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PROJ-REDIRECT" USING WS-PLAYER WS-SMALL WS-DONE
+     MOVE "acceptance US16 44-8 6.3 a small fireball is not redirectable" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-DONE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PROJ-REDIRECT" USING WS-PLAYER WS-FIRE WS-DONE
+     MOVE "acceptance US16 44-8 6.3 a large fireball is redirected" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-DONE TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 44-8 6.3 AIM_DEFLECT: facing +z gives velocity (0, 0, 1)" TO TL-CASE
+     MOVE 1000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-VZ(WS-FIRE) * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 44-8 6.3 the player becomes the owner" TO TL-CASE
+     MOVE PL-ENTITY-ID(WS-PLAYER) TO TL-EXPECTED-N
+     MOVE EN-TARGET-ID(WS-FIRE) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   REVERSE halves and reverses.
+     MOVE 0.4 TO EN-VX(WS-FIRE)
+     MOVE 0.2 TO EN-VY(WS-FIRE)
+     MOVE -0.6 TO EN-VZ(WS-FIRE)
+     CALL "PROJ-REVERSE" USING WS-FIRE
+     MOVE "acceptance US16 44-8 6.3 REVERSE: v x (-0.5, -0.5, -0.5) = (-0.2, -0.1, 0.3)" TO TL-CASE
+     MOVE -200 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = EN-VX(WS-FIRE) * 1000
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US16 44-8 6.3 REVERSE turns the yaw by 170 to 190 degrees" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-YAW(WS-FIRE) >= 170 AND EN-YAW(WS-FIRE) <= 190
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   The attack path: a new fireball 2 blocks ahead is hit through Attack 0x01.
+     CALL "PROJ-SPAWN" USING WS-KIND1 WS-DIM WS-X WS-Y WS-Z WS-DX WS-DY WS-DZ WS-POWER WS-OWNER WS-FIRE
+     MOVE EN-ID(WS-FIRE) TO WS-TARGET
+     CALL "TEST-ATTACK" USING WS-CONN WS-TARGET
+     MOVE "acceptance US16 44-8 6.3 hitting a fireball through Attack 0x01 makes the player its owner" TO TL-CASE
+     MOVE PL-ENTITY-ID(WS-PLAYER) TO TL-EXPECTED-N
+     MOVE EN-TARGET-ID(WS-FIRE) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM ACC-US16-DEFLECT.
+ COPY CORETEST.
+ COPY MOBSPTEST.

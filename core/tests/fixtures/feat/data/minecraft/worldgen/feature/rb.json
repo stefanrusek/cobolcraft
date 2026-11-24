@@ -1,0 +1,10 @@
+{
+ "type": "minecraft:simple_block",
+ "to_place": {
+  "type": "minecraft:random_block",
+  "blocks": [
+   "minecraft:poppy",
+   "minecraft:dandelion"
+  ]
+ }
+}

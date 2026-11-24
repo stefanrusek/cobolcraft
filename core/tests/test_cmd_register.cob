@@ -1,0 +1,446 @@
+*> Acceptance test of the registration of command forms (docs/protocol/16-commands-catalog.md §1 path syntax; core/src/cmd-register.cob): every type
+*> word gives its parser id (and string kind), a literal takes its level after an @, the argument options ! (custom suggestions) and the
+*> minimum and maximum are kept on the node. Each form is registered as `t<i> <a:type...>` under the root of a reset tree: the literal is node
+*> 2i and the argument 2i+1 (node 1 is the root).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-CMD-REGISTER.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY BRIGADIER.
+ 01 WS-LEVEL               BINARY-LONG VALUE 2.
+ 01 WS-COMMAND             BINARY-LONG VALUE 7.
+ 01 WS-PATH                PIC X(256).
+ 01 WS-NODE                BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ PROCEDURE DIVISION.
+     CALL "BR-TREE-RESET"
+
+     MOVE "t0 <a:bool>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word bool is the parser BR-P-BOOL" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-BOOL TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(3) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t1 <a:int>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word int is the parser BR-P-INTEGER" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-INTEGER TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(5) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t2 <a:long>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word long is the parser BR-P-LONG" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-LONG TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(7) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t3 <a:float>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word float is the parser BR-P-FLOAT" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-FLOAT TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(9) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t4 <a:double>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word double is the parser BR-P-DOUBLE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-DOUBLE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(11) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t5 <a:word>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word word is the parser BR-P-STRING" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-STRING TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(13) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t6 <a:phrase>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word phrase is the parser BR-P-STRING" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-STRING TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(15) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t7 <a:greedy>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word greedy is the parser BR-P-STRING" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-STRING TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(17) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t8 <a:entities>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word entities is the parser BR-P-ENTITY" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-ENTITY TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(19) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t9 <a:entity>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word entity is the parser BR-P-ENTITY" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-ENTITY TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(21) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t10 <a:players>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word players is the parser BR-P-ENTITY" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-ENTITY TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(23) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t11 <a:player>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word player is the parser BR-P-ENTITY" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-ENTITY TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(25) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t12 <a:profiles>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word profiles is the parser BR-P-GAME-PROFILE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-GAME-PROFILE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(27) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t13 <a:holder>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word holder is the parser BR-P-SCORE-HOLDER" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-SCORE-HOLDER TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(29) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t14 <a:holders>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word holders is the parser BR-P-SCORE-HOLDER" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-SCORE-HOLDER TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(31) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t15 <a:pos>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word pos is the parser BR-P-BLOCK-POS" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-BLOCK-POS TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(33) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t16 <a:colpos>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word colpos is the parser BR-P-COLUMN-POS" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-COLUMN-POS TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(35) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t17 <a:vec3>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word vec3 is the parser BR-P-VEC3" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-VEC3 TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(37) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t18 <a:vec2>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word vec2 is the parser BR-P-VEC2" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-VEC2 TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(39) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t19 <a:rotation>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word rotation is the parser BR-P-ROTATION" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-ROTATION TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(41) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t20 <a:angle>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word angle is the parser BR-P-ANGLE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-ANGLE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(43) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t21 <a:swizzle>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word swizzle is the parser BR-P-SWIZZLE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-SWIZZLE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(45) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t22 <a:blockstate>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word blockstate is the parser BR-P-BLOCK-STATE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-BLOCK-STATE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(47) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t23 <a:blockpred>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word blockpred is the parser BR-P-BLOCK-PREDICATE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-BLOCK-PREDICATE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(49) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t24 <a:item>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word item is the parser BR-P-ITEM-STACK" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-ITEM-STACK TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(51) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t25 <a:itempred>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word itempred is the parser BR-P-ITEM-PREDICATE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-ITEM-PREDICATE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(53) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t26 <a:component>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word component is the parser BR-P-COMPONENT" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-COMPONENT TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(55) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t27 <a:style>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word style is the parser BR-P-STYLE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-STYLE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(57) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t28 <a:message>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word message is the parser BR-P-MESSAGE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-MESSAGE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(59) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t29 <a:nbt>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word nbt is the parser BR-P-NBT-COMPOUND" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-NBT-COMPOUND TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(61) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t30 <a:nbttag>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word nbttag is the parser BR-P-NBT-TAG" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-NBT-TAG TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(63) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t31 <a:nbtpath>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word nbtpath is the parser BR-P-NBT-PATH" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-NBT-PATH TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(65) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t32 <a:objective>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word objective is the parser BR-P-OBJECTIVE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-OBJECTIVE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(67) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t33 <a:criteria>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word criteria is the parser BR-P-CRITERIA" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-CRITERIA TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(69) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t34 <a:operation>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word operation is the parser BR-P-OPERATION" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-OPERATION TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(71) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t35 <a:particle>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word particle is the parser BR-P-PARTICLE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-PARTICLE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(73) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t36 <a:team>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word team is the parser BR-P-TEAM" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-TEAM TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(75) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t37 <a:slot>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word slot is the parser BR-P-ITEM-SLOT" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-ITEM-SLOT TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(77) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t38 <a:slots>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word slots is the parser BR-P-ITEM-SLOTS" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-ITEM-SLOTS TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(79) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t39 <a:resloc>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word resloc is the parser BR-P-RESLOC" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-RESLOC TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(81) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t40 <a:function>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word function is the parser BR-P-FUNCTION" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-FUNCTION TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(83) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t41 <a:anchor>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word anchor is the parser BR-P-ANCHOR" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-ANCHOR TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(85) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t42 <a:intrange>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word intrange is the parser BR-P-INT-RANGE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-INT-RANGE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(87) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t43 <a:floatrange>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word floatrange is the parser BR-P-FLOAT-RANGE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-FLOAT-RANGE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(89) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t44 <a:dimension>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word dimension is the parser BR-P-DIMENSION" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-DIMENSION TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(91) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t45 <a:gamemode>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word gamemode is the parser BR-P-GAMEMODE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-GAMEMODE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(93) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t46 <a:uuid>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word uuid is the parser BR-P-UUID" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-UUID TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(95) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t47 <a:hexcolor>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word hexcolor is the parser BR-P-HEX-COLOR" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-HEX-COLOR TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(97) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t48 <a:teamcolor>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word teamcolor is the parser BR-P-TEAM-COLOR" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-TEAM-COLOR TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(99) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t49 <a:entitytype>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word entitytype is the parser BR-P-RESOURCE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-RESOURCE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(101) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t50 <a:phrase>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word phrase is the parser BR-P-STRING" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-STRING TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(103) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US13 15 register The type word phrase is the string kind BR-S-PHRASE" TO TL-CASE
+     MOVE BR-S-PHRASE TO TL-EXPECTED-N
+     MOVE BR-N-STRING-KIND(103) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t51 <a:greedy>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word greedy is the parser BR-P-STRING" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-STRING TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(105) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US13 15 register The type word greedy is the string kind BR-S-GREEDY" TO TL-CASE
+     MOVE BR-S-GREEDY TO TL-EXPECTED-N
+     MOVE BR-N-STRING-KIND(105) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t52 <a:entity>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word entity is the parser BR-P-ENTITY" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-ENTITY TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(107) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t53 <a:players>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word players is the parser BR-P-ENTITY" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-ENTITY TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(109) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t54 <a:player>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word player is the parser BR-P-ENTITY" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-ENTITY TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(111) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t55 <a:holders>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word holders is the parser BR-P-SCORE-HOLDER" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-SCORE-HOLDER TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(113) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t56 <a:entitytype>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word entitytype is the parser BR-P-RESOURCE" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-RESOURCE TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(115) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "t57 <a:time>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register The type word time is the parser BR-P-TIME" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE BR-P-TIME TO TL-EXPECTED-N
+     MOVE BR-N-TYPE(117) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "lv@3 <a:int:1:9!>" TO WS-PATH
+     CALL "BR-REG" USING WS-LEVEL WS-COMMAND WS-PATH
+     MOVE "acceptance US13 15 register A literal with @3 has the level 3, the form's last node the command" TO TL-CASE
+     MOVE 3007 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = BR-N-LEVEL(118) * 1000 + BR-N-COMMAND(119)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US13 15 register An argument with !, a minimum and a maximum keeps them (ask_server 1, min 1, max 9)" TO TL-CASE
+     MOVE 1019 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = BR-N-SUGGEST(119) * 1000 + BR-N-IMIN(119) * 10 + BR-N-IMAX(119)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     GOBACK.
+ END PROGRAM TEST-CMD-REGISTER.
+
+ COPY CORETEST.

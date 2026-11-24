@@ -1,0 +1,104 @@
+*> Implementation test (002-lane-mobsa5; 30 part 5 section 8.4, 44 part 4 section 14): a right click on a note block (Use Item On, empty hand) raises its note by one (24 wraps to 0) and, with air
+*> above, the play event reaches the allays within 16 blocks (they remember the block); a block with something above is tuned but plays nothing; other blocks are unaffected.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MOB-44-NOTETUNE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY CONTENT.
+ COPY BRWORLD.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-STATE-TEXT          PIC X(5).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ 01 WS-ALLAY               BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-X0                  BINARY-LONG.
+ 01 WS-Z0                  BINARY-LONG.
+ 01 WS-BX                  BINARY-LONG.
+ 01 WS-BY                  BINARY-LONG.
+ 01 WS-BZ                  BINARY-LONG.
+ 01 WS-AY                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-FLOOR               BINARY-LONG VALUE 40.
+ 01 WS-SIZE                BINARY-LONG VALUE 48.
+ 01 WS-STONE               BINARY-LONG VALUE 1.
+ 01 WS-FACE                BINARY-LONG VALUE 1.
+ 01 WS-SEQ                 BINARY-LONG VALUE 0.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-PROP                PIC X(24) VALUE "note".
+ 01 WS-MODE-READ           BINARY-LONG VALUE 1.
+ 01 WS-TEXT                PIC X(32).
+ 01 WS-RESULT              BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE PL-CONN(WS-PLAYER) TO WS-CONN
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     COMPUTE WS-X0 = FUNCTION INTEGER(PL-X(WS-PLAYER)) - 24
+     COMPUTE WS-Z0 = FUNCTION INTEGER(PL-Z(WS-PLAYER)) - 24
+     CALL "MS-TEST-FLOOR" USING WS-DIM WS-X0 WS-Z0 WS-SIZE WS-FLOOR WS-STONE
+     MOVE "N" TO TL-MODE
+     COMPUTE PL-X(WS-PLAYER) = WS-X0 + 24.5
+     COMPUTE PL-Y(WS-PLAYER) = WS-FLOOR + 1
+     COMPUTE PL-Z(WS-PLAYER) = WS-Z0 + 22.5
+     MOVE 0 TO PL-HELD(WS-PLAYER)
+     MOVE "minecraft:note_block" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BLOCK WS-BLOCK-ROW WS-STATUS
+     MOVE WS-BLOCK-ROW(1 + 4 + 35 + 32 + 288 + 4 + 5:5) TO WS-STATE-TEXT
+     COMPUTE WS-STATE = FUNCTION NUMVAL(WS-STATE-TEXT)
+     COMPUTE WS-BX = WS-X0 + 24
+     COMPUTE WS-BY = WS-FLOOR + 1
+     COMPUTE WS-BZ = WS-Z0 + 24
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     MOVE "minecraft:allay" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     COMPUTE WS-X = WS-BX + 5.5
+     COMPUTE WS-Y = WS-BY + 2
+     COMPUTE WS-Z = WS-BZ + 0.5
+     CALL "MOB-SPAWN" USING WS-DIM WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-ALLAY
+     CALL "TEST-USE-ON" USING WS-CONN WS-BX WS-BY WS-BZ WS-FACE WS-SEQ
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     CALL "BLOCK-STATE-PROP" USING WS-MODE-READ WS-STATE WS-PROP WS-TEXT WS-RESULT
+     MOVE "acceptance US15 30-5§8.4 Note block: a right click raises the note to 1" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION NUMVAL(WS-TEXT)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US15 44§14 Note block: the allay within 16 blocks hears the play event and remembers the block" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF EN-ALLAY-NB-ON(WS-ALLAY) = 1 AND EN-ALLAY-NB-X(WS-ALLAY) = WS-BX
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 24
+         CALL "TEST-USE-ON" USING WS-CONN WS-BX WS-BY WS-BZ WS-FACE WS-SEQ
+     END-PERFORM
+     CALL "WORLD-GET-BLOCK" USING WS-DIM WS-BX WS-BY WS-BZ WS-STATE
+     CALL "BLOCK-STATE-PROP" USING WS-MODE-READ WS-STATE WS-PROP WS-TEXT WS-RESULT
+     MOVE "acceptance US15 30-5§8.4 Note block: 24 more clicks wrap the note (25 mod 25 = 0)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = FUNCTION NUMVAL(WS-TEXT)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   With a block above nothing plays: a second allay hears nothing.
+     MOVE 0 TO EN-ALLAY-NB-ON(WS-ALLAY)
+     COMPUTE WS-AY = WS-BY + 1
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-BX WS-AY WS-BZ WS-STATE
+     CALL "TEST-USE-ON" USING WS-CONN WS-BX WS-BY WS-BZ WS-FACE WS-SEQ
+     MOVE "acceptance US15 44§14 Note block: with a block above the note is tuned but the allay hears nothing" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-ALLAY-NB-ON(WS-ALLAY) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-MOB-44-NOTETUNE.
+ COPY CORETEST.
+ COPY MOBSPTEST.

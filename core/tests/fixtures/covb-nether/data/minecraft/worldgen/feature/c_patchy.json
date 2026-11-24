@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:projected_random_patchy_square",
+  "block": {
+    "id": "minecraft:basalt",
+    "properties": {
+      "axis": "y"
+    }
+  },
+  "max_projection_height": 3,
+  "project_through": {
+    "type": "minecraft:matching_block_tag",
+    "tag": "minecraft:air"
+  },
+  "size": 3
+}

@@ -1,0 +1,120 @@
+*> The spears (docs/protocol/17 section 2.4, 3.12; US14; T2031): the stats like the other kinds, and the numbers of the kinetic weapon
+*> the jab and the charge attack read.
+*>   TOOL-SPEAR-STATS USING item key (PIC X(48)), found out, durability, attack damage, attack speed, cooldown (1/10000), mining speed
+*>   TOOL-SPEAR-KINETIC USING item key (PIC X(48)), found out (1 for a spear), delay ticks, dismount max ticks, dismount min speed (tenths),
+*>     knockback max ticks, knockback min speed (tenths), damage max ticks, damage min relative speed (tenths), damage multiplier
+*>     (thousandths), minimum attack charge (PIC X(8): "1.0"), attack range (PIC X(24): min and max reach, "2.0 4.5"); a key that is no
+*>     spear gives found 0, the numbers 0, charge "0.0" and range "0.0 0.0"
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-SPEAR-STATS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-KIND                PIC X(12) VALUE "spear".
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-DURABILITY           BINARY-LONG.
+ 01 L-DAMAGE               BINARY-LONG.
+ 01 L-SPEED                BINARY-LONG.
+ 01 L-COOLDOWN             BINARY-LONG.
+ 01 L-MINING               BINARY-LONG.
+ PROCEDURE DIVISION USING L-KEY L-FOUND L-DURABILITY L-DAMAGE L-SPEED L-COOLDOWN L-MINING.
+     CALL "TOOL-KIND-STATS" USING WS-KIND L-KEY L-FOUND L-DURABILITY L-DAMAGE L-SPEED L-COOLDOWN L-MINING
+     GOBACK.
+ END PROGRAM TOOL-SPEAR-STATS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-SPLIT-PAIR.
+*> USING value (PIC X(100): "<ticks> <speed>"), ticks out (BINARY-LONG), speed out (BINARY-LONG, tenths).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-TICKS-TEXT          PIC X(12).
+ 01 WS-SPEED-TEXT          PIC X(12).
+ LINKAGE SECTION.
+ 01 L-VALUE                PIC X(100).
+ 01 L-TICKS                BINARY-LONG.
+ 01 L-SPEED                BINARY-LONG.
+ PROCEDURE DIVISION USING L-VALUE L-TICKS L-SPEED.
+     MOVE SPACES TO WS-TICKS-TEXT WS-SPEED-TEXT
+     UNSTRING L-VALUE DELIMITED BY SPACE INTO WS-TICKS-TEXT WS-SPEED-TEXT
+     COMPUTE L-TICKS = FUNCTION NUMVAL(WS-TICKS-TEXT)
+     COMPUTE L-SPEED ROUNDED = FUNCTION NUMVAL(WS-SPEED-TEXT) * 10
+     GOBACK.
+ END PROGRAM TOOL-SPLIT-PAIR.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TOOL-SPEAR-KINETIC.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-ROW                 PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-NAME                PIC X(32).
+ 01 WS-VALUE               PIC X(100).
+ 01 WS-TICKS               BINARY-LONG.
+ 01 WS-SPEED               BINARY-LONG.
+ 01 WS-RANGE-MIN           PIC X(8).
+ 01 WS-RANGE-MAX           PIC X(8).
+ LINKAGE SECTION.
+ 01 L-KEY                  PIC X(48).
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-DELAY                BINARY-LONG.
+ 01 L-DT                   BINARY-LONG.
+ 01 L-DS                   BINARY-LONG.
+ 01 L-KT                   BINARY-LONG.
+ 01 L-KS                   BINARY-LONG.
+ 01 L-AT                   BINARY-LONG.
+ 01 L-AS                   BINARY-LONG.
+ 01 L-MULT                 BINARY-LONG.
+ 01 L-CHARGE               PIC X(8).
+ 01 L-RANGE                PIC X(24).
+ PROCEDURE DIVISION USING L-KEY L-FOUND L-DELAY L-DT L-DS L-KT L-KS L-AT L-AS L-MULT L-CHARGE L-RANGE.
+     MOVE 0 TO L-FOUND L-DELAY L-DT L-DS L-KT L-KS L-AT L-AS L-MULT
+     MOVE "0.0" TO L-CHARGE
+     MOVE "0.0 0.0" TO L-RANGE
+     MOVE SPACES TO WS-KEY
+     IF L-KEY(1:10) = "minecraft:"
+         MOVE L-KEY(11:38) TO WS-KEY
+     ELSE
+         MOVE L-KEY TO WS-KEY
+     END-IF
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
+     MOVE "kinetic_delay" TO WS-NAME
+     CALL "CONTENT-ITEM-COMPONENT" USING WS-ID WS-NAME WS-VALUE WS-STATUS
+     IF WS-STATUS NOT = CT-OK
+         GOBACK
+     END-IF
+     MOVE 1 TO L-FOUND
+     COMPUTE L-DELAY = FUNCTION NUMVAL(WS-VALUE)
+     MOVE "kinetic_dismount" TO WS-NAME
+     CALL "CONTENT-ITEM-COMPONENT" USING WS-ID WS-NAME WS-VALUE WS-STATUS
+     CALL "TOOL-SPLIT-PAIR" USING WS-VALUE WS-TICKS WS-SPEED
+     MOVE WS-TICKS TO L-DT
+     MOVE WS-SPEED TO L-DS
+     MOVE "kinetic_knockback" TO WS-NAME
+     CALL "CONTENT-ITEM-COMPONENT" USING WS-ID WS-NAME WS-VALUE WS-STATUS
+     CALL "TOOL-SPLIT-PAIR" USING WS-VALUE WS-TICKS WS-SPEED
+     MOVE WS-TICKS TO L-KT
+     MOVE WS-SPEED TO L-KS
+     MOVE "kinetic_damage" TO WS-NAME
+     CALL "CONTENT-ITEM-COMPONENT" USING WS-ID WS-NAME WS-VALUE WS-STATUS
+     CALL "TOOL-SPLIT-PAIR" USING WS-VALUE WS-TICKS WS-SPEED
+     MOVE WS-TICKS TO L-AT
+     MOVE WS-SPEED TO L-AS
+     MOVE "kinetic_multiplier" TO WS-NAME
+     CALL "CONTENT-ITEM-COMPONENT" USING WS-ID WS-NAME WS-VALUE WS-STATUS
+     COMPUTE L-MULT ROUNDED = FUNCTION NUMVAL(WS-VALUE) * 1000
+     MOVE "minimum_attack_charge" TO WS-NAME
+     CALL "CONTENT-ITEM-COMPONENT" USING WS-ID WS-NAME WS-VALUE WS-STATUS
+     MOVE WS-VALUE TO L-CHARGE
+     MOVE "attack_range" TO WS-NAME
+     CALL "CONTENT-ITEM-COMPONENT" USING WS-ID WS-NAME WS-VALUE WS-STATUS
+     MOVE SPACES TO WS-RANGE-MIN WS-RANGE-MAX
+     UNSTRING WS-VALUE DELIMITED BY SPACE INTO WS-RANGE-MIN WS-RANGE-MAX
+     MOVE SPACES TO L-RANGE
+     STRING FUNCTION TRIM(WS-RANGE-MIN) " " FUNCTION TRIM(WS-RANGE-MAX) DELIMITED BY SIZE INTO L-RANGE
+     GOBACK.
+ END PROGRAM TOOL-SPEAR-KINETIC.

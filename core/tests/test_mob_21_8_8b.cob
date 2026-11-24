@@ -1,0 +1,196 @@
+*> Entity data of boats and minecarts (docs/protocol/21 section 8.8, 44 part 8 sections 3.2, 3.5, 4.2; lane p49f, T21700): a minecart sends hurt time (8), hurt direction (9) and damage (10, Float) once
+*> and again when they change (a furnace minecart also 13, the fuel flag); the Paddle Boat packet (05c 0x23) of the rider sets the paddle states, sent to the viewers as metadata 11 and 12 (Booleans)
+*> when they change; a packet of a player who steers no boat does nothing.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MOB-21-8-8B.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY PROJSTATE.
+ COPY PROTO.
+ 01 WS-CASE                PIC X(160).
+ 01 WS-E                   BINARY-DOUBLE.
+ 01 WS-O                   BINARY-DOUBLE.
+ 01 WS-PLAYER              BINARY-LONG.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-LONG VALUE 0.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-TEXT                PIC X(1024).
+ 01 WS-EXPECT              PIC X(300).
+ 01 WS-ID                  PIC Z(8)9.
+ 01 WS-AMOUNT              BINARY-LONG VALUE 2.
+ 01 WS-NONE                BINARY-LONG VALUE 0.
+ 01 WS-HANDLED             BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-RIGHT               BINARY-LONG.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 35.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 64.
+ 01 WS-FUEL                BINARY-LONG VALUE 100.
+ 01 WS-DIR                 PIC -(2)9.
+ 01 WS-FILL-ID             BINARY-LONG.
+ 01 WS-FILL-KIND           BINARY-LONG VALUE 1.
+ 01 WS-FILL-SLOT           BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "MS-TEST-OPEN" USING WS-PLAYER
+     MOVE PL-DIM(WS-PLAYER) TO WS-DIM
+     MOVE 0 TO WS-CONN
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CORE-MAX-CONNS
+         IF CN-PLAYER(WS-I) = WS-PLAYER
+             MOVE WS-I TO WS-CONN
+         END-IF
+     END-PERFORM
+     MOVE PL-X(WS-PLAYER) TO WS-X
+     COMPUTE WS-Y = PL-Y(WS-PLAYER) + 30
+     MOVE PL-Z(WS-PLAYER) TO WS-Z
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+*>   A minecart: the hurt state, then again after it is hurt.
+     MOVE 1 TO WS-KIND
+     CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-ROW
+     MOVE EN-ID(WS-ROW) TO WS-ID
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE SPACES TO WS-EXPECT
+     STRING "1 101(" FUNCTION TRIM(WS-ID) ";8=I0,9=I1,10=F0.00)" DELIMITED BY SIZE INTO WS-EXPECT
+     MOVE "A" TO TL-MODE
+     MOVE "acceptance US15 minecraft:minecart 21§8.8 Add Entity then metadata 8 hurt 0, 9 hurt direction 1, 10 damage 0.0" TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "MINECART-HURT" USING WS-ROW WS-AMOUNT WS-NONE WS-HANDLED
+     CALL "THROWN-TICK"
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     CALL "PJ-FIND" USING EN-ID(WS-ROW) WS-SLOT
+     MOVE "acceptance US15 minecraft:minecart 44-8§4.2 hurt time 10 falls by 1 in the tick" TO WS-CASE
+     MOVE 9 TO WS-E
+     MOVE PJ-I4(WS-SLOT) TO WS-O
+     PERFORM CHECK-N
+     MOVE SPACES TO WS-EXPECT
+     MOVE PJ-I5(WS-SLOT) TO WS-DIR
+     STRING "101(" FUNCTION TRIM(WS-ID) ";8=I9,9=I" FUNCTION TRIM(WS-DIR) ",10=F19.00)" DELIMITED BY SIZE INTO WS-EXPECT
+     MOVE "acceptance US15 minecraft:minecart 21§8.8 the hurt state is sent again: hurt 9, damage 19 (20 less 1)" TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PJ-DROP" USING WS-ROW
+*>   A furnace minecart also sends its fuel flag (13).
+     MOVE 4 TO WS-KIND
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-ROW
+     MOVE EN-ID(WS-ROW) TO WS-ID
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE SPACES TO WS-EXPECT
+     STRING "1 101(" FUNCTION TRIM(WS-ID) ";8=I0,9=I1,10=F0.00,13=Z0)" DELIMITED BY SIZE INTO WS-EXPECT
+     MOVE "acceptance US15 minecraft:furnace_minecart 21§8.8 metadata 13 the fuel flag is false" TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PJ-FIND" USING EN-ID(WS-ROW) WS-SLOT
+     MOVE WS-FUEL TO PJ-I3(WS-SLOT)
+     CALL "THROWN-TICK"
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE SPACES TO WS-EXPECT
+     STRING "101(" FUNCTION TRIM(WS-ID) ";8=I0,9=I1,10=F0.00,13=Z1)" DELIMITED BY SIZE INTO WS-EXPECT
+     MOVE "acceptance US15 minecraft:furnace_minecart 21§8.8 with fuel the flag becomes true" TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "PJ-DROP" USING WS-ROW
+*>   A boat whose rider paddles.
+     MOVE "minecraft:oak_boat" TO WS-KEY
+     CALL "BOAT-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-YAW WS-KEY WS-ROW
+     MOVE EN-ID(WS-ROW) TO WS-ID
+     MOVE WS-PLAYER TO EN-RIDER(WS-ROW)
+     MOVE WS-ROW TO EN-VEHICLE(PL-ENTITY-ROW(WS-PLAYER))
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE 1 TO WS-LEFT
+     MOVE 0 TO WS-RIGHT
+     PERFORM FEED-PADDLE
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE SPACES TO WS-EXPECT
+     STRING "101(" FUNCTION TRIM(WS-ID) ";11=Z1,12=Z0)" DELIMITED BY SIZE INTO WS-EXPECT
+     MOVE "acceptance US15 minecraft:oak_boat 44-8§3.5 the rider's Paddle Boat (left) is sent as metadata 11 true, 12 false" TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM FEED-PADDLE
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE "acceptance US15 minecraft:oak_boat 44-8§3.5 the same paddle state again sends nothing" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-TEXT(1:1) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-LEFT
+     PERFORM FEED-PADDLE
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE SPACES TO WS-EXPECT
+     STRING "101(" FUNCTION TRIM(WS-ID) ";11=Z0,12=Z0)" DELIMITED BY SIZE INTO WS-EXPECT
+     MOVE "acceptance US15 minecraft:oak_boat 44-8§3.5 releasing both paddles sends 11 false, 12 false" TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED
+     MOVE WS-TEXT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A player who steers no boat: nothing.
+     MOVE 0 TO EN-RIDER(WS-ROW)
+     MOVE 0 TO EN-VEHICLE(PL-ENTITY-ROW(WS-PLAYER))
+     MOVE 1 TO WS-RIGHT
+     PERFORM FEED-PADDLE
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE "acceptance US15 minecraft:oak_boat 44-8§3.5 a Paddle Boat from a player on no boat does nothing" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-TEXT(1:1) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A player riding something that is no boat: nothing either.
+     MOVE 1 TO WS-KIND
+     CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-I
+     MOVE WS-PLAYER TO EN-RIDER(WS-I)
+     MOVE WS-I TO EN-VEHICLE(PL-ENTITY-ROW(WS-PLAYER))
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     PERFORM FEED-PADDLE
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE "acceptance US15 minecraft:oak_boat 44-8§3.5 a Paddle Boat from a player riding a minecart does nothing" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-TEXT(1:1) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO EN-VEHICLE(PL-ENTITY-ROW(WS-PLAYER))
+*>   A full state table: the paddle state of a boat that has none yet cannot be kept, nothing is sent.
+     CALL "BOAT-SPAWN" USING WS-DIM WS-X WS-Y WS-Z WS-YAW WS-KEY WS-ROW
+     MOVE WS-PLAYER TO EN-RIDER(WS-ROW)
+     MOVE WS-ROW TO EN-VEHICLE(PL-ENTITY-ROW(WS-PLAYER))
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 128
+         COMPUTE WS-FILL-ID = 900000 + WS-I
+         CALL "PJ-ALLOC" USING WS-FILL-ID WS-FILL-KIND WS-FILL-SLOT
+     END-PERFORM
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE 1 TO WS-LEFT
+     PERFORM FEED-PADDLE
+     CALL "P49-DRAIN-DATA" USING WS-CONN WS-TEXT
+     MOVE "acceptance US15 minecraft:oak_boat 44-8§3.5 with the state table full nothing is sent" TO TL-CASE
+     MOVE SPACES TO TL-EXPECTED
+     MOVE WS-TEXT(1:1) TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ FEED-PADDLE.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-LEFT
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-RIGHT
+     CALL "TEST-FEED-BUFFER" USING WS-CONN PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER.
+
+ CHECK-N.
+     MOVE "N" TO TL-MODE
+     MOVE WS-CASE TO TL-CASE
+     MOVE WS-E TO TL-EXPECTED-N
+     MOVE WS-O TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-MOB-21-8-8B.
+ COPY CORETEST.
+ COPY MOBSPTEST.
+ COPY P49FTEST.

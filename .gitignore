@@ -7,3 +7,8 @@ client/tests/fixtures/textures/
 client/tests/fixtures/packs/
 
 /tmp/
+generated/
+/scratchpad/
+client/tests/fixtures/biglang/
+client/tests/fixtures/hugelang/
+client/tests/fixtures/oversizelang/

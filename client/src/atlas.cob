@@ -1,5 +1,5 @@
 *> The block atlas (texture 0; 08 §7.2, §7.3, §10.2; research R4): ATLAS-BUILD runs the sources of
-*> the block and item atlas definitions of every pack (definitions merge across packs, bottom pack
+*> the block, item, chest, celestials, shulker box and banner pattern (sun and moon phases of the sky, sky-render.cob) atlas definitions of every pack (definitions merge across packs, bottom pack
 *> first; "directory" lists textures/<source>/... in every namespace of every pack, "single" adds
 *> one texture; a later add with the same sprite id replaces the earlier), reads each sprite from
 *> the top-most pack that has it and stitches the sprites in rows into an atlas 128 pixels wide.
@@ -14,11 +14,28 @@
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  COPY JSONDOC.
+ COPY CLMCMETA.
+ 01 WS-ANIMATED            BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 B-PIXELS               PIC X(1073741824) BASED.
  01 WS-DEFS.
-    05 FILLER PIC X(40) VALUE "assets/minecraft/atlases/blocks.json".
-    05 FILLER PIC X(40) VALUE "assets/minecraft/atlases/items.json".
+    05 FILLER PIC X(48) VALUE "assets/minecraft/atlases/blocks.json".
+    05 FILLER PIC X(48) VALUE "assets/minecraft/atlases/items.json".
+    05 FILLER PIC X(48) VALUE "assets/minecraft/atlases/chests.json".
+    05 FILLER PIC X(48) VALUE "assets/minecraft/atlases/celestials.json".
+    05 FILLER PIC X(48) VALUE "assets/minecraft/atlases/shulker_boxes.json".
+    05 FILLER PIC X(48) VALUE "assets/minecraft/atlases/banner_patterns.json".
  01 WS-DEF-TABLE REDEFINES WS-DEFS.
-    05 WS-DEF              PIC X(40) OCCURS 2 TIMES.
+    05 WS-DEF              PIC X(48) OCCURS 6 TIMES.
+ 01 WS-HEADS-DATA.
+    05 FILLER PIC X(40) VALUE "entity/skeleton/skeleton".
+    05 FILLER PIC X(40) VALUE "entity/skeleton/wither_skeleton".
+    05 FILLER PIC X(40) VALUE "entity/creeper/creeper".
+    05 FILLER PIC X(40) VALUE "entity/zombie/zombie".
+    05 FILLER PIC X(40) VALUE "entity/player/slim/steve".
+ 01 WS-HEADS REDEFINES WS-HEADS-DATA.
+    05 WS-HEAD-TEXTURE     PIC X(40) OCCURS 5 TIMES.
+ 01 WS-HAS                 BINARY-LONG.
  01 WS-D                   BINARY-LONG.
  01 WS-P                   BINARY-LONG.
  01 WS-Q                   BINARY-LONG.
@@ -50,8 +67,8 @@
  01 WS-REST-LENGTH         BINARY-LONG.
  01 WS-ID                  PIC X(80).
  01 WS-ID-LENGTH           BINARY-LONG.
- 01 WS-SPRITE-PATH         PIC X(256) OCCURS 128 TIMES.
- 01 WS-SPRITE-PATH-LENGTH  BINARY-LONG OCCURS 128 TIMES.
+ 01 WS-SPRITE-PATH         PIC X(256) OCCURS 4096 TIMES.
+ 01 WS-SPRITE-PATH-LENGTH  BINARY-LONG OCCURS 4096 TIMES.
  01 WS-IMAGE               PIC X(1048576).
  01 WS-IMAGE-CAP           BINARY-LONG VALUE 1048576.
  01 WS-W                   BINARY-LONG.
@@ -59,6 +76,10 @@
  01 WS-X                   BINARY-LONG.
  01 WS-Y                   BINARY-LONG.
  01 WS-ROW-H               BINARY-LONG.
+ 01 WS-AREA                BINARY-LONG.
+ 01 WS-M                   BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
  01 WS-BYTES               BINARY-LONG.
  01 WS-SIXTEEN             BINARY-LONG VALUE 16.
  01 WS-SIXTEEN2            BINARY-LONG VALUE 16.
@@ -66,12 +87,17 @@
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION USING CLIENT-STATE.
+     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > AN-COUNT
+         FREE AN-PIXELS(WS-A)
+         FREE AN-OUT(WS-A)
+     END-PERFORM
+     MOVE 0 TO AN-COUNT AN-START-MS
      MOVE 1 TO AT-SPRITE-COUNT
      INITIALIZE AT-SPRITE(1)
      MOVE "missing" TO AT-NAME(1)
      MOVE 7 TO AT-NAME-LENGTH(1)
      MOVE 16 TO AT-SW(1) AT-SH(1)
-     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 2
+     PERFORM VARYING WS-D FROM 1 BY 1 UNTIL WS-D > 6
          MOVE WS-DEF(WS-D) TO WS-FILE
          MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-FILE)) TO WS-FILE-LENGTH
          PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > PK-COUNT
@@ -142,32 +168,146 @@
                                  END-IF
                              END-PERFORM
                          END-PERFORM
+                     WHEN "single"
+                     WHEN "minecraft:single"
+*>                       One texture, the `resource` id (the bell's body, the enchanting table's book): the sprite <resource> from textures/<path>.png of its namespace.
+                         MOVE "resource" TO WS-NAME
+                         MOVE 8 TO WS-NAME-LENGTH
+                         CALL "JSON-MEMBER" USING JSON-DOC WS-SOURCE WS-NAME WS-NAME-LENGTH
+                             WS-FIELD
+                         MOVE SPACES TO WS-DIR
+                         CALL "JSON-STRING" USING JSON-DOC WS-FIELD WS-DIR WS-VALUE-CAP
+                             WS-DIR-LENGTH
+                         IF WS-DIR-LENGTH > 0
+                             CALL "ATLAS-RESOURCE-ID" USING WS-DIR WS-DIR-LENGTH WS-ID WS-ID-LENGTH WS-PATH WS-PATH-LENGTH
+                             CALL "ATLAS-FIND" USING CLIENT-STATE WS-ID WS-ID-LENGTH WS-S
+                             IF WS-S = 0 AND AT-SPRITE-COUNT < CL-MAX-SPRITES
+                                 ADD 1 TO AT-SPRITE-COUNT
+                                 MOVE AT-SPRITE-COUNT TO WS-S
+                             END-IF
+                             IF WS-S > 0
+                                 INITIALIZE AT-SPRITE(WS-S)
+                                 MOVE WS-ID TO AT-NAME(WS-S)
+                                 MOVE WS-ID-LENGTH TO AT-NAME-LENGTH(WS-S)
+                                 MOVE WS-PATH TO WS-SPRITE-PATH(WS-S)
+                                 MOVE WS-PATH-LENGTH TO WS-SPRITE-PATH-LENGTH(WS-S)
+                             END-IF
+                         END-IF
                  END-EVALUATE
                  MOVE JN-NEXT(WS-SOURCE) TO WS-SOURCE
              END-PERFORM
          END-PERFORM
      END-PERFORM
-*>   Sizes, then rows of sprites in order, 128 pixels wide (wider when a sprite is).
-     MOVE 128 TO AT-W
+*>   Sizes, then rows of sprites in order, as wide as the pack's sprites need: 128 pixels, doubled
+*>   while the area of all the sprites would not fill a square of that width (at most 4096 pixels), and
+*>   at least as wide as the widest sprite.
+*>   The entity textures the head items are drawn with (item-special.cob, 34-2 1.6.1: the skeleton, wither skeleton, creeper, zombie, and the default skin of the player head) are sprites
+*>   of their own: no atlas definition lists them, and the entity atlas is another texture than the item pipelines bind.
+     PERFORM VARYING WS-Q FROM 1 BY 1 UNTIL WS-Q > 5
+         MOVE SPACES TO WS-DIR
+         MOVE WS-HEAD-TEXTURE(WS-Q) TO WS-DIR
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-DIR)) TO WS-DIR-LENGTH
+         CALL "ATLAS-RESOURCE-ID" USING WS-DIR WS-DIR-LENGTH WS-ID WS-ID-LENGTH WS-PATH WS-PATH-LENGTH
+*>       Only when a pack of the stack holds the file (the built-in pack has none of them).
+         MOVE 0 TO WS-HAS
+         PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > PK-COUNT
+             CALL "PACK-SOURCE-HAS" USING CLIENT-STATE WS-P WS-PATH WS-PATH-LENGTH WS-FOUND
+             IF WS-FOUND = 1
+                 MOVE 1 TO WS-HAS
+             END-IF
+         END-PERFORM
+         CALL "ATLAS-FIND" USING CLIENT-STATE WS-ID WS-ID-LENGTH WS-S
+         IF WS-HAS = 1 AND WS-S = 0 AND AT-SPRITE-COUNT < CL-MAX-SPRITES
+             ADD 1 TO AT-SPRITE-COUNT
+             MOVE AT-SPRITE-COUNT TO WS-S
+         END-IF
+         IF WS-HAS = 1 AND WS-S > 0
+             INITIALIZE AT-SPRITE(WS-S)
+             MOVE WS-ID TO AT-NAME(WS-S)
+             MOVE WS-ID-LENGTH TO AT-NAME-LENGTH(WS-S)
+             MOVE WS-PATH TO WS-SPRITE-PATH(WS-S)
+             MOVE WS-PATH-LENGTH TO WS-SPRITE-PATH-LENGTH(WS-S)
+         END-IF
+     END-PERFORM
      PERFORM VARYING WS-S FROM 2 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
-         CALL "PACK-IMAGE" USING CLIENT-STATE WS-SPRITE-PATH(WS-S) WS-SPRITE-PATH-LENGTH(WS-S)
-             WS-IMAGE WS-IMAGE-CAP AT-SW(WS-S) AT-SH(WS-S) WS-FOUND
-*>       A texture that cannot be decoded is drawn as the missing texture (US18-5).
+         CALL "ATLAS-LOAD-IMAGE" USING CLIENT-STATE WS-SPRITE-PATH(WS-S) WS-SPRITE-PATH-LENGTH(WS-S)
+             WS-IMAGE WS-IMAGE-CAP AT-SW(WS-S) AT-SH(WS-S) WS-FOUND AT-PACK(WS-S) WS-ANIMATED
+             ANIM-META
+*>       A texture no pack can give is drawn as the missing texture (US18-5).
          IF WS-FOUND = 0
              MOVE 16 TO AT-SW(WS-S) AT-SH(WS-S)
+             MOVE 0 TO AT-PACK(WS-S)
          END-IF
-         MOVE FUNCTION MAX(AT-W, AT-SW(WS-S)) TO AT-W
+         IF WS-FOUND = 1 AND WS-ANIMATED = 1
+*>           The sprite is animated: its strip and the schedule are kept (AN-ANIM row), the sprite is
+*>           one frame of the strip; past 256 animations a sprite shows its first frame only.
+         MOVE AM-FRAME-W TO AT-SW(WS-S)
+         MOVE AM-FRAME-H TO AT-SH(WS-S)
+         IF AN-COUNT < 256
+             ADD 1 TO AN-COUNT
+             MOVE AN-COUNT TO AT-ANIM(WS-S)
+             MOVE WS-S TO AN-SPRITE(AN-COUNT)
+             MOVE AM-FRAME-W TO AN-FRAME-W(AN-COUNT)
+             MOVE AM-FRAME-H TO AN-FRAME-H(AN-COUNT)
+             MOVE AM-INTERPOLATE TO AN-INTERPOLATE(AN-COUNT)
+             MOVE AM-COUNT TO AN-ENTRIES(AN-COUNT)
+             MOVE AM-TOTAL TO AN-TOTAL(AN-COUNT)
+             MOVE -1 TO AN-CUR(AN-COUNT)
+             MOVE 0 TO AN-DIRTY(AN-COUNT)
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > AM-COUNT
+                 MOVE AM-INDEX(WS-I) TO AN-SEQ-INDEX(AN-COUNT, WS-I)
+                 MOVE AM-TIME(WS-I) TO AN-SEQ-TIME(AN-COUNT, WS-I)
+             END-PERFORM
+             COMPUTE WS-BYTES = AM-FRAME-W * AM-PICTURES * AM-FRAME-H * 4
+             ALLOCATE WS-BYTES CHARACTERS RETURNING AN-PIXELS(AN-COUNT)
+             SET ADDRESS OF B-PIXELS TO AN-PIXELS(AN-COUNT)
+             MOVE WS-IMAGE(1:WS-BYTES) TO B-PIXELS(1:WS-BYTES)
+             COMPUTE WS-BYTES = AM-FRAME-W * AM-FRAME-H * 4
+             ALLOCATE WS-BYTES CHARACTERS INITIALIZED RETURNING AN-OUT(AN-COUNT)
+         END-IF
+         END-IF
+     END-PERFORM
+*>   The mip level M used: at most 4 and at most the lowest set bit of every sprite's width and height;
+*>   the padding is 2^M pixels on each side of a sprite (12 section 2.2), its slot is that much larger.
+     MOVE 4 TO WS-M
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 2
+             IF WS-I = 1
+                 MOVE AT-SW(WS-S) TO WS-V
+             ELSE
+                 MOVE AT-SH(WS-S) TO WS-V
+             END-IF
+             MOVE 0 TO WS-K
+             PERFORM UNTIL FUNCTION MOD(WS-V, 2) NOT = 0 OR WS-K >= WS-M
+                 COMPUTE WS-V = WS-V / 2
+                 ADD 1 TO WS-K
+             END-PERFORM
+             MOVE FUNCTION MIN(WS-M, WS-K) TO WS-M
+         END-PERFORM
+     END-PERFORM
+     COMPUTE AT-PAD = 2 ** WS-M
+     COMPUTE AT-MIPS = WS-M + 1
+     MOVE 0 TO WS-AREA
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
+         COMPUTE WS-AREA = WS-AREA + (AT-SW(WS-S) + 2 * AT-PAD) * (AT-SH(WS-S) + 2 * AT-PAD)
+     END-PERFORM
+     MOVE 128 TO AT-W
+     PERFORM UNTIL AT-W * AT-W >= WS-AREA OR AT-W >= 4096
+         COMPUTE AT-W = AT-W * 2
+     END-PERFORM
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
+         MOVE FUNCTION MAX(AT-W, AT-SW(WS-S) + 2 * AT-PAD) TO AT-W
      END-PERFORM
      MOVE 0 TO WS-X WS-Y WS-ROW-H
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
-         IF WS-X + AT-SW(WS-S) > AT-W
+         IF WS-X + AT-SW(WS-S) + 2 * AT-PAD > AT-W
              ADD WS-ROW-H TO WS-Y
              MOVE 0 TO WS-X WS-ROW-H
          END-IF
-         MOVE WS-X TO AT-X(WS-S)
-         MOVE WS-Y TO AT-Y(WS-S)
-         ADD AT-SW(WS-S) TO WS-X
-         MOVE FUNCTION MAX(WS-ROW-H, AT-SH(WS-S)) TO WS-ROW-H
+         COMPUTE AT-X(WS-S) = WS-X + AT-PAD
+         COMPUTE AT-Y(WS-S) = WS-Y + AT-PAD
+         COMPUTE WS-X = WS-X + AT-SW(WS-S) + 2 * AT-PAD
+         MOVE FUNCTION MAX(WS-ROW-H, AT-SH(WS-S) + 2 * AT-PAD) TO WS-ROW-H
      END-PERFORM
      COMPUTE AT-H = WS-Y + WS-ROW-H
      IF AT-ADDR NOT = NULL
@@ -179,10 +319,33 @@
      CALL "MISSING-TEXTURE" USING WS-SIXTEEN WS-SIXTEEN2 WS-IMAGE
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > AT-SPRITE-COUNT
          IF WS-S > 1
-             CALL "PACK-IMAGE" USING CLIENT-STATE WS-SPRITE-PATH(WS-S)
-                 WS-SPRITE-PATH-LENGTH(WS-S) WS-IMAGE WS-IMAGE-CAP WS-W WS-H WS-FOUND
-             IF WS-FOUND = 0
-                 CALL "MISSING-TEXTURE" USING WS-SIXTEEN WS-SIXTEEN2 WS-IMAGE
+             EVALUATE TRUE
+                 WHEN AT-PACK(WS-S) = 0
+                     CALL "MISSING-TEXTURE" USING WS-SIXTEEN WS-SIXTEEN2 WS-IMAGE
+                 WHEN AT-ANIM(WS-S) > 0
+*>                   The first picture of the sequence; ANIM-TICK writes the schedule's frame.
+                     MOVE AT-ANIM(WS-S) TO WS-A
+                     COMPUTE WS-BYTES = AN-FRAME-W(WS-A) * AN-FRAME-H(WS-A) * 4
+                     SET ADDRESS OF B-PIXELS TO AN-PIXELS(WS-A)
+                     MOVE B-PIXELS(AN-SEQ-INDEX(WS-A, 1) * WS-BYTES + 1:WS-BYTES)
+                         TO WS-IMAGE(1:WS-BYTES)
+                     MOVE -1 TO AN-CUR(WS-A)
+                 WHEN OTHER
+                     CALL "PACK-SOURCE-IMAGE" USING CLIENT-STATE AT-PACK(WS-S)
+                         WS-SPRITE-PATH(WS-S) WS-SPRITE-PATH-LENGTH(WS-S) WS-IMAGE WS-IMAGE-CAP
+                         WS-W WS-H WS-FOUND
+             END-EVALUATE
+         END-IF
+*>       The sun, the moon phases and the end flash (the celestials atlas definition) are drawn additively by vanilla, the shim only alpha-blends: their
+*>       black background becomes clear pixels (ATLAS-ADDITIVE; a still image of a pack, never the missing texture or an animation strip).
+         IF AT-PACK(WS-S) > 0 AND AT-ANIM(WS-S) = 0
+             AND (AT-NAME(WS-S) = "minecraft:sun" OR AT-NAME(WS-S) = "minecraft:end_flash"
+                 OR AT-NAME(WS-S)(1:15) = "minecraft:moon/")
+             COMPUTE WS-BYTES = AT-SW(WS-S) * AT-SH(WS-S)
+             IF AT-NAME(WS-S) = "minecraft:sun"
+                 CALL "ATLAS-ADDITIVE-DAY" USING WS-IMAGE WS-BYTES
+             ELSE
+                 CALL "ATLAS-ADDITIVE" USING WS-IMAGE WS-BYTES
              END-IF
          END-IF
          PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y >= AT-SH(WS-S)
@@ -190,16 +353,138 @@
              MOVE WS-IMAGE(WS-Y * AT-SW(WS-S) * 4 + 1:AT-SW(WS-S) * 4)
                  TO B-ATLAS(WS-I:AT-SW(WS-S) * 4)
          END-PERFORM
-*>       Translucent when any pixel has alpha below 255 (08 §5.3).
-         PERFORM VARYING WS-I FROM 4 BY 4 UNTIL WS-I > AT-SW(WS-S) * AT-SH(WS-S) * 4
-             IF WS-IMAGE(WS-I:1) NOT = X"FF"
-                 MOVE 1 TO AT-TRANSLUCENT(WS-S)
-             END-IF
+*>       The padding: the sprite's edge pixels repeated outward, sides first, then the top and bottom
+*>       rows whole (12 section 2.2: a clamped sample of the sprite beyond its edge).
+         PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y >= AT-SH(WS-S)
+             COMPUTE WS-I = ((AT-Y(WS-S) + WS-Y) * AT-W + AT-X(WS-S)) * 4 + 1
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > AT-PAD
+                 MOVE B-ATLAS(WS-I:4) TO B-ATLAS(WS-I - WS-K * 4:4)
+                 MOVE B-ATLAS(WS-I + AT-SW(WS-S) * 4 - 4:4)
+                     TO B-ATLAS(WS-I + AT-SW(WS-S) * 4 + (WS-K - 1) * 4:4)
+             END-PERFORM
          END-PERFORM
+         COMPUTE WS-BYTES = (AT-SW(WS-S) + 2 * AT-PAD) * 4
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > AT-PAD
+             COMPUTE WS-I = (AT-Y(WS-S) * AT-W + AT-X(WS-S) - AT-PAD) * 4 + 1
+             COMPUTE WS-V = ((AT-Y(WS-S) - WS-K) * AT-W + AT-X(WS-S) - AT-PAD) * 4 + 1
+             MOVE B-ATLAS(WS-I:WS-BYTES) TO B-ATLAS(WS-V:WS-BYTES)
+             COMPUTE WS-I = ((AT-Y(WS-S) + AT-SH(WS-S) - 1) * AT-W + AT-X(WS-S) - AT-PAD) * 4 + 1
+             COMPUTE WS-V = ((AT-Y(WS-S) + AT-SH(WS-S) + WS-K - 1) * AT-W + AT-X(WS-S) - AT-PAD) * 4 + 1
+             MOVE B-ATLAS(WS-I:WS-BYTES) TO B-ATLAS(WS-V:WS-BYTES)
+         END-PERFORM
+*>       Translucent only when a pixel has an alpha that is neither 0 nor 255 (08 §5.3: a sprite with alpha 0 pixels only is
+*>       cut out and is drawn in the opaque layer, where the shader drops its clear texels).
+         COMPUTE WS-BYTES = AT-SW(WS-S) * AT-SH(WS-S)
+         CALL "ATLAS-TRANSLUCENT" USING WS-IMAGE WS-BYTES AT-TRANSLUCENT(WS-S)
      END-PERFORM
      MOVE 1 TO AT-UPLOAD(1)
      GOBACK.
  END PROGRAM ATLAS-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ATLAS-TRANSLUCENT.
+*> USING RGBA bytes (the first byte of the image), pixel count, translucent out (PIC 9): 1 when some pixel has an alpha that is neither
+*> 0 nor 255 (08 section 5.3, SpriteContents.computeTransparency: opaque, cut out (alpha 0 pixels) or translucent), else 0. Cut-out
+*> sprites (leaves, doors, trapdoors, panes, plants) are drawn in the opaque layer with the clear texels discarded.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 B-IMAGE                PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ 01 L-IMAGE                PIC X.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-TRANSLUCENT          PIC 9.
+ PROCEDURE DIVISION USING L-IMAGE L-COUNT L-TRANSLUCENT.
+     MOVE 0 TO L-TRANSLUCENT
+     SET ADDRESS OF B-IMAGE TO ADDRESS OF L-IMAGE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > L-COUNT
+         IF B-IMAGE(WS-I * 4:1) NOT = X"FF" AND B-IMAGE(WS-I * 4:1) NOT = X"00"
+             MOVE 1 TO L-TRANSLUCENT
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ATLAS-TRANSLUCENT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ATLAS-ADDITIVE-DAY.
+*> USING RGBA bytes (the first byte of the image), pixel count: the sun sprite's version of ATLAS-ADDITIVE (lane bugsunchest; operator try19 play: vanilla's sun is a pure
+*> white square with a pale blue halo, ours was a gold square with an orange rim). The sun is added to the DAY sky (12 section 3.4c, blend SRC_ALPHA, ONE) and the sum
+*> saturates: the sprite's gold rim (255, 213, 74) and its pale centre (255, 255, 217) both reach white over the overworld's sky colour #78a7ff (120, 167, 255), and
+*> its dim halo pixels (a few units of red and green) only lighten the blue. The shim's alpha blend cannot clamp a sum, so each pixel is baked against that sky colour:
+*> the colour is white and the alpha is the share of the way to white the sum reaches, the mean of the red share min(1, r / (255 - 120)) and the green share
+*> min(1, g / (255 - 167)) (the blue of the sky is already full), times the pixel's own alpha. A black pixel or one with alpha 0 gets alpha 0, so the sprite's
+*> background stays clear.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-G                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-SHARE-R             BINARY-LONG.
+ 01 WS-SHARE-G             BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 B-IMAGE                PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ 01 L-IMAGE                PIC X.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-IMAGE L-COUNT.
+     SET ADDRESS OF B-IMAGE TO ADDRESS OF L-IMAGE
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= L-COUNT
+         COMPUTE WS-R = FUNCTION ORD(B-IMAGE(WS-I * 4 + 1:1)) - 1
+         COMPUTE WS-G = FUNCTION ORD(B-IMAGE(WS-I * 4 + 2:1)) - 1
+         COMPUTE WS-A = FUNCTION ORD(B-IMAGE(WS-I * 4 + 4:1)) - 1
+         COMPUTE WS-SHARE-R = FUNCTION MIN(255, (WS-R * 255 + 67) / 135)
+         COMPUTE WS-SHARE-G = FUNCTION MIN(255, (WS-G * 255 + 44) / 88)
+         COMPUTE WS-V = ((WS-SHARE-R + WS-SHARE-G) * WS-A + 255) / 510
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+             MOVE FUNCTION CHAR(256) TO B-IMAGE(WS-I * 4 + WS-K:1)
+         END-PERFORM
+         MOVE FUNCTION CHAR(WS-V + 1) TO B-IMAGE(WS-I * 4 + 4:1)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ATLAS-ADDITIVE-DAY.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ATLAS-ADDITIVE.
+*> USING RGBA bytes (the first byte of the image), pixel count: turns the pixels of a celestial sprite (sun, moon phase, end flash) into straight-alpha
+*> pixels whose alpha blend (SRC_ALPHA, ONE_MINUS_SRC_ALPHA, the only blend the shim's sky draws have) approximates vanilla's additive OVERLAY blend
+*> (12 section 3.4c: SRC_ALPHA, ONE; black adds nothing). With m = max(r, g, b) a pixel becomes colour = c x 255 / m (rounded) and alpha = m x alpha / 255
+*> (rounded): the blend then adds the pixel's rgb x alpha and dims the sky under it by that brightness only, so the sprite's black background is
+*> clear (alpha 0) and the bright centre stays opaque. A pixel with m = 0 or alpha 0 gets alpha 0 (its colour is kept: a clear pixel adds nothing).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 B-IMAGE                PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ 01 L-IMAGE                PIC X.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-IMAGE L-COUNT.
+     SET ADDRESS OF B-IMAGE TO ADDRESS OF L-IMAGE
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I >= L-COUNT
+         MOVE 0 TO WS-MAX
+         PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+             COMPUTE WS-C = FUNCTION ORD(B-IMAGE(WS-I * 4 + WS-K:1)) - 1
+             MOVE FUNCTION MAX(WS-MAX, WS-C) TO WS-MAX
+         END-PERFORM
+         COMPUTE WS-A = FUNCTION ORD(B-IMAGE(WS-I * 4 + 4:1)) - 1
+         IF WS-MAX > 0
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 3
+                 COMPUTE WS-C = FUNCTION ORD(B-IMAGE(WS-I * 4 + WS-K:1)) - 1
+                 COMPUTE WS-V = (WS-C * 510 + WS-MAX) / (2 * WS-MAX)
+                 MOVE FUNCTION CHAR(WS-V + 1) TO B-IMAGE(WS-I * 4 + WS-K:1)
+             END-PERFORM
+         END-IF
+         COMPUTE WS-V = (WS-MAX * WS-A * 2 + 255) / 510
+         MOVE FUNCTION CHAR(WS-V + 1) TO B-IMAGE(WS-I * 4 + 4:1)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ATLAS-ADDITIVE.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ATLAS-DIRECTORY-MATCH.
@@ -237,6 +522,38 @@
      END-IF
      GOBACK.
  END PROGRAM ATLAS-DIRECTORY-MATCH.
+
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ATLAS-RESOURCE-ID.
+*> USING resource (PIC X(128), the `resource` of a "single" source: `ns:path` or `path` for minecraft), its length, sprite id out (PIC X(80): `ns:path`) and its length, texture file
+*> out (PIC X(256): assets/<ns>/textures/<path>.png) and its length.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-COLON               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-RESOURCE             PIC X(128).
+ 01 L-RESOURCE-LENGTH      BINARY-LONG.
+ 01 L-ID                   PIC X(80).
+ 01 L-ID-LENGTH            BINARY-LONG.
+ 01 L-PATH                 PIC X(256).
+ 01 L-PATH-LENGTH          BINARY-LONG.
+ PROCEDURE DIVISION USING L-RESOURCE L-RESOURCE-LENGTH L-ID L-ID-LENGTH L-PATH L-PATH-LENGTH.
+     MOVE 0 TO WS-COLON
+     INSPECT L-RESOURCE(1:L-RESOURCE-LENGTH) TALLYING WS-COLON FOR CHARACTERS BEFORE INITIAL ":"
+     MOVE SPACES TO L-ID L-PATH
+     IF WS-COLON >= L-RESOURCE-LENGTH
+         STRING "minecraft:" L-RESOURCE(1:L-RESOURCE-LENGTH) DELIMITED BY SIZE INTO L-ID
+         STRING "assets/minecraft/textures/" L-RESOURCE(1:L-RESOURCE-LENGTH) ".png" DELIMITED BY SIZE INTO L-PATH
+     ELSE
+         MOVE L-RESOURCE(1:L-RESOURCE-LENGTH) TO L-ID
+         STRING "assets/" L-RESOURCE(1:WS-COLON) "/textures/" L-RESOURCE(WS-COLON + 2:L-RESOURCE-LENGTH - WS-COLON - 1) ".png"
+             DELIMITED BY SIZE INTO L-PATH
+     END-IF
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-ID)) TO L-ID-LENGTH
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(L-PATH)) TO L-PATH-LENGTH
+     GOBACK.
+ END PROGRAM ATLAS-RESOURCE-ID.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ATLAS-FIND.
@@ -310,3 +627,210 @@
      END-PERFORM
      GOBACK.
  END PROGRAM MISSING-TEXTURE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ANIM-TICK.
+*> USING CLIENT-STATE, clock (BINARY-DOUBLE ms): the animated sprites of the block atlas show the frame
+*> their schedule gives at this time: the clock of the first call is tick 0, a tick is 50 ms, the
+*> sequence of AN-SEQ repeats every AN-TOTAL ticks. With interpolation the shown pixels are the blend of
+*> the picture and the next entry's, by the share of the entry's time that has passed (per mille). A
+*> frame that differs from the one shown (AN-CUR) is written into AN-OUT and the atlas cell, and the cell
+*> is marked (AN-DIRTY) for cc_vk_texture_update (SUBMIT-FRAME).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-TICKS               BINARY-DOUBLE.
+ 01 WS-POS                 BINARY-LONG.
+ 01 WS-E                   BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ 01 WS-NEXT                BINARY-LONG.
+ 01 WS-KEY                 BINARY-LONG.
+ 01 WS-SHARE               BINARY-LONG.
+ 01 WS-PICTURE             BINARY-LONG.
+ 01 WS-NEXT-PICTURE        BINARY-LONG.
+ 01 WS-BYTES               BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-PTR-A               USAGE POINTER.
+ 01 WS-PTR-B               USAGE POINTER.
+ 01 WS-OFFSET              BINARY-LONG.
+ 01 WS-KEEP                BINARY-LONG.
+ 01 WS-WEIGHT              BINARY-LONG.
+ 01 WS-SUM                 BINARY-LONG.
+ 01 WS-PART                BINARY-LONG.
+ 01 WS-Q                   BINARY-LONG.
+ 01 WS-QI                  BINARY-LONG.
+ 01 WS-TABLE-READY         BINARY-LONG VALUE 0.
+*> The blend of a byte is table lookups: a x keep and b x share by the byte's value, then the quotient of the sum by 1000 (256000 entries, made on the first blend).
+ 01 WS-KEEP-TABLE.
+    05 WS-KT               BINARY-LONG OCCURS 256 TIMES.
+ 01 WS-SHARE-TABLE.
+    05 WS-ST               BINARY-LONG OCCURS 256 TIMES.
+ 01 WS-QUOTIENT-TABLE.
+    05 WS-QT               BINARY-CHAR UNSIGNED OCCURS 256000 TIMES.
+ 01 B-BYTES-A BASED.
+    05 BA-BYTE             BINARY-CHAR UNSIGNED OCCURS 268435456 TIMES.
+ 01 B-BYTES-B BASED.
+    05 BB-BYTE             BINARY-CHAR UNSIGNED OCCURS 268435456 TIMES.
+ 01 B-BYTES-O BASED.
+    05 BO-BYTE             BINARY-CHAR UNSIGNED OCCURS 268435456 TIMES.
+ 01 B-PIXELS               PIC X(1073741824) BASED.
+ 01 B-OUT                  PIC X(1073741824) BASED.
+ 01 B-ATLAS                PIC X(1073741824) BASED.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-NOW                  BINARY-DOUBLE.
+ PROCEDURE DIVISION USING CLIENT-STATE L-NOW.
+     IF AN-COUNT = 0
+         GOBACK
+     END-IF
+     IF AN-START-MS = 0
+         MOVE L-NOW TO AN-START-MS
+     END-IF
+     COMPUTE WS-TICKS = (L-NOW - AN-START-MS) / 50
+     SET ADDRESS OF B-ATLAS TO AT-ADDR
+     PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > AN-COUNT
+         COMPUTE WS-POS = FUNCTION MOD(WS-TICKS, AN-TOTAL(WS-A))
+*>       The entry holding the position, where it starts, and the entry after it.
+         MOVE 0 TO WS-START
+         MOVE 1 TO WS-E
+         PERFORM UNTIL WS-POS < WS-START + AN-SEQ-TIME(WS-A, WS-E)
+             ADD AN-SEQ-TIME(WS-A, WS-E) TO WS-START
+             ADD 1 TO WS-E
+         END-PERFORM
+         COMPUTE WS-NEXT = FUNCTION MOD(WS-E, AN-ENTRIES(WS-A)) + 1
+         MOVE AN-SEQ-INDEX(WS-A, WS-E) TO WS-PICTURE
+         MOVE AN-SEQ-INDEX(WS-A, WS-NEXT) TO WS-NEXT-PICTURE
+         MOVE 0 TO WS-SHARE
+         IF AN-INTERPOLATE(WS-A) = 1
+             COMPUTE WS-SHARE = (WS-POS - WS-START) * 1000 / AN-SEQ-TIME(WS-A, WS-E)
+         END-IF
+         COMPUTE WS-KEY = WS-PICTURE * 1000 + WS-SHARE
+         IF WS-KEY NOT = AN-CUR(WS-A)
+             MOVE WS-KEY TO AN-CUR(WS-A)
+             COMPUTE WS-BYTES = AN-FRAME-W(WS-A) * AN-FRAME-H(WS-A) * 4
+             SET ADDRESS OF B-PIXELS TO AN-PIXELS(WS-A)
+             SET ADDRESS OF B-OUT TO AN-OUT(WS-A)
+             IF WS-SHARE = 0
+                 MOVE B-PIXELS(WS-PICTURE * WS-BYTES + 1:WS-BYTES) TO B-OUT(1:WS-BYTES)
+             ELSE
+*>               The blend of two pictures, byte by byte on unsigned views (the intrinsic ORD and CHAR calls cost most of a
+*>               frame when several sprites interpolate; so did the decimal arithmetic of (a x keep + b x share) / 1000 a byte:
+*>               the products are tables of the frame's share and the quotient a table of the sums).
+                 IF WS-TABLE-READY = 0
+                     MOVE 0 TO WS-QI
+                     PERFORM VARYING WS-Q FROM 0 BY 1 UNTIL WS-Q > 255
+                         PERFORM 1000 TIMES
+                             ADD 1 TO WS-QI
+                             MOVE WS-Q TO WS-QT(WS-QI)
+                         END-PERFORM
+                     END-PERFORM
+                     MOVE 1 TO WS-TABLE-READY
+                 END-IF
+                 SET WS-PTR-A TO AN-PIXELS(WS-A)
+                 COMPUTE WS-OFFSET = WS-PICTURE * WS-BYTES
+                 SET WS-PTR-A UP BY WS-OFFSET
+                 SET WS-PTR-B TO AN-PIXELS(WS-A)
+                 COMPUTE WS-OFFSET = WS-NEXT-PICTURE * WS-BYTES
+                 SET WS-PTR-B UP BY WS-OFFSET
+                 SET ADDRESS OF B-BYTES-A TO WS-PTR-A
+                 SET ADDRESS OF B-BYTES-B TO WS-PTR-B
+                 SET ADDRESS OF B-BYTES-O TO AN-OUT(WS-A)
+                 COMPUTE WS-KEEP = 1000 - WS-SHARE
+                 MOVE 0 TO WS-WEIGHT
+                 MOVE 0 TO WS-SUM
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 256
+                     MOVE WS-WEIGHT TO WS-KT(WS-I)
+                     ADD WS-KEEP TO WS-WEIGHT
+                     MOVE WS-SUM TO WS-ST(WS-I)
+                     ADD WS-SHARE TO WS-SUM
+                 END-PERFORM
+                 PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-BYTES
+                     MOVE WS-KT(BA-BYTE(WS-I) + 1) TO WS-SUM
+                     MOVE WS-ST(BB-BYTE(WS-I) + 1) TO WS-PART
+                     ADD WS-PART TO WS-SUM
+                     MOVE WS-QT(WS-SUM + 1) TO BO-BYTE(WS-I)
+                 END-PERFORM
+             END-IF
+             MOVE AN-SPRITE(WS-A) TO WS-S
+             PERFORM VARYING WS-Y FROM 0 BY 1 UNTIL WS-Y >= AN-FRAME-H(WS-A)
+                 COMPUTE WS-I = ((AT-Y(WS-S) + WS-Y) * AT-W + AT-X(WS-S)) * 4 + 1
+                 MOVE B-OUT(WS-Y * AN-FRAME-W(WS-A) * 4 + 1:AN-FRAME-W(WS-A) * 4)
+                     TO B-ATLAS(WS-I:AN-FRAME-W(WS-A) * 4)
+             END-PERFORM
+             MOVE 1 TO AN-DIRTY(WS-A)
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM ANIM-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ATLAS-LOAD-IMAGE.
+*> USING CLIENT-STATE, path (PIC X(256)), path length, area, capacity, width out, height out, found out,
+*> pack out, animated out (1 = ANIM-META holds the animation), ANIM-META: the texture from the top-most
+*> pack that can give it, falling to the pack below when a pack's file cannot be decoded or its
+*> <path>.mcmeta is malformed (a texture whose animation file is broken is a static texture of the pack
+*> below, never a crash: FR-012; the animation file of a pack applies to that pack's own texture only).
+*> An animated texture's width and height are those of the whole strip; the caller sizes the sprite by
+*> AM-FRAME-W and AM-FRAME-H.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-HAS                 BINARY-LONG.
+ 01 WS-IMAGE-OK            BINARY-LONG.
+ 01 WS-META-PATH           PIC X(256).
+ 01 WS-META-LENGTH         BINARY-LONG.
+ 01 WS-TEXT                PIC X(16384).
+ 01 WS-TEXT-CAP            BINARY-LONG VALUE 16384.
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-RESULT              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-PATH                 PIC X(256).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-AREA                 PIC X.
+ 01 L-CAPACITY             BINARY-LONG.
+ 01 L-W                    BINARY-LONG.
+ 01 L-H                    BINARY-LONG.
+ 01 L-FOUND                BINARY-LONG.
+ 01 L-PACK                 BINARY-LONG.
+ 01 L-ANIMATED             BINARY-LONG.
+ COPY CLMCMETA.
+ PROCEDURE DIVISION USING CLIENT-STATE L-PATH L-LENGTH L-AREA L-CAPACITY L-W L-H L-FOUND L-PACK
+         L-ANIMATED ANIM-META.
+     MOVE 0 TO L-W L-H L-FOUND L-PACK L-ANIMATED
+     PERFORM VARYING WS-P FROM PK-COUNT BY -1 UNTIL WS-P < 1 OR L-FOUND = 1
+         CALL "PACK-SOURCE-HAS" USING CLIENT-STATE WS-P L-PATH L-LENGTH WS-HAS
+         IF WS-HAS = 1
+             CALL "PACK-SOURCE-IMAGE" USING CLIENT-STATE WS-P L-PATH L-LENGTH L-AREA L-CAPACITY
+                 L-W L-H WS-IMAGE-OK
+             IF WS-IMAGE-OK = 1
+                 MOVE SPACES TO WS-META-PATH
+                 STRING L-PATH(1:L-LENGTH) ".mcmeta" DELIMITED BY SIZE INTO WS-META-PATH
+                 COMPUTE WS-META-LENGTH = L-LENGTH + 7
+                 CALL "PACK-SOURCE-HAS" USING CLIENT-STATE WS-P WS-META-PATH WS-META-LENGTH WS-HAS
+                 MOVE 2 TO WS-RESULT
+                 IF WS-HAS = 1
+                     CALL "PACK-SOURCE-READ" USING CLIENT-STATE WS-P WS-META-PATH WS-META-LENGTH
+                         WS-TEXT WS-TEXT-CAP WS-TEXT-LENGTH WS-IMAGE-OK
+                     MOVE 0 TO WS-RESULT
+                     IF WS-IMAGE-OK = 1
+                         CALL "ANIM-PARSE" USING WS-TEXT WS-TEXT-LENGTH L-W L-H ANIM-META WS-RESULT
+                     END-IF
+                 END-IF
+                 IF WS-RESULT > 0
+                     MOVE 1 TO L-FOUND
+                     MOVE WS-P TO L-PACK
+                     IF WS-RESULT = 1
+                         MOVE 1 TO L-ANIMATED
+                     END-IF
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     IF L-FOUND = 0
+         MOVE 0 TO L-W L-H
+     END-IF
+     GOBACK.
+ END PROGRAM ATLAS-LOAD-IMAGE.

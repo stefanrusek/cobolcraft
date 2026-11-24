@@ -1,0 +1,394 @@
+ *> The walk and idle poses of the mobs of codes W and V of the model table (entities-pose.cob ENTITY-POSE-MORE, docs/protocol/34-entity-models-3..7):
+ *> a mob that walks (replica walk position and speed) or idles (ageInTicks) has a different mesh than at rest, as whole cuboids, and a mob of code W does
+ *> not depend on its age (the bake key of the mob is unchanged by it).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTITY-POSE-MORE.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY CLMODELS.
+ COPY TESTLIB.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ROW-AREA            PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG VALUE 1.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG VALUE 10.5.
+ 01 WS-Y                   FLOAT-LONG VALUE 64.
+ 01 WS-Z                   FLOAT-LONG VALUE 10.5.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
+ 01 WS-NAME                PIC X(20).
+ 01 WS-REST                FLOAT-LONG.
+ 01 WS-MOVED               FLOAT-LONG.
+ 01 WS-AGED                FLOAT-LONG.
+ 01 WS-N0                  BINARY-LONG.
+ 01 WS-LIST-DATA.
+    05 FILLER PIC X(20) VALUE "horse".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "donkey".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "mule".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "skeleton_horse".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "zombie_horse".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "llama".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "trader_llama".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "goat".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "camel".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "ocelot".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "cat".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "fox".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "panda".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "polar_bear".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "wolf".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "armadillo".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "turtle".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "sniffer".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "warden".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "strider".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "hoglin".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "zoglin".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "villager".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "wandering_trader".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "witch".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "pillager".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "vindicator".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "iron_golem".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "ravager".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "shulker".
+    05 FILLER PIC X VALUE "S".
+    05 FILLER PIC X(20) VALUE "horse".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "cat".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "goat".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "bat".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "bee".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "phantom".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "ghast".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "happy_ghast".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "silverfish".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "endermite".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "breeze".
+    05 FILLER PIC X VALUE "S".
+    05 FILLER PIC X(20) VALUE "parrot".
+    05 FILLER PIC X VALUE "M".
+    05 FILLER PIC X(20) VALUE "vex".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "allay".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "tadpole".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "rabbit".
+    05 FILLER PIC X VALUE "S".
+    05 FILLER PIC X(20) VALUE "frog".
+    05 FILLER PIC X VALUE "M".
+    05 FILLER PIC X(20) VALUE "dolphin".
+    05 FILLER PIC X VALUE "M".
+    05 FILLER PIC X(20) VALUE "axolotl".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "cod".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "salmon".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "pufferfish".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "tropical_fish".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "cow".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "pig".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "sheep".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "mooshroom".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "chicken".
+    05 FILLER PIC X VALUE "W".
+    05 FILLER PIC X(20) VALUE "squid".
+    05 FILLER PIC X VALUE "S".
+    05 FILLER PIC X(20) VALUE "glow_squid".
+    05 FILLER PIC X VALUE "S".
+    05 FILLER PIC X(20) VALUE "guardian".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "elder_guardian".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "wither".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "end_crystal".
+    05 FILLER PIC X VALUE "V".
+    05 FILLER PIC X(20) VALUE "creaking".
+    05 FILLER PIC X VALUE "M".
+    05 FILLER PIC X(20) VALUE "zombie_villager".
+    05 FILLER PIC X VALUE "S".
+ 01 WS-LIST REDEFINES WS-LIST-DATA.
+    05 WS-L OCCURS 66 TIMES.
+       10 WS-L-KEY         PIC X(20).
+       10 WS-L-MODE        PIC X.
+ 01 WS-BABY-DATA.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 1.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 1.
+    05 FILLER PIC 9 VALUE 1.
+    05 FILLER PIC 9 VALUE 1.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 1.
+    05 FILLER PIC 9 VALUE 1.
+    05 FILLER PIC 9 VALUE 1.
+    05 FILLER PIC 9 VALUE 1.
+    05 FILLER PIC 9 VALUE 1.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+    05 FILLER PIC 9 VALUE 0.
+ 01 WS-BABY-LIST REDEFINES WS-BABY-DATA.
+    05 WS-L-BABY           PIC 9 OCCURS 66 TIMES.
+ 01 WS-EYE-TABLE.
+    05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION.
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE 0 TO PK-COUNT
+     CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
+     MOVE 256 TO PL-HEIGHT
+     MOVE 0 TO SK-U
+     MOVE 10 TO WS-EYE(1) WS-EYE(3)
+     MOVE 64 TO WS-EYE(2)
+     MOVE 1 TO CT-OPEN
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 66
+         MOVE WS-L-KEY(WS-I) TO WS-NAME
+         CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+         MOVE 0 TO EA-MT-COUNT
+         MOVE SPACES TO WS-KEY
+         MOVE WS-NAME TO WS-KEY
+         CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+         CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+         MOVE WS-L-BABY(WS-I) TO EN-BABY(1)
+*>       An axolotl that has been in the water for ten ticks (34-8 4.5: the in-water animator is full).
+         IF WS-NAME = "axolotl"
+             MOVE 10 TO EN-AX-T(1, 2) EN-AX-O(1, 2)
+         END-IF
+         CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+         MOVE RL-EN-COUNT TO WS-N0
+         CALL "POSE-SUM" USING CLIENT-STATE WS-REST
+         MOVE 1.3 TO EN-WALK-POS(1)
+         MOVE 0.8 TO EN-WALK-SPEED(1)
+         MOVE 1 TO EN-WALK-SCALE(1)
+         CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+         CALL "POSE-SUM" USING CLIENT-STATE WS-MOVED
+         MOVE 0 TO EN-WALK-POS(1) EN-WALK-SPEED(1)
+         MOVE 37 TO EN-AGE(1)
+         CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+         CALL "POSE-SUM" USING CLIENT-STATE WS-AGED
+         MOVE "N" TO TL-MODE
+         MOVE SPACES TO TL-CASE
+         EVALUATE WS-L-MODE(WS-I)
+             WHEN "W"
+                 STRING "acceptance poses " FUNCTION TRIM(WS-NAME) " walking changes the mesh, whole cuboids, age does not" DELIMITED BY SIZE INTO TL-CASE
+             WHEN "M"
+                 STRING "acceptance poses " FUNCTION TRIM(WS-NAME) " walking changes the mesh, whole cuboids" DELIMITED BY SIZE INTO TL-CASE
+             WHEN "S"
+                 STRING "acceptance poses " FUNCTION TRIM(WS-NAME) " posed without a walk or age change: whole cuboids, mesh unchanged" DELIMITED BY SIZE INTO TL-CASE
+             WHEN OTHER
+                 STRING "acceptance poses " FUNCTION TRIM(WS-NAME) " idling with its age changes the mesh, whole cuboids" DELIMITED BY SIZE INTO TL-CASE
+         END-EVALUATE
+         MOVE 1 TO TL-EXPECTED-N
+         MOVE 0 TO TL-OBSERVED-N
+         IF WS-N0 >= 36 AND FUNCTION MOD(WS-N0, 36) = 0 AND RL-EN-COUNT = WS-N0
+             EVALUATE WS-L-MODE(WS-I)
+                 WHEN "W"
+                     IF WS-MOVED NOT = WS-REST AND WS-AGED = WS-REST
+                         MOVE 1 TO TL-OBSERVED-N
+                     END-IF
+                 WHEN "M"
+                     IF WS-MOVED NOT = WS-REST
+                         MOVE 1 TO TL-OBSERVED-N
+                     END-IF
+                 WHEN "S"
+                     IF WS-MOVED = WS-REST AND WS-AGED = WS-REST
+                         MOVE 1 TO TL-OBSERVED-N
+                     END-IF
+                 WHEN OTHER
+                     IF WS-AGED NOT = WS-REST
+                         MOVE 1 TO TL-OBSERVED-N
+                     END-IF
+             END-EVALUATE
+         END-IF
+         CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     END-PERFORM
+*>   The size of a slime (entry 18) scales the model on every axis: a size 3 slime is bigger than a size 1 slime.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE 0 TO EA-MT-COUNT
+     MOVE SPACES TO WS-KEY
+     MOVE "slime" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     MOVE 1 TO EN-VAR(1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE RL-EN-COUNT TO WS-N0
+     CALL "POSE-SUM" USING CLIENT-STATE WS-REST
+     MOVE 3 TO EN-VAR(1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     CALL "POSE-SUM" USING CLIENT-STATE WS-MOVED
+     MOVE "N" TO TL-MODE
+     MOVE "acceptance poses slime size 3 differs from size 1, same cuboids" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-N0 >= 36 AND RL-EN-COUNT = WS-N0 AND WS-MOVED NOT = WS-REST
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM TEST-ENTITY-POSE-MORE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. POSE-SUM.
+*> USING CLIENT-STATE, sum out (FLOAT-LONG): a position-weighted sum of the x, y and z of the frame's entity vertices.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-K                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-SUM                  FLOAT-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-SUM.
+     MOVE 0 TO L-SUM
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > RL-EN-COUNT
+         COMPUTE L-SUM = L-SUM + (RL-EN-X(WS-K) * 1.1 + RL-EN-Y(WS-K) * 2.3 + RL-EN-Z(WS-K) * 3.7) * (1 + FUNCTION MOD(WS-K, 7))
+     END-PERFORM
+     GOBACK.
+ END PROGRAM POSE-SUM.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MM-SPAWN.
+*> USING CLIENT-STATE, entity id, type (registry id), x y z (FLOAT-LONG), yaw (FLOAT-SHORT, also the head yaw): Add Entity.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-ADD                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-UUID                PIC X(16) VALUE LOW-VALUES.
+ 01 WS-V0                  FLOAT-LONG VALUE 0.
+ 01 WS-V1                  FLOAT-LONG VALUE 0.
+ 01 WS-V2                  FLOAT-LONG VALUE 0.
+ 01 WS-A0                  FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ID L-TYPE L-X L-Y L-Z L-YAW.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-V0 WS-V1 WS-V2
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER WS-A0
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-PACKET" USING CLIENT-STATE PB-BUFFER WS-ADD
+     GOBACK.
+ END PROGRAM MM-SPAWN.
+

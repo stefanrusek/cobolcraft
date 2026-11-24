@@ -58,3 +58,17 @@
        10 PM-FEATURE-ID-LENGTH BINARY-LONG.
 *>  A limit applied while reading (spaces when none): the console text of MCMETA-REPORT.
     05 PM-WARNING           PIC X(128).
+
+*> A texture animation (08 section 7, the animation section of <texture>.png.mcmeta; ANIM-PARSE in
+*> packs/mcmeta.cob): the frame size, the frames in the image (a vertical strip of AM-PICTURES frames), whether
+*> the frames blend, and the sequence: for each entry the picture shown and for how many ticks.
+ 01 ANIM-META.
+    05 AM-FRAME-W            BINARY-LONG.
+    05 AM-FRAME-H            BINARY-LONG.
+    05 AM-PICTURES           BINARY-LONG.
+    05 AM-INTERPOLATE        PIC 9.
+    05 AM-COUNT              BINARY-LONG.
+    05 AM-TOTAL              BINARY-LONG.
+    05 AM-SEQ OCCURS 32 TIMES.
+       10 AM-INDEX           BINARY-LONG.
+       10 AM-TIME            BINARY-LONG.

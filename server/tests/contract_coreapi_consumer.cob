@@ -17,7 +17,8 @@
  01 WS-WORLD-DIR           PIC X(16) VALUE "world".
  01 WS-FILE-INFO           PIC X(16).
  01 WS-CAPACITY            BINARY-LONG VALUE 65536.
- 01 WS-PORT                BINARY-LONG VALUE 25565.
+ 01 WS-PORT                BINARY-LONG.
+ 01 WS-CONF                PIC X(4096).
  01 WS-CLIENT              BINARY-LONG.
  01 WS-STATUS-CLIENT       BINARY-LONG.
  01 WS-ALICE               BINARY-LONG.
@@ -35,7 +36,7 @@
  01 WS-TICKS               BINARY-DOUBLE.
  01 WS-EDIT                PIC -(9)9.
  01 WS-EDIT2               PIC -(9)9.
- 01 WS-SHUTDOWN            PIC X(16) VALUE Z"shutdown".
+ 01 WS-SHUTDOWN            PIC X(16) VALUE Z"stop".
  01 WS-STATE-BEFORE        BINARY-LONG.
  01 WS-LEVEL-DAT           PIC X(32) VALUE "world/level.dat".
  01 WS-CAPTURE             PIC X(256) VALUE "stdout.txt".
@@ -44,9 +45,9 @@
      CALL "PB-INIT" USING ST-BUFFER WS-CAPACITY
      CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
      MOVE "N" TO TL-MODE
-     MOVE "contract server coreapi consumer record lengths CORE-SETTINGS 1707 CORE-BUFFER 16 "
+     MOVE "contract server coreapi consumer record lengths CORE-SETTINGS 3829 CORE-BUFFER 16 "
          & "CORE-STATUS 5 (core-host-api §1)" TO TL-CASE
-     MOVE 1707016005 TO TL-EXPECTED-N
+     MOVE 3829016005 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = LENGTH OF CORE-SETTINGS * 1000000 + LENGTH OF CORE-BUFFER * 1000
          + LENGTH OF CORE-STATUS
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
@@ -61,15 +62,23 @@
 
 *>   Start: CORE-WORLD-OPEN of ./world, then listening on the configured port.
      CALL "SVT-SCRATCH" USING WS-SCRATCH
+*>   A free port, never the default (CC-0005).
+     CALL "SVT-FREE-PORT" USING WS-PORT
+     MOVE WS-PORT TO WS-EDIT
+     MOVE SPACES TO WS-CONF
+     STRING "port=" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-CONF
+     CALL "SVT-WRITE-CONF" USING WS-CONF
      CALL "SV-START"
      CALL "CORE-STATUS-GET" USING CORE-STATUS
      CALL "SVT-CONNECT" USING WS-PORT WS-CLIENT
      CALL STATIC "cc_net_status" USING BY VALUE WS-CLIENT RETURNING WS-OUTCOME
      MOVE "contract server coreapi consumer SV-START opens ./world with CORE-WORLD-OPEN, then listens "
-         & "on port 25565; the core runs (state 0, nobody online)" TO TL-CASE
+         & "on the configured port; the core runs (state 0, nobody online)" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "world port 25565 accepting run 0 online 0" TO TL-EXPECTED
-     MOVE SPACES TO TL-OBSERVED
+     MOVE SPACES TO TL-EXPECTED TL-OBSERVED
+     MOVE WS-PORT TO WS-EDIT
+     STRING "world port " FUNCTION TRIM(WS-EDIT) " accepting run 0 online 0" DELIMITED BY SIZE
+         INTO TL-EXPECTED
      CALL "CBL_CHECK_FILE_EXIST" USING WS-WORLD-DIR WS-FILE-INFO
      IF RETURN-CODE = 0
          MOVE "world" TO TL-OBSERVED
@@ -87,6 +96,24 @@
      MOVE 0 TO RETURN-CODE
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      CALL STATIC "cc_net_close" USING BY VALUE WS-CLIENT
+
+*>   The 002 settings fields the host fills (core-host-delta §1) and the CORE-WORLD-OPEN status words (§2).
+     MOVE "contract server coreapi consumer the host fills CS-WORLD-TYPE, CS-GENERATED-DIR and CS-GAME-DIR "
+         & "(auto, ./generated, .)" TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "auto|./generated|." TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE SV-SETTINGS TO CORE-SETTINGS
+     STRING FUNCTION TRIM(CS-WORLD-TYPE) "|" FUNCTION TRIM(CS-GENERATED-DIR) "|"
+         FUNCTION TRIM(CS-GAME-DIR) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "contract server coreapi consumer status words ok 0, packs not ok 1, no level.dat 2, no WorldType 3"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 123 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = CORE-WO-PACKS-NOT-OK * 100 + CORE-WO-NO-LEVEL-DAT * 10 + CORE-WO-NO-WORLDTYPE
+         + CORE-WO-OK
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Per-connection pump, status: Status Response, then the Pong of the Ping.
      CALL "SVT-CONNECT" USING WS-PORT WS-STATUS-CLIENT
@@ -219,7 +246,7 @@
          & "CORE-STOP (run state 2, level.dat saved) between the Stopping and Stopped lines"
          TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "run 1 then 2 saved | Shutting down | Stopping: saving world and disconnecting players | "
+     MOVE "run 1 then 2 saved | Stopping the server | Stopping: saving world and disconnecting players | "
          & "Stopped" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE WS-STATE-BEFORE TO WS-EDIT

@@ -1,0 +1,9 @@
+ENT=[('squid',0.7,['squid','squid_baby'],(0.8,0.8,0.4)),('glow_squid',0.7,['glow_squid','glow_squid_baby'],(0.8,0.8,0.4)),('dolphin',0.7,['dolphin','dolphin_baby','DolphinCarryingItemLayer'],(0.9,0.6,0.3)),
+ ('axolotl',0.5,['axolotl','axolotl_baby'],(0.75,0.42,0.2751)),('cod',0.3,['cod'],(0.5,0.3,0.195)),('salmon',0.4,['salmon_small','salmon','salmon_large'],(0.7,0.4,0.26)),
+ ('pufferfish',-1,['pufferfish_small','pufferfish_medium','pufferfish_big'],(0.7,0.7,0.455)),('tropical_fish',0.15,['tropical_fish_small','tropical_fish_large','tropical_fish_small_pattern','tropical_fish_large_pattern'],(0.5,0.4,0.26)),
+ ('nautilus',0.7,['nautilus','nautilus_baby','nautilus_armor','nautilus_saddle'],(0.875,0.95,0.2751)),('zombie_nautilus',0.7,['zombie_nautilus','zombie_nautilus_coral','nautilus_armor','nautilus_saddle'],(0.875,0.95,0.2751)),
+ ('boat',0.8,['boat','chest_boat','boat#water_patch'],(1.375,0.5625,0.5625)),('raft',0.8,['boat/bamboo','chest_boat/bamboo'],(1.375,0.5625,0.5625))]
+TEX=[('squid',[(1,'squid/squid.png'),(2,'squid/squid_baby.png')]),('glow_squid',[(1,'squid/glow_squid.png'),(2,'squid/glow_squid_baby.png')]),('dolphin',[(1,'dolphin/dolphin.png'),(2,'dolphin/dolphin_baby.png')]),
+ ('cod',[(1,'fish/cod.png')]),('salmon',[(1,'fish/salmon.png')]),('pufferfish',[(1,'fish/pufferfish.png')]),('tropical_fish',[(1,'fish/tropical_a.png'),(2,'fish/tropical_b.png')]),('nautilus',[(1,'nautilus/nautilus.png'),(2,'nautilus/nautilus_baby.png')])]
+VARIANTS=['lucy','wild','gold','cyan','blue']
+WOODS=['oak','spruce','birch','jungle','acacia','cherry','dark_oak','pale_oak','mangrove','poplar','bamboo']

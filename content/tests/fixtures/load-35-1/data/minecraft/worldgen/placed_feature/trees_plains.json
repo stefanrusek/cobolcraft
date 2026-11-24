@@ -1,0 +1,1 @@
+{"feature":"minecraft:trees_plains","placement":[{"type":"minecraft:count","count":{"type":"minecraft:constant","value":2}},{"type":"minecraft:in_square"},{"type":"minecraft:biome"}]}

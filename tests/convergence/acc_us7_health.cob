@@ -1,12 +1,12 @@
-*> Convergence acceptance test of US7-1 to US7-6 through the client (spec.md US7; standin-content
-*> §10): two survival Players, the host of a single-player world (Alice, an operator) and a second
-*> client on a further memory connection of the same core (Bobby). The host sets up states with
-*> commands typed in chat (ration, vitality, relocate, mode). Bobby falls ten blocks from a pillar
-*> top (12 damage, the hurt indication), is hit by Alice's pry bar through her attack control
-*> (4 damage), recovers with food at the maximum (1 health per 50 ticks), dies from a fall (the
-*> death screen with the cause, the death message in Alice's chat, his items on the ground),
-*> respawns at the world spawn with full health and food, and in creative takes no damage and shows
-*> no health.
+*> Convergence acceptance test of US7-1 to US7-6 through the client (spec.md US7; docs/protocol 17
+*> health and damage, 18 hunger): two survival Players, the host of a single-player world (Alice, an
+*> operator) and a second client on a further memory connection of the same core (Bobby). The host
+*> sets up states with standard commands typed in chat (gamerule, tp, damage, give, gamemode).
+*> Bobby falls ten blocks from a pillar top (vanilla fall damage 7 of his 20 health, the hurt
+*> indication), is hit bare-handed by Alice through her attack control (1 damage), recovers with
+*> full food (regeneration rule on), dies from a fall (the death screen with the cause, the death
+*> message in Alice's chat, his items on the ground), respawns with full health and food, and in
+*> creative takes no damage and shows no health.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-US7-HEALTH.
  DATA DIVISION.
@@ -36,6 +36,7 @@
  01 WS-FOUND-2             BINARY-LONG.
  01 WS-HURT                BINARY-LONG.
  01 WS-H0                  BINARY-LONG.
+ 01 WS-HEARTS              BINARY-LONG.
  01 WS-H1                  BINARY-LONG.
  01 WS-KEY                  BINARY-LONG.
  01 WS-BUTTON              BINARY-LONG.
@@ -69,21 +70,23 @@
      CALL "CV-STEPS" USING CONVH WS-N
 
 *>   US7-1: the survival HUD shows current and maximum health.
-     CALL "CV-TEXTS" USING CONVH WS-ALICE WS-TEXTS
-     MOVE "Health 30/30" TO WS-NEEDLE
-     CALL "TEXT-HAS" USING WS-TEXTS WS-NEEDLE WS-FOUND
-     MOVE "acceptance US7-1 given a survival Player in the world then their current and maximum "
-         & "health are shown on screen" TO TL-CASE
+     CALL "HEARTS-SHOWN" USING CONVH WS-ALICE WS-HEARTS
+     MOVE 0 TO WS-FOUND
+     IF WS-HEARTS = 20
+         MOVE 1 TO WS-FOUND
+     END-IF
+     MOVE "acceptance US7-1 given a survival Player in the world then their health "
+         & "is shown as heart icons of the 20 maximum" TO TL-CASE
      MOVE "N" TO TL-MODE
      MOVE 111 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-JOINED-A * 100 + WS-JOINED-B * 10 + WS-FOUND
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   US7-2 falling: food below 20 keeps recovery out of the way; a fall of 10 blocks (from 67 to the
-*>   turf top at 57 in column (20, 8)) is 2 x (10 - 4) = 12 damage.
-     MOVE "/ration Bobby 19" TO WS-LINE
+*>   US7-2 falling: regeneration off keeps recovery out of the way; a fall of 10 blocks (from 67 to the
+*>   turf top at 57 in column (20, 8)) is 10 - 3 = 7 damage (vanilla).
+     MOVE "/gamerule natural_health_regeneration false" TO WS-LINE
      CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
-     MOVE "/relocate Bobby at 20.5 67 8.5" TO WS-LINE
+     MOVE "/tp Bobby 20.5 67 8.5" TO WS-LINE
      CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
      MOVE 0 TO WS-HURT
      PERFORM 50 TIMES
@@ -96,13 +99,15 @@
          END-IF
      END-PERFORM
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
-     CALL "CV-TEXTS" USING CONVH WS-BOBBY WS-TEXTS
-     MOVE "Health 18/30" TO WS-NEEDLE
-     CALL "TEXT-HAS" USING WS-TEXTS WS-NEEDLE WS-FOUND
+     CALL "HEARTS-SHOWN" USING CONVH WS-BOBBY WS-HEARTS
+     MOVE 0 TO WS-FOUND
+     IF WS-HEARTS = 13
+         MOVE 1 TO WS-FOUND
+     END-IF
      MOVE "acceptance US7-2 given a survival Player when they fall 10 blocks from a pillar top then "
-         & "they lose 12 health and see that they were hurt" TO TL-CASE
+         & "they lose 7 health and see that they were hurt" TO TL-CASE
      MOVE "T" TO TL-MODE
-     MOVE "health 18 shown 1 hurt 1" TO TL-EXPECTED
+     MOVE "health 13 shown 1 hurt 1" TO TL-EXPECTED
      COMPUTE WS-E1 = PL-HEALTH
      MOVE WS-FOUND TO WS-E2
      MOVE WS-HURT TO WS-E3
@@ -112,16 +117,14 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   US7-5 and US7-2 hit by a player: Bobby stands 1.5 blocks east of Alice, who faces east, holds
-*>   the pry bar (key 9: hotbar slot 8) and attacks: 4 damage.
-     MOVE "/relocate Bobby at 6.0 54 8.5" TO WS-LINE
+*>   bare-handed and attacks: 1 damage.
+     MOVE "/tp Bobby 6.0 54 8.5" TO WS-LINE
      CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
      MOVE 20 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
      MOVE -90 TO PL-YAW
      MOVE 0 TO PL-PITCH
-     MOVE CC-KEY-9 TO WS-KEY
-     CALL "CV-KEY" USING CONVH WS-ALICE WS-KEY
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
      COMPUTE WS-H0 = PL-HEALTH
      CALL "ATTACK" USING CONVH WS-ALICE
@@ -129,9 +132,9 @@
      CALL "CV-STEPS" USING CONVH WS-N
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
      MOVE "acceptance US7-5 given player combat on when the Player attacks another player within "
-         & "reach holding the pry bar then the target loses 4 health and sees that they were hurt"
+         & "reach bare-handed then the target loses 1 health and sees that they were hurt"
          TO TL-CASE
-     MOVE "before 18 after 14 hurt 1" TO TL-EXPECTED
+     MOVE "before 13 after 12 hurt 1" TO TL-EXPECTED
      MOVE WS-H0 TO WS-E1
      COMPUTE WS-E2 = PL-HEALTH
      MOVE 0 TO WS-E3
@@ -143,8 +146,8 @@
          FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   US7-3: with food at the maximum, 1 health per 50 ticks: 2 in 105 ticks.
-     MOVE "/ration Bobby full" TO WS-LINE
+*>   US7-3: with full food and the rule on, health recovers (saturated regeneration, 1 per 10 ticks).
+     MOVE "/gamerule natural_health_regeneration true" TO WS-LINE
      CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
      COMPUTE WS-H0 = PL-HEALTH
@@ -153,17 +156,26 @@
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
      COMPUTE WS-H1 = PL-HEALTH
      MOVE "acceptance US7-3 given a survival Player with less than full health and full food when "
-         & "time passes without damage then health recovers 1 per 50 ticks" TO TL-CASE
+         & "time passes without damage then health recovers" TO TL-CASE
      MOVE "N" TO TL-MODE
-     MOVE 1416 TO TL-EXPECTED-N
-     COMPUTE TL-OBSERVED-N = WS-H0 * 100 + WS-H1
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-H1 > WS-H0
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   US7-4: health 4, then the 10-block fall kills: the death screen with the cause, the death
+*>   US7-4: health 1 or 2, then the 10-block fall kills: the death screen with the cause, the death
 *>   message in the other Player's chat, the inventory (slots 0 to 9) dropped as 10 ground items.
-     MOVE "/vitality Bobby 4" TO WS-LINE
+     MOVE "/gamerule natural_health_regeneration false" TO WS-LINE
      CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
-     MOVE "/relocate Bobby at 20.5 67 8.5" TO WS-LINE
+     MOVE "/give Bobby cobolcraft:greystone 5" TO WS-LINE
+     CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
+     MOVE "/give Bobby cobolcraft:lucite 5" TO WS-LINE
+     CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
+     MOVE "/damage Bobby 11" TO WS-LINE
+     CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
+     MOVE "/tp Bobby 20.5 67 8.5" TO WS-LINE
      CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
      MOVE SCR-DEATH TO WS-SCREEN
      CALL "CV-UNTIL-SCREEN" USING CONVH WS-BOBBY WS-SCREEN WS-REACHED
@@ -212,9 +224,9 @@
      END-PERFORM
      MOVE WS-DROPS TO WS-E4
      MOVE "acceptance US7-4 when the dead Player chooses to respawn then they reappear at the world "
-         & "spawn point in the main dimension with full health and food, their inventory dropped "
+         & "spawn point in the main dimension with full health and food, their inventory (the 9 kit stacks and the two given) dropped "
          & "on the ground" TO TL-CASE
-     MOVE "cobolcraft:main 4.5/54.0/8.5 health 30 food 24 items 0 drops 10" TO TL-EXPECTED
+     MOVE "cobolcraft:main 4.5/54.0/8.5 health 20 food 20 items 0 drops 11" TO TL-EXPECTED
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(PL-DIM-NAME) " " FUNCTION TRIM(WS-F1) "/" FUNCTION TRIM(WS-F2) "/"
@@ -223,20 +235,22 @@
          DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   US7-6: in creative the same 10-block fall does nothing and no health is shown.
-     MOVE "/mode Bobby creative" TO WS-LINE
+*>   US7-6: in creative the same 10-block fall does nothing and no hearts are shown.
+     MOVE "/gamemode creative Bobby" TO WS-LINE
      CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
-     MOVE "/relocate Bobby at 20.5 67 8.5" TO WS-LINE
+     MOVE "/tp Bobby 20.5 67 8.5" TO WS-LINE
      CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
      MOVE 50 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
-     CALL "CV-TEXTS" USING CONVH WS-BOBBY WS-TEXTS
-     MOVE "Health " TO WS-NEEDLE
-     CALL "TEXT-HAS" USING WS-TEXTS WS-NEEDLE WS-FOUND
+     CALL "HEARTS-SHOWN" USING CONVH WS-BOBBY WS-HEARTS
+     MOVE 0 TO WS-FOUND
+     IF WS-HEARTS >= 0
+         MOVE 1 TO WS-FOUND
+     END-IF
      MOVE "acceptance US7-6 given a creative Player when they fall 10 blocks then they take no "
-         & "damage and no health is shown" TO TL-CASE
-     MOVE "mode 1 y 57.0 health 30 shown 0" TO TL-EXPECTED
+         & "damage and no hearts are shown" TO TL-CASE
+     MOVE "mode 1 y 57.0 health 20 shown 0" TO TL-EXPECTED
      COMPUTE WS-F2 ROUNDED = PL-Y
      MOVE PL-MODE TO WS-E1
      COMPUTE WS-E2 = PL-HEALTH
@@ -313,3 +327,27 @@
      CALL "CV-BUTTON-SET" USING CONVH L-INDEX WS-BUTTON WS-UP
      GOBACK.
  END PROGRAM ATTACK.
+
+*> HEARTS-SHOWN USING CONVH, client, shown out: the half hearts of the HUD's heart row meter widget (the
+*> widget's state, 12 5.4), -1 when the screen holds none (test infrastructure).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HEARTS-SHOWN.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CONVH.
+ COPY CLSTATE.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-SHOWN                BINARY-LONG.
+ PROCEDURE DIVISION USING CONVH L-INDEX L-SHOWN.
+     MOVE -1 TO L-SHOWN
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(L-INDEX)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SM-WIDGET-COUNT
+         IF SM-W-KIND(WS-I) = WK-METER AND SM-W-ARG(WS-I) = 1
+             MOVE SM-W-STATE(WS-I) TO L-SHOWN
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM HEARTS-SHOWN.

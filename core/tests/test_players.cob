@@ -79,9 +79,9 @@
      PERFORM APPEND-EDIT
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE "test players a new survival player has full health 30 and food 24, held slot 0, the "
+     MOVE "test players a new survival player has full health 20 and food 20, held slot 0, the "
          & "514 starting items (standin §2), view 12" TO TL-CASE
-     MOVE "30 24 0 514 0 12 0" TO TL-EXPECTED
+     MOVE "20 20 0 514 0 12 0" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      MOVE PL-HEALTH(WS-ROW) TO WS-EDIT
      PERFORM APPEND-EDIT

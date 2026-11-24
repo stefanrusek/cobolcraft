@@ -1,0 +1,281 @@
+*> Test of 40-7§10 section, The saved hotbars (T1089): counts, file, loading, key use and messages (core/src/menu-40-7.cob).
+*> A case loads its inputs from a text of numbers (LOAD-IN fills WS-I as integers and WS-FX as doubles), calls the program
+*> and shows the outputs WS-R(1..WS-N) joined by "/", one group per call; expected values come from the rules and tables of the section.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-MENU-40-7-10.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY INTERACT.
+ 01 WS-ISG.
+    05 WS-I1 BINARY-LONG.
+    05 WS-I2 BINARY-LONG.
+    05 WS-I3 BINARY-LONG.
+    05 WS-I4 BINARY-LONG.
+    05 WS-I5 BINARY-LONG.
+    05 WS-I6 BINARY-LONG.
+    05 WS-I7 BINARY-LONG.
+    05 WS-I8 BINARY-LONG.
+    05 WS-I9 BINARY-LONG.
+    05 WS-I10 BINARY-LONG.
+    05 WS-I11 BINARY-LONG.
+    05 WS-I12 BINARY-LONG.
+    05 WS-I13 BINARY-LONG.
+    05 WS-I14 BINARY-LONG.
+    05 WS-I15 BINARY-LONG.
+    05 WS-I16 BINARY-LONG.
+ 01 WS-IST REDEFINES WS-ISG.
+    05 WS-I BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-FXSG.
+    05 WS-FX1 FLOAT-LONG.
+    05 WS-FX2 FLOAT-LONG.
+    05 WS-FX3 FLOAT-LONG.
+    05 WS-FX4 FLOAT-LONG.
+    05 WS-FX5 FLOAT-LONG.
+    05 WS-FX6 FLOAT-LONG.
+    05 WS-FX7 FLOAT-LONG.
+    05 WS-FX8 FLOAT-LONG.
+    05 WS-FX9 FLOAT-LONG.
+    05 WS-FX10 FLOAT-LONG.
+    05 WS-FX11 FLOAT-LONG.
+    05 WS-FX12 FLOAT-LONG.
+    05 WS-FX13 FLOAT-LONG.
+    05 WS-FX14 FLOAT-LONG.
+    05 WS-FX15 FLOAT-LONG.
+    05 WS-FX16 FLOAT-LONG.
+ 01 WS-FXST REDEFINES WS-FXSG.
+    05 WS-FX FLOAT-LONG OCCURS 16 TIMES.
+ 01 WS-RSG.
+    05 WS-R1 BINARY-LONG.
+    05 WS-R2 BINARY-LONG.
+    05 WS-R3 BINARY-LONG.
+    05 WS-R4 BINARY-LONG.
+    05 WS-R5 BINARY-LONG.
+    05 WS-R6 BINARY-LONG.
+    05 WS-R7 BINARY-LONG.
+    05 WS-R8 BINARY-LONG.
+    05 WS-R9 BINARY-LONG.
+    05 WS-R10 BINARY-LONG.
+    05 WS-R11 BINARY-LONG.
+    05 WS-R12 BINARY-LONG.
+    05 WS-R13 BINARY-LONG.
+    05 WS-R14 BINARY-LONG.
+    05 WS-R15 BINARY-LONG.
+    05 WS-R16 BINARY-LONG.
+ 01 WS-RST REDEFINES WS-RSG.
+    05 WS-R BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-RFSG.
+    05 WS-RF1 FLOAT-LONG.
+    05 WS-RF2 FLOAT-LONG.
+    05 WS-RF3 FLOAT-LONG.
+    05 WS-RF4 FLOAT-LONG.
+    05 WS-RF5 FLOAT-LONG.
+    05 WS-RF6 FLOAT-LONG.
+    05 WS-RF7 FLOAT-LONG.
+    05 WS-RF8 FLOAT-LONG.
+ 01 WS-RFST REDEFINES WS-RFSG.
+    05 WS-RF FLOAT-LONG OCCURS 8 TIMES.
+ 01 WS-IN                  PIC X(160).
+ 01 WS-TOK                 PIC X(24).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-SHOW                PIC -(10)9.
+ 01 WS-TEXTS.
+    05 WS-T1               PIC X(96).
+    05 WS-T2               PIC X(96).
+ 01 WS-NM                PIC X(32).
+ 01 WS-T3                 PIC X(96).
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     MOVE "acceptance US12 40-7§10 The saved hotbars: 10: 9 saved hotbars, default stored data version 1343; th" &
+         "e file hotbar.nbt" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-IDENT" USING WS-R1 WS-R2
+     MOVE 2 TO WS-N
+     PERFORM ADD-N
+     MOVE "9/1343" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§10 The saved hotbars: 10: the file name and the entry names 0 to 8 (hotbar)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-FILE" USING WS-I1 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-FILE" USING WS-I1 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "8" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-FILE" USING WS-I1 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "hotbar.nbt|0 hotbar.nbt|4 hotbar.nbt|8" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§10 The saved hotbars: 10 loading: a missing file keeps nine empty hotbars; an a" &
+         "bsent data version is 1343; an entry that fails to parse becomes an empty hotbar with a" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-LOAD" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 3000 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-LOAD" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-LOAD" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 1 3000 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-LOAD" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-LOAD" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-R1 WS-R2 WS-R3
+     MOVE 3 TO WS-N
+     PERFORM ADD-N
+     MOVE "1/1343/0 0/3000/0 0/1343/0 1/3000/1 1/1343/1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§10 The saved hotbars: 10 key use: spectators go to the spectator hotbar (3); wi" &
+         "th infinite materials, no screen and a load or save key down the hotbar is loaded (1) or saved" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "3 1 1 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-KEY" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0 1 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-KEY" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0 1 0 0 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-KEY" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0 1 0 1 1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-KEY" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0 1 1 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-KEY" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0 0 0 1 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-KEY" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 0 1 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-KEY" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "5 0 0 0 0 0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-KEY" USING WS-I1 WS-I2 WS-I3 WS-I4 WS-I5 WS-I6 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "3 1 2 1 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§10 The saved hotbars: 10 load: for j 0 to 8 inventory slot j gets stack j and a" &
+         " creative slot packet goes to slot 36 + j (j -> packet slot)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-LOADSLOT" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "4" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-LOADSLOT" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "8" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-LOADSLOT" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "36 40 44" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§10 The saved hotbars: 10 messages: inventory.hotbarSaved and inventory.hotbarIn" &
+         "fo (message)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-MSG" USING WS-I1 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "2" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-MSG" USING WS-I1 WS-T1 WS-T2
+     PERFORM ADD-TEXT
+     MOVE "inventory.hotbarSaved|Item hotbar saved (restore with %1$s + %2$s) inventory.hotbarInfo|Save hotbar " &
+         "with %1$s + %2$s" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "acceptance US12 40-7§10 The saved hotbars: 10 Hotbar.isEmpty: every stored entry equals the empty st" &
+         "ack encoding (number of non-empty entries -> empty)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "0" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-ISEMPTY" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-ISEMPTY" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "9" TO WS-IN
+     PERFORM LOAD-IN
+     CALL "MN7-HB-ISEMPTY" USING WS-I1 WS-R1
+     MOVE 1 TO WS-N
+     PERFORM ADD-N
+     MOVE "1 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ LOAD-IN.
+     MOVE 1 TO WS-P
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 16
+         MOVE SPACES TO WS-TOK
+         IF WS-P <= 160
+             UNSTRING WS-IN DELIMITED BY ALL SPACE INTO WS-TOK WITH POINTER WS-P
+         END-IF
+         COMPUTE WS-FX(WS-K) = FUNCTION NUMVAL(WS-TOK)
+         COMPUTE WS-I(WS-K) = FUNCTION NUMVAL(WS-TOK)
+     END-PERFORM
+     .
+
+ ADD-N.
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-N
+         MOVE WS-R(WS-J) TO WS-SHOW
+         IF WS-J > 1
+             STRING "/" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-SHOW) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     END-PERFORM
+     STRING " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+ ADD-TEXT.
+     STRING FUNCTION TRIM(WS-T1) "|" FUNCTION TRIM(WS-T2) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+ END PROGRAM TEST-MENU-40-7-10.

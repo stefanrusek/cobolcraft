@@ -1,0 +1,1848 @@
+*> Test of 31-6 section 6, The structure block entity (core/src/be-31-6.cob; T0943): keys, enum strings, power edges, scan, placement rules, the Set Structure Block handler.
+*> Each case runs its statements and shows the items joined by single spaces ("n" integers, "f" floats x 1e6, "t" text up to a stored length).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BE-31-6-6.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY BESTATE.
+ COPY PROTO.
+ COPY COREAPI.
+ COPY CITEMS.
+ 01 WS-SHOW                PIC -(10)9.
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-IDX                 BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-OUT                 PIC X(8192).
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-T10                 BINARY-LONG VALUE 10.
+ 01 WS-FORM                BINARY-LONG VALUE 1.
+ 01 WS-D                   BINARY-LONG VALUE 1.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-NM                  PIC X(32).
+ 01 WS-NML                 BINARY-LONG.
+ 01 WS-SV                  PIC X(256).
+ 01 WS-SVL                 BINARY-LONG.
+ 01 WS-NV                  BINARY-LONG.
+ 01 WS-LV                  BINARY-DOUBLE.
+ 01 WS-FV                  FLOAT-SHORT.
+ 01 WS-IA.
+    05 WS-IAV              BINARY-LONG OCCURS 8 TIMES.
+ 01 WS-LT                  BINARY-LONG.
+ 01 WS-LC                  BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-KP                  BINARY-LONG VALUE 0.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-A                 BINARY-LONG.
+ 01 WS-B                 BINARY-LONG.
+ 01 WS-C                 BINARY-LONG.
+ 01 WS-E                 BINARY-LONG.
+ 01 WS-F                 BINARY-LONG.
+ 01 WS-G                 BINARY-LONG.
+ 01 WS-H                 BINARY-LONG.
+ 01 WS-P                 BINARY-LONG.
+ 01 WS-Q                 BINARY-LONG.
+ 01 WS-R                 BINARY-LONG.
+ 01 WS-S                 BINARY-LONG.
+ 01 WS-U                 BINARY-LONG.
+ 01 WS-V                 BINARY-LONG.
+ 01 WS-W                 BINARY-LONG.
+ 01 WS-EV                BINARY-LONG.
+ 01 WS-O1                 BINARY-LONG.
+ 01 WS-O2                 BINARY-LONG.
+ 01 WS-O3                 BINARY-LONG.
+ 01 WS-O4                 BINARY-LONG.
+ 01 WS-O5                 BINARY-LONG.
+ 01 WS-O6                 BINARY-LONG.
+ 01 WS-O7                 BINARY-LONG.
+ 01 WS-FA                FLOAT-LONG.
+ 01 WS-FB                FLOAT-LONG.
+ 01 WS-FC                FLOAT-LONG.
+ 01 WS-FD                FLOAT-LONG.
+ 01 WS-FE                FLOAT-LONG.
+ 01 WS-FF                FLOAT-LONG.
+ 01 WS-FS1                FLOAT-SHORT.
+ 01 WS-FS2                FLOAT-SHORT.
+ 01 WS-N24                PIC X(24).
+ 01 WS-N48                PIC X(48).
+ 01 WS-T64                PIC X(64).
+ 01 WS-T256               PIC X(256).
+ 01 WS-T2                 PIC X(64).
+ 01 WS-TAB.
+    05 WS-TV              BINARY-LONG OCCURS 64 TIMES.
+ 01 WS-LONG1              BINARY-DOUBLE.
+ 01 WS-LONG2              BINARY-DOUBLE.
+ PROCEDURE DIVISION.
+     MOVE "T" TO TL-MODE
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE "acceptance US12 31-6§6 The structure block entity: new entity (6.1): the 19 keys in order with the defaults (offset 0, 1, 0, size 0, NONE, NONE, mode LOAD from the block, ignoreEntities true, showboundingbox true, integrity 1.0," TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE "{name:,author:,metadata:,posX:0,posY:1,posZ:0,sizeX:0,sizeY:0,sizeZ:0,rotation:NONE,mirror:NONE,mode" &
+         ":LOAD,ignoreEntities:1,strict:0,powered:0,showair:0,showboundingbox:1,integrity:1.000,seed:0}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§6 The structure block entity: round trip (6.1): every key loads and saves back unchanged in the same order" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "name" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE "demo:house" TO WS-SV
+     MOVE 10 TO WS-SVL
+     PERFORM NB-S
+     MOVE "author" TO WS-NM
+     MOVE 6 TO WS-NML
+     MOVE "Ann" TO WS-SV
+     MOVE 3 TO WS-SVL
+     PERFORM NB-S
+     MOVE "metadata" TO WS-NM
+     MOVE 8 TO WS-NML
+     MOVE "m1" TO WS-SV
+     MOVE 2 TO WS-SVL
+     PERFORM NB-S
+     MOVE "posX" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE -3 TO WS-NV
+     PERFORM NB-I
+     MOVE "posY" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE 2 TO WS-NV
+     PERFORM NB-I
+     MOVE "posZ" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE 9 TO WS-NV
+     PERFORM NB-I
+     MOVE "sizeX" TO WS-NM
+     MOVE 5 TO WS-NML
+     MOVE 4 TO WS-NV
+     PERFORM NB-I
+     MOVE "sizeY" TO WS-NM
+     MOVE 5 TO WS-NML
+     MOVE 5 TO WS-NV
+     PERFORM NB-I
+     MOVE "sizeZ" TO WS-NM
+     MOVE 5 TO WS-NML
+     MOVE 6 TO WS-NV
+     PERFORM NB-I
+     MOVE "rotation" TO WS-NM
+     MOVE 8 TO WS-NML
+     MOVE "CLOCKWISE_90" TO WS-SV
+     MOVE 12 TO WS-SVL
+     PERFORM NB-S
+     MOVE "mirror" TO WS-NM
+     MOVE 6 TO WS-NML
+     MOVE "FRONT_BACK" TO WS-SV
+     MOVE 10 TO WS-SVL
+     PERFORM NB-S
+     MOVE "mode" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE "CORNER" TO WS-SV
+     MOVE 6 TO WS-SVL
+     PERFORM NB-S
+     MOVE "ignoreEntities" TO WS-NM
+     MOVE 14 TO WS-NML
+     MOVE 0 TO WS-NV
+     PERFORM NB-B
+     MOVE "strict" TO WS-NM
+     MOVE 6 TO WS-NML
+     MOVE 1 TO WS-NV
+     PERFORM NB-B
+     MOVE "powered" TO WS-NM
+     MOVE 7 TO WS-NML
+     MOVE 1 TO WS-NV
+     PERFORM NB-B
+     MOVE "showair" TO WS-NM
+     MOVE 7 TO WS-NML
+     MOVE 1 TO WS-NV
+     PERFORM NB-B
+     MOVE "showboundingbox" TO WS-NM
+     MOVE 15 TO WS-NML
+     MOVE 0 TO WS-NV
+     PERFORM NB-B
+     MOVE "integrity" TO WS-NM
+     MOVE 9 TO WS-NML
+     COMPUTE WS-FV = 0.5
+     PERFORM NB-FLOAT
+     MOVE "seed" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE 123456789012 TO WS-LV
+     PERFORM NB-LONG
+     PERFORM LOAD-BUFFER
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE BE-XI(WS-IDX, 9) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 7) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 8) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "{name:demo:house,author:Ann,metadata:m1,posX:-3,posY:2,posZ:9,sizeX:4,sizeY:5,sizeZ:6,rotation:CLOCK" &
+         "WISE_90,mirror:FRONT_BACK,mode:CORNER,ignoreEntities:0,strict:1,powered:1,showair:1,showboundingbox:" &
+         "0,integrity:0.500,seed:123456789012} 2 1 2" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§6 The structure block entity: load defaults (6.1): an empty compound gives mode DATA (not the block default load), offset 0 1 0, size 0, integrity 1, ignoreEntities and showboundingbox true" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     PERFORM LOAD-BUFFER
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE "{name:,author:,metadata:,posX:0,posY:1,posZ:0,sizeX:0,sizeY:0,sizeZ:0,rotation:NONE,mirror:NONE,mode" &
+         ":DATA,ignoreEntities:1,strict:0,powered:0,showair:0,showboundingbox:1,integrity:1.000,seed:0}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§6 The structure block entity: load clamps and legacy enums (6.1, 6.1.1): offsets clamp to -48..48, sizes to 0..48, integrity is not clamped; lower-case names do not decode (rotation NONE, mode DATA); an exact" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "posX" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE 99 TO WS-NV
+     PERFORM NB-I
+     MOVE "posY" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE -99 TO WS-NV
+     PERFORM NB-I
+     MOVE "posZ" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE 48 TO WS-NV
+     PERFORM NB-I
+     MOVE "sizeX" TO WS-NM
+     MOVE 5 TO WS-NML
+     MOVE 60 TO WS-NV
+     PERFORM NB-I
+     MOVE "sizeY" TO WS-NM
+     MOVE 5 TO WS-NML
+     MOVE -5 TO WS-NV
+     PERFORM NB-I
+     MOVE "sizeZ" TO WS-NM
+     MOVE 5 TO WS-NML
+     MOVE 48 TO WS-NV
+     PERFORM NB-I
+     MOVE "integrity" TO WS-NM
+     MOVE 9 TO WS-NML
+     COMPUTE WS-FV = 5.0
+     PERFORM NB-FLOAT
+     MOVE "rotation" TO WS-NM
+     MOVE 8 TO WS-NML
+     MOVE "clockwise_90" TO WS-SV
+     MOVE 12 TO WS-SVL
+     PERFORM NB-S
+     MOVE "mirror" TO WS-NM
+     MOVE 6 TO WS-NML
+     MOVE "LEFT_RIGHT" TO WS-SV
+     MOVE 10 TO WS-SVL
+     PERFORM NB-S
+     MOVE "mode" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE "save" TO WS-SV
+     MOVE 4 TO WS-SVL
+     PERFORM NB-S
+     PERFORM LOAD-BUFFER
+     MOVE 2 TO WS-FORM
+     PERFORM SAVE-RENDER
+     MOVE "{name:,author:,metadata:,posX:48,posY:-48,posZ:48,sizeX:48,sizeY:0,sizeZ:48,rotation:NONE,mirror:LEF" &
+         "T_RIGHT,mode:DATA,ignoreEntities:1,strict:0,powered:0,showair:0,showboundingbox:1,integrity:5.000,se" &
+         "ed:0}" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§6 The structure block entity: structure name (6.1): an identifier is kept, a name without a namespace gets minecraft:, an unparsable or empty text is none" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "name" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE "demo:house" TO WS-SV
+     MOVE 10 TO WS-SVL
+     PERFORM NB-S
+     PERFORM LOAD-BUFFER
+     STRING BE-XT(WS-IDX, 1)(1:BE-XI(WS-IDX, 20)) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "name" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE "house" TO WS-SV
+     MOVE 5 TO WS-SVL
+     PERFORM NB-S
+     PERFORM LOAD-BUFFER
+     STRING BE-XT(WS-IDX, 1)(1:BE-XI(WS-IDX, 20)) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "name" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE "Bad Name" TO WS-SV
+     MOVE 8 TO WS-SVL
+     PERFORM NB-S
+     PERFORM LOAD-BUFFER
+     MOVE BE-XI(WS-IDX, 20) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "name" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE SPACES TO WS-SV
+     MOVE 0 TO WS-SVL
+     PERFORM NB-S
+     PERFORM LOAD-BUFFER
+     MOVE BE-XI(WS-IDX, 20) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE "name" TO WS-NM
+     MOVE 4 TO WS-NML
+     MOVE "a:b/c" TO WS-SV
+     MOVE 5 TO WS-SVL
+     PERFORM NB-S
+     PERFORM LOAD-BUFFER
+     STRING BE-XT(WS-IDX, 1)(1:BE-XI(WS-IDX, 20)) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE "demo:house minecraft:house 0 0 a:b/c" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§6 The structure block entity: enum strings (6.1.1, 9.1, 10.1, 8.1): kind 1 rotation, 2 mirror, 3 structure mode (upper-case constant names), 4 test instance rotation, 5 status, 6 test block mode, 7 joint" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 3 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 3 TO WS-A
+     MOVE 3 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 4 TO WS-A
+     MOVE 3 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 5 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 5 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 5 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 6 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 6 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 6 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 6 TO WS-A
+     MOVE 3 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 7 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 7 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-ENUM-NAME" USING WS-A WS-B WS-T64 WS-LEN
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     STRING WS-T64(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE SPACES TO WS-T64
+     MOVE "Clockwise_90" TO WS-T64
+     MOVE 12 TO WS-LEN
+     MOVE 1 TO WS-A
+     CALL "BE6-ENUM-ID" USING WS-A WS-T64 WS-LEN WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "NONE 0 CLOCKWISE_90 1 CLOCKWISE_180 2 COUNTERCLOCKWISE_90 3 NONE 0 LEFT_RIGHT 1 FRONT_BACK 2 SAVE 0 " &
+         "LOAD 1 CORNER 2 DATA 3 none 0 clockwise_90 1 180 2 counterclockwise_90 3 cleared 0 running 1 finishe" &
+         "d 2 start 0 log 1 fail 2 accept 3 rollable 0 aligned 1 -1" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§6 The structure block entity: power edge (6.2): a rising signal on an unpowered block sets powered and triggers by mode (1 save without writing the file, 2 place, 3 unload, 0 nothing for DATA); a falling" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 12)
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 12)
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 12)
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 12)
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 12)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 12)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 12)
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 12)
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 12)
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 12)
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 12)
+     MOVE 0 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 12)
+     MOVE 0 TO WS-A
+     MOVE 2 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 12)
+     MOVE 1 TO WS-A
+     MOVE 3 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 12)
+     MOVE 1 TO WS-A
+     MOVE 3 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 12)
+     MOVE 0 TO WS-A
+     MOVE 3 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 12)
+     MOVE 0 TO WS-A
+     MOVE 3 TO WS-B
+     CALL "BE6-POWER" USING WS-IDX WS-A WS-B WS-C
+     MOVE WS-C TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 1 0 1 0 0 0 0 2 1 0 1 0 0 0 0 3 1 0 1 0 0 0 0 0 1 0 1 0 0 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§6 The structure block entity: corner scan (6.6, example 12.4): two corners give the box of the corners, one corner the box with this block, none or a span of 1 or less on an axis fails, only in mode SAVE;" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 12 TO WS-X
+     MOVE 64 TO WS-Y
+     MOVE 8 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 9)
+     MOVE 10 TO WS-TV(1)
+     MOVE 64 TO WS-TV(2)
+     MOVE 10 TO WS-TV(3)
+     MOVE 20 TO WS-TV(4)
+     MOVE 70 TO WS-TV(5)
+     MOVE 25 TO WS-TV(6)
+     MOVE 2 TO WS-A
+     CALL "BE6-SCAN" USING WS-IDX WS-TAB WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 12 TO WS-X
+     MOVE 64 TO WS-Y
+     MOVE 8 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 9)
+     MOVE 10 TO WS-TV(1)
+     MOVE 64 TO WS-TV(2)
+     MOVE 10 TO WS-TV(3)
+     MOVE 1 TO WS-A
+     CALL "BE6-SCAN" USING WS-IDX WS-TAB WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 12 TO WS-X
+     MOVE 64 TO WS-Y
+     MOVE 8 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 9)
+     MOVE 20 TO WS-TV(1)
+     MOVE 70 TO WS-TV(2)
+     MOVE 25 TO WS-TV(3)
+     MOVE 1 TO WS-A
+     CALL "BE6-SCAN" USING WS-IDX WS-TAB WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 12 TO WS-X
+     MOVE 64 TO WS-Y
+     MOVE 8 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 9)
+     MOVE 0 TO WS-A
+     CALL "BE6-SCAN" USING WS-IDX WS-TAB WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 12 TO WS-X
+     MOVE 64 TO WS-Y
+     MOVE 8 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 9)
+     MOVE 10 TO WS-TV(1)
+     MOVE 64 TO WS-TV(2)
+     MOVE 10 TO WS-TV(3)
+     MOVE 20 TO WS-TV(4)
+     MOVE 70 TO WS-TV(5)
+     MOVE 25 TO WS-TV(6)
+     MOVE 2 TO WS-A
+     CALL "BE6-SCAN" USING WS-IDX WS-TAB WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 12 TO WS-X
+     MOVE 64 TO WS-Y
+     MOVE 8 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 9)
+     MOVE 10 TO WS-TV(1)
+     MOVE 64 TO WS-TV(2)
+     MOVE 10 TO WS-TV(3)
+     MOVE 20 TO WS-TV(4)
+     MOVE 70 TO WS-TV(5)
+     MOVE 25 TO WS-TV(6)
+     MOVE 9 TO WS-TV(7)
+     MOVE 60 TO WS-TV(8)
+     MOVE 5 TO WS-TV(9)
+     MOVE 3 TO WS-A
+     CALL "BE6-SCAN" USING WS-IDX WS-TAB WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 2) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 3) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 5) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 -1 1 3 9 5 14 0 0 1 0 0 0 0 1 1 1 1 7 5 16 0 0 1 0 0 0 0 0 0 1 0 0 0 0 1 -2 -3 -2 10 9 19" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§6 The structure block entity: scan candidates (6.6 step 2): another structure block counts when it is in mode CORNER and its name equals this one (both none counts as equal)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE WS-IDX TO WS-Q
+     MOVE 2 TO BE-XI(WS-IDX, 9)
+     MOVE "demo:a" TO BE-XT(WS-IDX, 1)
+     MOVE 6 TO BE-XI(WS-IDX, 20)
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO BE-XI(WS-IDX, 9)
+     MOVE "demo:a" TO BE-XT(WS-IDX, 1)
+     MOVE 6 TO BE-XI(WS-IDX, 20)
+     CALL "BE6-SCAN-MATCH" USING WS-Q WS-IDX WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE WS-IDX TO WS-Q
+     MOVE 2 TO BE-XI(WS-IDX, 9)
+     MOVE "demo:a" TO BE-XT(WS-IDX, 1)
+     MOVE 6 TO BE-XI(WS-IDX, 20)
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO BE-XI(WS-IDX, 9)
+     MOVE "demo:b" TO BE-XT(WS-IDX, 1)
+     MOVE 6 TO BE-XI(WS-IDX, 20)
+     CALL "BE6-SCAN-MATCH" USING WS-Q WS-IDX WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE WS-IDX TO WS-Q
+     MOVE 2 TO BE-XI(WS-IDX, 9)
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO BE-XI(WS-IDX, 9)
+     CALL "BE6-SCAN-MATCH" USING WS-Q WS-IDX WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE WS-IDX TO WS-Q
+     MOVE 2 TO BE-XI(WS-IDX, 9)
+     MOVE "demo:a" TO BE-XT(WS-IDX, 1)
+     MOVE 6 TO BE-XI(WS-IDX, 20)
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 3 TO BE-XI(WS-IDX, 9)
+     MOVE "demo:a" TO BE-XT(WS-IDX, 1)
+     MOVE 6 TO BE-XI(WS-IDX, 20)
+     CALL "BE6-SCAN-MATCH" USING WS-Q WS-IDX WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE WS-IDX TO WS-Q
+     MOVE 2 TO BE-XI(WS-IDX, 9)
+     MOVE "demo:a" TO BE-XT(WS-IDX, 1)
+     MOVE 6 TO BE-XI(WS-IDX, 20)
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 2 TO BE-XI(WS-IDX, 9)
+     CALL "BE6-SCAN-MATCH" USING WS-Q WS-IDX WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 0 1 0 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§6 The structure block entity: placeStructureIfSameSize (6.4): needs mode LOAD, a name and a template; equal sizes place (true, with loadStructureInfo adopting the author), different sizes adopt the template" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 9)
+     MOVE "demo:a" TO BE-XT(WS-IDX, 1)
+     MOVE 6 TO BE-XI(WS-IDX, 20)
+     MOVE 3 TO BE-XI(WS-IDX, 4)
+     MOVE 2 TO BE-XI(WS-IDX, 5)
+     MOVE 4 TO BE-XI(WS-IDX, 6)
+     MOVE SPACES TO WS-T64
+     MOVE "Tpl" TO WS-T64
+     MOVE 1 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 2 TO WS-C
+     MOVE 4 TO WS-E
+     MOVE 3 TO WS-LEN
+     CALL "BE6-SAME-SIZE" USING WS-IDX WS-A WS-B WS-C WS-E WS-T64 WS-LEN WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 21) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 9)
+     MOVE "demo:a" TO BE-XT(WS-IDX, 1)
+     MOVE 6 TO BE-XI(WS-IDX, 20)
+     MOVE 3 TO BE-XI(WS-IDX, 4)
+     MOVE 2 TO BE-XI(WS-IDX, 5)
+     MOVE 4 TO BE-XI(WS-IDX, 6)
+     MOVE SPACES TO WS-T64
+     MOVE "Tpl" TO WS-T64
+     MOVE 1 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 2 TO WS-C
+     MOVE 5 TO WS-E
+     MOVE 3 TO WS-LEN
+     CALL "BE6-SAME-SIZE" USING WS-IDX WS-A WS-B WS-C WS-E WS-T64 WS-LEN WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 21) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 9)
+     MOVE "demo:a" TO BE-XT(WS-IDX, 1)
+     MOVE 6 TO BE-XI(WS-IDX, 20)
+     MOVE 3 TO BE-XI(WS-IDX, 4)
+     MOVE 2 TO BE-XI(WS-IDX, 5)
+     MOVE 4 TO BE-XI(WS-IDX, 6)
+     MOVE SPACES TO WS-T64
+     MOVE "Tpl" TO WS-T64
+     MOVE 0 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 2 TO WS-C
+     MOVE 4 TO WS-E
+     MOVE 3 TO WS-LEN
+     CALL "BE6-SAME-SIZE" USING WS-IDX WS-A WS-B WS-C WS-E WS-T64 WS-LEN WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 21) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 0 TO BE-XI(WS-IDX, 9)
+     MOVE "demo:a" TO BE-XT(WS-IDX, 1)
+     MOVE 6 TO BE-XI(WS-IDX, 20)
+     MOVE 3 TO BE-XI(WS-IDX, 4)
+     MOVE 2 TO BE-XI(WS-IDX, 5)
+     MOVE 4 TO BE-XI(WS-IDX, 6)
+     MOVE SPACES TO WS-T64
+     MOVE "Tpl" TO WS-T64
+     MOVE 1 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 2 TO WS-C
+     MOVE 4 TO WS-E
+     MOVE 3 TO WS-LEN
+     CALL "BE6-SAME-SIZE" USING WS-IDX WS-A WS-B WS-C WS-E WS-T64 WS-LEN WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 21) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE 1 TO BE-XI(WS-IDX, 9)
+     MOVE 3 TO BE-XI(WS-IDX, 4)
+     MOVE 2 TO BE-XI(WS-IDX, 5)
+     MOVE 4 TO BE-XI(WS-IDX, 6)
+     MOVE SPACES TO WS-T64
+     MOVE "Tpl" TO WS-T64
+     MOVE 1 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 2 TO WS-C
+     MOVE 4 TO WS-E
+     MOVE 3 TO WS-LEN
+     CALL "BE6-SAME-SIZE" USING WS-IDX WS-A WS-B WS-C WS-E WS-T64 WS-LEN WS-F
+     MOVE WS-F TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 6) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 21) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "1 4 3 0 5 3 0 4 0 0 4 0 0 4 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§6 The structure block entity: placement flags (6.4, validation 15): 2, or 818 when strict; integrity processor: a block is kept when its draw is <= the integrity clamped to 0..1 (integrity, draw in)" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     CALL "BE6-PLACE-FLAGS" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     CALL "BE6-PLACE-FLAGS" USING WS-A WS-B
+     MOVE WS-B TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FS1 = 1.0
+     COMPUTE WS-FS2 = 0.5
+     CALL "BE6-INTEGRITY" USING WS-FS1 WS-FS2 WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FS1 = 0.5
+     COMPUTE WS-FS2 = 0.5
+     CALL "BE6-INTEGRITY" USING WS-FS1 WS-FS2 WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FS1 = 0.5
+     COMPUTE WS-FS2 = 0.75
+     CALL "BE6-INTEGRITY" USING WS-FS1 WS-FS2 WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FS1 = 0.25
+     COMPUTE WS-FS2 = 0.0
+     CALL "BE6-INTEGRITY" USING WS-FS1 WS-FS2 WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FS1 = 2.0
+     COMPUTE WS-FS2 = 0.99
+     CALL "BE6-INTEGRITY" USING WS-FS1 WS-FS2 WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FS1 = -1.0
+     COMPUTE WS-FS2 = 0.0
+     CALL "BE6-INTEGRITY" USING WS-FS1 WS-FS2 WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     COMPUTE WS-FS1 = -1.0
+     COMPUTE WS-FS2 = 0.5
+     CALL "BE6-INTEGRITY" USING WS-FS1 WS-FS2 WS-A
+     MOVE WS-A TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "2 818 1 1 0 1 1 1 0" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§6 The structure block entity: Mth.getSeed(pos) (6.4, the seed of the position-derived random source): l = (int)(x * 3129871) XOR z * 116129781 XOR y, then l * l * 42317861 + l * 11 with 64-bit wrap, shifted" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE 0 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 0 TO WS-C
+     CALL "XORO-GET-SEED" USING WS-A WS-B WS-C WS-LONG1
+     MOVE FUNCTION MOD(WS-LONG1, 1000000007) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE FUNCTION INTEGER(WS-LONG1 / 4294967296) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 3 TO WS-C
+     CALL "XORO-GET-SEED" USING WS-A WS-B WS-C WS-LONG1
+     MOVE FUNCTION MOD(WS-LONG1, 1000000007) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE FUNCTION INTEGER(WS-LONG1 / 4294967296) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE -5 TO WS-A
+     MOVE 64 TO WS-B
+     MOVE 7 TO WS-C
+     CALL "XORO-GET-SEED" USING WS-A WS-B WS-C WS-LONG1
+     MOVE FUNCTION MOD(WS-LONG1, 1000000007) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE FUNCTION INTEGER(WS-LONG1 / 4294967296) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 100000 TO WS-A
+     MOVE -3 TO WS-B
+     MOVE -77777 TO WS-C
+     CALL "XORO-GET-SEED" USING WS-A WS-B WS-C WS-LONG1
+     MOVE FUNCTION MOD(WS-LONG1, 1000000007) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE FUNCTION INTEGER(WS-LONG1 / 4294967296) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE 2147483647 TO WS-A
+     MOVE 319 TO WS-B
+     MOVE -2147483648 TO WS-C
+     CALL "XORO-GET-SEED" USING WS-A WS-B WS-C WS-LONG1
+     MOVE FUNCTION MOD(WS-LONG1, 1000000007) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE FUNCTION INTEGER(WS-LONG1 / 4294967296) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0 869957829 -7841 95516806 23457 910419101 -6676 264255301 2914" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     MOVE "acceptance US12 31-6§6 The structure block entity: Set Structure Block (6.7): ignored silently without the rights; otherwise mode, name, offset, size and the other fields are copied (not author, not powered), then by update type:" TO TL-CASE
+     PERFORM BEGIN-CASE
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE WS-IDX TO WS-Q
+     MOVE 3 TO BE-XI(WS-Q, 9)
+     MOVE "demo:a" TO BE-XT(WS-Q, 1)
+     MOVE 6 TO BE-XI(WS-Q, 20)
+     MOVE 2 TO BE-XI(WS-Q, 1)
+     MOVE 7 TO BE-XI(WS-Q, 4)
+     MOVE 9 TO BE-XI(WS-Q, 12)
+     MOVE "pk" TO BE-XT(WS-Q, 2)
+     MOVE 2 TO BE-XI(WS-Q, 21)
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE "old" TO BE-XT(WS-IDX, 2)
+     MOVE 3 TO BE-XI(WS-IDX, 21)
+     MOVE 0 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 1 TO WS-F
+     MOVE 1 TO WS-G
+     CALL "BE6-SB-PACKET" USING WS-IDX WS-Q WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 9) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 21) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE WS-IDX TO WS-Q
+     MOVE 3 TO BE-XI(WS-Q, 9)
+     MOVE "demo:a" TO BE-XT(WS-Q, 1)
+     MOVE 6 TO BE-XI(WS-Q, 20)
+     MOVE 2 TO BE-XI(WS-Q, 1)
+     MOVE 7 TO BE-XI(WS-Q, 4)
+     MOVE 9 TO BE-XI(WS-Q, 12)
+     MOVE "pk" TO BE-XT(WS-Q, 2)
+     MOVE 2 TO BE-XI(WS-Q, 21)
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE "old" TO BE-XT(WS-IDX, 2)
+     MOVE 3 TO BE-XI(WS-IDX, 21)
+     MOVE 1 TO WS-A
+     MOVE 0 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 1 TO WS-F
+     MOVE 1 TO WS-G
+     CALL "BE6-SB-PACKET" USING WS-IDX WS-Q WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 9) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 21) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE WS-IDX TO WS-Q
+     MOVE 3 TO BE-XI(WS-Q, 9)
+     MOVE "demo:a" TO BE-XT(WS-Q, 1)
+     MOVE 6 TO BE-XI(WS-Q, 20)
+     MOVE 2 TO BE-XI(WS-Q, 1)
+     MOVE 7 TO BE-XI(WS-Q, 4)
+     MOVE 9 TO BE-XI(WS-Q, 12)
+     MOVE "pk" TO BE-XT(WS-Q, 2)
+     MOVE 2 TO BE-XI(WS-Q, 21)
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE "old" TO BE-XT(WS-IDX, 2)
+     MOVE 3 TO BE-XI(WS-IDX, 21)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 1 TO WS-F
+     MOVE 1 TO WS-G
+     CALL "BE6-SB-PACKET" USING WS-IDX WS-Q WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 9) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 21) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE WS-IDX TO WS-Q
+     MOVE 3 TO BE-XI(WS-Q, 9)
+     MOVE "demo:a" TO BE-XT(WS-Q, 1)
+     MOVE 6 TO BE-XI(WS-Q, 20)
+     MOVE 2 TO BE-XI(WS-Q, 1)
+     MOVE 7 TO BE-XI(WS-Q, 4)
+     MOVE 9 TO BE-XI(WS-Q, 12)
+     MOVE "pk" TO BE-XT(WS-Q, 2)
+     MOVE 2 TO BE-XI(WS-Q, 21)
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE "old" TO BE-XT(WS-IDX, 2)
+     MOVE 3 TO BE-XI(WS-IDX, 21)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 0 TO WS-F
+     MOVE 1 TO WS-G
+     CALL "BE6-SB-PACKET" USING WS-IDX WS-Q WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 9) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 21) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE WS-IDX TO WS-Q
+     MOVE 3 TO BE-XI(WS-Q, 9)
+     MOVE "demo:a" TO BE-XT(WS-Q, 1)
+     MOVE 6 TO BE-XI(WS-Q, 20)
+     MOVE 2 TO BE-XI(WS-Q, 1)
+     MOVE 7 TO BE-XI(WS-Q, 4)
+     MOVE 9 TO BE-XI(WS-Q, 12)
+     MOVE "pk" TO BE-XT(WS-Q, 2)
+     MOVE 2 TO BE-XI(WS-Q, 21)
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE "old" TO BE-XT(WS-IDX, 2)
+     MOVE 3 TO BE-XI(WS-IDX, 21)
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 0 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 1 TO WS-F
+     MOVE 1 TO WS-G
+     CALL "BE6-SB-PACKET" USING WS-IDX WS-Q WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 9) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 21) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE WS-IDX TO WS-Q
+     MOVE 3 TO BE-XI(WS-Q, 9)
+     MOVE "demo:a" TO BE-XT(WS-Q, 1)
+     MOVE 6 TO BE-XI(WS-Q, 20)
+     MOVE 2 TO BE-XI(WS-Q, 1)
+     MOVE 7 TO BE-XI(WS-Q, 4)
+     MOVE 9 TO BE-XI(WS-Q, 12)
+     MOVE "pk" TO BE-XT(WS-Q, 2)
+     MOVE 2 TO BE-XI(WS-Q, 21)
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE "old" TO BE-XT(WS-IDX, 2)
+     MOVE 3 TO BE-XI(WS-IDX, 21)
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 1 TO WS-F
+     MOVE 1 TO WS-G
+     CALL "BE6-SB-PACKET" USING WS-IDX WS-Q WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 9) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 21) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE WS-IDX TO WS-Q
+     MOVE 3 TO BE-XI(WS-Q, 9)
+     MOVE "demo:a" TO BE-XT(WS-Q, 1)
+     MOVE 6 TO BE-XI(WS-Q, 20)
+     MOVE 2 TO BE-XI(WS-Q, 1)
+     MOVE 7 TO BE-XI(WS-Q, 4)
+     MOVE 9 TO BE-XI(WS-Q, 12)
+     MOVE "pk" TO BE-XT(WS-Q, 2)
+     MOVE 2 TO BE-XI(WS-Q, 21)
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE "old" TO BE-XT(WS-IDX, 2)
+     MOVE 3 TO BE-XI(WS-IDX, 21)
+     MOVE 1 TO WS-A
+     MOVE 2 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 0 TO WS-E
+     MOVE 1 TO WS-F
+     MOVE 1 TO WS-G
+     CALL "BE6-SB-PACKET" USING WS-IDX WS-Q WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 9) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 21) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE WS-IDX TO WS-Q
+     MOVE 3 TO BE-XI(WS-Q, 9)
+     MOVE "demo:a" TO BE-XT(WS-Q, 1)
+     MOVE 6 TO BE-XI(WS-Q, 20)
+     MOVE 2 TO BE-XI(WS-Q, 1)
+     MOVE 7 TO BE-XI(WS-Q, 4)
+     MOVE 9 TO BE-XI(WS-Q, 12)
+     MOVE "pk" TO BE-XT(WS-Q, 2)
+     MOVE 2 TO BE-XI(WS-Q, 21)
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE "old" TO BE-XT(WS-IDX, 2)
+     MOVE 3 TO BE-XI(WS-IDX, 21)
+     MOVE 1 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 1 TO WS-F
+     MOVE 1 TO WS-G
+     CALL "BE6-SB-PACKET" USING WS-IDX WS-Q WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 9) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 21) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE WS-IDX TO WS-Q
+     MOVE 3 TO BE-XI(WS-Q, 9)
+     MOVE "demo:a" TO BE-XT(WS-Q, 1)
+     MOVE 6 TO BE-XI(WS-Q, 20)
+     MOVE 2 TO BE-XI(WS-Q, 1)
+     MOVE 7 TO BE-XI(WS-Q, 4)
+     MOVE 9 TO BE-XI(WS-Q, 12)
+     MOVE "pk" TO BE-XT(WS-Q, 2)
+     MOVE 2 TO BE-XI(WS-Q, 21)
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE "old" TO BE-XT(WS-IDX, 2)
+     MOVE 3 TO BE-XI(WS-IDX, 21)
+     MOVE 1 TO WS-A
+     MOVE 3 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 1 TO WS-F
+     MOVE 0 TO WS-G
+     CALL "BE6-SB-PACKET" USING WS-IDX WS-Q WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 9) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 21) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE WS-IDX TO WS-Q
+     MOVE 3 TO BE-XI(WS-Q, 9)
+     MOVE 2 TO BE-XI(WS-Q, 1)
+     MOVE 7 TO BE-XI(WS-Q, 4)
+     MOVE 9 TO BE-XI(WS-Q, 12)
+     MOVE "pk" TO BE-XT(WS-Q, 2)
+     MOVE 2 TO BE-XI(WS-Q, 21)
+     MOVE "minecraft:structure_block" TO WS-KEY
+     MOVE 25 TO WS-SVL
+     MOVE 21 TO WS-NV
+     MOVE 5 TO WS-X
+     MOVE 70 TO WS-Y
+     MOVE 5 TO WS-Z
+     CALL "BE-CREATE" USING WS-D WS-X WS-Y WS-Z WS-NV WS-KEY WS-SVL WS-IDX
+     MOVE "old" TO BE-XT(WS-IDX, 2)
+     MOVE 3 TO BE-XI(WS-IDX, 21)
+     MOVE 1 TO WS-A
+     MOVE 1 TO WS-B
+     MOVE 1 TO WS-C
+     MOVE 1 TO WS-E
+     MOVE 1 TO WS-F
+     MOVE 1 TO WS-G
+     CALL "BE6-SB-PACKET" USING WS-IDX WS-Q WS-A WS-B WS-C WS-E WS-F WS-G WS-H WS-P
+     MOVE WS-H TO WS-SHOW
+     PERFORM ADD-N
+     MOVE WS-P TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 9) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 1) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 4) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 12) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE BE-XI(WS-IDX, 21) TO WS-SHOW
+     PERFORM ADD-N
+     MOVE "0 0 1 0 0 0 3 0 1 3 2 7 0 3 1 1 3 2 7 0 3 2 1 3 2 7 0 3 3 1 3 2 7 0 3 4 1 3 2 7 0 3 5 1 3 2 7 0 3 6 " &
+         "1 3 2 7 0 3 7 1 3 2 7 0 3 8 1 3 2 7 0 3" TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     STOP RUN.
+
+ BEGIN-CASE.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     .
+
+ ADD-N.
+     STRING FUNCTION TRIM(WS-SHOW) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> Saves entity WS-IDX in form WS-FORM, renders the compound and appends it to TL-OBSERVED.
+ SAVE-RENDER.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "BE-SAVE" USING WS-IDX WS-FORM PB-BUFFER
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     MOVE 0 TO WS-LEN
+     MOVE SPACES TO WS-OUT
+     CALL "TEST-NBT-RENDER" USING PB-BUFFER WS-T10 WS-OUT WS-LEN
+     CALL "PB-FREE" USING PB-BUFFER
+     STRING WS-OUT(1:WS-LEN) " " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     .
+
+*> The NBT builders of the cases (name WS-NM and length WS-NML, text WS-SV and length WS-SVL, number WS-NV, list type WS-LT and count WS-LC).
+ NB-S.
+     CALL "NBT-WRITE-STRING" USING PB-BUFFER WS-NM WS-NML WS-SV WS-SVL
+     .
+ NB-I.
+     CALL "NBT-WRITE-INT" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-LONG.
+     CALL "NBT-WRITE-LONG" USING PB-BUFFER WS-NM WS-NML WS-LV
+     .
+ NB-IA.
+     CALL "NBT-WRITE-INT-ARRAY" USING PB-BUFFER WS-NM WS-NML WS-LC WS-IA
+     .
+ NB-FLOAT.
+     CALL "NBT-WRITE-FLOAT" USING PB-BUFFER WS-NM WS-NML WS-FV
+     .
+ NB-B.
+     CALL "NBT-WRITE-BYTE" USING PB-BUFFER WS-NM WS-NML WS-NV
+     .
+ NB-C.
+     CALL "NBT-WRITE-COMPOUND-BEGIN" USING PB-BUFFER WS-NM WS-NML
+     .
+ NB-E.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     .
+ NB-STACK.
+     MOVE 0 TO WS-KP
+     CALL "PNBT-STACK-WRITE" USING PB-BUFFER WS-ITEM WS-NV WS-KP
+     .
+ NB-L.
+     CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WS-NM WS-NML WS-LT WS-LC
+     .
+
+*> Loads entity WS-IDX from the compound the case built in PB-BUFFER (the closing End tag is written here).
+ LOAD-BUFFER.
+     CALL "NBT-WRITE-COMPOUND-END" USING PB-BUFFER
+     MOVE 0 TO PB-POS
+     CALL "BE-LOAD" USING WS-IDX PB-BUFFER
+     CALL "PB-FREE" USING PB-BUFFER
+     .
+ END PROGRAM TEST-BE-31-6-6.
+
+ COPY CORETEST.

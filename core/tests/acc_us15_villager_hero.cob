@@ -1,0 +1,106 @@
+*> Acceptance test, the Hero of the Village discount (docs/protocol/19 section 22.4 and 25.2; lane 002-lane-mobsb3, T8103): a player with the effect (id 31) gets
+*> diff -= max(floor((0.3 + 0.0625 x amplifier) x base count), 1) on every offer when the window opens; a player without it gets none.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. ACC-US15-VILLAGER-HERO.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY VILSTATE.
+ 01 WS-NAME                PIC X(16).
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-CONN                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ENTITY-ROW          PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-VROW                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-FIRST               BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-PICK                BINARY-LONG.
+ 01 WS-USED                BINARY-LONG.
+ 01 WS-LIB                 PIC X(16) VALUE "librarian".
+ 01 WS-ONE                 BINARY-LONG VALUE 1.
+ 01 WS-VID                 BINARY-LONG.
+ 01 WS-WANT                PIC X(32).
+ 01 WS-EXTRA               PIC X(32).
+ 01 WS-GIVE                PIC X(32).
+ 01 WS-WC                  BINARY-LONG.
+ 01 WS-EC                  BINARY-LONG.
+ 01 WS-GC                  BINARY-LONG.
+ 01 WS-MU                  BINARY-LONG.
+ 01 WS-XPV                 BINARY-LONG.
+ 01 WS-MULT                BINARY-LONG.
+ 01 WS-MASK                BINARY-LONG.
+ 01 WS-MOD                 BINARY-LONG.
+ 01 WS-EXPECT              BINARY-LONG.
+ 01 WS-HERO                BINARY-LONG VALUE 31.
+ 01 WS-AMP                 BINARY-LONG VALUE 0.
+ 01 WS-DUR                 BINARY-LONG VALUE 24000.
+ 01 WS-FLAGS               BINARY-LONG VALUE 3.
+ 01 WS-X                   FLOAT-LONG.
+ 01 WS-Y                   FLOAT-LONG.
+ 01 WS-Z                   FLOAT-LONG.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ PROCEDURE DIVISION.
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     MOVE 0 TO CS-HOSTILE-MOBS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+     MOVE 16001 TO CW-TIME
+     MOVE "Alice" TO WS-NAME
+     CALL "TEST-JOIN" USING WS-NAME WS-NAME-LENGTH WS-CONN
+     CALL "TEST-STANDARD-TABLES"
+     MOVE CN-PLAYER(WS-CONN) TO WS-ROW
+     MOVE "villager" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ENTITY-ROW WS-STATUS
+     MOVE PL-X(WS-ROW) TO WS-X
+     MOVE PL-Y(WS-ROW) TO WS-Y
+     MOVE PL-Z(WS-ROW) TO WS-Z
+     CALL "MOB-SPAWN" USING PL-DIM(WS-ROW) WS-TYPE WS-X WS-Y WS-Z WS-YAW WS-VROW
+     MOVE EN-ID(WS-VROW) TO WS-VID
+     CALL "VL-FIND" USING WS-VID WS-ONE WS-SLOT
+     MOVE "librarian" TO VL-PROF(WS-SLOT)
+     CALL "VIL-TRADE-SET" USING WS-LIB WS-ONE WS-FIRST WS-N WS-PICK
+     MOVE 1 TO VL-O-N(WS-SLOT) VL-BUILT(WS-SLOT)
+     MOVE WS-FIRST TO VL-O-ROW(WS-SLOT, 1)
+     MOVE 0 TO VL-O-USES(WS-SLOT, 1) VL-O-DEMAND(WS-SLOT, 1) VL-O-SPECIAL(WS-SLOT, 1) VL-O-EXTRA(WS-SLOT, 1)
+     CALL "VIL-TRADE-ROW" USING VL-O-ROW(WS-SLOT, 1) WS-WANT WS-WC WS-EXTRA WS-EC WS-GIVE WS-GC WS-MU WS-XPV WS-MULT WS-MASK WS-MOD
+     MOVE "N" TO TL-MODE
+*>   No effect: no discount.
+     CALL "VL-SPECIALS" USING WS-SLOT WS-ROW
+     MOVE "acceptance US15 19§22.4 no Hero of the Village: no special price" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE VL-O-SPECIAL(WS-SLOT, 1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Hero I: 0.3 x base count, at least 1.
+     CALL "EFFECT-ADD" USING WS-ROW WS-HERO WS-AMP WS-DUR WS-FLAGS
+     CALL "VL-SPECIALS" USING WS-SLOT WS-ROW
+     COMPUTE WS-EXPECT = FUNCTION INTEGER(300 * WS-WC / 1000)
+     IF WS-EXPECT < 1
+         MOVE 1 TO WS-EXPECT
+     END-IF
+     COMPUTE WS-EXPECT = 0 - WS-EXPECT
+     MOVE "acceptance US15 19§22.4 Hero of the Village I lowers the price by max(floor(0.3 x count), 1)" TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED-N
+     MOVE VL-O-SPECIAL(WS-SLOT, 1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   Hero V (amplifier 4): 0.55.
+     MOVE 4 TO WS-AMP
+     MOVE 40 TO WS-DUR
+     CALL "EFFECT-ADD" USING WS-ROW WS-HERO WS-AMP WS-DUR WS-FLAGS
+     CALL "VL-SPECIALS" USING WS-SLOT WS-ROW
+     COMPUTE WS-EXPECT = FUNCTION INTEGER(550 * WS-WC / 1000)
+     IF WS-EXPECT < 1
+         MOVE 1 TO WS-EXPECT
+     END-IF
+     COMPUTE WS-EXPECT = 0 - WS-EXPECT
+     MOVE "acceptance US15 19§22.4 Hero of the Village V lowers the price by floor(0.55 x count)" TO TL-CASE
+     MOVE WS-EXPECT TO TL-EXPECTED-N
+     MOVE VL-O-SPECIAL(WS-SLOT, 1) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+ END PROGRAM ACC-US15-VILLAGER-HERO.
+ COPY CORETEST.

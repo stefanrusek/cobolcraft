@@ -9,6 +9,7 @@
  78 MOB-FIRST-TYPE            VALUE 2.
  78 MOB-PASSIVE               VALUE 0.
  78 MOB-HOSTILE               VALUE 1.
+ 78 MOB-ACTIVE-RANGE          VALUE 64.     *> blocks: a mob farther than this from every player of its dimension is not stepped (MOB-ACTIVE)
  01 MOB-DATA.
     05 FILLER.                                  *> cobolcraft:sodgrazer
        10 FILLER BINARY-LONG VALUE 2.           *> entity type id

@@ -74,6 +74,21 @@
              CALL "LOCAL-PACK-READ" USING CLIENT-STATE LP-COUNT WS-ROOT WS-ROOT-LENGTH
          END-IF
      END-PERFORM
+*>   The built-in optional skin pack (faithful-pack-mapping 9.7), always listed, last.
+     IF LP-COUNT < CL-MAX-LOCAL-PACKS
+         ADD 1 TO LP-COUNT
+         INITIALIZE LP-ENTRY(LP-COUNT)
+         MOVE "Faithful Skin" TO LP-NAME(LP-COUNT)
+         MOVE 13 TO LP-NAME-LENGTH(LP-COUNT)
+         MOVE "cobolcraft_faithful_skin" TO LP-ID(LP-COUNT)
+         MOVE 24 TO LP-ID-LENGTH(LP-COUNT)
+         MOVE 3 TO LP-KIND(LP-COUNT)
+         MOVE 1 TO LP-VALID(LP-COUNT)
+         MOVE 0 TO LP-COMPAT(LP-COUNT) LP-ICON(LP-COUNT)
+         MOVE "Uses Faithful 32x textures for CobolCraft blocks and items. Needs the generated vanilla "
+             & "pack or a Faithful pack." TO LP-DESC(LP-COUNT)
+         MOVE FUNCTION LENGTH(FUNCTION TRIM(LP-DESC(LP-COUNT))) TO LP-DESC-LENGTH(LP-COUNT)
+     END-IF
      GOBACK.
  END PROGRAM LOCAL-PACKS-SCAN.
 

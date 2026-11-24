@@ -919,13 +919,15 @@ Read in this round from `ScatteredOreFeature`, `AbstractOreFeature` and `BlockRe
 
 ### 13.1 Schema
 
+*(Corrected in the R3 round: the `state` row used to read `{"Name", "Properties"}`. The data-JSON codec of a block state is `BlockState.CODEC`: a bare id string or an object with the keys `id` and `properties`; `Name`/`Properties` are the chunk-palette NBT keys of 06 and 07. The jar's own ore files use the bare string.)*
+
 | Element | Field | Type | Rule |
 |---|---|---|---|
 | Feature `minecraft:scattered_ore` | `targets` | list of `BlockReplacement` | required; may be empty (then nothing is ever placed) |
 | | `size` | int, range 0 to 64 | required; the maximum number of attempts |
 | | `discard_chance_on_air_exposure` | float, range 0.0 to 1.0 | required |
-| `BlockReplacement` (a record, not a feature type) | `target` | `RuleTest` (35-2 section 8) | required |
-| | `state` | block state (`{"Name", "Properties"}`, 23 section 7.4) | required; the block written |
+| `BlockReplacement` (a record, not a feature type; its replacement rule and the state codec are 35-4 §7.5.2) | `target` | `RuleTest` (35-4 §7.5.3) | required |
+| | `state` | block state: a bare block id (the default state) or `{"id", "properties"}` (`BlockState.CODEC`, 35-4 §7.5.2) | required; the block written |
 
 The same `targets` / `size` / `discard_chance_on_air_exposure` triple is the record of `ore` (there `size` is the blob size). The data uses `scattered_ore` twice:
 `ore_ancient_debris_large` (`size` 3) and `ore_ancient_debris_small` (`size` 2), each with one target: state `ancient_debris`, rule `tag_match` of the block tag
@@ -979,7 +981,7 @@ named first is the longer treatment.
 | `geode`, `speleothem`, `speleothem_cluster`, `large_dripstone`, `sculk_patch`, `monster_room`, `fossil`, `template` | 35-6 sections 4 to 10 (`template` also 35-7 section 11.3) |
 | `delta_feature`, `stepped_column_cluster`, `end_spike`, `chorus_plant`, `end_island`, `end_platform`, `end_podium`, `end_gateway`, `void_start_platform` | 35-7 sections 3, 4, 8, 9, 10 |
 | Block predicates (16 types), block state providers (10 types), noise providers | 35-2 sections 3, 4, 5; numeric providers 23 section 7 |
-| `RuleTest` family | 35-2 section 8 |
+| `RuleTest` family | 35-4 section 7.5.3 (names and cross-reference: 35-2 section 8) |
 | Placement modifiers (18 types) | this document, section 7 (the `cuboid` modifier is class `CuboidPlacement`, section 7.14) |
 | Coverage audit of every class of the `feature` package | 35-7 section 12 |
 
@@ -1005,8 +1007,7 @@ named first is the longer treatment.
    being of `PlacedFeature` values. Two differently named placed features with identical content would then be indistinguishable in the check.
 8. **The 2D simplex noise.** `BIOME_INFO_NOISE` is the seed-2345 simplex noise of 10 section 3.5 and 10 section 10.8; this round did not re-read its permutation construction and gives no
    numeric noise example. The worked values of 7.9 use assumed noise values.
-9. **16 versus this jar.** 16 section 7.5 names the argument of `/place feature` a "configured_feature"; in this jar the argument is a holder of a `Feature` of the registry
-   `worldgen/feature` and the command places it without modifiers. The argument is built by `ResourceOrIdArgument.feature` (type `FeatureArgument`, result read by `getFeature` as a holder of a `Feature`), so it also accepts an inline feature definition in the resource-or-id form (inferred from the argument type; the inline grammar was not read). 16 should be corrected by its owner.
+9. **16 versus this jar.** Closed in the R3 review round (read in `PlaceCommand` and `ResourceOrIdArgument$FeatureArgument`): the `/place feature` argument is built by `ResourceOrIdArgument.feature`, a `FeatureArgument` over the registry key `Registries.FEATURE` (the data registry `worldgen/feature`, i.e. the **configured feature** files, 240 in the jar) with `Feature.DIRECT_CODEC` as its inline codec. It therefore accepts either (a) an identifier naming an element of `worldgen/feature`, or (b) an inline feature value (the grammar has two alternatives named `id` and `value`; the inline form is a data value that decodes with the `type`-dispatch feature codec of section 3). It does **not** accept a placed feature (the `worldgen/placed_feature` registry and its placement modifiers are not involved) and has no default. `placeFeature` calls `Feature.place` on the holder's value with the source level, the chunk generator, the **server level's own random** (`ServerLevel.getRandom`, see Open question 2) and the position (the block containing the source's position when `<pos>` is omitted), after checking that the chunks of the position are loaded; a false result gives `commands.place.feature.failed`, success sends `commands.place.feature.success` with the registered id when the holder has one and `commands.place.feature.success.inline` otherwise. 16 §7.5 should therefore describe the argument as a `Feature` resource-or-id (registry `worldgen/feature`), not a bare "configured_feature" (the registry name is `worldgen/feature`).
 10. **`DEBUG_FEATURE_COUNT`.** The flag is initialised with `debugFlag("FEATURE_COUNT")`; the source of that flag (system property or environment) was not traced.
 11. **Other post-processing marks.** Section 4.3 lists the blocks that mark themselves and `markAboveForPostProcessing`; whether other call sites in the jar (carvers, aquifer
     fluids, structure pieces) mark positions was not scanned jar-wide. Chunk promotion order is 33's.

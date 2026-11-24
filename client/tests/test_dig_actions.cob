@@ -1,0 +1,119 @@
+*> Implementation test of the dig actions the client sends (13 section 2.3; 09 section 3.2 Player Action 0x29): start
+*> destroy (0), abort destroy (2) and finish (stop) destroy (3), each with the next block-change sequence id, and
+*> an abort when the held item changes during a break (13: a change of the held slot cancels the break). What the
+*> server receives is read from a real loopback connection.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-DIG-ACTIONS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CCSHIM.
+ COPY TESTLIB.
+ 01 WS-SERVER              BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-LEFT                BINARY-LONG VALUE 0.
+ 01 WS-DOWN                BINARY-LONG VALUE 4.
+ 01 WS-UP                  BINARY-LONG VALUE 5.
+ 01 WS-MS                  BINARY-LONG.
+ 01 WS-KEY                 BINARY-LONG VALUE CC-KEY-2.
+ 01 WS-KEY-DOWN            BINARY-LONG VALUE CC-EV-KEY-DOWN.
+ 01 WS-KEY-UP              BINARY-LONG VALUE CC-EV-KEY-UP.
+ 01 WS-STEPS.
+    05 WS-STEP-TEXT        PIC X(1024) OCCURS 3 TIMES.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "TEST-PLAY" USING CLIENT-STATE WS-SERVER
+     MOVE 0 TO PL-MODE PL-HELD
+     MOVE 64 TO PL-SLOT-COUNT(1) PL-SLOT-COUNT(2)
+     MOVE 2 TO PL-SLOT-ITEM(1) PL-SLOT-ITEM(2)
+     MOVE 90 TO PL-PITCH
+     CALL "TEST-STEP" USING CLIENT-STATE
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(1) WS-THRESHOLD
+     MOVE SPACES TO WS-STEPS
+
+*>   A break of greystone begun, then the held slot changed with key 2: abort destroy follows.
+     MOVE 20 TO WS-MS
+     CALL "TEST-BUTTON" USING CLIENT-STATE WS-LEFT WS-DOWN WS-MS
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(1) WS-THRESHOLD
+     CALL "TEST-KEY-TICK" USING CLIENT-STATE WS-KEY WS-KEY-DOWN
+     CALL "TEST-KEY-TICK" USING CLIENT-STATE WS-KEY WS-KEY-UP
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(2) WS-THRESHOLD
+     MOVE 100 TO WS-MS
+     CALL "TEST-IDLE" USING CLIENT-STATE WS-MS
+     CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-STEP-TEXT(3) WS-THRESHOLD
+     MOVE "dig actions start destroy (sequence 1), then a change of the held slot sends Set Carried Item, "
+         & "abort destroy (sequence 2) and, the button still held, a new start (sequence 3)" TO TL-CASE
+     PERFORM STEPS-TEXT
+     MOVE "T" TO TL-MODE
+     MOVE "290000000000000000090101 | 360001 290200000000000000090102 290000000000000000090103 | -"
+         TO TL-EXPECTED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     STOP RUN.
+
+ STEPS-TEXT.
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 3
+         IF WS-STEP-TEXT(WS-I) = SPACES
+             MOVE "-" TO WS-STEP-TEXT(WS-I)
+         END-IF
+         IF WS-I > 1
+             STRING " | " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         END-IF
+         STRING FUNCTION TRIM(WS-STEP-TEXT(WS-I)) DELIMITED BY SIZE INTO TL-OBSERVED
+             WITH POINTER WS-PTR
+     END-PERFORM.
+ END PROGRAM TEST-DIG-ACTIONS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-BUTTON.
+*> USING CLIENT-STATE, button (0 left, 1 right), event kind (4 down, 5 up, 0 a click: down and up),
+*> milliseconds: one CL-STEP with that mouse button event, that many ms after the last step.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CCSHIM.
+ 01 WS-EVENTS.
+    05 WS-EVENT OCCURS 2 TIMES.
+       10 WS-KIND          BINARY-LONG.
+       10 WS-A             BINARY-LONG.
+       10 WS-B             BINARY-LONG.
+       10 WS-C             BINARY-LONG.
+       10 WS-X             FLOAT-SHORT.
+       10 WS-Y             FLOAT-SHORT.
+ 01 WS-COUNT               BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-BUTTON               BINARY-LONG.
+ 01 L-KIND                 BINARY-LONG.
+ 01 L-MS                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-BUTTON L-KIND L-MS.
+     INITIALIZE WS-EVENTS
+     MOVE L-BUTTON TO WS-A(1) WS-A(2)
+     MOVE 1 TO WS-COUNT
+     MOVE L-KIND TO WS-KIND(1)
+     IF L-KIND = 0
+         MOVE CC-EV-BUTTON-DOWN TO WS-KIND(1)
+         MOVE CC-EV-BUTTON-UP TO WS-KIND(2)
+         MOVE 2 TO WS-COUNT
+     END-IF
+     CALL "TEST-EVENTS-MS" USING CLIENT-STATE WS-EVENTS WS-COUNT L-MS
+     GOBACK.
+ END PROGRAM TEST-BUTTON.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-IDLE.
+*> USING CLIENT-STATE, milliseconds: one CL-STEP without events that many ms after the last.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-EVENTS              PIC X(24).
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-MS                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-MS.
+     CALL "TEST-EVENTS-MS" USING CLIENT-STATE WS-EVENTS WS-ZERO L-MS
+     GOBACK.
+ END PROGRAM TEST-IDLE.
+ COPY CLTEST.

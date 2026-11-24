@@ -1,0 +1,296 @@
+*> Boat hurt tilt and bubble column wobble (34-8 7.3 and 7.4 steps 3 and 4): Set Entity Data entries 8 (hurt time), 9 (hurt direction), 10 (damage, FLOAT) and 13 (bubble time) are kept
+*> (ENTITY-BOAT-SET), ENTITIES-ANIM-TICK lowers the hurt time and the damage by 1 a tick and runs the bubble multiplier and angle (10 sin(0.5 age) x multiplier) with the
+*> under-water flag, ENTITY-BOAT-SEQUENCE lists the render sequence (translate, yaw, hurt tilt, bubble rotation, scale, quarter turn).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ENTITY-BOAT-HURT.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY CLMODELS.
+ COPY TESTLIB.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ROW-AREA            PIC X(66).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG VALUE 10.5.
+ 01 WS-Y                   FLOAT-LONG VALUE 64.
+ 01 WS-Z                   FLOAT-LONG VALUE 10.5.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-SER                 BINARY-LONG.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-FLOAT               FLOAT-SHORT.
+ 01 WS-BX                  BINARY-LONG VALUE 10.
+ 01 WS-BY                  BINARY-LONG VALUE 64.
+ 01 WS-BZ                  BINARY-LONG VALUE 10.
+ 01 WS-STATE               BINARY-LONG VALUE 4.
+ 01 WS-DIFF                FLOAT-LONG.
+ 01 WS-SUM1                FLOAT-LONG.
+ 01 WS-SUM2                FLOAT-LONG.
+ 01 WS-OPS.
+    05 WS-OV               FLOAT-LONG OCCURS 64 TIMES.
+ 01 WS-EYE-TABLE.
+    05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION.
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE 0 TO PK-COUNT
+     CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
+     MOVE 256 TO PL-HEIGHT
+     MOVE 0 TO SK-U
+     MOVE 10 TO WS-EYE(1) WS-EYE(3)
+     MOVE 64 TO WS-EYE(2)
+     MOVE 1 TO CT-OPEN
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     CALL "STATE-TABLES-ENSURE" USING CLIENT-STATE
+     MOVE 1 TO ST-FLUID(5)
+     MOVE 0 TO ST-LEVEL(5) ST-OPAQUE(5)
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE "oak_boat" TO WS-KEY
+     PERFORM SPAWN-ONE
+     MOVE 1 TO WS-ROW
+*>   Metadata.
+     MOVE 8 TO WS-INDEX
+     MOVE 1 TO WS-SER
+     MOVE 10 TO WS-INT
+     MOVE 0 TO WS-FLOAT
+     CALL "ENTITY-BOAT-SET" USING CLIENT-STATE WS-ROW WS-INDEX WS-SER WS-INT WS-FLOAT
+     MOVE "acceptance boat hurt time" TO TL-CASE
+     MOVE EN-BHT(1) TO TL-OBSERVED-N
+     MOVE 10 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     MOVE 9 TO WS-INDEX
+     MOVE -1 TO WS-INT
+     CALL "ENTITY-BOAT-SET" USING CLIENT-STATE WS-ROW WS-INDEX WS-SER WS-INT WS-FLOAT
+     MOVE "acceptance boat hurt direction" TO TL-CASE
+     MOVE EN-BHD(1) TO TL-OBSERVED-N
+     MOVE -1 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     MOVE 10 TO WS-INDEX
+     MOVE 3 TO WS-SER
+     MOVE 4 TO WS-FLOAT
+     CALL "ENTITY-BOAT-SET" USING CLIENT-STATE WS-ROW WS-INDEX WS-SER WS-INT WS-FLOAT
+     MOVE "acceptance boat damage" TO TL-CASE
+     COMPUTE WS-DIFF = EN-BDM(1) - 4
+     PERFORM CHECK-SMALL
+     MOVE 13 TO WS-INDEX
+     MOVE 1 TO WS-SER
+     MOVE 60 TO WS-INT
+     CALL "ENTITY-BOAT-SET" USING CLIENT-STATE WS-ROW WS-INDEX WS-SER WS-INT WS-FLOAT
+     MOVE "acceptance boat bubble time" TO TL-CASE
+     MOVE EN-BBT(1) TO TL-OBSERVED-N
+     MOVE 60 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     MOVE 11 TO WS-INDEX
+     MOVE 8 TO WS-SER
+     MOVE 1 TO WS-INT
+     CALL "ENTITY-BOAT-SET" USING CLIENT-STATE WS-ROW WS-INDEX WS-SER WS-INT WS-FLOAT
+     MOVE "acceptance boat other entries are ignored" TO TL-CASE
+     MOVE EN-BHT(1) TO TL-OBSERVED-N
+     MOVE 10 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+*>   A cow ignores them.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE "cow" TO WS-KEY
+     PERFORM SPAWN-ONE
+     MOVE 8 TO WS-INDEX
+     MOVE 1 TO WS-SER
+     MOVE 10 TO WS-INT
+     CALL "ENTITY-BOAT-SET" USING CLIENT-STATE WS-ROW WS-INDEX WS-SER WS-INT WS-FLOAT
+     MOVE "acceptance cow has no hurt time" TO TL-CASE
+     MOVE EN-BHT(1) TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+*>   The tick: hurt time and damage fall by 1 (not below 0); the bubble multiplier rises by 0.05 with bubble time and falls by 0.1 without, clamped to 0 to 1.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE "oak_boat" TO WS-KEY
+     PERFORM SPAWN-ONE
+     MOVE 2 TO EN-BHT(1)
+     MOVE 0.5 TO EN-BDM(1)
+     MOVE 60 TO EN-BBT(1)
+     MOVE 5 TO EN-AGE(1)
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     MOVE "acceptance boat hurt time falls" TO TL-CASE
+     MOVE EN-BHT(1) TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     MOVE "acceptance boat damage never below 0" TO TL-CASE
+     MOVE EN-BDM(1) TO WS-DIFF
+     PERFORM CHECK-SMALL
+     MOVE "acceptance boat bubble multiplier rises" TO TL-CASE
+     COMPUTE WS-DIFF = EN-BBM(1) - 0.05
+     PERFORM CHECK-SMALL
+     MOVE "acceptance boat bubble angle" TO TL-CASE
+     COMPUTE WS-DIFF = EN-BBA(1) - 10 * FUNCTION SIN(0.5 * 5) * 0.05
+     PERFORM CHECK-SMALL
+     MOVE 0.98 TO EN-BBM(1)
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     MOVE "acceptance boat bubble multiplier clamps at 1" TO TL-CASE
+     COMPUTE WS-DIFF = EN-BBM(1) - 1
+     PERFORM CHECK-SMALL
+     MOVE 0 TO EN-BBT(1)
+     MOVE 0.05 TO EN-BBM(1)
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     MOVE "acceptance boat bubble multiplier clamps at 0" TO TL-CASE
+     MOVE EN-BBM(1) TO WS-DIFF
+     PERFORM CHECK-SMALL
+     MOVE 1 TO EN-BBM(1)
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     MOVE "acceptance boat bubble multiplier falls by 0.1" TO TL-CASE
+     COMPUTE WS-DIFF = EN-BBM(1) - 0.9
+     PERFORM CHECK-SMALL
+*>   Under water (a water cell above the box top): the flag.
+     MOVE 10 TO WS-BX
+     MOVE 64 TO WS-BY
+     MOVE 10 TO WS-BZ
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-BX WS-BY WS-BZ WS-STATE
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     MOVE "acceptance boat under water" TO TL-CASE
+     MOVE EN-BUW(1) TO TL-OBSERVED-N
+     MOVE 1 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+     MOVE 80 TO EN-Y(1) EN-OY(1)
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     MOVE "acceptance boat above the water" TO TL-CASE
+     MOVE EN-BUW(1) TO TL-OBSERVED-N
+     MOVE 0 TO TL-EXPECTED-N
+     PERFORM CHECK-N
+*>   The sequence: translate, yaw, tilt, bubble rotation about (1, 0, 1), scale, quarter turn.
+     MOVE 30 TO EN-YAW(1)
+     MOVE 3 TO EN-BHT(1)
+     MOVE 2 TO EN-BDM(1)
+     MOVE -1 TO EN-BHD(1)
+     MOVE 6 TO EN-BBA(1)
+     CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-ROW WS-OPS
+     MOVE "acceptance boat sequence count" TO TL-CASE
+     COMPUTE WS-DIFF = WS-OV(1) - 6
+     PERFORM CHECK-SMALL
+     MOVE "acceptance boat sequence translate and yaw" TO TL-CASE
+     COMPUTE WS-DIFF = WS-OV(2) - 1 + WS-OV(4) - 0.375 + WS-OV(6) - 3 + WS-OV(7) - 150
+     PERFORM CHECK-SMALL
+     MOVE "acceptance boat sequence hurt tilt about X" TO TL-CASE
+     COMPUTE WS-DIFF = WS-OV(10) - 5 + WS-OV(11) - FUNCTION SIN(2) * 2 * 1 / 10 * (0 - 1)
+     PERFORM CHECK-SMALL
+     MOVE "acceptance boat sequence bubble rotation" TO TL-CASE
+     COMPUTE WS-DIFF = WS-OV(14) - 8 + WS-OV(15) - 6
+     PERFORM CHECK-SMALL
+     MOVE "acceptance boat sequence scale and quarter turn" TO TL-CASE
+     COMPUTE WS-DIFF = WS-OV(18) - 2 + WS-OV(19) + 1 + WS-OV(22) - 3 + WS-OV(23) - 90
+     PERFORM CHECK-SMALL
+*>   No tilt without hurt time, no bubble rotation under water or at angle 0.
+     MOVE 0 TO EN-BHT(1)
+     MOVE 1 TO EN-BUW(1)
+     CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-ROW WS-OPS
+     MOVE "acceptance boat sequence plain count" TO TL-CASE
+     COMPUTE WS-DIFF = WS-OV(1) - 4
+     PERFORM CHECK-SMALL
+     MOVE 0 TO EN-BUW(1)
+     MOVE 0 TO EN-BBA(1)
+     CALL "ENTITY-BOAT-SEQUENCE" USING CLIENT-STATE WS-ROW WS-OPS
+     MOVE "acceptance boat sequence angle 0 count" TO TL-CASE
+     COMPUTE WS-DIFF = WS-OV(1) - 4
+     PERFORM CHECK-SMALL
+*>   Drawn: the hurt tilt and the bubble rotation move the vertices.
+     CALL "ENTITIES-CLEAR" USING CLIENT-STATE
+     MOVE "oak_boat" TO WS-KEY
+     PERFORM SPAWN-ONE
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     PERFORM SUM-MESH
+     MOVE WS-SUM2 TO WS-SUM1
+     MOVE 8 TO EN-BHT(1)
+     MOVE 5 TO EN-BDM(1)
+     MOVE 1 TO EN-BHD(1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     PERFORM SUM-MESH
+     MOVE "acceptance boat drawn tilted when hurt" TO TL-CASE
+     COMPUTE WS-DIFF = WS-SUM2 - WS-SUM1
+     PERFORM CHECK-OTHER
+     MOVE WS-SUM2 TO WS-SUM1
+     MOVE 12 TO EN-BBA(1)
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     PERFORM SUM-MESH
+     MOVE "acceptance boat drawn with the bubble wobble" TO TL-CASE
+     COMPUTE WS-DIFF = WS-SUM2 - WS-SUM1
+     PERFORM CHECK-OTHER
+     STOP RUN.
+ SPAWN-ONE.
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE 1 TO WS-ID
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW.
+ SUM-MESH.
+     MOVE 0 TO WS-SUM2
+     PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RL-EN-COUNT
+         COMPUTE WS-SUM2 = WS-SUM2 + (RL-EN-Y(WS-J) + RL-EN-X(WS-J) * 2 + RL-EN-Z(WS-J) * 3) * WS-J
+     END-PERFORM.
+ CHECK-SMALL.
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-DIFF < 0.0001 AND WS-DIFF > -0.0001
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ CHECK-OTHER.
+     MOVE "N" TO TL-MODE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE 0 TO TL-OBSERVED-N
+     IF WS-DIFF > 0.001 OR WS-DIFF < -0.001
+         MOVE 1 TO TL-OBSERVED-N
+     END-IF
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ CHECK-N.
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-ENTITY-BOAT-HURT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MM-SPAWN.
+*> USING CLIENT-STATE, entity id, type (registry id), x y z (FLOAT-LONG), yaw (FLOAT-SHORT, also the head yaw): Add Entity.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-ADD                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-UUID                PIC X(16) VALUE LOW-VALUES.
+ 01 WS-V0                  FLOAT-LONG VALUE 0.
+ 01 WS-V1                  FLOAT-LONG VALUE 0.
+ 01 WS-V2                  FLOAT-LONG VALUE 0.
+ 01 WS-A0                  FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ID L-TYPE L-X L-Y L-Z L-YAW.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-V0 WS-V1 WS-V2
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER WS-A0
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-PACKET" USING CLIENT-STATE PB-BUFFER WS-ADD
+     GOBACK.
+ END PROGRAM MM-SPAWN.
+
+
+ COPY CLTEST.

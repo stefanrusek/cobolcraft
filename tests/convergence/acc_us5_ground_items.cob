@@ -61,7 +61,7 @@
      CALL "CV-UNTIL-PLAY" USING CONVH WS-ALICE WS-JOINED-A
      CALL "CV-ATTACH" USING CONVH WS-BOBBY
      CALL "CV-UNTIL-PLAY" USING CONVH WS-BOBBY WS-JOINED-B
-     MOVE "/relocate Bobby at 4.5 54 30.5" TO WS-LINE
+     MOVE "/tp Bobby 4.5 54 30.5" TO WS-LINE
      CALL "SAY-LINE" USING CONVH WS-ALICE WS-LINE
      MOVE 20 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
@@ -89,15 +89,15 @@
      PERFORM OBSERVE-FALL
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   US5-3 whole stack: Control+Q throws the 63 left.
+*>   US5-3 whole stack: Control+Q throws the 63 left; the two items lie within merge range, so they merge into one stack of 64.
      MOVE CC-MOD-CONTROL TO WS-MODS
      CALL "THROW" USING CONVH WS-ALICE WS-MODS
      PERFORM WATCH-FALL
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
      MOVE PL-SLOT-COUNT(1) TO WS-HELD
      MOVE "acceptance US5-3 with the whole-stack modifier the whole held stack leaves the "
-         & "inventory and lands on the ground as one item" TO TL-CASE
-     MOVE "slot 0 items 2 same 1 last 63x2" TO TL-EXPECTED
+         & "inventory and, landing beside the item thrown first, merges with it into one item (vanilla merge)" TO TL-CASE
+     MOVE "slot 0 items 1 same 1 last 64x2" TO TL-EXPECTED
      MOVE WS-HELD TO WS-E1
      MOVE WS-COUNT-A TO WS-E2
      MOVE 0 TO WS-E3
@@ -105,13 +105,13 @@
          MOVE 1 TO WS-E3
      END-IF
      MOVE 0 TO WS-I
-     INSPECT WS-LIST-A TALLYING WS-I FOR ALL " 63x2 "
+     INSPECT WS-LIST-A TALLYING WS-I FOR ALL " 64x2 "
      MOVE SPACES TO TL-OBSERVED
      MOVE 1 TO WS-PTR
      STRING "slot " FUNCTION TRIM(WS-E1) " items " FUNCTION TRIM(WS-E2) " same "
          FUNCTION TRIM(WS-E3) " last " DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
      IF WS-I = 1
-         STRING "63x2" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+         STRING "64x2" DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
      ELSE
          STRING FUNCTION TRIM(WS-LIST-A) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
      END-IF
@@ -179,29 +179,24 @@
          FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   US5-4: Bobby, facing +Z, throws one greystone out of everyone's pickup range; 4600 ticks
-*>   later it still lies there, 4800 after it was thrown it has gone for both. Frames of 10 s
-*>   (200 ticks, inside the keep-alive deadline) make the time pass.
+*>   US5-4: Bobby, facing +Z, throws one greystone out of everyone's pickup range; it still lies there
+*>   at 5000 ticks, and 6200 ticks after it was thrown it has gone for both (vanilla item
+*>   lifetime 6000, docs/protocol/41). The single-player host runs one core tick per frame of 50 ms
+*>   (a jump of the clock is not caught up), so the time passes in frames.
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
      MOVE 0 TO PL-YAW
      MOVE 0 TO WS-MODS
      CALL "THROW" USING CONVH WS-BOBBY WS-MODS
-     PERFORM 23 TIMES
-         ADD 9950 TO CV-NOW
-         CALL "CV-STEP" USING CONVH
-         CALL "CV-STEP" USING CONVH
-     END-PERFORM
+     MOVE 5000 TO WS-N
+     CALL "CV-STEPS" USING CONVH WS-N
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
      CALL "ITEM-LIST" USING CLIENT-STATE WS-LIST-A WS-COUNT-A WS-Y
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-BOBBY)
      CALL "ITEM-LIST" USING CLIENT-STATE WS-LIST-B WS-COUNT-B WS-Y
      MOVE WS-COUNT-A TO WS-E1
      MOVE WS-COUNT-B TO WS-E2
-     PERFORM 2 TIMES
-         ADD 9950 TO CV-NOW
-         CALL "CV-STEP" USING CONVH
-         CALL "CV-STEP" USING CONVH
-     END-PERFORM
+     MOVE 1200 TO WS-N
+     CALL "CV-STEPS" USING CONVH WS-N
      MOVE 5 TO WS-N
      CALL "CV-STEPS" USING CONVH WS-N
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
@@ -210,11 +205,11 @@
      CALL "ITEM-LIST" USING CLIENT-STATE WS-LIST-B WS-COUNT-B WS-Y
      MOVE "acceptance US5-4 given an item on the ground near a player when the despawn time "
          & "passes then it disappears for everyone" TO TL-CASE
-     MOVE "at 4600 ticks 1 1 after 4800 0 0" TO TL-EXPECTED
+     MOVE "at 5000 ticks 1 1 after 6200 0 0" TO TL-EXPECTED
      MOVE WS-COUNT-A TO WS-E3
      MOVE WS-COUNT-B TO WS-E4
      MOVE SPACES TO TL-OBSERVED
-     STRING "at 4600 ticks " FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " after 4800 "
+     STRING "at 5000 ticks " FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " after 6200 "
          FUNCTION TRIM(WS-E3) " " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.

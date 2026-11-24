@@ -130,6 +130,13 @@
      IF IN-KEY-PRESSED(CC-KEY-BACKSPACE + 1) = 1
          CALL "TEXT-DROP-LAST" USING CH-LINE CH-LINE-LENGTH
      END-IF
+*>   Typing or Backspace ends a Tab cycle.
+     IF IN-TEXT-COUNT > 0 OR IN-KEY-PRESSED(CC-KEY-BACKSPACE + 1) = 1
+         MOVE 0 TO CS-FROZEN CS-SELECTED
+     END-IF
+     IF IN-KEY-PRESSED(CC-KEY-TAB + 1) = 1
+         CALL "CHAT-TAB" USING CLIENT-STATE
+     END-IF
 *>   The wheel: up (positive) goes back to earlier messages, at most to the oldest.
      COMPUTE WS-STEPS ROUNDED = IN-SCROLL-Y
      COMPUTE CH-SCROLL = FUNCTION MIN(FUNCTION MAX(CH-SCROLL + WS-STEPS, 0),
@@ -140,7 +147,9 @@
          END-IF
          CALL "SCREEN-OPEN" USING CLIENT-STATE WS-SCREEN
      ELSE
-         CALL "CHAT-SUGGEST" USING CLIENT-STATE
+         IF CS-FROZEN = 0
+             CALL "CHAT-SUGGEST" USING CLIENT-STATE
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM CHAT-INPUT.
@@ -148,9 +157,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CHAT-SEND.
 *> USING CLIENT-STATE: Chat Command with a line starting with / (without the /), else Chat with
-*> the line, stamped with the frame's clock as milliseconds since the
-*> Unix epoch (CL-CLOCK counts from day 1 of INTEGER-OF-DATE; 1970-01-01 is day 134775, so the
-*> offset is 134775 x 86400000 ms; local time, which the server does not use, 09 §3.2).
+*> the line, stamped with the frame's clock, which is milliseconds since the Unix epoch (CL-CLOCK, gettimeofday; the server does not use it, 09 §3.2).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -158,7 +165,6 @@
  01 WS-READY               BINARY-LONG VALUE 0.
  01 WS-CAPACITY            BINARY-LONG VALUE 1100.
  01 WS-CONN                BINARY-LONG VALUE CONN-GAME.
- 01 WS-EPOCH               BINARY-DOUBLE VALUE 11644560000000.
  01 WS-TIME                BINARY-DOUBLE.
  01 WS-COMMAND             PIC X(1024).
  01 WS-LENGTH              BINARY-LONG.
@@ -169,7 +175,7 @@
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
          MOVE 1 TO WS-READY
      END-IF
-     COMPUTE WS-TIME = CL-NOW-MS - WS-EPOCH
+     MOVE CL-NOW-MS TO WS-TIME
      CALL "PB-RESET" USING PB-BUFFER
      IF CH-LINE(1:1) = "/"
          MOVE SPACES TO WS-COMMAND
@@ -208,6 +214,8 @@
  01 WS-LITERAL             BINARY-LONG.
  01 WS-ARGUMENT            BINARY-LONG.
  01 WS-ASK                 BINARY-LONG.
+ 01 WS-PLAYERS             BINARY-LONG.
+ 01 WS-FIT                 BINARY-LONG.
  01 WS-WORD                PIC X(1024).
  01 WS-WORD-LENGTH         BINARY-LONG.
  01 WS-NAME                PIC X(32).
@@ -221,7 +229,7 @@
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
          MOVE 1 TO WS-READY
      END-IF
-     MOVE 0 TO CS-COUNT WS-ASK WS-NODE
+     MOVE 0 TO CS-COUNT WS-ASK WS-NODE WS-PLAYERS
      IF CH-LINE-LENGTH > 0 AND CH-LINE(1:1) = "/" AND CM-COUNT > 0
          COMPUTE WS-NODE = CM-ROOT + 1
          MOVE 2 TO WS-START
@@ -268,10 +276,11 @@
                      CONTINUE
                  WHEN WS-WORD-LENGTH = 0
                      MOVE 1 TO WS-MATCH
-                 WHEN WS-NAME(1:WS-WORD-LENGTH) = WS-WORD(1:WS-WORD-LENGTH)
+                 WHEN FUNCTION LOWER-CASE(WS-NAME(1:WS-WORD-LENGTH))
+                         = FUNCTION LOWER-CASE(WS-WORD(1:WS-WORD-LENGTH))
                      MOVE 1 TO WS-MATCH
              END-EVALUATE
-             IF WS-MATCH = 1 AND CS-COUNT < CL-MAX-SUGGEST
+             IF WS-MATCH = 1 AND CS-COUNT < CL-MAX-COMMANDS
                  ADD 1 TO CS-COUNT
                  MOVE WS-NAME TO CS-TEXT(CS-COUNT)
                  MOVE WS-NAME-LENGTH TO CS-LENGTH(CS-COUNT)
@@ -280,9 +289,14 @@
          EVALUATE TRUE
              WHEN WS-END = 0
 *>               The word being typed: an ask_server argument asks the server; done.
+                 MOVE WS-START TO CS-WORD-START
                  IF WS-ARGUMENT > 0
                      COMPUTE WS-BIT = CM-FLAGS(WS-ARGUMENT) / 16
                      COMPUTE WS-ASK = FUNCTION MOD(WS-BIT, 2)
+*>                   An entity or game profile argument completes from the players online (15 section 14).
+                     IF WS-ASK = 0 AND (CM-PARSER(WS-ARGUMENT) = 6 OR CM-PARSER(WS-ARGUMENT) = 7)
+                         MOVE 1 TO WS-PLAYERS
+                     END-IF
                  END-IF
                  MOVE 0 TO WS-NODE
              WHEN WS-LITERAL > 0
@@ -294,7 +308,29 @@
          END-EVALUATE
          COMPUTE WS-START = WS-END + 1
      END-PERFORM
+     CALL "CHAT-SORT" USING CLIENT-STATE
      EVALUATE TRUE
+         WHEN WS-PLAYERS = 1
+             MOVE 0 TO CS-ASKED-LENGTH CS-ANSWERS
+             COMPUTE WS-WORD-LENGTH = CH-LINE-LENGTH - CS-WORD-START + 1
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > PI-COUNT OR CS-ANSWERS = CL-MAX-SUGGEST
+                 MOVE 0 TO WS-FIT
+                 IF PI-USED(WS-I) = 1 AND PI-NAME-LENGTH(WS-I) >= WS-WORD-LENGTH
+                     IF WS-WORD-LENGTH = 0
+                         MOVE 1 TO WS-FIT
+                     ELSE
+                         IF FUNCTION LOWER-CASE(PI-NAME(WS-I)(1:WS-WORD-LENGTH))
+                                 = FUNCTION LOWER-CASE(CH-LINE(CS-WORD-START:WS-WORD-LENGTH))
+                             MOVE 1 TO WS-FIT
+                         END-IF
+                     END-IF
+                 END-IF
+                 IF WS-FIT = 1
+                     ADD 1 TO CS-ANSWERS
+                     MOVE PI-NAME(WS-I) TO CS-A-TEXT(CS-ANSWERS)
+                     MOVE PI-NAME-LENGTH(WS-I) TO CS-A-LENGTH(CS-ANSWERS)
+                 END-IF
+             END-PERFORM
          WHEN WS-ASK = 0
              MOVE 0 TO CS-ASKED-LENGTH CS-ANSWERS
          WHEN CS-ASKED-LENGTH = CH-LINE-LENGTH
@@ -311,3 +347,68 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM CHAT-SUGGEST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CHAT-SORT.
+*> USING CLIENT-STATE: the command suggestions (CS-ENTRY) in the order of their lower-cased text (15 §14.2; equal text keeps the tree's order).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-TEXT                PIC X(32).
+ 01 WS-LENGTH              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     PERFORM VARYING WS-I FROM 2 BY 1 UNTIL WS-I > CS-COUNT
+         MOVE CS-TEXT(WS-I) TO WS-TEXT
+         MOVE CS-LENGTH(WS-I) TO WS-LENGTH
+         MOVE WS-I TO WS-J
+         PERFORM UNTIL WS-J < 2
+                 OR FUNCTION LOWER-CASE(CS-TEXT(WS-J - 1)) <= FUNCTION LOWER-CASE(WS-TEXT)
+             MOVE CS-ENTRY(WS-J - 1) TO CS-ENTRY(WS-J)
+             SUBTRACT 1 FROM WS-J
+         END-PERFORM
+         MOVE WS-TEXT TO CS-TEXT(WS-J)
+         MOVE WS-LENGTH TO CS-LENGTH(WS-J)
+     END-PERFORM
+     GOBACK.
+ END PROGRAM CHAT-SORT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CHAT-TAB.
+*> USING CLIENT-STATE: Tab puts the first suggestion (the commands, then the server answers) in place of the
+*> word being typed (from CS-WORD-START to the end of the line), each further Tab the next one, round; the list is kept (CS-FROZEN) until
+*> the next typed character or Backspace. With no suggestion Tab does nothing.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLCONST.
+ 01 WS-TOTAL               BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-TEXT                PIC X(64).
+ 01 WS-LENGTH              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ PROCEDURE DIVISION USING CLIENT-STATE.
+     COMPUTE WS-TOTAL = CS-COUNT + CS-ANSWERS
+     IF WS-TOTAL > 0 AND CS-WORD-START > 0
+         IF CS-FROZEN = 0
+             MOVE 1 TO CS-FROZEN CS-SELECTED
+         ELSE
+             COMPUTE CS-SELECTED = FUNCTION MOD(CS-SELECTED, WS-TOTAL) + 1
+         END-IF
+         IF CS-SELECTED <= CS-COUNT
+             MOVE CS-TEXT(CS-SELECTED) TO WS-TEXT
+             MOVE CS-LENGTH(CS-SELECTED) TO WS-LENGTH
+         ELSE
+             COMPUTE WS-J = CS-SELECTED - CS-COUNT
+             MOVE CS-A-TEXT(WS-J) TO WS-TEXT
+             MOVE CS-A-LENGTH(WS-J) TO WS-LENGTH
+         END-IF
+         IF CS-WORD-START + WS-LENGTH - 1 <= CL-CHAT-UNITS
+             MOVE WS-TEXT(1:WS-LENGTH) TO CH-LINE(CS-WORD-START:WS-LENGTH)
+             COMPUTE CH-LINE-LENGTH = CS-WORD-START + WS-LENGTH - 1
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CHAT-TAB.

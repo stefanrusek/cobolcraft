@@ -2,7 +2,7 @@
 spile: ticket
 id: CC-0001
 type: feature
-status: draft
+status: unverified
 owner: stefanrusek
 resolution:
 blocked_by: []
@@ -11,7 +11,9 @@ relations:
   depends_on: []
   relates_to: [CC-0002, CC-0007]
   supersedes: []
-implementation: []
+implementation:
+  branch: 002-client-polish
+  pr: 2
 ---
 
 # CC-0001: Client polish: visuals, controls and missing gameplay
@@ -199,3 +201,19 @@ cobolcraft world type (Principle II).
 
 > [!NOTE]
 > Today a count is drawn on stacks of 1, unlike Minecraft.
+
+## State at the end of the polish run (2026-11-23)
+
+- The implement phases of the second SDD run (specs/002-client-polish, PR #2) are closed at the wrap, so the status is
+  `unverified`. `python3 tools/tasks.py status specs/002-client-polish --open` still lists open task lines (257 at
+  origin 804aa12f with the ticks of T3612 and T3613 applied); they are classified in CC-0045 and are not claimed done.
+- The work not done is recorded as draft tickets: play-test bugs and lanes with saved work (unmerged branches and
+  uncommitted worktrees) CC-0010 to CC-0026, unbuilt larger items CC-0027 to CC-0035, doc rounds CC-0036 to CC-0038,
+  wiring, long-tail and small items CC-0039 to CC-0044, the classification of the open task lines CC-0045 and the
+  older play-test reports CC-0046. Lighting stays CC-0007 (the L32 light engine note is there).
+- SC-013 (a reference vanilla client passes configuration against a standard-type server): the manual half is pending.
+  `specs/002-client-polish/vanilla-client-evidence.md` reads `Status: pending operator`: the operator's own real-client
+  check (quickstart section 9) has not been recorded. Until that file reads `Status: done` the ticket is not
+  `verifying` or `closed`. The automated half is the configuration and play sequence tests of the core; this
+  ticket does not restate their results.
+- The terminal gate (T3614, `make gate` with its real output) is its own task line and is not claimed here.
