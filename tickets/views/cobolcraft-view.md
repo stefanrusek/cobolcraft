@@ -60,6 +60,7 @@ project: CobolCraft
 | [CC-0044](../CC-0044-client-small-leftovers.md) | Small client leftovers: slot counts, sign editor, bed item, heads, slime bounce | feature | stefanrusek |  |  |
 | [CC-0045](../CC-0045-polish-run-closing-inventory.md) | The open task lines of the polish run are decided: build, cut or keep as tickets | feature | stefanrusek |  |  |
 | [CC-0046](../CC-0046-older-play-test-reports-unverified.md) | Play-test reports of try8 to try11 are checked against a current build | bug | stefanrusek |  |  |
+| [CC-0047](../CC-0047-first-chunk-fill-step-within-tick-budget.md) | The first fill step of a freshly loaded chunk stays inside the per-tick step budget | bug | stefanrusek |  |  |
 
 ### unverified
 
