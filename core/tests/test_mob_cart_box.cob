@@ -29,6 +29,7 @@
  01 WS-KIND                BINARY-LONG.
  01 WS-CHEST               BINARY-LONG.
  01 WS-HOPPER              BINARY-LONG.
+ 01 WS-FURNACE             BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
  01 WS-SLOT2               BINARY-LONG.
  01 WS-USED                BINARY-LONG.
@@ -222,6 +223,15 @@
      MOVE 0 TO TL-EXPECTED-N
      COMPUTE TL-OBSERVED-N = WS-USED * 10 + MN-WINDOW(WS-PLAYER)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   A furnace cart (kind 4) is neither boarded nor opened by an interact: no rider, no menu, not used.
+     MOVE 4 TO WS-KIND
+     CALL "MINECART-SPAWN" USING WS-KIND WS-DIM WS-X WS-Y WS-Z WS-FURNACE
+     CALL "MINECART-USE" USING WS-PLAYER WS-FURNACE WS-USED
+     MOVE "implementation 44-8 4.4.3 an interact on a furnace cart boards nobody and opens no menu" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-USED * 100 + EN-RIDER(WS-FURNACE) * 10 + MN-WINDOW(WS-PLAYER)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     CALL "ENTITY-REMOVE" USING WS-FURNACE
 *>   The comparator signal and the slowdown factor of the contents.
      CALL "ECV-SIGNAL" USING WS-SLOT2 WS-SIGNAL
      MOVE "implementation 44-8 4.6 a plain cart holds no container: signal 0 whatever its row holds" TO TL-CASE
