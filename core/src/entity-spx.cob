@@ -160,16 +160,6 @@
                  MOVE EK-SPX-SET(L-ROW, WS-SLOT) TO WS-SET
              END-IF
              EVALUATE TRUE
-                 WHEN SPX-MODE(WS-R) = "X"
-*>                   Written when the first number of the species (the chest flag) is 1: the items kept, or an empty list.
-                     IF EK-SPX-SET(L-ROW, 1) = 1 AND EK-SPX-NUM(L-ROW, 1) = 1
-                         IF WS-SET = 1
-                             CALL "NBT-WRITE-HEADER" USING PB-BUFFER WS-TAG WN WL
-                             CALL "PB-APPEND-BYTES" USING PB-BUFFER EK-BIG-RAW(L-ROW, WS-BIG) EK-BIG-LEN(L-ROW, WS-BIG)
-                         ELSE
-                             CALL "NBT-WRITE-LIST-BEGIN" USING PB-BUFFER WN WL WS-T-COMPOUND WS-ZERO
-                         END-IF
-                     END-IF
                  WHEN SPX-MODE(WS-R) = "Z"
                      CONTINUE
                  WHEN SPX-MODE(WS-R) = "Y"
