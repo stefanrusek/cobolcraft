@@ -401,7 +401,7 @@
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
 
-*> WS-MISS: how many of the corners, brightness and uv of the slot quad WS-Q (vertices 1, 2, 3 and 6 are its corners) differ from GUI row WS-R.
+*> WS-MISS: how many of the corners, shade (colour) and uv of the slot quad WS-Q (vertices 1, 2, 3 and 6 are its corners) differ from GUI row WS-R.
  GUI-DIFF.
      MOVE 0 TO WS-MISS
      MOVE SPACES TO WS-TEXID
@@ -409,9 +409,22 @@
      MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-TEXID)) TO WS-TEXLEN
      CALL "ATLAS-FIND" USING CLIENT-STATE WS-TEXID WS-TEXLEN WS-TEXSPR
      COMPUTE WS-BASE = (WS-Q - 1) * 6
-     COMPUTE WS-GOT ROUNDED = RL-IC-B(WS-BASE + 1) * 10000
+*>   CC-0016: the shade of the face is in the vertex colour (12 section 6.10: vertexColor = colour.rgb x lightAccum; the UI pipeline ignores the vertex brightness): the bed's quads are
+*>   untinted, so red, green and blue are the shade and the brightness field is 1.
      MOVE WS-GR-B(WS-R) TO WS-EXP
+     COMPUTE WS-GOT ROUNDED = RL-IC-R(WS-BASE + 1) * 10000
      IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+         ADD 1 TO WS-MISS
+     END-IF
+     COMPUTE WS-GOT ROUNDED = RL-IC-G(WS-BASE + 1) * 10000
+     IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+         ADD 1 TO WS-MISS
+     END-IF
+     COMPUTE WS-GOT ROUNDED = RL-IC-BLUE(WS-BASE + 1) * 10000
+     IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+         ADD 1 TO WS-MISS
+     END-IF
+     IF RL-IC-B(WS-BASE + 1) NOT = 1
          ADD 1 TO WS-MISS
      END-IF
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4

@@ -126,7 +126,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPECIAL-UI-QUAD.
 *> USING CLIENT-STATE, corners (8 FLOAT-SHORT: x y of the four corners, window pixels), uv (4 u then 4 v), brightness, tint (3 FLOAT-SHORT): the two triangles 1 2 3, 1 3 4 of a quad in
-*> the icon layer (RL-IC-VERTEX, the block atlas) while it has room.
+*> the icon layer (RL-IC-VERTEX, the block atlas) while it has room. The brightness of the face's lighting is folded into the vertex colour, as the item shader does (12 section 6.10:
+*> vertexColor = colour.rgb x lightAccum): the UI pipeline ignores the vertex brightness (shim-abi section 9), so a vertex carries tint x brightness and the brightness field 1 (CC-0016).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -155,12 +156,12 @@
              MOVE 0 TO RL-IC-Z(RL-IC-COUNT)
              MOVE L-U(WS-C) TO RL-IC-U(RL-IC-COUNT)
              MOVE L-V(WS-C) TO RL-IC-V(RL-IC-COUNT)
-             MOVE L-B TO RL-IC-B(RL-IC-COUNT)
+             MOVE 1 TO RL-IC-B(RL-IC-COUNT)
              MOVE 1 TO RL-IC-A(RL-IC-COUNT)
              MOVE 0 TO RL-IC-SKY(RL-IC-COUNT)
-             MOVE L-T(1) TO RL-IC-R(RL-IC-COUNT)
-             MOVE L-T(2) TO RL-IC-G(RL-IC-COUNT)
-             MOVE L-T(3) TO RL-IC-BLUE(RL-IC-COUNT)
+             COMPUTE RL-IC-R(RL-IC-COUNT) = L-T(1) * L-B
+             COMPUTE RL-IC-G(RL-IC-COUNT) = L-T(2) * L-B
+             COMPUTE RL-IC-BLUE(RL-IC-COUNT) = L-T(3) * L-B
          END-PERFORM
      END-IF
      GOBACK.
