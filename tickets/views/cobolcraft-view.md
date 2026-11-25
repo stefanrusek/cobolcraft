@@ -65,6 +65,7 @@ project: CobolCraft
 | [CC-0049](../CC-0049-standard-registry-data-for-clients-without-core-pack.md) | A standard world sends NBT Registry Data to a client without the core pack | bug | stefanrusek |  |  |
 | [CC-0050](../CC-0050-real-player-skins.md) | A player's own skin is shown to the others | feature | stefanrusek |  |  |
 | [CC-0051](../CC-0051-vanilla-client-actions-ignored.md) | The actions of a vanilla client that the server discards take effect | feature | stefanrusek |  |  |
+| [CC-0053](../CC-0053-other-players-see-held-items-and-armour.md) | Other players see what a player holds and wears at all times | bug | stefanrusek |  |  |
 
 ### implementing
 
