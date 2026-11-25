@@ -24,6 +24,7 @@ project: CobolCraft
 | [CC-0021](../CC-0021-block-and-fluid-fixes-on-lanes.md) | Block placement, update and fluid fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 | [CC-0022](../CC-0022-container-tool-and-ui-fixes-on-lanes.md) | Furnace, brush, recipe book and F3 fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 | [CC-0023](../CC-0023-superflat-spawn-rates.md) | Superflat worlds spawn slimes and hostile mobs at the standard rates | bug | stefanrusek |  | --- |
+| [CC-0046](../CC-0046-older-play-test-reports-unverified.md) | Play-test reports of try8 to try11 are checked against a current build | bug | stefanrusek |  | --- |
 
 ## Board
 
@@ -58,7 +59,6 @@ project: CobolCraft
 | [CC-0043](../CC-0043-structure-generation-leftovers.md) | Structure generation leftovers: mineshaft loot, test bookkeeping and the cut families | feature | stefanrusek |  |  |
 | [CC-0044](../CC-0044-client-small-leftovers.md) | Small client leftovers: slot counts, sign editor, bed item, heads, slime bounce | feature | stefanrusek |  |  |
 | [CC-0045](../CC-0045-polish-run-closing-inventory.md) | The open task lines of the polish run are decided: build, cut or keep as tickets | feature | stefanrusek |  |  |
-| [CC-0046](../CC-0046-older-play-test-reports-unverified.md) | Play-test reports of try8 to try11 are checked against a current build | bug | stefanrusek |  |  |
 | [CC-0047](../CC-0047-first-chunk-fill-step-within-tick-budget.md) | The first fill step of a freshly loaded chunk stays inside the per-tick step budget | bug | stefanrusek |  |  |
 
 ### implementing
@@ -84,6 +84,7 @@ project: CobolCraft
 | [CC-0021](../CC-0021-block-and-fluid-fixes-on-lanes.md) | Block placement, update and fluid fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 | [CC-0022](../CC-0022-container-tool-and-ui-fixes-on-lanes.md) | Furnace, brush, recipe book and F3 fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 | [CC-0023](../CC-0023-superflat-spawn-rates.md) | Superflat worlds spawn slimes and hostile mobs at the standard rates | bug | stefanrusek |  | --- |
+| [CC-0046](../CC-0046-older-play-test-reports-unverified.md) | Play-test reports of try8 to try11 are checked against a current build | bug | stefanrusek |  | --- |
 
 ## Recently Closed
 
