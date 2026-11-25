@@ -50,6 +50,16 @@
  01 WS-EDIT-X              PIC -(9)9.
  01 WS-EDIT-Y              PIC -(9)9.
  01 WS-EDIT-Z              PIC -(9)9.
+ 01 WS-EDIT-X2             PIC -(9)9.
+ 01 WS-EDIT-Y2             PIC -(9)9.
+ 01 WS-EDIT-Z2             PIC -(9)9.
+  01 WS-E1                  BINARY-LONG.
+ 01 WS-LO-X                BINARY-LONG.
+ 01 WS-LO-Z                BINARY-LONG.
+ 01 WS-HI-X                BINARY-LONG.
+ 01 WS-HI-Z                BINARY-LONG.
+ 01 WS-FLOOR-Y             BINARY-LONG.
+ 01 WS-TOP-Y               BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  PROCEDURE DIVISION.
@@ -94,6 +104,19 @@
 *>   survival, an empty pack
      MOVE "/gamemode survival" TO WS-LINE
      PERFORM SAY-AND-STEP
+     MOVE "N" TO TL-MODE
+
+*>   the ground under and ahead of the player is made level: a stone floor with clear air above (the terrain of a random seed may slope, and a boat whose box would overlap
+*>   the ground is refused, as in Minecraft)
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
+     COMPUTE WS-LO-X = FUNCTION INTEGER(PL-X) - 3
+     COMPUTE WS-HI-X = FUNCTION INTEGER(PL-X) + 3
+     COMPUTE WS-LO-Z = FUNCTION INTEGER(PL-Z) - 3
+     COMPUTE WS-HI-Z = FUNCTION INTEGER(PL-Z) + 4
+     COMPUTE WS-FLOOR-Y = FUNCTION INTEGER(PL-Y) - 1
+     COMPUTE WS-TOP-Y = WS-FLOOR-Y + 4
+     PERFORM FILL-AIR
+     PERFORM FILL-STONE
      MOVE "N" TO TL-MODE
 
 *>   a boat pressed on the ground (looking 50 degrees down)
@@ -198,6 +221,31 @@
      PERFORM COUNT-ITEMS
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
+
+ FILL-AIR.
+     COMPUTE WS-E1 = WS-FLOOR-Y + 1
+     MOVE WS-LO-X TO WS-EDIT-X
+     MOVE WS-E1 TO WS-EDIT-Y
+     MOVE WS-LO-Z TO WS-EDIT-Z
+     MOVE WS-HI-X TO WS-EDIT-X2
+     MOVE WS-TOP-Y TO WS-EDIT-Y2
+     MOVE WS-HI-Z TO WS-EDIT-Z2
+     MOVE SPACES TO WS-LINE
+     STRING "/fill " FUNCTION TRIM(WS-EDIT-X) " " FUNCTION TRIM(WS-EDIT-Y) " " FUNCTION TRIM(WS-EDIT-Z) " " FUNCTION TRIM(WS-EDIT-X2) " "
+         FUNCTION TRIM(WS-EDIT-Y2) " " FUNCTION TRIM(WS-EDIT-Z2) " air" DELIMITED BY SIZE INTO WS-LINE
+     PERFORM SAY-AND-STEP.
+
+ FILL-STONE.
+     MOVE WS-LO-X TO WS-EDIT-X
+     MOVE WS-FLOOR-Y TO WS-EDIT-Y
+     MOVE WS-LO-Z TO WS-EDIT-Z
+     MOVE WS-HI-X TO WS-EDIT-X2
+     MOVE WS-FLOOR-Y TO WS-EDIT-Y2
+     MOVE WS-HI-Z TO WS-EDIT-Z2
+     MOVE SPACES TO WS-LINE
+     STRING "/fill " FUNCTION TRIM(WS-EDIT-X) " " FUNCTION TRIM(WS-EDIT-Y) " " FUNCTION TRIM(WS-EDIT-Z) " " FUNCTION TRIM(WS-EDIT-X2) " "
+         FUNCTION TRIM(WS-EDIT-Y2) " " FUNCTION TRIM(WS-EDIT-Z2) " stone" DELIMITED BY SIZE INTO WS-LINE
+     PERFORM SAY-AND-STEP.
 
  SAY-AND-STEP.
      MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-LINE TRAILING)) TO WS-LINE-LENGTH

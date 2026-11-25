@@ -553,7 +553,7 @@
        10 PL-USE-START        BINARY-DOUBLE.
        10 PL-USE-DURATION     BINARY-LONG.
        10 PL-USE-SLOT         BINARY-LONG.
-*>     Held-use items of CONTROLS-INPUT (controls.cob, CONTROLS-USE-KIND kind 2): 1 from the Use Item of a spyglass, goat horn, brush, potion or ominous bottle until the right button is
+*>     Held-use items of CONTROLS-INPUT (controls.cob, CONTROLS-USE-KIND kind 2): 1 from the Use Item of a spyglass, goat horn, potion or ominous bottle (or the right press at a block with a brush held) until the right button is
 *>     released (or the item is no longer held): then Player Action 6 (release use item) is sent. A bow, crossbow, trident and shield are driven by USE-ITEM-INPUT (PL-USE-KIND above).
        10 PL-USING           PIC 9.
 *>     Weather (US11; standin-content §14): the rain and thunder levels of the last Game Events 7

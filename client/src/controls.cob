@@ -24,9 +24,9 @@
 *>     eaten); a later release, or Entity Event 9 for the Player first, ends it with nothing sent.
 *>     The server decides whether eating starts (food below 24, survival).
 *>   - the other items the server uses (lane bugusein; 17 sections 3.14, 3.16, 25 part 7 sections 7 and 9; CONTROLS-USE-KIND): the right button pressed on the world screen with
-*>     a boat, a firework rocket, armor or elytra held sends Use Item (the next sequence number, the facing); with a spyglass, goat horn, brush, potion or ominous bottle held it sends
+*>     a boat, a firework rocket, armor or elytra held sends Use Item (the next sequence number, the facing); with a spyglass, goat horn, potion or ominous bottle held it sends
 *>     Use Item and the Player is using the item (PL-USING) until the button is released, the item is no longer held or the screen is left: then release use item (Player Action 6) is
-*>     sent. The block that was aimed at has had its Use Item On first; when it took the click the server ignores that tick's Use Item. A bow, crossbow, trident and shield (also in the
+*>     sent; with a brush held the right press at a block (its Use Item On) is the use. The block that was aimed at has had its Use Item On first; when it took the click the server ignores that tick's Use Item. A bow, crossbow, trident and shield (also in the
 *>     off hand) are driven by USE-ITEM-INPUT (use-item.cob: ammo, the pose state), not here.
 *>   CONTROLS-SPRINT (every frame in play, before the client tick; US8-2; client-surface §3;
 *>   09 §3.3 Player Command 0x2A): the Player sprints while, on the world screen, Left Control is
@@ -87,7 +87,7 @@
      IF WS-USE-KIND = 1
          MOVE 1 TO WS-IS-AIR-USE
      END-IF
-     IF WS-USE-KIND = 2
+     IF WS-USE-KIND = 2 OR WS-USE-KIND = 3
          MOVE 1 TO WS-HOLD-USE
      END-IF
      MOVE 0 TO WS-STATE
@@ -119,10 +119,15 @@
          WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND WS-IS-AIR-USE = 1
              CALL "CONTROLS-SEND-BUCKET" USING CLIENT-STATE
 *>       A spyglass, goat horn, brush, potion or ominous bottle: Use Item starts the use, the release ends it.
-         WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND WS-HOLD-USE = 1 AND PL-USING = 0
+         WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND WS-USE-KIND = 2 AND PL-USING = 0
              CALL "CONTROLS-SEND-BUCKET" USING CLIENT-STATE
              MOVE 1 TO PL-USING
      END-EVALUATE
+*>   A brush (17 section 3.5, 25 part 8 section 7): the right press that sent Use Item On at a block with the brush held starts its use on the server; the use goes on while the button is held
+*>   and release use item is sent when it comes up (the server's use lasts 200 ticks otherwise). In the air the brush does nothing.
+     IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND TG-HIT = 1 AND WS-USE-KIND = 3 AND PL-USING = 0
+         MOVE 1 TO PL-USING
+     END-IF
 *>   The use ends with the button, the held item or the screen: release use item.
      IF PL-USING = 1 AND (IN-BUTTON-DOWN(CC-BUTTON-RIGHT + 1) = 0 OR WS-HOLD-USE = 0 OR SM-SCREEN NOT = SCR-WORLD)
          MOVE 0 TO PL-USING
@@ -212,7 +217,8 @@
  PROGRAM-ID. CONTROLS-USE-KIND.
 *> USING item path (PIC X(40)), kind out: how the right button uses the held item in the air (lane bugusein; the server decides what happens): 0 nothing is sent, 1 Use Item is sent
 *> (buckets, the thrown items of THROWN-ITEM-USE, boats and rafts, firework rockets, armor and elytra: 25 section 6.3, 17 section 3.16), 2 Use Item is sent and the release is sent too
-*> (spyglass, goat horn, brush, potion and ominous bottle: 17 sections 3.5, 3.14, 25 part 7). The bow, crossbow, trident and shield are 0 here: USE-ITEM-INPUT drives them.
+*> (spyglass, goat horn, potion and ominous bottle: 17 section 3.14, 25 part 7), 3 nothing is sent for the item itself but the right press at a block starts its use (the brush: Use Item
+*> On starts it on the server, 17 section 3.5, and the release is sent when the button is let go). The bow, crossbow, trident and shield are 0 here: USE-ITEM-INPUT drives them.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-LEN                 BINARY-LONG.
@@ -230,8 +236,10 @@
              MOVE 1 TO L-KIND
          WHEN L-PATH = "firework_rocket" OR "elytra"
              MOVE 1 TO L-KIND
-         WHEN L-PATH = "spyglass" OR "goat_horn" OR "brush" OR "potion" OR "ominous_bottle"
+         WHEN L-PATH = "spyglass" OR "goat_horn" OR "potion" OR "ominous_bottle"
              MOVE 2 TO L-KIND
+         WHEN L-PATH = "brush"
+             MOVE 3 TO L-KIND
      END-EVALUATE
      IF L-KIND = 0 AND WS-LEN >= 5
          COMPUTE WS-START = WS-LEN - 4
