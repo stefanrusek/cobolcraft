@@ -1,6 +1,6 @@
 *> T10410 (bug-sweep: limbs textured upside down): the texture orientation of every cuboid the render path draws. The side faces (west, north, east, south)
 *> of a cuboid show the texture upright: of two vertices of the same face, the one higher in the world has the smaller v (the top row of the face's
-*> texture rectangle is the top of the face), at every cuboid of a zombie, a skeleton, an iron golem, a creeper and an enderman standing still (models whose parts are not
+*> texture rectangle is the top of the face), at every cuboid of a zombie, a skeleton, an iron golem, a creeper, an enderman and a villager (CC-0046: the try10 report of one arm and one leg upside down) standing still (models whose parts are not
 *> turned onto their side: every limb is checked, the left arms and legs are the mirrored cuboids). The bottom face (DOWN of the model, the visible top, face 0) and the top face keep their own order (checked by the head).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-ENTITY-UV.
@@ -28,6 +28,9 @@
  01 WS-V0                  BINARY-LONG.
  01 WS-HI                  BINARY-LONG.
  01 WS-LO                  BINARY-LONG.
+ 01 WS-LAST-FACE           BINARY-LONG.
+ 01 WS-YMIN                FLOAT-LONG.
+ 01 WS-YMAX                FLOAT-LONG.
  01 WS-LIST                PIC X(200).
  01 WS-PTR                 BINARY-LONG.
  01 WS-EDIT                PIC Z(5)9.
@@ -37,8 +40,9 @@
     05 FILLER              PIC X(12) VALUE "iron_golem".
     05 FILLER              PIC X(12) VALUE "creeper".
     05 FILLER              PIC X(12) VALUE "enderman".
+    05 FILLER              PIC X(12) VALUE "villager".
  01 WS-NAMES-R REDEFINES WS-NAMES.
-    05 WS-NAME             PIC X(12) OCCURS 5 TIMES.
+    05 WS-NAME             PIC X(12) OCCURS 6 TIMES.
  01 WS-N                   BINARY-LONG.
  01 WS-EYE-TABLE.
     05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
@@ -52,7 +56,7 @@
      MOVE 64 TO WS-EYE(2)
      MOVE 1 TO CT-OPEN
      MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
-     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > 5
+     PERFORM VARYING WS-N FROM 1 BY 1 UNTIL WS-N > 6
          CALL "ENTITIES-CLEAR" USING CLIENT-STATE
          MOVE SPACES TO WS-KEY
          MOVE WS-NAME(WS-N) TO WS-KEY
@@ -70,7 +74,23 @@
          MOVE SPACES TO WS-LIST
          MOVE 1 TO WS-PTR
          PERFORM VARYING WS-C FROM 1 BY 1 UNTIL WS-C > WS-CUBES
-             PERFORM VARYING WS-F FROM 2 BY 1 UNTIL WS-F > 5
+*>           A part lying flat (the villager's hat rim, one pixel thick, turned a quarter turn about x) has its side faces turned: its texture rows run along the ground,
+*>           so the upright test does not apply to it (the cuboid's whole height is under a tenth of a block).
+             MOVE RL-EN-Y((WS-C - 1) * 36 + 1) TO WS-YMIN WS-YMAX
+             PERFORM VARYING WS-K FROM 2 BY 1 UNTIL WS-K > 36
+                 IF RL-EN-Y((WS-C - 1) * 36 + WS-K) < WS-YMIN
+                     MOVE RL-EN-Y((WS-C - 1) * 36 + WS-K) TO WS-YMIN
+                 END-IF
+                 IF RL-EN-Y((WS-C - 1) * 36 + WS-K) > WS-YMAX
+                     MOVE RL-EN-Y((WS-C - 1) * 36 + WS-K) TO WS-YMAX
+                 END-IF
+             END-PERFORM
+             IF WS-YMAX - WS-YMIN < 0.1
+                 MOVE 1 TO WS-LAST-FACE
+             ELSE
+                 MOVE 5 TO WS-LAST-FACE
+             END-IF
+             PERFORM VARYING WS-F FROM 2 BY 1 UNTIL WS-F > WS-LAST-FACE
                  COMPUTE WS-V0 = (WS-C - 1) * 36 + WS-F * 6
                  COMPUTE WS-HI = WS-V0 + 1
                  MOVE WS-HI TO WS-LO
