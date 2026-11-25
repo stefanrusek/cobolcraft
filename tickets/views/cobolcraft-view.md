@@ -13,6 +13,7 @@ project: CobolCraft
 |---|---|---|---|---|---|
 | [CC-0001](../CC-0001-client-polish.md) | Client polish: visuals, controls and missing gameplay | feature | stefanrusek |  | 2 |
 | [CC-0010](../CC-0010-swim-crawl-mining-target.md) | Mining, placing and attacking while swimming or crawling hit the block in front | bug | stefanrusek |  |  |
+| [CC-0013](../CC-0013-tree-flicker.md) | A tree does not flicker while the camera moves | bug | stefanrusek |  |  |
 | [CC-0015](../CC-0015-player-model-scale.md) | Other players and the third-person figure have the vanilla height | bug | stefanrusek |  |  |
 
 ## Board
@@ -63,7 +64,6 @@ project: CobolCraft
 
 | ID | Title | Type | Owner | Blocked | PR |
 |---|---|---|---|---|---|
-| [CC-0013](../CC-0013-tree-flicker.md) | A tree does not flicker while the camera moves | bug | stefanrusek |  |  |
 | [CC-0014](../CC-0014-goat-horn-in-hand.md) | A goat horn in the hand is raised to the mouth when used | bug | stefanrusek |  |  |
 | [CC-0021](../CC-0021-block-and-fluid-fixes-on-lanes.md) | Block placement, update and fluid fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 
@@ -73,6 +73,7 @@ project: CobolCraft
 |---|---|---|---|---|---|
 | [CC-0001](../CC-0001-client-polish.md) | Client polish: visuals, controls and missing gameplay | feature | stefanrusek |  | 2 |
 | [CC-0010](../CC-0010-swim-crawl-mining-target.md) | Mining, placing and attacking while swimming or crawling hit the block in front | bug | stefanrusek |  |  |
+| [CC-0013](../CC-0013-tree-flicker.md) | A tree does not flicker while the camera moves | bug | stefanrusek |  |  |
 | [CC-0015](../CC-0015-player-model-scale.md) | Other players and the third-person figure have the vanilla height | bug | stefanrusek |  |  |
 
 ## Recently Closed

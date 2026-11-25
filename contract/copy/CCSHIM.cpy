@@ -25,6 +25,7 @@
  78 CC-PIPE-CRUMBLING       VALUE 3.
  78 CC-PIPE-GLINT           VALUE 4.
  78 CC-PIPE-TRANSLUCENT-CULL VALUE 5.
+ 78 CC-PIPE-OPAQUE-CULL     VALUE 6.
 
 *> Texture ids (§9).
  78 CC-TEX-BLOCKS           VALUE 0.   *> block and item atlas
