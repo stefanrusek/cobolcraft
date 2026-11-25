@@ -432,7 +432,50 @@
 
      MOVE "test play packet id 69 (no serverbound play packet) closes the connection" TO TL-CASE
      MOVE 69 TO WS-N
-     PERFORM FEED-REFUSED.
+     PERFORM FEED-REFUSED
+
+     MOVE "test play packet id 16 (answers Start Configuration, never sent) closes the connection" TO TL-CASE
+     MOVE 16 TO WS-N
+     PERFORM FEED-REFUSED
+
+     MOVE "test play packet Punch (a vanilla client breaks a block) is discarded and the connection stays open"
+         TO TL-CASE
+     MOVE 46 TO WS-N
+     PERFORM FEED-DISCARDED
+
+     MOVE "test play packet Pick Item From Block (middle click) is discarded and the connection stays open"
+         TO TL-CASE
+     MOVE 36 TO WS-N
+     PERFORM FEED-DISCARDED
+
+     MOVE "test play packet Seen Advancements (the advancements screen) is discarded and the connection stays open"
+         TO TL-CASE
+     MOVE 51 TO WS-N
+     PERFORM FEED-DISCARDED
+
+     MOVE "test play packet Chat Ack is discarded and the connection stays open" TO TL-CASE
+     MOVE 6 TO WS-N
+     PERFORM FEED-DISCARDED
+
+     MOVE "test play packet Custom Click Action (the last serverbound id) is discarded and the connection stays open"
+         TO TL-CASE
+     MOVE 68 TO WS-N
+     PERFORM FEED-DISCARDED.
+
+*> A packet of id WS-N with one zero byte as body on a fresh play connection; asserts it stays open.
+ FEED-DISCARDED.
+     PERFORM PLAY-OPEN
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "PB-PUT-VARINT" USING PK-BUFFER WS-N
+     MOVE 0 TO WS-NUM
+     CALL "PB-PUT-BYTE" USING PK-BUFFER WS-NUM
+     CALL "TEST-FEED-BUFFER" USING WS-CONN PK-BUFFER
+     PERFORM START-ROW
+     MOVE CN-CLOSE(WS-CONN) TO WS-NUM PERFORM ADD-NUM
+     MOVE "0" TO TL-EXPECTED
+     PERFORM ASSERT-ROW
+     MOVE 1 TO CN-CLOSE(WS-CONN)
+     PERFORM PLAY-CLOSE.
 
 *> A packet of id WS-N with one zero byte as body on a fresh play connection; asserts the close.
  FEED-REFUSED.

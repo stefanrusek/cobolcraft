@@ -157,8 +157,8 @@ Configuration (order of 03 "Configuration sequence"; no Code of Conduct, no Serv
 | C→S | 0x02 (2) | Custom Payload | Channel `minecraft:brand`, String `cobolcraft`. | `config-c2s-02-custom-payload-brand.hex` |
 | C→S | 0x00 (0) | Client Information | Language `en_us`; view distance = the client's view distance setting; chat visibility 0 (full); chat colors true; model customisation 0 (the fixture is the packet of a client whose seven skin parts are all off; the cobolcraft client sends the parts of its `modelPart_*` options, 127 by default, and the core keeps the byte and sends it as entry 16 of Set Entity Data, 47 section 5.3); main hand 1 (right); text filtering false; allows listing true; particle status 0 (all). The server reads the view distance and the model customisation byte. | `config-c2s-00-client-information.hex` |
 | S→C | 0x0D (13) | Update Enabled Features | One feature, `minecraft:vanilla` (Open question 1). | `config-s2c-0d-update-enabled-features.hex` |
-| S→C | 0x0F (15) | Select Known Packs | Empty list, in both world types (04 §2 guidance, CORE §2). | `config-s2c-0f-select-known-packs.hex` |
-| C→S | 0x07 (7) | Select Known Packs | Empty list. | `config-c2s-07-select-known-packs.hex` |
+| S→C | 0x0F (15) | Select Known Packs | **Cobolcraft:** empty list (04 §2 guidance, CORE §2). **Standard:** one KnownPack (`minecraft`, `core`, `26.3`) (04 §2). | `config-s2c-0f-select-known-packs.hex` |
+| C→S | 0x07 (7) | Select Known Packs | The CobolCraft client sends an empty list. The server also accepts the offered pack echoed back (a vanilla client) and then sends a standard world's entries without Data (04 §2). | `config-c2s-07-select-known-packs.hex` |
 | S→C | 0x07 (7) | Registry Data `minecraft:worldgen/biome` | **Cobolcraft only:** 3 entries, ids 0–2: `minecraft:plains`, `cobolcraft:upland`, `cobolcraft:ash_flats` (CORE §3.4, CORE-2), each with Data present. | `config-s2c-07-registry-data-worldgen-biome.hex` |
 | S→C | 0x07 (7) | Registry Data `minecraft:chat_type` | **Cobolcraft only:** 8 entries (CORE §3.5): the standard chat types of 16 §8 and `cobolcraft:say`. | `config-s2c-07-registry-data-chat-type.hex` |
 | S→C | 0x07 (7) | Registry Data, each of the 13 MV registries | **Cobolcraft only:** one entry `cobolcraft:placeholder` with the standin §4.5 data, in this order: `wolf_variant`, `wolf_sound_variant`, `pig_variant`, `pig_sound_variant`, `frog_variant`, `cat_variant`, `cat_sound_variant`, `cow_sound_variant`, `cow_variant`, `chicken_sound_variant`, `chicken_variant`, `zombie_nautilus_variant`, `painting_variant` (all `minecraft:` registry keys). One fixture each. | `config-s2c-07-registry-data-wolf-variant.hex`, `config-s2c-07-registry-data-wolf-sound-variant.hex`, `config-s2c-07-registry-data-pig-variant.hex`, `config-s2c-07-registry-data-pig-sound-variant.hex`, `config-s2c-07-registry-data-frog-variant.hex`, `config-s2c-07-registry-data-cat-variant.hex`, `config-s2c-07-registry-data-cat-sound-variant.hex`, `config-s2c-07-registry-data-cow-sound-variant.hex`, `config-s2c-07-registry-data-cow-variant.hex`, `config-s2c-07-registry-data-chicken-sound-variant.hex`, `config-s2c-07-registry-data-chicken-variant.hex`, `config-s2c-07-registry-data-zombie-nautilus-variant.hex`, `config-s2c-07-registry-data-painting-variant.hex` |
@@ -285,7 +285,7 @@ despawn, the 29-command set, crafting without a block) are retired in both world
 | Need | Dir | Id | Packet | Values and meaning | Fixture |
 |---|---|---|---|---|---|
 | Ground items | S→C | 0x01 (1) | Add Entity (item role) | Entity type: the item role (standard `minecraft:item`, cobolcraft `cobolcraft:loose_item`, type 1); entity UUID: most significant 64 bits 0, least significant 64 bits = the entity id; position and initial motion per the spawn source in 41 §2; angles 0; data 0. Followed by Set Entity Data. | `play-s2c-01-add-entity-loose-item.hex` |
-| | S→C | 0x65 (101) | Set Entity Data (item stack) | Entity id; the item entity's stack entry with the index and serializer of 21 App A, holding the stack (00 §12.1); then `0xFF`. Sent after Add Entity and whenever the stack changes (merge or pickup, 41 §4). | `play-s2c-65-set-entity-data-item.hex` |
+| | S→C | 0x65 (101) | Set Entity Data (item stack) | Entity id; the item entity's stack entry with the index and serializer of 21 App A (**standard:** index 8; the cobolcraft type still sends index 0, as its fixture shows), holding the stack (00 §12.1); then `0xFF`. Sent after Add Entity and whenever the stack changes (merge or pickup, 41 §4). | `play-s2c-65-set-entity-data-item.hex` |
 | | S→C | 0x67 (103) | Set Entity Motion | Entity id; motion as LpVec3; when sent: §3.4 rule 6. | `play-s2c-67-set-entity-motion.hex` |
 | | S→C | 0x80 (128) | Teleport Entity | As the row of §3.2. | Same layout as row 0x80 of §3.2 |
 | | S→C | 0x7F (127) | Take Item Entity | Collected = the item's entity id, collector = the player's, amount = items taken (41 §4.2); then Remove Entities if none remain. | `play-s2c-7f-take-item-entity.hex` |
@@ -494,8 +494,8 @@ loaded data pack defines (WT §4), in the order of 04 §3. The packet layouts ar
 
 | Packet | Fields | Value | Fixture |
 |---|---|---|---|
-| Registry Data (config S→C 0x07 (7)) | Registry Identifier; Entries: array of (Id Identifier, Data Optional network NBT, Boolean-prefixed) | **standard:** one packet per synchronized registry the pack defines (51 world registries, 04 §3 order), each entry's NBT in the schema of 04 §6 with the field order of §3.4 rule 9, `Data` present (CobolCraft has no known packs, 04 §3.1); **cobolcraft:** the packets of CORE §2 | exists for the cobolcraft type: `config-s2c-07-registry-data-*.hex`. None for the standard type: its rows come from the generated pack, so no byte fixture exists until the loader of 23 does (Open question 11); the automated check is `contract_vanilla_config` against the 04 worked examples |
-| Update Tags (config S→C 0x0E (14); play S→C 0x89 (137)) | Registries: array of (Registry Identifier, Tags: array of (Tag name Identifier, Entries: array of VarInt element ids)) | one packet with every registry's flattened tags; ids are the Registry Data order for synchronized registries and the static ids of 46 and 24 for static ones (04 §1); standard: the pack's tags; cobolcraft: CORE §4.4 | exists for cobolcraft: `config-s2c-0e-update-tags.hex`. None for the standard set (same reason) and none for play id 0x89, which has the layout of the configuration one |
+| Registry Data (config S→C 0x07 (7)) | Registry Identifier; Entries: array of (Id Identifier, Data Optional network NBT, Boolean-prefixed) | **standard:** one packet per synchronized registry the pack defines (51 world registries, 04 §3 order), each entry's NBT in the schema of 04 §6 with the field order of §3.4 rule 9, `Data` absent when the client's Select Known Packs is exactly (`minecraft`, `core`, `26.3`), else present (the CobolCraft client has no known packs) (04 §2); **cobolcraft:** the packets of CORE §2 | exists for the cobolcraft type: `config-s2c-07-registry-data-*.hex`. None for the standard type: its rows come from the generated pack, so no byte fixture exists until the loader of 23 does (Open question 11); the automated check is `contract_vanilla_config` against the 04 worked examples |
+| Update Tags (config S→C 0x0E (14); play S→C 0x89 (137)) | Registries: array of (Registry Identifier, Tags: array of (Tag name Identifier, Entries: array of VarInt element ids)) | one packet with every registry's flattened tags; ids are the Registry Data order for synchronized registries and the static ids of 46 and 24 for static ones (04 §1); standard: the pack's tags of the synchronized registries and of `block`, `item`, `entity_type`, `fluid`, `game_event` and `point_of_interest_type`, a registry without tags left out and no other registry sent (23 §6.6); cobolcraft: CORE §4.4 | exists for cobolcraft: `config-s2c-0e-update-tags.hex`. None for the standard set (same reason) and none for play id 0x89, which has the layout of the configuration one |
 
 ## 4. Packets CobolCraft never sends
 
@@ -504,7 +504,17 @@ handled as 01 §5 defines for a packet the receiver cannot decode: the connectio
 the protocol marks skippable, the frame is discarded). The exception is an unsolicited Custom Query Answer
 (login) or Cookie Response (login, configuration, play): as 02 defines, the server disconnects with
 `multiplayer.disconnect.unexpected_query_response` (Login Disconnect in login, Disconnect otherwise) and
-closes the connection. In particular CobolCraft never uses Encryption Request
+closes the connection.
+
+A vanilla client sends, in ordinary play, serverbound packets that CobolCraft does not act on (for example
+Punch 05c 0x2E while it breaks a block, Pick Item From Block, Seen Advancements and Chat Ack). The server
+therefore discards, unread, every play packet of 05c (ids 0 to 68) that it does not decode, and keeps the
+connection. The exceptions are Cookie Response (above) and Configuration Acknowledged (0x10) and Pong (0x2D),
+which answer packets CobolCraft never sends: they, an id above 68, and a packet the server decodes that is
+malformed or has bytes left over close the connection. A discarded packet has no effect: a signed chat command
+(0x08) runs nothing.
+
+In particular CobolCraft never uses Encryption Request
 and Response, Custom Query, cookies, Transfer, Code of Conduct, Server Links, dialogs, Bundle Delimiter (the server
 never sends it; whether the client must accept it from a vanilla-like server is Open question 12), Chat Session Update,
 signed chat commands or Start Configuration. Player Chat and Disguised Chat are used (§3.2).

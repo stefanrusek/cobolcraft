@@ -38,13 +38,15 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SET-ENTITY-DATA-STACK-BUILD.
 *> USING entity id, item, count (BINARY-LONG), patch handle (CSTACK.cpy; 0 none), PB-BUFFER: Set Entity Data 0x65 (05b; 09 §3.3): the
-*> entity id, one metadata entry (index 0, serializer 7 ITEM_STACK, the stack with its data component patch as 00 §12.2 gives it: the
-*> components that differ from the item's prototype, enchantments among them, so a viewer draws the glint), the 0xFF end.
+*> entity id, one metadata entry (serializer 7 ITEM_STACK, the stack with its data component patch as 00 §12.2 gives it: the
+*> components that differ from the item's prototype, enchantments among them, so a viewer draws the glint), the 0xFF end. The
+*> entry's index is 8 in a standard world (21 App A: item DATA_ITEM; entry 0 is the entity flags) and 0 in the cobolcraft type.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CONTENT.
  COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
  01 WS-PACKET-ID           BINARY-LONG VALUE 101.
- 01 WS-INDEX               BINARY-LONG VALUE 0.
+ 01 WS-INDEX               BINARY-LONG.
  01 WS-SERIALIZER          BINARY-LONG VALUE 7.
  01 WS-END                 BINARY-LONG VALUE 255.
  LINKAGE SECTION.
@@ -56,6 +58,10 @@
  PROCEDURE DIVISION USING L-ENTITY-ID L-ITEM L-COUNT L-HANDLE PB-BUFFER.
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PB-PUT-VARINT" USING PB-BUFFER L-ENTITY-ID
+     MOVE 0 TO WS-INDEX
+     IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+         MOVE 8 TO WS-INDEX
+     END-IF
      CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-INDEX
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-SERIALIZER
      CALL "SP-EXPORT" USING L-ITEM L-COUNT L-HANDLE MD-ITEMSTACK-X
