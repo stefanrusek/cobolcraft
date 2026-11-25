@@ -27,7 +27,6 @@ project: CobolCraft
 | [CC-0004](../CC-0004-shutdown-disconnect-delivery.md) | Players reliably see why the server shut down | bug | stefanrusek |  |  |
 | [CC-0007](../CC-0007-lighting-sky-and-clouds.md) | Lighting, sky, fog and clouds | feature | stefanrusek |  |  |
 | [CC-0009](../CC-0009-block-placement-orientation-attachment.md) | Block placement honours orientation and attachment | bug | stefanrusek |  |  |
-| [CC-0012](../CC-0012-farmland-trample.md) | Farmland turns to dirt when an entity lands on it | bug | stefanrusek |  |  |
 | [CC-0016](../CC-0016-item-icon-3d-shading.md) | 3D block icons in slots are shaded per face | bug | stefanrusek |  |  |
 | [CC-0017](../CC-0017-use-item-in-air.md) | Boats, bows, shields and other held items start their use from the real window | bug | stefanrusek |  |  |
 | [CC-0018](../CC-0018-skyblock-world-stays-void.md) | A void world stays void around its saved island | bug | stefanrusek |  |  |
@@ -64,6 +63,7 @@ project: CobolCraft
 
 | ID | Title | Type | Owner | Blocked | PR |
 |---|---|---|---|---|---|
+| [CC-0012](../CC-0012-farmland-trample.md) | Farmland turns to dirt when an entity lands on it | bug | stefanrusek |  |  |
 | [CC-0014](../CC-0014-goat-horn-in-hand.md) | A goat horn in the hand is raised to the mouth when used | bug | stefanrusek |  |  |
 | [CC-0021](../CC-0021-block-and-fluid-fixes-on-lanes.md) | Block placement, update and fluid fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 
