@@ -12,6 +12,7 @@ project: CobolCraft
 | ID | Title | Type | Owner | Blocked | PR |
 |---|---|---|---|---|---|
 | [CC-0001](../CC-0001-client-polish.md) | Client polish: visuals, controls and missing gameplay | feature | stefanrusek |  | 2 |
+| [CC-0009](../CC-0009-block-placement-orientation-attachment.md) | Block placement honours orientation and attachment | bug | stefanrusek |  |  |
 | [CC-0010](../CC-0010-swim-crawl-mining-target.md) | Mining, placing and attacking while swimming or crawling hit the block in front | bug | stefanrusek |  |  |
 | [CC-0011](../CC-0011-stairs-fall-damage.md) | Walking down stairs or an incline fast deals no fall damage | bug | stefanrusek |  |  |
 | [CC-0012](../CC-0012-farmland-trample.md) | Farmland turns to dirt when an entity lands on it | bug | stefanrusek |  |  |
@@ -33,7 +34,6 @@ project: CobolCraft
 | [CC-0002](../CC-0002-chunk-meshing-performance.md) | Chunk mesh building fast enough to play | feature | stefanrusek |  |  |
 | [CC-0004](../CC-0004-shutdown-disconnect-delivery.md) | Players reliably see why the server shut down | bug | stefanrusek |  |  |
 | [CC-0007](../CC-0007-lighting-sky-and-clouds.md) | Lighting, sky, fog and clouds | feature | stefanrusek |  |  |
-| [CC-0009](../CC-0009-block-placement-orientation-attachment.md) | Block placement honours orientation and attachment | bug | stefanrusek |  |  |
 | [CC-0019](../CC-0019-sleeping-on-the-client.md) | Sleeping in a bed works on the client and with villagers | feature | stefanrusek |  |  |
 | [CC-0020](../CC-0020-ci-workflow.md) | Continuous integration builds and tests the packages that need no client jar | feature | stefanrusek |  |  |
 | [CC-0024](../CC-0024-block-shapes-doc-51-round-4.md) | Block shapes follow doc 51 round 4: offset rule, scaffolding, shulker lid, light data, step-up | feature | stefanrusek |  |  |
@@ -72,6 +72,7 @@ project: CobolCraft
 | ID | Title | Type | Owner | Blocked | PR |
 |---|---|---|---|---|---|
 | [CC-0001](../CC-0001-client-polish.md) | Client polish: visuals, controls and missing gameplay | feature | stefanrusek |  | 2 |
+| [CC-0009](../CC-0009-block-placement-orientation-attachment.md) | Block placement honours orientation and attachment | bug | stefanrusek |  |  |
 | [CC-0010](../CC-0010-swim-crawl-mining-target.md) | Mining, placing and attacking while swimming or crawling hit the block in front | bug | stefanrusek |  |  |
 | [CC-0011](../CC-0011-stairs-fall-damage.md) | Walking down stairs or an incline fast deals no fall damage | bug | stefanrusek |  |  |
 | [CC-0012](../CC-0012-farmland-trample.md) | Farmland turns to dirt when an entity lands on it | bug | stefanrusek |  |  |
