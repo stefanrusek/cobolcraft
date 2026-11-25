@@ -2186,8 +2186,9 @@
              END-IF
          END-PERFORM
          INITIALIZE WS-COUNTS WS-LOCAL
+*>       A persistence-required mob (a name tag, a structure's mob, a caught one: EN-PERSISTENT) is not counted (18 section 6.1 step 1), so a village's or a pet-named zombie never holds the cap.
          PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
-             IF EN-USED(WS-ROW) = 1 AND EN-DIM(WS-ROW) = WS-DIM
+             IF EN-USED(WS-ROW) = 1 AND EN-DIM(WS-ROW) = WS-DIM AND EN-PERSISTENT(WS-ROW) = 0
                  CALL "STDMOB-INDEX" USING EN-TYPE(WS-ROW) WS-S
                  IF WS-S > 0
                      CALL "MS6-ROW-CAT" USING WS-S WS-CAT
