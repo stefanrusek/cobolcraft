@@ -7,6 +7,7 @@
 *>   STRUCT-BEARD-COLLECT USING chunk x, chunk z: 9.2 from the store of starts (references of the chunk must exist: STRUCT-REFS-CREATE)
 *>   STRUCT-BEARD-SAMPLE USING x, y, z, value out (FLOAT-LONG, single precision): 9.3, 0 when the beardifier is empty or the block is outside the affected box
 *>   STRUCT-BEARD-VOLUME USING min x, min y, min z, step x, step y, step z, size x, size y, size z (BINARY-LONG), out (a table of FLOAT-LONG, size x * size y * size z entries): 9.4
+*>   STRUCT-BEARD-SCAN USING seed, chunk x, chunk z: one chunk of the window of PREPARE (its starts, and the adapting ones stored); STRUCT-BEARD-AHEAD USING chunk x, chunk z, step: a slice of 4 chunks of that window, run by the biome steps ahead of the fill stage (CC-0047)
 *>   STRUCT-BEARD-PREPARE USING chunk x, chunk z: makes the starts of the adapting structures within 8 chunks (their generators, STRUCT-CAPTURE) and collects; empty when no structure is gated on; once per chunk, seed and data epoch
 
  IDENTIFICATION DIVISION.
@@ -300,6 +301,108 @@
  END PROGRAM STRUCT-BEARD-VOLUME.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-BEARD-SCAN.
+*> USING seed (BINARY-DOUBLE), chunk x, chunk z: one chunk of the window that STRUCT-BEARD-PREPARE scans (36-1 section 9.2 step 1): the starts of the chunk (STRUCT-CHUNK-STARTS, answered from the start
+*> list cache when it was asked for before), and for each of them whose structure adapts the terrain (SDT-ADAPT not 0) that is not stored yet: its point (STRUCT-FIND-POINT, the height walk of the
+*> density corners) and, when the point is valid, its capture (STRUCT-START-CAPTURE). The result is the store of starts and the cache, nothing else: the same chunk scanned twice leaves the same
+*> state, in any step of the generation that calls it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTDATA.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-STRUCT              BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-VALID               BINARY-LONG.
+ 01 WS-STORED              BINARY-LONG.
+ 01 WS-STARTS.
+    05 WS-START OCCURS 64 TIMES.
+       10 WS-ST            BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SEED                 BINARY-DOUBLE.
+ 01 L-SX                   BINARY-LONG.
+ 01 L-SZ                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-SEED L-SX L-SZ.
+     CALL "STRUCT-CHUNK-STARTS" USING L-SEED L-SX L-SZ WS-N
+*>   the starts of this chunk that adapt the terrain, copied first (the generators below use the same working tables)
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+         MOVE SC-STRUCT(WS-I) TO WS-ST(WS-I)
+     END-PERFORM
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
+         MOVE WS-ST(WS-I) TO WS-STRUCT
+         IF SDT-ADAPT(WS-STRUCT) NOT = 0
+             CALL "STRUCT-START-FIND" USING WS-STRUCT L-SX L-SZ WS-ROW
+             IF WS-ROW = 0
+                 CALL "STRUCT-FIND-POINT" USING WS-STRUCT L-SEED L-SX L-SZ WS-X WS-Y WS-Z WS-VALID
+                 IF WS-VALID = 1
+                     CALL "STRUCT-START-CAPTURE" USING WS-STRUCT L-SX L-SZ WS-STORED
+                 END-IF
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM STRUCT-BEARD-SCAN.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. STRUCT-BEARD-AHEAD.
+*> USING chunk x, chunk z, step (BINARY-LONG, 0 and up): the scan of STRUCT-BEARD-PREPARE for the chunk, done ahead in slices (CC-0047). The window of 17 x 17 chunks is scanned in the order of PREPARE
+*> (x outer, z inner, position x * 17 + z) and step n scans the positions 4 n to 4 n + 3, so the 289 chunks are done by step 72: a generation step that calls it with its own number (the biome
+*> layers, 96 steps of a few milliseconds before the fill stage) leaves the work of the window to many steps, and the queue's wall limit between steps can end a tick after any of them. What the first
+*> fill step used to do in one go (0.6 s of CPU for the first window of a world: the heights of its starts, 20 to 350 ms each, are units that cannot be cut) is a cache hit and stored starts by then.
+*> The result is the same as PREPARE's own scan, which finds every start made: the scan stores starts under the world seed and the structure data only (the beardifier of the chunk before it is switched off
+*> for its heights as PREPARE switches its own off, SBD-GEN changing each way for the density memo) and leaves the records of the chunk being generated alone. Nothing happens while no structure is gated on.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY STRUCTBEARD.
+ COPY STRUCTDATA.
+ COPY CARVER.
+ 01 WS-M64                 PIC 9(20) VALUE 18446744073709551616.
+ 01 WS-M63                 PIC 9(20) VALUE 9223372036854775808.
+ 01 WS-SEED                BINARY-DOUBLE.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-LAST                BINARY-LONG.
+ 01 WS-IX                  BINARY-LONG.
+ 01 WS-IZ                  BINARY-LONG.
+ 01 WS-SX                  BINARY-LONG.
+ 01 WS-SZ                  BINARY-LONG.
+ 01 WS-WAS                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-CX                   BINARY-LONG.
+ 01 L-CZ                   BINARY-LONG.
+ 01 L-STEP                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-CX L-CZ L-STEP.
+     IF SD-GATE-COUNT = 0
+         GOBACK
+     END-IF
+     COMPUTE WS-K = L-STEP * 4
+     IF WS-K > 288
+         GOBACK
+     END-IF
+     COMPUTE WS-LAST = FUNCTION MIN(WS-K + 3, 288)
+     COMPUTE WS-SEED = FUNCTION MOD(CV-SEED + WS-M63, WS-M64) - WS-M63
+     MOVE SBD-ACTIVE TO WS-WAS
+     IF WS-WAS = 1
+         MOVE 0 TO SBD-ACTIVE
+         ADD 1 TO SBD-GEN
+     END-IF
+     CALL "STRUCT-STORE-SYNC"
+     PERFORM VARYING WS-K FROM WS-K BY 1 UNTIL WS-K > WS-LAST
+         DIVIDE WS-K BY 17 GIVING WS-IX REMAINDER WS-IZ
+         COMPUTE WS-SX = L-CX - 8 + WS-IX
+         COMPUTE WS-SZ = L-CZ - 8 + WS-IZ
+         CALL "STRUCT-BEARD-SCAN" USING WS-SEED WS-SX WS-SZ
+     END-PERFORM
+     IF WS-WAS = 1
+         MOVE 1 TO SBD-ACTIVE
+         ADD 1 TO SBD-GEN
+     END-IF
+     GOBACK.
+ END PROGRAM STRUCT-BEARD-AHEAD.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. STRUCT-BEARD-PREPARE.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -314,19 +417,7 @@
  01 WS-IZ                  BINARY-LONG.
  01 WS-SX                  BINARY-LONG.
  01 WS-SZ                  BINARY-LONG.
- 01 WS-N                   BINARY-LONG.
- 01 WS-I                   BINARY-LONG.
- 01 WS-ROW                 BINARY-LONG.
- 01 WS-STRUCT              BINARY-LONG.
- 01 WS-X                   BINARY-LONG.
- 01 WS-Y                   BINARY-LONG.
- 01 WS-Z                   BINARY-LONG.
- 01 WS-VALID               BINARY-LONG.
- 01 WS-STORED              BINARY-LONG.
  01 WS-WAS                 BINARY-LONG.
- 01 WS-STARTS.
-    05 WS-START OCCURS 64 TIMES.
-       10 WS-ST            BINARY-LONG.
  LINKAGE SECTION.
  01 L-CX                   BINARY-LONG.
  01 L-CZ                   BINARY-LONG.
@@ -353,23 +444,7 @@
          COMPUTE WS-SX = L-CX - 8 + WS-IX
          PERFORM VARYING WS-IZ FROM 0 BY 1 UNTIL WS-IZ > 16
              COMPUTE WS-SZ = L-CZ - 8 + WS-IZ
-             CALL "STRUCT-CHUNK-STARTS" USING WS-SEED WS-SX WS-SZ WS-N
-*>           the starts of this chunk that adapt the terrain, copied first (the generators below use the same working tables)
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
-                 MOVE SC-STRUCT(WS-I) TO WS-ST(WS-I)
-             END-PERFORM
-             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-N
-                 MOVE WS-ST(WS-I) TO WS-STRUCT
-                 IF SDT-ADAPT(WS-STRUCT) NOT = 0
-                     CALL "STRUCT-START-FIND" USING WS-STRUCT WS-SX WS-SZ WS-ROW
-                     IF WS-ROW = 0
-                         CALL "STRUCT-FIND-POINT" USING WS-STRUCT WS-SEED WS-SX WS-SZ WS-X WS-Y WS-Z WS-VALID
-                         IF WS-VALID = 1
-                             CALL "STRUCT-START-CAPTURE" USING WS-STRUCT WS-SX WS-SZ WS-STORED
-                         END-IF
-                     END-IF
-                 END-IF
-             END-PERFORM
+             CALL "STRUCT-BEARD-SCAN" USING WS-SEED WS-SX WS-SZ
          END-PERFORM
      END-PERFORM
      CALL "STRUCT-REFS-CREATE" USING L-CX L-CZ
