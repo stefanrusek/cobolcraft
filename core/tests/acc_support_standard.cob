@@ -308,9 +308,13 @@
      CALL "TEST-USE-ON" USING WS-CONN WS-X WS-FLOOR WS-Z WS-FACE WS-SEQ
      COMPUTE WS-Y = WS-FLOOR + 1
      CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+*>   A placed kelp is a head with a random age of 0 to 24 (29b part 4 section 3.2 step 3; the states of the block run age 0 to 24 from WS-KELP).
      MOVE "acceptance support standard: kelp is placed under water in a water source" TO WS-CASE
-     MOVE WS-KELP TO WS-EXPECT
-     MOVE WS-STATE TO WS-OBSERVE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF WS-STATE >= WS-KELP AND WS-STATE <= WS-KELP + 24
+         MOVE 1 TO WS-OBSERVE
+     END-IF
      PERFORM CHECK-N
 *>   Ice broken by a survival player over water leaves a water source (29b 7.1 playerDestroy), not a hole the neighbouring water flows into
      MOVE "ice" TO WS-KEY

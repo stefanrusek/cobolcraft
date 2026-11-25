@@ -285,10 +285,16 @@
      END-IF
      MOVE PL-ON-GROUND(WS-ROW) TO WS-OLD-ON-GROUND
      MOVE FUNCTION MOD(PSB-FLAGS, 2) TO PL-ON-GROUND(WS-ROW)
-*>   The claim counts as ground only with support below the feet (move-check.cob).
+*>   The claim counts as ground only with support below the feet (move-check.cob). The client's move goes along y first and then x and z
+*>   (docs/protocol/18 section 3, Entity.move), so a landing on a step narrower than the stride ends the tick over nothing: the support of the landing is
+*>   the column the player left, at the new height. Without it a descent of stairs or an incline never counted as ground and its fall distance added up.
      IF PL-ON-GROUND(WS-ROW) = 1 AND PL-MODE(WS-ROW) = 0
          CALL "MOVE-SUPPORTED" USING PL-DIM(WS-ROW) PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW)
              WS-SUPPORTED
+         IF WS-SUPPORTED = 0 AND WS-MOVED = 1
+             CALL "MOVE-SUPPORTED" USING PL-DIM(WS-ROW) WS-OLD-X PL-Y(WS-ROW) WS-OLD-Z
+                 WS-SUPPORTED
+         END-IF
          IF WS-SUPPORTED = 0
              MOVE 0 TO PL-ON-GROUND(WS-ROW)
          END-IF
