@@ -6,7 +6,8 @@
 *> in a second run also Space held, the jump) through the real controls. The client moves by its own physics and tells the core with Move Player;
 *> the core refuses a position it finds wrong with Player Position (a teleport: the shake). Counted per run: the teleports the core sent
 *> (expected 0), the frames where the Player's z went backwards (expected 0) and whether the Player got over the feature (a step of at most 0.6
-*> by walking; a higher one by jumping). BS_FEATURE=n runs only that feature, BS_TRACE=1 prints every frame.
+*> by walking; a higher one by jumping). A farmland the Player lands on from a jump may be trampled (CC-0012): the core lifts the Player onto the dirt by a Player Position, which counts as
+*> expected, one teleport per trampled cell. BS_FEATURE=n runs only that feature, BS_TRACE=1 prints every frame.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-BUGSTEP-VILLAGE.
  DATA DIVISION.
@@ -59,6 +60,8 @@
  01 WS-D3                  PIC -(3)9.
  01 WS-D4                  PIC -(3)9.
  01 WS-D5                  PIC -(3)9.
+ 01 WS-D6                  PIC -(3)9.
+ 01 WS-TRAMPLED            BINARY-LONG.
  01 WS-F1                  PIC -(4)9.99.
  01 WS-F2                  PIC -(4)9.99.
  01 WS-TX                 BINARY-LONG.
@@ -178,6 +181,12 @@
      MOVE PL-Z TO WS-END-Z
      CALL "BS-TELEPORTS" USING WS-TP1
      COMPUTE WS-TELEPORTS = WS-TP1 - WS-TP0
+*>   Farmland: a landing on it (a jump) tramples it with the chance d - 0.5 and the core lifts the Player onto the dirt by one Player Position (docs/protocol/29b part 2
+*>   sections 9.3 to 9.5, CC-0012): those teleports are legitimate, exactly one per trampled cell. Any other teleport is still the shake.
+     MOVE 0 TO WS-TRAMPLED
+     IF WS-FEATURE = 6
+         CALL "BS-DIRT-COUNT" USING WS-ZS WS-DEPTH WS-TRAMPLED
+     END-IF
      CALL "CV-KEY-SET" USING CONVH WS-ALICE WS-KEY-W WS-UP
      IF WS-JUMP = 1
          CALL "CV-KEY-SET" USING CONVH WS-ALICE WS-KEY-SPACE WS-UP
@@ -225,11 +234,12 @@
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "teleports 0 backward 0 passed ok" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
-     IF WS-TELEPORTS = 0 AND WS-BACK = 0 AND WS-PASSED = WS-WANT
+     IF WS-TELEPORTS = WS-TRAMPLED AND WS-BACK = 0 AND WS-PASSED = WS-WANT
          MOVE TL-EXPECTED TO TL-OBSERVED
      ELSE
+         MOVE WS-TRAMPLED TO WS-D6
          STRING "teleports " FUNCTION TRIM(WS-D1) " backward " FUNCTION TRIM(WS-D2) " passed " FUNCTION TRIM(WS-D3)
-             " wanted " FUNCTION TRIM(WS-D5) DELIMITED BY SIZE INTO TL-OBSERVED
+             " wanted " FUNCTION TRIM(WS-D5) " trampled " FUNCTION TRIM(WS-D6) DELIMITED BY SIZE INTO TL-OBSERVED
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
  END PROGRAM ACC-BUGSTEP-VILLAGE.
@@ -252,6 +262,45 @@
      END-PERFORM
      GOBACK.
  END PROGRAM BS-TELEPORTS.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BS-DIRT-COUNT.
+*> USING first z of the feature, depth (BINARY-LONG), count out (BINARY-LONG): the cells of the farmland feature (x 2 to 7, z first to first + depth - 1, y -61) that are dirt now: the cells a landing trampled.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ 01 WS-DIM                 BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-Y                   BINARY-LONG VALUE -61.
+ 01 WS-Z                   BINARY-LONG.
+ 01 WS-KEY                 PIC X(112) VALUE "dirt".
+ 01 WS-PAIRS               PIC X(160).
+ 01 WS-DIRT                BINARY-LONG.
+ 01 WS-STATE               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ZS                   BINARY-LONG.
+ 01 L-DEPTH                BINARY-LONG.
+ 01 L-COUNT                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ZS L-DEPTH L-COUNT.
+     MOVE 0 TO L-COUNT
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > CORE-MAX-PLAYERS
+         IF PL-USED(WS-P) = 1
+             MOVE PL-DIM(WS-P) TO WS-DIM
+         END-IF
+     END-PERFORM
+     MOVE SPACES TO WS-PAIRS
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-DIRT
+     PERFORM VARYING WS-Z FROM L-ZS BY 1 UNTIL WS-Z >= L-ZS + L-DEPTH
+         PERFORM VARYING WS-X FROM 2 BY 1 UNTIL WS-X > 7
+             CALL "WORLD-GET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+             IF WS-STATE = WS-DIRT
+                 ADD 1 TO L-COUNT
+             END-IF
+         END-PERFORM
+     END-PERFORM
+     GOBACK.
+ END PROGRAM BS-DIRT-COUNT.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BS-BUILD.
