@@ -1038,6 +1038,10 @@
           15 RK-REQ-COUNT    BINARY-LONG.    *> crafting requirements (one item each); 0 and RK-REQ-PRESENT 0 = never craftable
           15 RK-REQ-PRESENT  PIC 9.
           15 RK-REQ-ITEM     BINARY-LONG OCCURS 9 TIMES.
+          15 RK-REQ-ALT      OCCURS 9 TIMES.  *> a requirement is an HolderSet (05b): a tag, a list of up to 8 items or the one item above
+             20 RK-REQ-N        BINARY-LONG.    *> items of the list, 0 = none
+             20 RK-REQ-LIST     BINARY-LONG OCCURS 8 TIMES.
+             20 RK-REQ-TAG-IX   BINARY-LONG.    *> 0 = not a tag, else the row of RK-TAG-NAME, -1 = a tag the table had no room for (never met)
           15 RK-SLOTS        BINARY-LONG.    *> ingredient slots
           15 RK-SLOT-ITEM    BINARY-LONG OCCURS 9 TIMES. *> the item each slot shows, -1 none
           15 RK-RES-ITEM     BINARY-LONG.
@@ -1074,6 +1078,8 @@
        10 RK-GHOST-ITEM      BINARY-LONG OCCURS 9 TIMES.
        10 RK-TOAST-UNTIL     BINARY-DOUBLE.  *> CL-NOW-MS until which the toast shows, 0 none
        10 RK-GHEAD           BINARY-LONG OCCURS 4096 TIMES.
+       10 RK-TAG-COUNT       BINARY-LONG.    *> the distinct item tags of the requirements (RK-TAG-INDEX)
+       10 RK-TAG-NAME        PIC X(64) OCCURS 256 TIMES.
 *>  ---- packs (08 §3, §10): stack, language, font ----
 *>  The stack (08 §3.1; stack.cob, source.cob): bottom first, the built-in pack at the bottom, then
 *>  the enabled local packs (user order), then the server packs (newest on top). A local or server

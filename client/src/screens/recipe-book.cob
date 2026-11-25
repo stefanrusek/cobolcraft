@@ -141,9 +141,133 @@
  END PROGRAM RK-VISIBLE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. RK-CRAFTABLE.
+*> USING CLIENT-STATE, row, stock count, stock (item and count of each kind held), tag table (one flag per tag of RK-TAG-NAME and stock
+*> kind: the kind is a member of the tag), ok out (1 or 0): the entry's requirements (RK-REQ-*: a tag, a list of items or one item each,
+*> 05b HolderSet) can be met from the stock, each requirement taking a distinct unit of a kind it accepts (13 section 3.9,
+*> StackedContents). A matching of requirements to units is searched by augmenting paths (an explicit stack, no recursion), so a
+*> requirement that accepts several kinds gives way to one that accepts a single kind.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-L                   BINARY-LONG.
+ 01 WS-U                   BINARY-LONG.
+ 01 WS-X                   BINARY-LONG.
+ 01 WS-D                   BINARY-LONG.
+ 01 WS-TIX                 BINARY-LONG.
+ 01 WS-UNITS               BINARY-LONG.
+ 01 WS-FOUND               BINARY-LONG.
+ 01 WS-ACCEPT.
+    05 WS-ACC-R OCCURS 9 TIMES.
+       10 WS-ACC           PIC 9 OCCURS 64 TIMES.
+ 01 WS-UNIT-TABLE.
+    05 WS-OWNER            BINARY-LONG OCCURS 576 TIMES.
+    05 WS-HELD-BY          BINARY-LONG OCCURS 576 TIMES.
+    05 WS-SEEN             PIC 9 OCCURS 576 TIMES.
+ 01 WS-STACK.
+    05 WS-ST-REQ           BINARY-LONG OCCURS 10 TIMES.
+    05 WS-ST-UNIT          BINARY-LONG OCCURS 10 TIMES.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-STOCK-N              BINARY-LONG.
+ 01 L-STOCK.
+    05 L-ST OCCURS 64 TIMES.
+       10 L-ST-ITEM        BINARY-LONG.
+       10 L-ST-COUNT       BINARY-LONG.
+ 01 L-TAGS.
+    05 L-TAG-ROW OCCURS 256 TIMES.
+       10 L-TAG-HAS        PIC 9 OCCURS 64 TIMES.
+ 01 L-OK                   BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-STOCK-N L-STOCK L-TAGS L-OK.
+     MOVE 1 TO L-OK
+     MOVE RK-REQ-COUNT(L-ROW) TO WS-N
+     IF WS-N > 9
+         MOVE 9 TO WS-N
+     END-IF
+*>   The kinds each requirement accepts.
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WS-N
+         MOVE RK-REQ-TAG-IX(L-ROW, WS-R) TO WS-TIX
+         PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > L-STOCK-N
+             MOVE 0 TO WS-ACC(WS-R, WS-S)
+             EVALUATE TRUE
+                 WHEN WS-TIX > 0
+                     MOVE L-TAG-HAS(WS-TIX, WS-S) TO WS-ACC(WS-R, WS-S)
+                 WHEN WS-TIX < 0
+                     CONTINUE
+                 WHEN RK-REQ-N(L-ROW, WS-R) > 0
+                     PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > RK-REQ-N(L-ROW, WS-R)
+                         IF RK-REQ-LIST(L-ROW, WS-R, WS-L) = L-ST-ITEM(WS-S)
+                             MOVE 1 TO WS-ACC(WS-R, WS-S)
+                         END-IF
+                     END-PERFORM
+                 WHEN OTHER
+                     IF RK-REQ-ITEM(L-ROW, WS-R) = L-ST-ITEM(WS-S)
+                         MOVE 1 TO WS-ACC(WS-R, WS-S)
+                     END-IF
+             END-EVALUATE
+         END-PERFORM
+     END-PERFORM
+*>   The units: each kind has as many as it holds, at most the number of requirements.
+     MOVE 0 TO WS-UNITS
+     PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > L-STOCK-N
+         PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > WS-N OR WS-L > L-ST-COUNT(WS-S)
+             ADD 1 TO WS-UNITS
+             MOVE WS-S TO WS-OWNER(WS-UNITS)
+             MOVE 0 TO WS-HELD-BY(WS-UNITS)
+         END-PERFORM
+     END-PERFORM
+*>   Every requirement needs a unit: the search from requirement R walks (requirement, next unit to try) pairs down the stack.
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > WS-N OR L-OK = 0
+         PERFORM VARYING WS-U FROM 1 BY 1 UNTIL WS-U > WS-UNITS
+             MOVE 0 TO WS-SEEN(WS-U)
+         END-PERFORM
+         MOVE 1 TO WS-D
+         MOVE WS-R TO WS-ST-REQ(1)
+         MOVE 0 TO WS-ST-UNIT(1) WS-FOUND
+         PERFORM UNTIL WS-D = 0 OR WS-FOUND = 1
+             MOVE 0 TO WS-X
+             COMPUTE WS-U = WS-ST-UNIT(WS-D) + 1
+             PERFORM UNTIL WS-U > WS-UNITS OR WS-X > 0
+                 MOVE WS-ST-REQ(WS-D) TO WS-L
+                 MOVE WS-OWNER(WS-U) TO WS-S
+                 IF WS-ACC(WS-L, WS-S) = 1 AND WS-SEEN(WS-U) = 0
+                     MOVE WS-U TO WS-X
+                 ELSE
+                     ADD 1 TO WS-U
+                 END-IF
+             END-PERFORM
+             IF WS-X = 0
+                 SUBTRACT 1 FROM WS-D
+             ELSE
+                 MOVE 1 TO WS-SEEN(WS-X)
+                 MOVE WS-X TO WS-ST-UNIT(WS-D)
+                 IF WS-HELD-BY(WS-X) = 0
+                     MOVE 1 TO WS-FOUND
+                 ELSE
+                     ADD 1 TO WS-D
+                     MOVE WS-HELD-BY(WS-X) TO WS-ST-REQ(WS-D)
+                     MOVE 0 TO WS-ST-UNIT(WS-D)
+                 END-IF
+             END-IF
+         END-PERFORM
+         IF WS-FOUND = 1
+             PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > WS-D
+                 MOVE WS-ST-REQ(WS-L) TO WS-HELD-BY(WS-ST-UNIT(WS-L))
+             END-PERFORM
+         ELSE
+             MOVE 0 TO L-OK
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM RK-CRAFTABLE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-BOOK-REFRESH.
-*> USING CLIENT-STATE, grid (2 or 3): what the panel shows for this frame. The craftable marks (a requirement is one item; the stock is the
-*> main inventory, the hotbar and the grid slots, each requirement taking its own unit) are recomputed when the inventory or the grid
+*> USING CLIENT-STATE, grid (2 or 3): what the panel shows for this frame. The craftable marks (a requirement is an item, a list of items or an
+*> item tag, RK-CRAFTABLE; the stock is the main inventory, the hotbar and the grid slots, each requirement taking its own unit) are recomputed when the inventory or the grid
 *> changed or the book did; the search matches (the lower-cased text a substring of the lower-cased result name) when the text or the
 *> book did. Then the members of each collection that fit, are craftable or match are counted, the tabs that have recipes marked, and
 *> the cells of the selected page filled (RK-CELL: a collection with several recipes cycles its recipe every 30 ticks).
@@ -170,14 +294,18 @@
  01 WS-COUNT               BINARY-LONG.
  01 WS-DAMAGE              BINARY-LONG.
  01 WS-ARG                 BINARY-LONG.
- 01 WS-NEED                BINARY-LONG.
- 01 WS-HAVE                BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-NAME                PIC X(512).
  01 WS-NAME-LENGTH         BINARY-LONG.
  01 WS-HAY                 PIC X(512).
  01 WS-NEEDLE              PIC X(50).
  01 WS-HITS                BINARY-LONG.
+ 01 WS-REGISTRY            PIC X(48) VALUE "item".
+ 01 WS-TAG-KEY             PIC X(112).
+ 01 WS-HAS                 BINARY-LONG.
+ 01 WS-TAG-TABLE.
+    05 WS-TAG-ROW OCCURS 256 TIMES.
+       10 WS-TAG-HAS       PIC 9 OCCURS 64 TIMES.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-GRID                 BINARY-LONG.
@@ -213,24 +341,20 @@
          MOVE WS-SIG TO RK-SIG
          MOVE L-GRID TO RK-GRID
          MOVE 0 TO RK-DIRTY
+*>       Which kinds of the stock are members of each tag a requirement names (the item tags of the content set).
+         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RK-TAG-COUNT
+             MOVE SPACES TO WS-TAG-KEY
+             MOVE RK-TAG-NAME(WS-I) TO WS-TAG-KEY
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-STOCK-N
+                 CALL "CONTENT-TAG-HAS" USING WS-REGISTRY WS-TAG-KEY WS-ST-ITEM(WS-K) WS-HAS
+                 MOVE WS-HAS TO WS-TAG-HAS(WS-I, WS-K)
+             END-PERFORM
+         END-PERFORM
          PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RK-COUNT
              MOVE RK-REQ-PRESENT(WS-I) TO WS-OK
-             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > RK-REQ-COUNT(WS-I)
-                 MOVE 0 TO WS-NEED WS-HAVE
-                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-J
-                     IF RK-REQ-ITEM(WS-I, WS-K) = RK-REQ-ITEM(WS-I, WS-J)
-                         ADD 1 TO WS-NEED
-                     END-IF
-                 END-PERFORM
-                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-STOCK-N
-                     IF WS-ST-ITEM(WS-K) = RK-REQ-ITEM(WS-I, WS-J)
-                         MOVE WS-ST-COUNT(WS-K) TO WS-HAVE
-                     END-IF
-                 END-PERFORM
-                 IF WS-HAVE < WS-NEED
-                     MOVE 0 TO WS-OK
-                 END-IF
-             END-PERFORM
+             IF WS-OK = 1
+                 CALL "RK-CRAFTABLE" USING CLIENT-STATE WS-I WS-STOCK-N WS-STOCK WS-TAG-TABLE WS-OK
+             END-IF
              MOVE WS-OK TO RK-CAN(WS-I)
          END-PERFORM
      END-IF

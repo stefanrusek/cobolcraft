@@ -776,6 +776,36 @@
  END PROGRAM RECIPE-BOOK-HEADS.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. RK-TAG-INDEX.
+*> USING CLIENT-STATE, tag name (PIC X(64)), index out (BINARY-LONG): the row of the item tag in the book's table of the tags its
+*> requirements name (RK-TAG-NAME; 05b HolderSet), added when new; -1 when the table (256 rows) is full.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-NAME                 PIC X(64).
+ 01 L-INDEX                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-NAME L-INDEX.
+     MOVE 0 TO L-INDEX
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RK-TAG-COUNT OR L-INDEX > 0
+         IF RK-TAG-NAME(WS-I) = L-NAME
+             MOVE WS-I TO L-INDEX
+         END-IF
+     END-PERFORM
+     IF L-INDEX = 0
+         IF RK-TAG-COUNT >= 256
+             MOVE -1 TO L-INDEX
+         ELSE
+             ADD 1 TO RK-TAG-COUNT
+             MOVE L-NAME TO RK-TAG-NAME(RK-TAG-COUNT)
+             MOVE RK-TAG-COUNT TO L-INDEX
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM RK-TAG-INDEX.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. RECIPE-BOOK-READ.
 *> USING CLIENT-STATE, packet (Recipe Book Add, 05b 0x4B; 13 section 3.9): every entry is read with PB-GET-RECIPE-ENTRY into the book
 *> (RK-*): display id, type, category, group, size, the requirements, the item of each ingredient slot and of the result, the highlight
@@ -795,6 +825,8 @@
  01 WS-NOTIFY              BINARY-LONG.
  01 WS-ITEM                BINARY-LONG.
  01 WS-AMOUNT              BINARY-LONG.
+ 01 WS-L                   BINARY-LONG.
+ 01 WS-TAG                 PIC X(64).
  LINKAGE SECTION.
  COPY CLSTATE.
  COPY PROTO.
@@ -841,6 +873,14 @@
              MOVE RX-RE-INGREDIENT-COUNT TO RK-SLOTS(WS-ROW)
              PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 9
                  MOVE RX-RE-REQ-ITEM(WS-J) TO RK-REQ-ITEM(WS-ROW, WS-J)
+                 MOVE RX-RE-REQ-N(WS-J) TO RK-REQ-N(WS-ROW, WS-J)
+                 PERFORM VARYING WS-L FROM 1 BY 1 UNTIL WS-L > 8
+                     MOVE RX-RE-REQ-LIST(WS-J, WS-L) TO RK-REQ-LIST(WS-ROW, WS-J, WS-L)
+                 END-PERFORM
+                 IF RX-RE-REQ-TAG-LENGTH(WS-J) > 0
+                     MOVE RX-RE-REQ-TAG(WS-J) TO WS-TAG
+                     CALL "RK-TAG-INDEX" USING CLIENT-STATE WS-TAG RK-REQ-TAG-IX(WS-ROW, WS-J)
+                 END-IF
                  MOVE -1 TO RK-SLOT-ITEM(WS-ROW, WS-J)
                  IF WS-J <= RX-RE-INGREDIENT-COUNT
                      CALL "RK-NODE-ITEM" USING RX-SLOT-DISPLAY-TABLE RX-RE-INGREDIENT(WS-J) WS-ITEM WS-AMOUNT
