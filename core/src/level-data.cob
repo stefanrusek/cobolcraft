@@ -492,6 +492,133 @@
  END PROGRAM LEVEL-PEEK-TYPE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. LEVEL-PEEK-GENERATOR.
+*> USING kind out (BINARY-LONG): the generator the overworld stem of <world>/data/minecraft/world_gen_settings.dat declares (07 section 10.4.5, 56 section 2.5),
+*> so that a world of a real 26.3 game gets the generator it declares and not always the standard terrain (lane bugskyblock: a void world grew mountains around its
+*> island). 1 = minecraft:flat, 2 = minecraft:debug, 3 = a generator this core cannot make (a generator type of a mod, or minecraft:noise whose settings are a
+*> compound or an id of another namespace than minecraft:), 0 = the standard noise generator, or nothing to go by (no file, not readable, no overworld stem, a
+*> generator without a type).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-FRAMING             BINARY-LONG VALUE 1.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WN                     PIC X(32).
+ 01 WL                     BINARY-LONG.
+ 01 WS-NAME-CAPACITY       BINARY-LONG VALUE 32.
+ 01 WS-TEXT-CAPACITY       BINARY-LONG VALUE 64.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-DATA-TYPE           BINARY-LONG.
+ 01 WS-DIM-TYPE            BINARY-LONG.
+ 01 WS-STEM-TYPE           BINARY-LONG.
+ 01 WS-GEN-TYPE            BINARY-LONG.
+ 01 WS-LENGTH              BINARY-LONG.
+ 01 WS-GEN-NAME            PIC X(64).
+ 01 WS-SETTINGS            PIC X(64).
+ 01 WS-SETTINGS-KIND       BINARY-LONG.
+ 01 WS-SUFFIX              PIC X(128) VALUE "/data/minecraft/world_gen_settings.dat".
+ 01 WS-PATH                PIC X(1100).
+ 01 WS-PATH-LENGTH         BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-KIND                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-KIND.
+     MOVE 0 TO L-KIND
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PERSIST-PATH" USING WS-SUFFIX WS-PATH WS-PATH-LENGTH
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "NBT-FILE-READ" USING WS-PATH WS-PATH-LENGTH PB-BUFFER WS-OUTCOME
+     IF WS-OUTCOME NOT = 0
+         GOBACK
+     END-IF
+     MOVE SPACES TO WS-GEN-NAME WS-SETTINGS
+     MOVE 0 TO WS-SETTINGS-KIND
+     CALL "NBT-READ-ROOT" USING PB-BUFFER WS-FRAMING WS-TYPE
+     PERFORM UNTIL PB-ERROR = 1
+         MOVE SPACES TO WN
+         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-TYPE WN WS-NAME-CAPACITY WL
+         IF WS-TYPE = 0
+             EXIT PERFORM
+         END-IF
+         IF WN = "data" AND WS-TYPE = 10
+             PERFORM UNTIL PB-ERROR = 1
+                 MOVE SPACES TO WN
+                 CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-DATA-TYPE WN WS-NAME-CAPACITY WL
+                 IF WS-DATA-TYPE = 0
+                     EXIT PERFORM
+                 END-IF
+                 IF WN = "dimensions" AND WS-DATA-TYPE = 10
+                     PERFORM UNTIL PB-ERROR = 1
+                         MOVE SPACES TO WN
+                         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-DIM-TYPE WN WS-NAME-CAPACITY WL
+                         IF WS-DIM-TYPE = 0
+                             EXIT PERFORM
+                         END-IF
+                         IF WN = "minecraft:overworld" AND WS-DIM-TYPE = 10
+                             PERFORM UNTIL PB-ERROR = 1
+                                 MOVE SPACES TO WN
+                                 CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-STEM-TYPE WN WS-NAME-CAPACITY WL
+                                 IF WS-STEM-TYPE = 0
+                                     EXIT PERFORM
+                                 END-IF
+                                 IF WN = "generator" AND WS-STEM-TYPE = 10
+                                     PERFORM UNTIL PB-ERROR = 1
+                                         MOVE SPACES TO WN
+                                         CALL "NBT-READ-COMPOUND-NEXT" USING PB-BUFFER WS-GEN-TYPE WN WS-NAME-CAPACITY WL
+                                         IF WS-GEN-TYPE = 0
+                                             EXIT PERFORM
+                                         END-IF
+                                         EVALUATE TRUE
+                                             WHEN WN = "type" AND WS-GEN-TYPE = 8
+                                                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-GEN-NAME WS-TEXT-CAPACITY WS-LENGTH
+                                             WHEN WN = "settings" AND WS-GEN-TYPE = 8
+                                                 MOVE 1 TO WS-SETTINGS-KIND
+                                                 CALL "NBT-READ-STRING" USING PB-BUFFER WS-SETTINGS WS-TEXT-CAPACITY WS-LENGTH
+                                             WHEN WN = "settings"
+                                                 MOVE 2 TO WS-SETTINGS-KIND
+                                                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-GEN-TYPE
+                                             WHEN OTHER
+                                                 CALL "NBT-READ-SKIP" USING PB-BUFFER WS-GEN-TYPE
+                                         END-EVALUATE
+                                     END-PERFORM
+                                 ELSE
+                                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-STEM-TYPE
+                                 END-IF
+                             END-PERFORM
+                         ELSE
+                             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-DIM-TYPE
+                         END-IF
+                     END-PERFORM
+                 ELSE
+                     CALL "NBT-READ-SKIP" USING PB-BUFFER WS-DATA-TYPE
+                 END-IF
+             END-PERFORM
+         ELSE
+             CALL "NBT-READ-SKIP" USING PB-BUFFER WS-TYPE
+         END-IF
+     END-PERFORM
+     EVALUATE TRUE
+         WHEN WS-GEN-NAME = SPACES
+             MOVE 0 TO L-KIND
+         WHEN WS-GEN-NAME = "minecraft:flat"
+             MOVE 1 TO L-KIND
+         WHEN WS-GEN-NAME = "minecraft:debug"
+             MOVE 2 TO L-KIND
+         WHEN WS-GEN-NAME NOT = "minecraft:noise"
+             MOVE 3 TO L-KIND
+         WHEN WS-SETTINGS-KIND = 2
+             MOVE 3 TO L-KIND
+         WHEN WS-SETTINGS-KIND = 1 AND WS-SETTINGS(1:10) NOT = "minecraft:"
+             MOVE 3 TO L-KIND
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM LEVEL-PEEK-GENERATOR.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. VANILLA-SEED-READ.
 *> USING seed (BINARY-DOUBLE, in and out): the `seed` of the compound `data` of <world>/data/minecraft/world_gen_settings.dat
 *> (the 26.3 layout, 33 section 10). A missing file or key leaves the seed unchanged.
