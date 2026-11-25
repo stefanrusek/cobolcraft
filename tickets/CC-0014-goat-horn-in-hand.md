@@ -2,7 +2,7 @@
 spile: ticket
 id: CC-0014
 type: bug
-status: implementing
+status: unverified
 owner: stefanrusek
 resolution:
 blocked_by: []
@@ -178,3 +178,43 @@ Equipment for a player at all. Built from docs/protocol/58 sections 2.1, 2.2, 5.
   acc_us15_emitters3, acc_us15_ravager_shield, acc_us16_throw_item, acc_us8_creative, acc_us8_eat, acc_us7_death_respawn, acc_wrapc_bowevents, acc_wrapc_windcharge,
   test_arrow_shield, test_poses, test_pose_eye, test_player_parts, test_tool_special_shield) passed 478 failed 0; `make -C core lint` 2787 files 0 failed;
   `gen_tables.py --check` 0 differing files.
+
+## Bug wave, round 4 (2026-11-25), client half: the pose, the use count, the raised horn (doc 58)
+
+Root cause of the missing pose and model on the client: the client had no use state of another entity (only the flags byte EN-LIVING), selected only the ITEM and BLOCK arm poses for a player, had the
+left-arm yRot of TOOT_HORN and SPYGLASS with the right arm's sign and substituted the main arm for a two-handed pose also while an item is in use, and drew the model of an item the same whether or not it
+was in use. Built from docs/protocol/58 sections 2.3, 3.2, 4, 5.1, 5.3, 5.4 and 8.1; commits 92023f77 (formulas) and the client half after it.
+
+- Arm formulas, `client/src/entmodel-34-2-anim.cob`: EMD-A-POSE-ARM WHEN 8 and WHEN 7 use `head.yRot - sign * constant` (right +1, left -1; WS-SIGN); EMD-A-POSES poses the arm of the used hand first without
+  the two-handed main-arm substitution when using (L-S(16) not 0), and substitutes only when not using (58 section 5.3, 34-2 section 4.2 as corrected). `client/tests/test_entmodel_34_2_4.cob`: the two cases that
+  encoded the old text ("spyglass crouching and toot horn", "spyglass on the left arm only", the left arm's yRot) were re-derived by `scratchpad/bwb-r5/ref_arms.py` from the corrected documents (the script
+  with the old rules reproduces the old expected values, with the new rules gives 0.785398180 and 0.471238904) and six cases added (doc 58 section 8.1 arm numbers right and left, left-handed sneaking pitch 80 yaw 30,
+  pitch -90, using versus not using with a two-handed pose). Red 6 of 1768 before the fix, green 1768 of 1768.
+- Pose selection, `client/src/entities-models.cob` (case "H"): WS-ST(16) = bit 0 of EN-LIVING, WS-ST(17) = the arm of the used hand (bit 1: main hand = main arm), pose 8 on the arm whose hand is the used hand
+  with a remaining count above 0 and a goat horn in it (`ENTITY-HORN-POSE`, 58 section 5.1 step 3: it reads the count and the used hand, not bit 0).
+- The viewer's use state, new file `client/src/entity-use.cob`, fields EN-USE-ACTIVE / EN-USE-ITEM / EN-USE-LEFT in `client/copy/CLSTATE.cpy`: `ENTITY-USE-ENTRY8` (called at every received entry 8 in
+  `ENTITY-PACKET`: start test, 140 for a goat horn, 0 for a horn whose patch removes component 63 (EN-EQ-NOINST, set in `ENTITY-EQ-COMPONENTS`) and for any other item, an empty hand leaves the use unstarted
+  until a later entry 8, clear test), `ENTITY-USE-TICK` (called by `ENTITIES-ANIM-TICK`: count down, stop when the used hand holds another item), `ENTITY-USING-HAND` (the `using_item` property for a hand's stack),
+  `ENTITY-HORN-POSE`, `ITEM-GOAT-HORN`.
+- The model while in use, new file `client/src/item-in-use.cob` (`ITEM-IN-USE-ID`): an item whose definition is a `condition` on `using_item` with a plain `on_true` model (only the goat horn of the five
+  definitions with using_item; bow, crossbow, trident and shield are range_dispatch / select / special and are NOT done) gets a virtual item id (2040 to 2047, CL-USE-VIRT, table IS-USE-* reset where
+  `models.cob` resets IS-SPRITE); `ITEM-SPRITE-OF` reads `model.on_true.model` of the real item for a virtual id, so ITEM-HAND-DISPLAY and ITEM-DISPLAY return the tooting model's transforms. First person:
+  `HAND-EQUIP` sets CL-HAND-SHOWN / CL-OHAND-SHOWN (the in-use id while PL-USING and the shown stack is the live one, 58 section 2.5), `HAND-MESH` builds from them (and the still-hand cache key follows).
+  Third person: `ENTITY-HELD-POSED` draws the in-use variant while `ENTITY-USING-HAND` says the entity uses the stack of that hand.
+- Red first: `client/tests/test_entity_use_horn.cob` (22 cases through the real packet path: Set Equipment then Set Entity Data entry 8; arm frames against the document's angles through the chain of
+  test_entity_shield, `scratchpad/bwb-r5/ref_frame.py`) failed 15 of 22 with the five hooks removed (log scratchpad/bwb-r5/red2a.log); `client/tests/test_horn_in_use_model.cob` (30 cases, real generated vanilla
+  pack: the 58 section 4.3 table through ITEM-HAND-DISPLAY / ITEM-DISPLAY, the first-person mesh against the plain one: diagonal x 1/0.68, normal turned 35 degrees, centre moved 0.6463 block; the third-person
+  quad: centre, diagonal ratio 0.5/0.55, normal turned 55 degrees, the plain horn's centre validating the chain) failed 7 of 29 (red2b.log; a thirtieth case, the stand-in set, was added after). Green: 22 of 22 and 30 of 30.
+- Not done, by decision: (1) the explicit left-hand display entries are applied as authored (`ITEM-POSED-DRAW` uses a cached `thirdperson_lefthand` entry as it is and the first-person left entry is not
+  cached; 12 section 8.2 says an explicit left entry is mirrored once more); an existing behaviour for every item with such an entry (test_entity_held_pose encodes it), so the in-use horn in the left hand
+  (a left-handed player, the off hand) is posed with the authored left values; the mirrored-once-more question needs its own change and test update. (2) A player's own main arm (entry 15, HUMANOID_ARM
+  serializer 42, 58 section 5.2.1) is not read by the replica (only a mob's BYTE entry 15 is), so another player is always drawn right-handed: the horn arm of a left-handed player is the right one until that is
+  read. (3) The fallback quad of `ENTITY-HELD-EMIT` (an entity without arm frames) does not switch models. (4) No `using_item` model for the bow, crossbow, shield and trident. (5) The use count of items
+  other than the horn is not modelled (no pose reads it).
+- Still the operator's check in play: the look of the raised horn in first person (the tooting model's transform) and the arm pose of another player who toots (the third-person pose and the held horn),
+  with the core half (Set Equipment and entry 8 sent at the use start). The gap that the viewer sees no hands or armour of another player until the first used item is CC-0053.
+- Checks: `cover-changed` over 39 client modules (hands, entity held items and models, replica, item sprites, the 34-2 animation family, the two new tests): 3110 passed, 0 failed, 0 uncovered changed lines
+  (scratchpad/bwb-r5/cover-c.log); `make -C client lint` 901 files 0 failed; `gen_tables.py --check` 0 differing files. Known failure NOT from this change, seen in the first cover run and alone:
+  `client/tests/test_entities_digest.cob` (the expected digest of the entity mesh of every model in four states); its rows have no use state (EN-LIVING 0, EN-USE-* 0), so none of the new paths is reached, and the
+  player model scale commit d271886c (CC-0015, another lane) changed the player mesh without taking the digest again (not confirmed by reverting this change); it was left out of the later run and needs its digest
+  taken again by whoever owns CC-0015.

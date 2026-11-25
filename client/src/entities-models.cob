@@ -930,7 +930,14 @@
                  MOVE 1 TO WS-ST(10)
              END-IF
              MOVE EN-SWIM(WS-ROW) TO WS-ST(11)
-*>           The arm poses (12 section 7.5): an arm that holds an item has the ITEM pose (1), a hand that blocks with a shield the BLOCK pose (2); the main hand is the main arm's.
+*>           The arm poses (12 section 7.5, 58 section 5.1): an arm that holds an item has the ITEM pose (1), a hand that blocks with a shield the BLOCK pose (2), the used hand of a goat horn with a
+*>           remaining count above 0 the TOOT_HORN pose (8); the main hand is the main arm's. The flag of using an item (bit 0 of EN-LIVING) and the arm of the used hand (bit 1: the main hand is the main arm,
+*>           the off hand the other) are the inputs of the order of the two arms (58 section 5.3).
+             MOVE FUNCTION MOD(EN-LIVING(WS-ROW), 2) TO WS-ST(16)
+             MOVE WS-MAINARM TO WS-ST(17)
+             IF FUNCTION MOD(FUNCTION INTEGER(EN-LIVING(WS-ROW) / 2), 2) = 1
+                 COMPUTE WS-ST(17) = 3 - WS-MAINARM
+             END-IF
              PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 2
                  MOVE WS-J TO WS-HSL
                  IF WS-MAINARM = 2
@@ -941,6 +948,10 @@
                      CALL "ENTITY-BLOCKING" USING CLIENT-STATE WS-ROW WS-HSL WS-BLOCKING
                      IF WS-BLOCKING = 1
                          MOVE 2 TO WS-ST(13 + WS-J)
+                     END-IF
+                     CALL "ENTITY-HORN-POSE" USING CLIENT-STATE WS-ROW WS-HSL WS-BLOCKING
+                     IF WS-BLOCKING = 1
+                         MOVE 8 TO WS-ST(13 + WS-J)
                      END-IF
                  END-IF
              END-PERFORM
