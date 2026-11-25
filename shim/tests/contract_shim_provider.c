@@ -475,9 +475,9 @@ static void vulkan(void) {
         tl_int("contract shim cc_vk_texture of the glint texture id returns 0", 0, cc_vk_texture(CC_TEX_GLINT, 4, 4, rgba));
         tl_int("contract shim cc_vk_texture of the armour glint texture id returns 0", 0, cc_vk_texture(CC_TEX_GLINT_ARMOR, 4, 4, rgba));
     }
-    static const char *pipes[] = {"opaque", "translucent", "ui", "crumbling", "glint", "translucent-cull"};
+    static const char *pipes[] = {"opaque", "translucent", "ui", "crumbling", "glint", "translucent-cull", "opaque-cull"};
     const float clear[4] = {0, 0, 0, 1};
-    for (int32_t p = CC_PIPE_OPAQUE; p <= CC_PIPE_TRANSLUCENT_CULL; p++) {
+    for (int32_t p = CC_PIPE_OPAQUE; p <= CC_PIPE_OPAQUE_CULL; p++) {
         rc = cc_vk_frame_begin(clear);
         snprintf(name, sizeof name, "contract shim cc_vk_frame_begin returns 0 (%s frame)", pipes[p]);
         tl_int(name, 0, rc);

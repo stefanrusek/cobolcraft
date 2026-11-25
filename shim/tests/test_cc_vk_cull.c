@@ -3,7 +3,11 @@
  * 190) is blended over the clear colour; the same quad with the corners reversed (seen from behind) is culled and leaves the clear colour; the
  * pipeline without the culling (CC_PIPE_TRANSLUCENT) draws both.
  * Also (bug-sweep T10404: the grass block's tinted side overlay was never seen): of two opaque quads at the same depth the one drawn second wins
- * (depth test less or equal, as the renderer's solid layers have it). */
+ * (depth test less or equal, as the renderer's solid layers have it).
+ * CC_PIPE_OPAQUE_CULL (CC-0013: a face between two leaf blocks is two coplanar quads that face opposite ways, and without the culling they fought for the
+ * pixel while the camera moved) is the opaque pipeline with the back faces culled: the front quad is drawn opaque (no blend), the reversed one is dropped,
+ * it writes depth (a nearer quad hides a farther one drawn after it) and, like the opaque pipeline, it passes equal depth (of two quads at the same depth the
+ * second wins). */
 #include <stdio.h>
 #include <string.h>
 
@@ -70,17 +74,21 @@ static void centre_pixel(char out[9]) {
 
 
 
-/* A quad (two triangles) with the corners 1 2 3 4 at (-.5,-.5) (.5,-.5) (.5,.5) (-.5,.5), or in the reverse order. */
-static void quad(int reverse, float *out) {
+/* A quad (two triangles) with the corners 1 2 3 4 at (-.5,-.5) (.5,-.5) (.5,.5) (-.5,.5), or in the reverse order, at depth z. */
+static void quad_z(int reverse, float z, float *out) {
     static const float c[4][2] = {{-0.5f, -0.5f}, {0.5f, -0.5f}, {0.5f, 0.5f}, {-0.5f, 0.5f}};
     static const float uv[4][2] = {{0, 0}, {1, 0}, {1, 1}, {0, 1}};
     static const int fwd[6] = {0, 1, 2, 0, 2, 3};
     static const int rev[6] = {0, 2, 1, 0, 3, 2};
     for (int i = 0; i < 6; i++) {
         int k = reverse ? rev[i] : fwd[i];
-        float v[11] = {c[k][0], c[k][1], 0.5f, uv[k][0], uv[k][1], 1, 1, 0, 1, 1, 1};
+        float v[11] = {c[k][0], c[k][1], z, uv[k][0], uv[k][1], 1, 1, 0, 1, 1, 1};
         memcpy(out + i * 11, v, sizeof v);
     }
+}
+
+static void quad(int reverse, float *out) {
+    quad_z(reverse, 0.5f, out);
 }
 
 static void frame(int reverse, int pipeline, char out[9]) {
@@ -111,6 +119,12 @@ int main(void) {
     tl_str("test cc_vk the translucent pipeline with culling drops a quad seen from behind", "000000FF", back);
     frame(1, CC_PIPE_TRANSLUCENT, back);
     tl_str("test cc_vk the translucent pipeline without culling draws a quad seen from behind", "C86432FF", back);
+    frame(0, CC_PIPE_OPAQUE_CULL, front);
+    frame(1, CC_PIPE_OPAQUE_CULL, back);
+    tl_str("test cc_vk the opaque pipeline with culling draws a quad seen from the front, opaque", "C86432FF", front);
+    tl_str("test cc_vk the opaque pipeline with culling drops a quad seen from behind", "000000FF", back);
+    frame(1, CC_PIPE_OPAQUE, back);
+    tl_str("test cc_vk the opaque pipeline without culling draws a quad seen from behind", "C86432FF", back);
     static const uint8_t other[2 * 2 * 4] = {10, 220, 30, 255, 10, 220, 30, 255, 10, 220, 30, 255, 10, 220, 30, 255};
     cc_vk_texture(CC_TEX_ENTITIES, 2, 2, other);
     float second[6 * 11];
@@ -126,6 +140,27 @@ int main(void) {
     centre_pixel(back);
     cc_vk_present();
     tl_str("test cc_vk of two opaque quads at the same depth the second wins", "0ADC1EFF", back);
+    cc_vk_mesh(1, mesh_first, 6);
+    cc_vk_mesh(2, second, 6);
+    cc_vk_frame_begin(clear);
+    cc_vk_draw(1, CC_PIPE_OPAQUE_CULL, CC_TEX_BLOCKS, IDENTITY);
+    cc_vk_draw(2, CC_PIPE_OPAQUE_CULL, CC_TEX_ENTITIES, IDENTITY);
+    cc_vk_submit();
+    centre_pixel(back);
+    cc_vk_present();
+    tl_str("test cc_vk of two culling opaque quads at the same depth the second wins (depth test less or equal)", "0ADC1EFF", back);
+    float near_quad[6 * 11], far_quad[6 * 11];
+    quad_z(0, 0.3f, near_quad);
+    quad_z(0, 0.7f, far_quad);
+    cc_vk_mesh(1, near_quad, 6);
+    cc_vk_mesh(2, far_quad, 6);
+    cc_vk_frame_begin(clear);
+    cc_vk_draw(1, CC_PIPE_OPAQUE_CULL, CC_TEX_BLOCKS, IDENTITY);
+    cc_vk_draw(2, CC_PIPE_OPAQUE, CC_TEX_ENTITIES, IDENTITY);
+    cc_vk_submit();
+    centre_pixel(back);
+    cc_vk_present();
+    tl_str("test cc_vk the culling opaque pipeline writes depth: a farther quad drawn after it is hidden", "C86432FF", back);
     cc_vk_shutdown();
     cc_win_close();
     return 0;

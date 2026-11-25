@@ -79,6 +79,7 @@ int main(void) {
     tl_int("contract ccshim CC_PIPE_UI", 2, CC_PIPE_UI);
     tl_int("contract ccshim CC_PIPE_CRUMBLING", 3, CC_PIPE_CRUMBLING);
     tl_int("contract ccshim CC_PIPE_TRANSLUCENT_CULL", 5, CC_PIPE_TRANSLUCENT_CULL);
+    tl_int("contract ccshim CC_PIPE_OPAQUE_CULL", 6, CC_PIPE_OPAQUE_CULL);
     tl_int("contract ccshim CC_TEX_BLOCKS", 0, CC_TEX_BLOCKS);
     tl_int("contract ccshim CC_TEX_ENTITIES", 1, CC_TEX_ENTITIES);
     tl_int("contract ccshim CC_TEX_UI", 2, CC_TEX_UI);

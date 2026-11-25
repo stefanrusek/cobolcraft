@@ -2,7 +2,7 @@
 spile: ticket
 id: CC-0013
 type: bug
-status: implementing
+status: unverified
 owner: stefanrusek
 resolution:
 blocked_by: []
@@ -71,3 +71,28 @@ Cause found by reading the mesher, the render list and the shim (client and shim
   destroy loops and depthWriteEnable, shim/tests/contract_shim_provider.c, the shim-abi doc) so the shim and contract
   gates must run. Red test to write first: test_render_list.cob expects the world section draws on the new pipeline;
   plus a mesh test that the two coplanar quads of a shared leaf face have opposite winding (one front, one back).
+
+## Fix (bug wave, 2026-11-25)
+
+- Root cause (client and shim, not core): the terrain's opaque pass was drawn with a pipeline that culls nothing, while the
+  mesher (by the docs' leaves rule) draws the face between two leaf blocks as two coplanar quads facing opposite ways.
+- Fix: a new shim pipeline CC_PIPE_OPAQUE_CULL = 6 (the opaque pipeline: depth test less-or-equal and write, no blend; with
+  the back faces culled, front face clockwise like CC_PIPE_TRANSLUCENT_CULL). client/src/render-list.cob draws the sections'
+  opaque meshes with it (entities, the hand, signs and the UI keep their pipelines). Files: contract/include/ccshim.h,
+  contract/copy/CCSHIM.cpy, shim/src/cc_internal.h (pipelines[7]), shim/src/cc_vk.c (cull mode, depth write, compare op,
+  blend, create, draw check, destroy), specs/001-cobolcraft-complete/contracts/shim-abi.md section 9, client/src/render-list.cob,
+  shim/tests/contract_shim_provider.c, tools/probe/probe_contract.c and .cob.
+- Red tests: client/tests/test_render_list.cob "every opaque section draw takes the culling opaque pipeline (6)" (expected 4,
+  observed 0 before the fix); shim/tests/test_cc_vk_cull.c cases for the new pipeline (did not compile: no CC_PIPE_OPAQUE_CULL).
+  Green from the start by design: client/tests/test_mesher_leaves.cob "the face between oak and birch leaves is one quad looking
+  east and one looking west" checks the premise (the two quads wind opposite ways, so culling keeps exactly one).
+- Shim test (real GPU, offscreen quad): the culling opaque pipeline draws the clockwise quad opaque, drops the reversed one,
+  writes depth and passes equal depth (the second of two quads at one depth wins, as the grass overlay needs).
+- Checks: test_render_list 21 passed, test_mesher_leaves 14 passed; `make gate-shim` (1706 passed, shim coverage 0 uncovered),
+  `make gate-contract` (probe 106 passed); `make cover-changed SINCE=origin/003-play-test-bugs` with test_render_list,
+  test_mesher_leaves, test_cc_vk_cull, contract_shim_provider: 221 passed, 0 uncovered changed lines; `make -C client lint`
+  and `gen_tables.py --check` pass.
+- Not covered: FR-002 (same vertex and layer order for two meshes of a chunk) was not examined or changed. The headless run
+  cannot show the flicker itself; the operator's check is to stare at a tree while turning the camera, and to look at the
+  single-sided models that vanilla also culls from behind (a rail seen from below shows nothing): every model quad that the
+  pack gives one face only is now drawn from its front side only.
