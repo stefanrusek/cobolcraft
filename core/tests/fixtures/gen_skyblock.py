@@ -5,6 +5,7 @@ synthetic values) and the world_gen_settings.dat that declares the overworld gen
   skyblock-flat      minecraft:flat with no layers and the_void biome (a void world made with the Superflat Void preset)
   skyblock-modgen    a generator type this game does not know (skyblock:void_island, what a mod registers)
   skyblock-modnoise  minecraft:noise whose settings are another namespace's (skyblock:void_noise)
+  skyblock-noisecomp minecraft:noise whose settings are an inline compound (noise settings written out in the file)
   skyblock-noise     the ordinary minecraft:noise overworld (control: a standard world)
   skyblock-debug     minecraft:debug
   skyblock-bare      no dimensions map at all; skyblock-notype  an overworld generator with no type member
@@ -57,6 +58,10 @@ def overworld(variant):
         return stem(dim, [comp("settings", string("island", "skyblock:oak_island")), string("type", "skyblock:void_island")])
     if variant == "modnoise":
         return stem(dim, noise("skyblock:void_noise", "minecraft:overworld"))
+    if variant == "noisecomp":
+        return stem(dim, [comp("settings", string("sea_level_block", "minecraft:water"), byte("aquifers_enabled", 0)),
+                          comp("biome_source", string("preset", "minecraft:overworld"), string("type", "minecraft:multi_noise")),
+                          string("type", "minecraft:noise")])
     if variant == "notype":
         return stem(dim, [string("settings", "minecraft:overworld")])
     if variant == "debug":
@@ -73,7 +78,7 @@ def settings(variant):
                          comp("dimensions", overworld(variant), nether, end)), integer("DataVersion", 5023))
 
 here = os.path.dirname(os.path.abspath(__file__))
-for variant in ("flat", "modgen", "modnoise", "noise", "debug", "bare", "notype"):
+for variant in ("flat", "modgen", "modnoise", "noisecomp", "noise", "debug", "bare", "notype"):
     out = os.path.join(here, "skyblock-" + variant)
     os.makedirs(os.path.join(out, "data", "minecraft"), exist_ok=True)
     for path, data in (("level.dat", level()), ("data/minecraft/world_gen_settings.dat", settings(variant))):

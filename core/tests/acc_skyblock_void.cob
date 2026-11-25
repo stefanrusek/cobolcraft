@@ -75,6 +75,12 @@
          TO TL-CASE
      MOVE "0 superflat 1" TO TL-EXPECTED
      PERFORM CHECK
+     MOVE "noisecomp" TO WS-VARIANT
+     PERFORM DECIDE
+     MOVE "acceptance skyblock given noise with its settings written out as a compound when decided then void chunks: superflat with the fallback"
+         TO TL-CASE
+     MOVE "0 superflat 1" TO TL-EXPECTED
+     PERFORM CHECK
      MOVE "noise" TO WS-VARIANT
      PERFORM DECIDE
      MOVE "acceptance skyblock given the ordinary noise overworld when the type is decided then it is standard, no fallback" TO TL-CASE
