@@ -26,7 +26,6 @@ project: CobolCraft
 | [CC-0010](../CC-0010-swim-crawl-mining-target.md) | Mining, placing and attacking while swimming or crawling hit the block in front | bug | stefanrusek |  |  |
 | [CC-0011](../CC-0011-stairs-fall-damage.md) | Walking down stairs or an incline fast deals no fall damage | bug | stefanrusek |  |  |
 | [CC-0012](../CC-0012-farmland-trample.md) | Farmland turns to dirt when an entity lands on it | bug | stefanrusek |  |  |
-| [CC-0013](../CC-0013-tree-flicker.md) | A tree does not flicker while the camera moves | bug | stefanrusek |  |  |
 | [CC-0015](../CC-0015-player-model-scale.md) | Other players and the third-person figure have the vanilla height | bug | stefanrusek |  |  |
 | [CC-0016](../CC-0016-item-icon-3d-shading.md) | 3D block icons in slots are shaded per face | bug | stefanrusek |  |  |
 | [CC-0017](../CC-0017-use-item-in-air.md) | Boats, bows, shields and other held items start their use from the real window | bug | stefanrusek |  |  |
@@ -64,6 +63,7 @@ project: CobolCraft
 
 | ID | Title | Type | Owner | Blocked | PR |
 |---|---|---|---|---|---|
+| [CC-0013](../CC-0013-tree-flicker.md) | A tree does not flicker while the camera moves | bug | stefanrusek |  |  |
 | [CC-0014](../CC-0014-goat-horn-in-hand.md) | A goat horn in the hand is raised to the mouth when used | bug | stefanrusek |  |  |
 | [CC-0021](../CC-0021-block-and-fluid-fixes-on-lanes.md) | Block placement, update and fluid fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 
