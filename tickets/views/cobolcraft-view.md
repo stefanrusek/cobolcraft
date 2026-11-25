@@ -26,6 +26,7 @@ project: CobolCraft
 | [CC-0023](../CC-0023-superflat-spawn-rates.md) | Superflat worlds spawn slimes and hostile mobs at the standard rates | bug | stefanrusek |  | --- |
 | [CC-0046](../CC-0046-older-play-test-reports-unverified.md) | Play-test reports of try8 to try11 are checked against a current build | bug | stefanrusek |  | --- |
 | [CC-0047](../CC-0047-first-chunk-fill-step-within-tick-budget.md) | The first fill step of a freshly loaded chunk stays inside the per-tick step budget | bug | stefanrusek |  |  |
+| [CC-0052](../CC-0052-mob-tick-within-tick-cpu-budget.md) | A mob tick stays inside the per-tick CPU budget however many chunks are loaded | bug | stefanrusek |  |  |
 
 ## Board
 
@@ -64,7 +65,6 @@ project: CobolCraft
 | [CC-0049](../CC-0049-standard-registry-data-for-clients-without-core-pack.md) | A standard world sends NBT Registry Data to a client without the core pack | bug | stefanrusek |  |  |
 | [CC-0050](../CC-0050-real-player-skins.md) | A player's own skin is shown to the others | feature | stefanrusek |  |  |
 | [CC-0051](../CC-0051-vanilla-client-actions-ignored.md) | The actions of a vanilla client that the server discards take effect | feature | stefanrusek |  |  |
-| [CC-0052](../CC-0052-mob-tick-within-tick-cpu-budget.md) | A mob tick stays inside the per-tick CPU budget however many chunks are loaded | bug | stefanrusek |  |  |
 
 ### implementing
 
@@ -91,6 +91,7 @@ project: CobolCraft
 | [CC-0023](../CC-0023-superflat-spawn-rates.md) | Superflat worlds spawn slimes and hostile mobs at the standard rates | bug | stefanrusek |  | --- |
 | [CC-0046](../CC-0046-older-play-test-reports-unverified.md) | Play-test reports of try8 to try11 are checked against a current build | bug | stefanrusek |  | --- |
 | [CC-0047](../CC-0047-first-chunk-fill-step-within-tick-budget.md) | The first fill step of a freshly loaded chunk stays inside the per-tick step budget | bug | stefanrusek |  |  |
+| [CC-0052](../CC-0052-mob-tick-within-tick-cpu-budget.md) | A mob tick stays inside the per-tick CPU budget however many chunks are loaded | bug | stefanrusek |  |  |
 
 ## Recently Closed
 
