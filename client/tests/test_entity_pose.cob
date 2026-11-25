@@ -24,6 +24,9 @@
  01 WS-LAST                BINARY-LONG.
  01 WS-RANGE.
     05 WS-R                BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-LOW                BINARY-LONG.
+ 01 WS-VI                 BINARY-LONG.
+ 01 WS-MICRO              BINARY-LONG.
  01 WS-TOP-STAND           BINARY-LONG.
  01 WS-TOP-CROUCH          BINARY-LONG.
  01 WS-EYE-TABLE.
@@ -52,6 +55,25 @@
      MOVE RL-EN-COUNT TO WS-LAST
      CALL "EPO-RANGE" USING CLIENT-STATE WS-FIRST WS-LAST WS-RANGE
      MOVE WS-R(4) TO WS-TOP-STAND
+*>   CC-0015: the figure is drawn at the 0.9375 scale of 12 section 7.3 step 4 about the entity's feet. Expected numbers derived from the doc by an independent
+*>   Python script of that formula: a vertex at model height y_m lands 0.9375 x (1.501 - y_m / 16) above the feet; the head top is y_m -8 (1.8759375, 1876 thousandths);
+*>   the lowest vertex of the standing figure is not the sole line y_m 24 (0.0009375) but the leg corner that the leg's zRot 0.005 and yRot 0.005 (12 section 7.5, 34-2) lowers
+*>   to y_m 24.0099 (357.4 millionths above the feet; 381.3 millionths without the scale, 1.501 - y_m / 16); the vertices are eye-relative and the eye is at the feet height.
+     MOVE 999999999 TO WS-LOW
+     PERFORM VARYING WS-VI FROM WS-FIRST BY 1 UNTIL WS-VI > WS-LAST
+         COMPUTE WS-MICRO = FUNCTION INTEGER(RL-EN-Y(WS-VI) * 1000000 + 0.5)
+         IF WS-MICRO < WS-LOW
+             MOVE WS-MICRO TO WS-LOW
+         END-IF
+     END-PERFORM
+     MOVE "entity pose a standing player's lowest vertex is 0.357 thousandths above its feet (leg corner at y_m 24.0099 scaled 0.9375, 12 section 7.3 step 4)" TO TL-CASE
+     MOVE 357 TO TL-EXPECTED-N
+     MOVE WS-LOW TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "entity pose a standing player's head top is 0.9375 x 2.001 above its feet (1876 thousandths, 12 section 7.3 step 4)" TO TL-CASE
+     MOVE 1876 TO TL-EXPECTED-N
+     MOVE WS-R(4) TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "entity pose a standing player is drawn (its vertices exist)" TO TL-CASE
      MOVE 1 TO TL-EXPECTED-N
      MOVE 0 TO TL-OBSERVED-N

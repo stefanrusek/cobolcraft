@@ -2,7 +2,7 @@
 spile: ticket
 id: CC-0013
 type: bug
-status: draft
+status: unverified
 owner: stefanrusek
 resolution:
 blocked_by: []
@@ -11,7 +11,8 @@ relations:
   depends_on: []
   relates_to: [CC-0001]
   supersedes: []
-implementation: []
+implementation:
+  branch: 003-play-test-bugs
 ---
 
 # CC-0013: A tree does not flicker while the camera moves
@@ -46,3 +47,52 @@ Looking at a tree and turning the camera shows a stable image: no pixels change 
   translucent and cutout layers.
 - Method in the brief: a screenshot sequence of a fixed tree (--screenshot-after-frames) while rotating a few degrees,
   diffed for changing pixels; and a red client mesh test for identical order and no coplanar overlapping quads.
+
+## Investigation (bug wave, 2026-11-25)
+
+Cause found by reading the mesher, the render list and the shim (client and shim; not core). Not yet fixed.
+
+- With the Fancy default (cutoutLeaves on, CL-LEAVES-CULL 0) the mesher draws every face of every leaf block, including
+  the face between two adjacent leaf blocks, which therefore exists twice: one quad per block, in the same plane, facing
+  opposite ways, with mirrored texel mapping (client/tests/test_mesher_leaves.cob asserts it: oak beside birch leaves
+  draw 12 faces, "the one between them twice"; the 3 x 3 x 3 cube draws 162 quads, 108 more than its 54 outside faces).
+  This is the rule of the docs (24 part 1 section 9.1, LeavesBlock.skipRendering) and it relied on the terrain pass
+  culling back faces so that only the quad facing the camera is rasterised.
+- The leaf quads go to the opaque layer (WR-OP), which render-list.cob draws with CC-PIPE-OPAQUE, and
+  shim/src/cc_vk.c line 599 creates every pipeline except CC_PIPE_TRANSLUCENT_CULL with VK_CULL_MODE_NONE. So both quads of
+  each shared leaf face are rasterised at the same depth: z-fighting whose winner changes with the camera, between two
+  mirrored copies of the leaf texture. That is "a little bit of flicker when staring at a tree and moving the camera",
+  and it appeared with the fancy leaves rule of lane bugleaves (before it the shared faces were culled).
+- Proposed fix (needs a GPU run to confirm, so it is the operator's check): a new pipeline CC_PIPE_OPAQUE_CULL (id 6, the
+  opaque pipeline with the back faces culled, front face clockwise in the y-down framebuffer like
+  CC_PIPE_TRANSLUCENT_CULL) used by render-list.cob for the section opaque meshes only (line 423; signs, entities and
+  the hand keep CC-PIPE-OPAQUE). The terrain faces are the same baked block faces that the translucent pass already draws
+  culled in play. It changes the shim ABI (contract/include/ccshim.h, contract/copy/CCSHIM.cpy, shim/src/cc_vk.c create and
+  destroy loops and depthWriteEnable, shim/tests/contract_shim_provider.c, the shim-abi doc) so the shim and contract
+  gates must run. Red test to write first: test_render_list.cob expects the world section draws on the new pipeline;
+  plus a mesh test that the two coplanar quads of a shared leaf face have opposite winding (one front, one back).
+
+## Fix (bug wave, 2026-11-25)
+
+- Root cause (client and shim, not core): the terrain's opaque pass was drawn with a pipeline that culls nothing, while the
+  mesher (by the docs' leaves rule) draws the face between two leaf blocks as two coplanar quads facing opposite ways.
+- Fix: a new shim pipeline CC_PIPE_OPAQUE_CULL = 6 (the opaque pipeline: depth test less-or-equal and write, no blend; with
+  the back faces culled, front face clockwise like CC_PIPE_TRANSLUCENT_CULL). client/src/render-list.cob draws the sections'
+  opaque meshes with it (entities, the hand, signs and the UI keep their pipelines). Files: contract/include/ccshim.h,
+  contract/copy/CCSHIM.cpy, shim/src/cc_internal.h (pipelines[7]), shim/src/cc_vk.c (cull mode, depth write, compare op,
+  blend, create, draw check, destroy), specs/001-cobolcraft-complete/contracts/shim-abi.md section 9, client/src/render-list.cob,
+  shim/tests/contract_shim_provider.c, tools/probe/probe_contract.c and .cob.
+- Red tests: client/tests/test_render_list.cob "every opaque section draw takes the culling opaque pipeline (6)" (expected 4,
+  observed 0 before the fix); shim/tests/test_cc_vk_cull.c cases for the new pipeline (did not compile: no CC_PIPE_OPAQUE_CULL).
+  Green from the start by design: client/tests/test_mesher_leaves.cob "the face between oak and birch leaves is one quad looking
+  east and one looking west" checks the premise (the two quads wind opposite ways, so culling keeps exactly one).
+- Shim test (real GPU, offscreen quad): the culling opaque pipeline draws the clockwise quad opaque, drops the reversed one,
+  writes depth and passes equal depth (the second of two quads at one depth wins, as the grass overlay needs).
+- Checks: test_render_list 21 passed, test_mesher_leaves 14 passed; `make gate-shim` (1706 passed, shim coverage 0 uncovered),
+  `make gate-contract` (probe 106 passed); `make cover-changed SINCE=origin/003-play-test-bugs` with test_render_list,
+  test_mesher_leaves, test_cc_vk_cull, contract_shim_provider: 221 passed, 0 uncovered changed lines; `make -C client lint`
+  and `gen_tables.py --check` pass.
+- Not covered: FR-002 (same vertex and layer order for two meshes of a chunk) was not examined or changed. The headless run
+  cannot show the flicker itself; the operator's check is to stare at a tree while turning the camera, and to look at the
+  single-sided models that vanilla also culls from behind (a rail seen from below shows nothing): every model quad that the
+  pack gives one face only is now drawn from its front side only.
