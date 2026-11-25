@@ -6,8 +6,15 @@
 *> for the clean-room documentation of the item in use (a gap named in CC-0014): the use state of 140 ticks (startUsingItem / stopUsingItem and their item_interact_* events), the
 *> using-item flags of Set Entity Data entry 8 for viewers, and the instrument of a stack that carries an `instrument` component of another instrument than the default (no table of
 *> the instrument entries to sound events is documented; every horn plays the default sound).
+*> The use state (docs/protocol/58 sections 2.1 and 2.2; CC-0014 round 4): the use of a horn is LivingEntity.startUsingItem for 140 ticks (TS-HORN-USE-START, -HAND of CTOOLS.cpy), ignored while
+*> another use (a bow, eating, a raised shield) is going, with item_interact_start at the player. The used hand's Set Equipment and the living entity flags (Set Entity Data entry 8: 1 using an item,
+*> 2 the used hand is the off-hand) go to the viewers with the next tick (USE-FLAGS-SYNC, poses.cob; the stack keeps the instrument component of the prototype, 58 section 5.2). The use ends
+*> at 140 ticks (completion), when the key is let go or the held slot changes (HUNGER-CANCEL, the shared stopUsingItem of play.cob and inventory.cob), or when the used hand no longer holds a
+*> goat_horn (58 section 2.2); each end posts item_interact_finish at the player.
 *>
 *>   HORN-ITEM-USE USING connection id, PLAY-SERVERBOUND, done out (1 = the horn was played, 0 = the item is passed on)
+*>   HORN-USE-STOP USING player row: ends the horn use when there is one (stopUsingItem: item_interact_finish)
+*>   HORN-USE-TICK USING player row: the per tick rule of the horn use (the same item in the used hand, completion at 140 ticks), then USE-FLAGS-SYNC for every item in use
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. HORN-ITEM-USE.
@@ -37,6 +44,9 @@
  01 WS-GROUP-LENGTH        BINARY-LONG VALUE 19.
  01 WS-TICKS               BINARY-LONG VALUE 140.
  01 WS-EVENT               PIC X(32) VALUE "instrument_play".
+ 01 WS-EV-START            PIC X(32) VALUE "item_interact_start".
+ 01 WS-ACTIVE              BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG.
  01 WS-FX                  BINARY-LONG.
  01 WS-FY                  BINARY-LONG.
  01 WS-FZ                  BINARY-LONG.
@@ -75,6 +85,13 @@
          CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
          MOVE 1 TO WS-READY
      END-IF
+*>   LivingEntity.startUsingItem (58 section 2.2): ignored while another item is in use; the equipment and flags packets follow with the next tick (USE-FLAGS-SYNC).
+     CALL "USE-FLAGS-GET" USING WS-ROW WS-ACTIVE WS-FLAGS
+     IF WS-ACTIVE = 0
+         COMPUTE TS-HORN-USE-START(WS-ROW) = CW-TICKS + 1
+         MOVE PSB-HAND TO TS-HORN-USE-HAND(WS-ROW)
+         CALL "GAME-EVENT-AT" USING WS-EV-START PL-ENTITY-ROW(WS-ROW)
+     END-IF
 *>   The instrument's sound at the player's position (fixed point eighths), to the viewers except the player.
      CALL "CONTENT-STATIC-ID" USING WS-REGISTRY WS-SOUND WS-SOUND-ID WS-STATUS
      COMPUTE WS-HOLDER = WS-SOUND-ID + 1
@@ -108,3 +125,54 @@
      MOVE 1 TO L-DONE
      GOBACK.
  END PROGRAM HORN-ITEM-USE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HORN-USE-STOP.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CTOOLS.
+ 01 WS-EV-FINISH           PIC X(32) VALUE "item_interact_finish".
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "COMBAT-TS-CHECK" USING L-ROW
+     IF TS-HORN-USE-START(L-ROW) > 0
+         MOVE 0 TO TS-HORN-USE-START(L-ROW)
+         CALL "GAME-EVENT-AT" USING WS-EV-FINISH PL-ENTITY-ROW(L-ROW)
+     END-IF
+     GOBACK.
+ END PROGRAM HORN-USE-STOP.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. HORN-USE-TICK.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CTOOLS.
+ COPY CMENU.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-KEY                 PIC X(48).
+ 01 WS-DURATION            BINARY-LONG VALUE 140.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "COMBAT-TS-CHECK" USING L-ROW
+     IF TS-HORN-USE-START(L-ROW) > 0
+*>       The stack of the used hand must still be a goat_horn (58 section 2.2: a different item in the hand stops the use).
+         MOVE SPACES TO WS-KEY
+         COMPUTE WS-SLOT = PL-HELD(L-ROW) + 1
+         IF TS-HORN-USE-HAND(L-ROW) = 0 AND PL-SLOT-COUNT(L-ROW, WS-SLOT) > 0
+             CALL "TOOLUSE-KEY" USING PL-SLOT-ITEM(L-ROW, WS-SLOT) WS-KEY
+         END-IF
+         IF TS-HORN-USE-HAND(L-ROW) = 1 AND MN-EQUIP-COUNT(L-ROW, 5) > 0
+             CALL "TOOLUSE-KEY" USING MN-EQUIP-ITEM(L-ROW, 5) WS-KEY
+         END-IF
+*>       Completion: the use duration floor(7.0 x 20) = 140 ticks has passed (completeUsingItem ends in stopUsingItem).
+         IF WS-KEY NOT = "goat_horn" OR CW-TICKS + 1 >= TS-HORN-USE-START(L-ROW) + WS-DURATION
+             CALL "HORN-USE-STOP" USING L-ROW
+         END-IF
+     END-IF
+     CALL "USE-FLAGS-SYNC" USING L-ROW
+     GOBACK.
+ END PROGRAM HORN-USE-TICK.

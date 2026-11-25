@@ -146,3 +146,35 @@ Where each question is answered:
   the plain held one; the visible change is the item model (`using_item` switches the model) and, for a viewer, the arm
   pose of 58 section 5. The core must send entry 8 for a player using an item (58 section 2.2, 5.8) and keep the
   `instrument` component on the stack it sends. Open questions that stay open are listed in 58 "Open questions" (14).
+
+## Bug wave, round 3 (2026-11-25), core half: the use state and the viewers' flags (doc 58)
+
+Root cause of the missing viewer pose: core. The core had no use state of a horn and no living entity flags (entry 8) and sent no Set
+Equipment for a player at all. Built from docs/protocol/58 sections 2.1, 2.2, 5.2, 5.8 and 6:
+
+- `core/src/horn-use.cob`: `HORN-ITEM-USE` now starts the use (LivingEntity.startUsingItem: 140 ticks, `TS-HORN-USE-START` and `TS-HORN-USE-HAND` of
+  `core/copy/CTOOLS.cpy`, ignored while another item is in use, `item_interact_start` at the player, then the existing sound, `instrument_play` and
+  cooldown). New `HORN-USE-STOP` (stopUsingItem: `item_interact_finish` when a use was going) and `HORN-USE-TICK` (the used hand must still hold a
+  goat_horn, completion at 140 ticks, then `USE-FLAGS-SYNC`). `HUNGER-CANCEL` (the shared stop of Player Action 6, a changed held slot, death,
+  dimension change, a menu) calls `HORN-USE-STOP`; `HUNGER-TICK` calls `HORN-USE-TICK` once a tick for every alive player.
+- `core/src/poses.cob`: `USE-FLAGS-GET` derives the byte of entry 8 from the use states that exist (a raised shield `TS-BLOCK-START` with its hand, a bow, crossbow or
+  trident being drawn `TS-USE-START`, eating `PL-EATING-ITEM`, the horn): 1 = using an item, 2 = the used hand is the off hand, and with nothing in use bit 2
+  of the byte last sent is kept (58 section 2.1: only the next start rewrites it). `USE-FLAGS-SYNC` sends a changed byte as Set Entity Data entry 8
+  (`LIVING-DATA-BUILD`) to the players who see the player and to the player itself (18 section 9.2); when bit 1 rises it first sends Set Equipment (0x68) of
+  the used hand (slot 0 or 1, the stack with its component patch through `SP-EXPORT`), the order of 58 section 2.2 and 2.3 (the viewer's start test needs the stack in the hand).
+- The `instrument` component: 58 section 5.2 says the stack a viewer receives needs it and that leaving the prototype default in place is enough (a patch that
+  removes it is the only way to lose it). The core sends the stack with the patch it has (an empty patch for a creative or given horn), so the prototype default
+  stands and nothing is written; M44-GOAT-DROP-HORN needs no change for the viewer's 140 ticks. NOT BUILT (Open question, not guessed): the instrument a goat's
+  horn carries (the registry order of the `instrument` entries and the sound event of each one are in no document; data component type `instrument` is id 63 in 46
+  section 8.1), so every horn still plays `item.goat_horn.sound.0`.
+- Gaps found, not built: (1) the core sends no Set Equipment of a player's hands or armour at any other time (join pairing, a held-slot change, an item swap): a viewer
+  sees an empty hand until the first use of an item sets that hand's stack; the general equipment sync of players needs its own ticket. (2) A viewer who starts tracking a
+  player already using an item is not sent entry 8 (58 section 2.3: the vanilla pairing order makes that start fail too). (3) Potion drinking and the brush are not part of
+  the flags (no `TS-` state of the same shape; 58 section 6 lists them, behaviour not added).
+- Red first: `core/tests/acc_bughorn_state.cob` (24 cases, real packets through the play path, a second player as the viewer) failed 19 of 24 with the core half
+  removed (log scratchpad/bwb-r4/red1.log), passes 24 of 24 with it (green1.log). `acc_bughorn_use` expects `instrument_play` as the second event now (item_interact_start first).
+- Checks: regression of 27 core modules that copy CTOOLS or call the use hooks (acc_bughorn_state, acc_bughorn_use, acc_bugusein_click, acc_eat_standard, acc_itemcomp_drink,
+  acc_itemcomp_food, acc_us14_bow, acc_us14_crossbow, acc_us14_elytra, acc_us14_spear, acc_us14_tools_wire, acc_us14_combat_wire2, acc_us14_trident, acc_us15_emitters,
+  acc_us15_emitters3, acc_us15_ravager_shield, acc_us16_throw_item, acc_us8_creative, acc_us8_eat, acc_us7_death_respawn, acc_wrapc_bowevents, acc_wrapc_windcharge,
+  test_arrow_shield, test_poses, test_pose_eye, test_player_parts, test_tool_special_shield) passed 478 failed 0; `make -C core lint` 2787 files 0 failed;
+  `gen_tables.py --check` 0 differing files.
