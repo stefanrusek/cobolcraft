@@ -24,5 +24,7 @@
 *>  0x06 Resource Pack Response
     05 CSB-PACK-ID            PIC X(16).
     05 CSB-PACK-ACTION        BINARY-LONG.
-*>  0x07 Select Known Packs: number of KnownPack entries (their values are not used)
+*>  0x07 Select Known Packs: number of KnownPack entries, and 1 when the list is exactly the one pack
+*>  the standard world offers (minecraft, core, 26.3; 04 section 2)
     05 CSB-KNOWN-PACKS        BINARY-LONG.
+    05 CSB-CORE-PACK          BINARY-LONG.
