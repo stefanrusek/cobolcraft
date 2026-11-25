@@ -10,6 +10,7 @@
 *> Entry points:
 *>   POSE-DATA-BUILD USING entity id, flags, pose, skin parts, hand, PB-BUFFER
 *>   POSE-UPDATE USING player row
+*>   POSE-EYE USING player row, eye height out (FLOAT-LONG)
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. POSE-DATA-BUILD.
@@ -187,3 +188,39 @@
      END-IF
      GOBACK.
  END PROGRAM POSE-UPDATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. POSE-EYE.
+*> USING player row, eye height out (FLOAT-LONG, above the feet): the eye of the player's current pose, the origin of every look ray the server tests
+*> a player's interaction from (docs/protocol/53 sections 2.1 and 7: the entity's own eye height, not smoothed, "what the server and the picking ray use";
+*> the client's PHYS-EYE gives the same value): standing 1.62 and crouching (5) 1.27 with a standard or debug content set, 1.6 and 1.25 for the
+*> cobolcraft stand-in set (RULE-ATTACK-EYE-MILLI, standin-content section 3); swimming or crawling (3) and fall flying (1) 0.4; sleeping (2) 0.2.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CONTENT.
+ COPY RULES.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-EYE                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-ROW L-EYE.
+     COMPUTE L-EYE = RULE-ATTACK-EYE-MILLI / 1000
+     EVALUATE PL-POSE(L-ROW)
+         WHEN 5
+             MOVE 1.25 TO L-EYE
+             IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+                 MOVE 1.27 TO L-EYE
+             END-IF
+         WHEN 3
+             MOVE 0.4 TO L-EYE
+         WHEN 1
+             MOVE 0.4 TO L-EYE
+         WHEN 2
+             MOVE 0.2 TO L-EYE
+         WHEN OTHER
+             IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+                 MOVE 1.62 TO L-EYE
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM POSE-EYE.

@@ -12,6 +12,7 @@ project: CobolCraft
 | ID | Title | Type | Owner | Blocked | PR |
 |---|---|---|---|---|---|
 | [CC-0001](../CC-0001-client-polish.md) | Client polish: visuals, controls and missing gameplay | feature | stefanrusek |  | 2 |
+| [CC-0010](../CC-0010-swim-crawl-mining-target.md) | Mining, placing and attacking while swimming or crawling hit the block in front | bug | stefanrusek |  |  |
 
 ## Board
 
@@ -23,7 +24,6 @@ project: CobolCraft
 | [CC-0004](../CC-0004-shutdown-disconnect-delivery.md) | Players reliably see why the server shut down | bug | stefanrusek |  |  |
 | [CC-0007](../CC-0007-lighting-sky-and-clouds.md) | Lighting, sky, fog and clouds | feature | stefanrusek |  |  |
 | [CC-0009](../CC-0009-block-placement-orientation-attachment.md) | Block placement honours orientation and attachment | bug | stefanrusek |  |  |
-| [CC-0010](../CC-0010-swim-crawl-mining-target.md) | Mining, placing and attacking while swimming or crawling hit the block in front | bug | stefanrusek |  |  |
 | [CC-0011](../CC-0011-stairs-fall-damage.md) | Walking down stairs or an incline fast deals no fall damage | bug | stefanrusek |  |  |
 | [CC-0012](../CC-0012-farmland-trample.md) | Farmland turns to dirt when an entity lands on it | bug | stefanrusek |  |  |
 | [CC-0015](../CC-0015-player-model-scale.md) | Other players and the third-person figure have the vanilla height | bug | stefanrusek |  |  |
@@ -72,6 +72,7 @@ project: CobolCraft
 | ID | Title | Type | Owner | Blocked | PR |
 |---|---|---|---|---|---|
 | [CC-0001](../CC-0001-client-polish.md) | Client polish: visuals, controls and missing gameplay | feature | stefanrusek |  | 2 |
+| [CC-0010](../CC-0010-swim-crawl-mining-target.md) | Mining, placing and attacking while swimming or crawling hit the block in front | bug | stefanrusek |  |  |
 
 ## Recently Closed
 
