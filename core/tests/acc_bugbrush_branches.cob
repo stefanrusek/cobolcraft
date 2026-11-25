@@ -15,6 +15,7 @@
  COPY CBLOCKS.
  COPY BESTATE.
  COPY PLAYPKT.
+ COPY BUSTATE.
  01 WS-DIR                 PIC X(1024).
  01 WS-ENV                 PIC X(1024).
  01 WS-FILE                PIC X(1100).
@@ -71,6 +72,7 @@
  01 WS-WANT-FACE           BINARY-LONG.
  01 WS-LABEL               PIC X(24).
  01 WS-FACE-TEXT           PIC 9.
+ 01 WS-RULES               BINARY-LONG.
  01 WS-FACE                BINARY-LONG VALUE 2.
  PROCEDURE DIVISION.
      MOVE SPACES TO WS-ENV
@@ -266,6 +268,14 @@
      MOVE 1 TO WS-WANT
      PERFORM CHECK-NUMBER
      CALL "WORLD-SET-BLOCK" USING WS-DIM WS-SX WS-SY WS-SZ WS-STONE
+
+*>   --- The block rules of the suspicious blocks are registered once per world open: opening the rules again adds none ---
+     MOVE BU-RULE-COUNT TO WS-RULES
+     CALL "GB-RULES-OPEN"
+     MOVE "acceptance bugbrush branches: registering the falling-block rules again adds no rule (the suspicious blocks' tick rules are already there)" TO WS-CASE
+     MOVE WS-RULES TO WS-WANT
+     MOVE BU-RULE-COUNT TO WS-GOT
+     PERFORM CHECK-NUMBER
      STOP RUN.
 
 *> The player stands at WS-PX, WS-PY, WS-PZ looking by WS-YAW and WS-PITCH: BRUSH-HIT must hit the target block (WS-SX, WS-SY, WS-SZ) through the face WS-WANT-FACE.
