@@ -43,6 +43,7 @@
  01 WS-NE3                 PIC -(3)9.99.
  01 WS-PIPES               PIC X(64).
  01 WS-OK                  BINARY-LONG.
+ 01 WS-CULLED              BINARY-LONG.
  01 WS-PS.
     05 WS-P                FLOAT-LONG OCCURS 16 TIMES.
  01 WS-VS.
@@ -153,8 +154,14 @@
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
      MOVE SPACES TO WS-PIPES
+     MOVE 0 TO WS-CULLED
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > RL-DRAW-COUNT
          MOVE RL-D-PIPELINE(WS-I) TO WS-K
+*>       CC-0013: the sections' opaque meshes take the culling pipeline (6, CC_PIPE_OPAQUE_CULL), counted here and then read as the other (0) below.
+         IF WS-K = CC-PIPE-OPAQUE-CULL
+             ADD 1 TO WS-CULLED
+             MOVE CC-PIPE-OPAQUE TO WS-K
+         END-IF
 *>       The sections' translucent meshes take the culling pipeline (4): a translucent draw here as the other (1).
          IF WS-K = CC-PIPE-TRANSLUCENT-CULL
              MOVE CC-PIPE-TRANSLUCENT TO WS-K
@@ -176,6 +183,17 @@
      END-IF
      MOVE "112 2" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CC-0013 (a tree flickers while the camera moves): the leaf block draws all six of its faces, so a face between two leaf blocks exists twice, as two coplanar quads
+*>   that face opposite ways (test_mesher_leaves); the terrain's opaque pass has to cull the back faces so that only the one seen from outside is rasterised (no z-fight).
+*>   Every opaque draw of this list is a world section (the draws before the three translucent ones and the UI draw), and every one of them takes CC_PIPE_OPAQUE_CULL.
+     MOVE "render list every opaque section draw takes the culling opaque pipeline (6): the face between two leaf blocks is drawn once"
+         TO TL-CASE
+     MOVE "N" TO TL-MODE
+     COMPUTE TL-EXPECTED-N = RL-DRAW-COUNT - 4
+     MOVE WS-CULLED TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "T" TO TL-MODE
 
      MOVE "render list sections of chunks behind the camera or far outside its view are not drawn (3 translucent draws, "
          & "not 5) though their meshes are uploaded" TO TL-CASE

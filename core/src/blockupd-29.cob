@@ -475,6 +475,10 @@
      IF L-KIND = 4 AND L-OUT = L-STATE
          CALL "SUP-SHAPE" USING L-DIM L-X L-Y L-Z L-STATE L-OUT
      END-IF
+*>   A kelp head with kelp above it becomes a body, a body that lost what was above it becomes a head (29b part 4 section 3.2 steps 7 and 10; kelp-29b.cob).
+     IF L-KIND = 4 AND L-OUT = L-STATE
+         CALL "KELP-SHAPE" USING L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
+     END-IF
      GOBACK.
  END PROGRAM BU-HOOK.
 

@@ -1014,6 +1014,19 @@
      IF EN-KEY(WS-ROW) = "enderman"
          CALL "ENTITY-ROOT-FRAME" USING WS-SR-OUT WS-BK-RF(WS-E)
      END-IF
+*>   A player (the model code "H") is drawn at the scale 0.9375 in all axes (12 section 7.3 step 4, AvatarRenderer): after scale (-1, -1, 1) and before the translate
+*>   (0, -1.501, 0), that is the last but one operation of the sequence, so the soles are 0.9375 x 0.001 and the head top 0.9375 x 2.001 above the entity's feet.
+     IF WS-ANIM = "H"
+         COMPUTE WS-OB = WS-NOPS * 4 - 2
+         COMPUTE WS-OD = WS-OB + 4
+         MOVE WS-SRO(WS-OB) TO WS-SRO(WS-OD)
+         MOVE WS-SRO(WS-OB + 1) TO WS-SRO(WS-OD + 1)
+         MOVE WS-SRO(WS-OB + 2) TO WS-SRO(WS-OD + 2)
+         MOVE WS-SRO(WS-OB + 3) TO WS-SRO(WS-OD + 3)
+         MOVE 2 TO WS-SRO(WS-OB)
+         MOVE 0.9375 TO WS-SRO(WS-OB + 1) WS-SRO(WS-OB + 2) WS-SRO(WS-OB + 3)
+         ADD 1 TO WS-NOPS
+     END-IF
 *>   A player lying flat (swim amount above 0, 53 section 13): after the body yaw, the rotation about X by amount x T (T = -90 - pitch in water, -90 on
 *>   land) and the translation (0, -1, 0.3) that the pose SWIMMING adds before it (the vertex is moved first, then rotated, then yawed).
      IF WS-ANIM = "H" AND EN-SWIM(WS-ROW) > 0

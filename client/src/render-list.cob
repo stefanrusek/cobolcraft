@@ -420,7 +420,9 @@
                          AND RL-DRAW-COUNT < CL-MAX-DRAWS - CL-DRAW-RESERVE
                      ADD 1 TO RL-DRAW-COUNT
                      MOVE WS-SLOT TO RL-D-SLOT(RL-DRAW-COUNT)
-                     MOVE CC-PIPE-OPAQUE TO RL-D-PIPELINE(RL-DRAW-COUNT)
+*>                   The back faces are culled (CC-0013): a block draws all its faces, so the face between two leaf blocks is two coplanar quads facing opposite ways (the
+*>                   cutoutLeaves rule of 24 part 1 section 9.1), and only the one that looks at the eye may be rasterised, else the two fight for the pixel.
+                     MOVE CC-PIPE-OPAQUE-CULL TO RL-D-PIPELINE(RL-DRAW-COUNT)
                      MOVE CC-TEX-BLOCKS TO RL-D-TEX(RL-DRAW-COUNT)
                      CALL "SECTION-MATRIX" USING CLIENT-STATE WS-PV-SHORT-TABLE WS-PV-TABLE WS-RW-OFF-X(WS-R) WS-SECTION-OFF(WS-S) WS-RW-OFF-Z(WS-R)
                  END-IF

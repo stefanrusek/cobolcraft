@@ -6,8 +6,8 @@
 *> while gliding); a point p of the baked figure (feet at the origin, y up) is turned about X by b x 20 degrees, then by half a turn about Z (x and y change sign), moved up by half the standing
 *> height 1.8 plus the offset 0.0625, scaled by the model scale times the GUI scale and put at the box centre, the depth the negated z. The faces that look at the viewer are kept (a face looks
 *> at the viewer when its outward normal, taken away from the centre of its cuboid, has a positive depth component), lit by the two ENTITY_IN_UI lights of 12 section 1.9 (normalize(0.2, -1, 1) and
-*> normalize(-0.2, -1, 0) in the view space, y down) and drawn far to near by their mean depth. The armour, the held items and the cape are not drawn. (The baked figure is
-*> at scale 1; the player's 0.9375 of 12 section 7.3 is applied here.)
+*> normalize(-0.2, -1, 0) in the view space, y down) and drawn far to near by their mean depth. The armour, the held items and the cape are not drawn. (The baked figure
+*> already has the player's 0.9375 of 12 section 7.3 step 4: ENTITY-MODEL-EMIT applies it.)
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. PREVIEW-WIDGET.
@@ -159,10 +159,10 @@
          PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 6
              PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 4
                  COMPUTE WS-J = WS-START + (WS-C - 1) * 36 + (WS-F - 1) * 6 + WS-VA(WS-K)
-*>               The player's own scale of 12 section 7.3 step 4 (AvatarRenderer, 0.9375 about the feet), which ENTITY-MODEL-EMIT does not apply to a "player" row.
-                 COMPUTE WS-X = RL-EN-X(WS-J) * 0.9375
-                 COMPUTE WS-Y = RL-EN-Y(WS-J) * 0.9375
-                 COMPUTE WS-Z = RL-EN-Z(WS-J) * 0.9375
+*>               The vertices are the emit's: the player's own scale of 12 section 7.3 step 4 (0.9375 about the feet) is already in them.
+                 COMPUTE WS-X = RL-EN-X(WS-J)
+                 COMPUTE WS-Y = RL-EN-Y(WS-J)
+                 COMPUTE WS-Z = RL-EN-Z(WS-J)
                  COMPUTE WS-T = WS-Y * WS-COS - WS-Z * WS-SIN
                  COMPUTE WS-Z = WS-Y * WS-SIN + WS-Z * WS-COS
                  COMPUTE WS-VC(WS-F, WS-K, 1) = 0 - WS-X
