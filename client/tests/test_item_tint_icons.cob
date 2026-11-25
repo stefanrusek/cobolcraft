@@ -3,6 +3,8 @@
 *> grass colormap colour of (0.5, 1.0) while its other faces stay white, a leather helmet's layer 0 in the dye default or the stack's dyed_color with its overlay layer white, a potion's layer 0 in the colour
 *> of its potion (the default blue without one) with the bottle white, a firework star's second layer in the explosion default; an apple, dirt and a spawn egg (no tints) stay white. The flat icon of an
 *> item with a second layer has two quads (IS-LAYER1 of ITEM-SPRITE-OF).
+*> CC-0016: the shade of a 3D cube's face (12 section 6.10, 8.1: up 1.0, east 0.7459, north 0.6797 under ITEMS_3D, worked by client/tests/fixtures/gen_item_gui.py) is in the vertex colour (vertexColor = colour.rgb
+*> x lightAccum; the UI pipeline ignores the vertex brightness), so a vertex's colour is the layer's tint times its face's shade (flat icons have the shade 1).
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TEST-ITEM-TINT-ICONS.
  DATA DIVISION.
@@ -34,6 +36,14 @@
  01 WS-DOWN                COMP-2 VALUE 1.0.
  01 WS-COLOUR              BINARY-DOUBLE.
  01 WS-TINTED              BINARY-LONG.
+ 01 WS-SHADE               BINARY-LONG VALUE 10000.
+ 01 WS-SHADE-TABLE.
+    05 WS-SH               BINARY-LONG OCCURS 3 TIMES.
+ 01 WS-FACE-MATCH          BINARY-LONG OCCURS 3 TIMES.
+ 01 WS-EXP-SR              BINARY-LONG.
+ 01 WS-EXP-SG              BINARY-LONG.
+ 01 WS-EXP-SB              BINARY-LONG.
+ 01 WS-F                   BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE SPACES TO WS-GEN
      ACCEPT WS-GEN FROM ENVIRONMENT "CC_GENERATED_DIR"
@@ -80,10 +90,10 @@
      MOVE 72 TO WS-EXP-R
      MOVE 181 TO WS-EXP-G
      MOVE 24 TO WS-EXP-B
-     PERFORM COUNT-COLOUR
-     MOVE "item tint icons oak leaves: all 18 vertices are 48B518" TO TL-CASE
-     MOVE 18 TO TL-EXPECTED-N
-     MOVE WS-MATCH TO TL-OBSERVED-N
+     PERFORM COUNT-FACES
+     MOVE "item tint icons oak leaves: six vertices of 48B518 in each of the three face shades (1.0, 0.7459, 0.6797)" TO TL-CASE
+     MOVE 666 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-FACE-MATCH(1) * 100 + WS-FACE-MATCH(2) * 10 + WS-FACE-MATCH(3)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Dirt has no tints: white.
@@ -92,10 +102,10 @@
      MOVE 255 TO WS-EXP-R WS-EXP-G WS-EXP-B
      MOVE 1 TO WS-FROM
      MOVE RL-IC-COUNT TO WS-TO
-     PERFORM COUNT-COLOUR
-     MOVE "item tint icons dirt: every vertex is white" TO TL-CASE
-     MOVE RL-IC-COUNT TO TL-EXPECTED-N
-     MOVE WS-MATCH TO TL-OBSERVED-N
+     PERFORM COUNT-FACES
+     MOVE "item tint icons dirt: every vertex is white in its face's shade (six each of 1.0, 0.7459, 0.6797)" TO TL-CASE
+     MOVE 666 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-FACE-MATCH(1) * 100 + WS-FACE-MATCH(2) * 10 + WS-FACE-MATCH(3)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   The grass block: the tinted faces are in the grass colormap colour of (0.5, 1.0) (43 section 7.1), the others white; both kinds are there.
@@ -117,19 +127,21 @@
          MOVE 0 TO TL-OBSERVED-N
      END-IF
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     PERFORM COUNT-FACES
+     COMPUTE WS-TINTED = WS-FACE-MATCH(1) + WS-FACE-MATCH(2) + WS-FACE-MATCH(3)
+     MOVE "item tint icons grass block: the top (shade 1.0) and the two side overlays (0.7459, 0.6797) are in the colormap colour, six vertices each" TO TL-CASE
+     MOVE 666 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-FACE-MATCH(1) * 100 + WS-FACE-MATCH(2) * 10 + WS-FACE-MATCH(3)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 255 TO WS-EXP-R WS-EXP-G WS-EXP-B
-     PERFORM COUNT-COLOUR
+     PERFORM COUNT-FACES
+     MOVE "item tint icons grass block: the faces without a tintindex are white in their shade (none on top, six each on the two sides)" TO TL-CASE
+     MOVE 66 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-FACE-MATCH(1) * 100 + WS-FACE-MATCH(2) * 10 + WS-FACE-MATCH(3)
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE "item tint icons grass block: the vertices are the tinted ones and white ones" TO TL-CASE
      MOVE RL-IC-COUNT TO TL-EXPECTED-N
-     COMPUTE TL-OBSERVED-N = WS-TINTED + WS-MATCH
-     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
-     MOVE "item tint icons grass block: the faces without a tintindex are white" TO TL-CASE
-     MOVE 1 TO TL-EXPECTED-N
-     IF WS-MATCH > 0
-         MOVE 1 TO TL-OBSERVED-N
-     ELSE
-         MOVE 0 TO TL-OBSERVED-N
-     END-IF
+     COMPUTE TL-OBSERVED-N = WS-TINTED + WS-FACE-MATCH(1) + WS-FACE-MATCH(2) + WS-FACE-MATCH(3)
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   A leather helmet: layer 0 in the dye default A06540 of the item definition, the overlay layer 1 white; a stack with dyed_color shows its colour.
@@ -263,15 +275,30 @@
      MOVE 0 TO RL-IC-COUNT
      CALL "UI-RENDER" USING CLIENT-STATE.
 
-*> COUNT-COLOUR: the number of vertices WS-FROM to WS-TO of the icon layer whose colour times 255 rounds to WS-EXP-R, -G, -B (WS-MATCH).
+*> COUNT-COLOUR: the number of vertices WS-FROM to WS-TO of the icon layer whose colour times 255 rounds to WS-EXP-R, -G, -B times the shade WS-SHADE (ten thousandths), rounded (WS-MATCH).
  COUNT-COLOUR.
+     COMPUTE WS-EXP-SR = FUNCTION INTEGER(WS-EXP-R * WS-SHADE / 10000 + 0.5)
+     COMPUTE WS-EXP-SG = FUNCTION INTEGER(WS-EXP-G * WS-SHADE / 10000 + 0.5)
+     COMPUTE WS-EXP-SB = FUNCTION INTEGER(WS-EXP-B * WS-SHADE / 10000 + 0.5)
      MOVE 0 TO WS-MATCH
      PERFORM VARYING WS-I FROM WS-FROM BY 1 UNTIL WS-I > WS-TO
          COMPUTE WS-GOT-G ROUNDED = RL-IC-G(WS-I) * 255
          COMPUTE WS-GOT-B ROUNDED = RL-IC-BLUE(WS-I) * 255
          COMPUTE WS-GOT-R ROUNDED = RL-IC-R(WS-I) * 255
-         IF WS-GOT-R = WS-EXP-R AND WS-GOT-G = WS-EXP-G AND WS-GOT-B = WS-EXP-B
+         IF WS-GOT-R = WS-EXP-SR AND WS-GOT-G = WS-EXP-SG AND WS-GOT-B = WS-EXP-SB
              ADD 1 TO WS-MATCH
          END-IF
      END-PERFORM.
+
+*> COUNT-FACES: COUNT-COLOUR for the three shades of a cube's visible faces under ITEMS_3D (up 1.0000, east 0.7459, north 0.6797) into WS-FACE-MATCH(1 to 3); the shade is 1 again afterwards.
+ COUNT-FACES.
+     MOVE 10000 TO WS-SH(1)
+     MOVE 7459 TO WS-SH(2)
+     MOVE 6797 TO WS-SH(3)
+     PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 3
+         MOVE WS-SH(WS-F) TO WS-SHADE
+         PERFORM COUNT-COLOUR
+         MOVE WS-MATCH TO WS-FACE-MATCH(WS-F)
+     END-PERFORM
+     MOVE 10000 TO WS-SHADE.
  END PROGRAM TEST-ITEM-TINT-ICONS.
