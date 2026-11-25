@@ -412,8 +412,9 @@ cobolcraft world type.
 
 - **Enabled features.** Send Update Enabled Features (03, id 13) with exactly one flag,
   `minecraft:vanilla` (protocol vocabulary, §0). Our client ignores the flag set.
-- **Known packs.** Send Select Known Packs with an **empty list** (or skip it). Every entry is sent with
-  Data present. This is the simplest correct behaviour in 04 §2, and it holds for both world types.
+- **Known packs.** In the cobolcraft world type, send Select Known Packs with an **empty list** (or skip it). Every
+  entry is sent with Data present. This is the simplest correct behaviour in 04 §2. The standard world type offers the
+  vanilla core pack (04 §2, 09 §3.1).
 - **Order.** Order the Registry Data packets as in 04 §3. The client does not depend on that order, but
   keeping it makes byte-level comparison against reference captures easier.
 - **Entry order is the id.** The tables below list entries in id order (04 §4); core §1 (CORE-2) fixes the id order of the

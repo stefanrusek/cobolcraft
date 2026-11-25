@@ -79,12 +79,14 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BE2-PROVIDER-LOOKUP.
 *> USING key (X(112), without namespace), payload out (X(2048)), length out, found out: the text of the element `minecraft:<key>` of the registry
-*> context_int_provider in the element store of the data loaders (CTSHAPE.cpy), loaded by FURN-PROVIDERS-LOAD.
+*> context_int_provider in the element store of the data loaders (CTSHAPE.cpy), loaded by FURN-PROVIDERS-LOAD; a key that is not there is looked up in
+*> context_float_provider (the speed multiplier `cooking/speed_default` and the factors it names are floats: 48 section 4.6).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTSHAPE.
  01 B-TEXT                 PIC X(2048) BASED.
  01 WS-REGISTRY            PIC X(48) VALUE "context_int_provider".
+ 01 WS-FLOAT-REGISTRY      PIC X(48) VALUE "context_float_provider".
  01 WS-WANT                PIC X(112).
  01 WS-ROW                 BINARY-LONG.
  LINKAGE SECTION.
@@ -98,6 +100,9 @@
      MOVE SPACES TO WS-WANT
      STRING "minecraft:" FUNCTION TRIM(L-KEY) DELIMITED BY SIZE INTO WS-WANT
      CALL "SHAPE-FIND" USING WS-REGISTRY WS-WANT WS-ROW
+     IF WS-ROW = 0
+         CALL "SHAPE-FIND" USING WS-FLOAT-REGISTRY WS-WANT WS-ROW
+     END-IF
      IF WS-ROW > 0 AND SH-E-LENGTH(WS-ROW) <= 2048
          SET ADDRESS OF B-TEXT TO SH-E-ADDR(WS-ROW)
          MOVE SH-E-LENGTH(WS-ROW) TO L-LENGTH
@@ -920,3 +925,68 @@
      END-PERFORM
      GOBACK.
  END PROGRAM MENU-DATA-TICK.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FURN-AWARD.
+*> USING block entity index, dim, x, y, z (FLOAT-LONG, where the orbs appear), clear (1 empties RecipesUsed, 0 keeps it): the experience of the recipes the furnace has used
+*> (31-2 section 3.6, createExperience): for each (recipe, count) of RecipesUsed the total is count x the recipe's experience; its whole part is paid, plus one more point with the
+*> probability of its fraction (a draw of the XP-RANDOM source in millionths; the total is taken to 6 decimals first, so that 10 x 0.7 is 7 and not 7.000000000000001), as orbs of
+*> XP-AWARD. The result slot's pick-up (clear 1, at the player's position) and the removal of the block (clear 0, at its centre) call it.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY BESTATE.
+ COPY CTRECIPE.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-SALT                BINARY-LONG VALUE 4.
+ 01 WS-BOUND               BINARY-LONG VALUE 1000000.
+ 01 WS-DRAW                BINARY-LONG.
+ 01 WS-TOTAL               FLOAT-LONG.
+ 01 WS-MICRO               BINARY-DOUBLE.
+ 01 WS-WHOLE               BINARY-LONG.
+ 01 WS-FRAC                BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-DIM                  BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-CLEAR                BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-DIM L-X L-Y L-Z L-CLEAR.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 4
+         IF BE-F-USED-ROW(L-INDEX, WS-I) > 0
+             COMPUTE WS-TOTAL = BE-F-USED-COUNT(L-INDEX, WS-I) * RR-EXPERIENCE(BE-F-USED-ROW(L-INDEX, WS-I))
+             COMPUTE WS-MICRO = FUNCTION INTEGER(WS-TOTAL * 1000000 + 0.5)
+             COMPUTE WS-WHOLE = WS-MICRO / 1000000
+             COMPUTE WS-FRAC = WS-MICRO - WS-WHOLE * 1000000
+             IF WS-FRAC > 0
+                 CALL "XP-RANDOM" USING WS-SALT WS-BOUND WS-DRAW
+                 IF WS-DRAW < WS-FRAC
+                     ADD 1 TO WS-WHOLE
+                 END-IF
+             END-IF
+             IF WS-WHOLE > 0
+                 CALL "XP-AWARD" USING L-DIM L-X L-Y L-Z WS-WHOLE
+             END-IF
+         END-IF
+     END-PERFORM
+     IF L-CLEAR = 1
+         INITIALIZE BE-F-USED(L-INDEX, 1) BE-F-USED(L-INDEX, 2) BE-F-USED(L-INDEX, 3) BE-F-USED(L-INDEX, 4)
+     END-IF
+     GOBACK.
+ END PROGRAM FURN-AWARD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. FURN-TAKEN.
+*> USING player row: items left the result slot of the player's open furnace menu (40-2 section 2.4, checkTakeAchievements): the experience of the recipes used is paid at the
+*> player's position and RecipesUsed is emptied (FURN-AWARD). MENU-CLICK calls it when a click lowered the result slot's count.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CMENU.
+ 01 WS-CLEAR               BINARY-LONG VALUE 1.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "FURN-AWARD" USING MN-CBE1(L-ROW) PL-DIM(L-ROW) PL-X(L-ROW) PL-Y(L-ROW) PL-Z(L-ROW) WS-CLEAR
+     GOBACK.
+ END PROGRAM FURN-TAKEN.

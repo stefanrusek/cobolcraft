@@ -610,6 +610,7 @@
  01 WS-DY                  FLOAT-LONG.
  01 WS-DZ                  FLOAT-LONG.
  01 WS-EYE                 FLOAT-LONG.
+ 01 WS-EYE-HEIGHT          FLOAT-LONG.
  01 WS-REACH               FLOAT-LONG.
  01 WS-EV-MOUNT            PIC X(32) VALUE "entity_mount".
  LINKAGE SECTION.
@@ -621,7 +622,8 @@
      IF EN-BT-KIND(L-ROW) = 0
          GOBACK
      END-IF
-     COMPUTE WS-EYE = PL-Y(L-PLAYER) + RULE-ATTACK-EYE-MILLI / 1000
+     CALL "POSE-EYE" USING L-PLAYER WS-EYE-HEIGHT
+     COMPUTE WS-EYE = PL-Y(L-PLAYER) + WS-EYE-HEIGHT
      COMPUTE WS-DX = PL-X(L-PLAYER) - FUNCTION MAX(EN-X(L-ROW) - 0.6875, FUNCTION MIN(PL-X(L-PLAYER), EN-X(L-ROW) + 0.6875))
      COMPUTE WS-DY = WS-EYE - FUNCTION MAX(EN-Y(L-ROW), FUNCTION MIN(WS-EYE, EN-Y(L-ROW) + 0.5625))
      COMPUTE WS-DZ = PL-Z(L-PLAYER) - FUNCTION MAX(EN-Z(L-ROW) - 0.6875, FUNCTION MIN(PL-Z(L-PLAYER), EN-Z(L-ROW) + 0.6875))
@@ -815,6 +817,9 @@
  01 WS-NEW                 BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-FACING              FLOAT-LONG.
+ 01 WS-LO                  FLOAT-LONG.
+ 01 WS-HI                  FLOAT-LONG.
+ 01 WS-ITER                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -866,6 +871,33 @@
          END-IF
          ADD 0.02 TO WS-T
      END-PERFORM
+*>   The ray stopped inside a solid cell, up to a step past the surface: the boat is created at the surface itself (the exact hit location, 44 part 8), so the point is brought back
+*>   to the last place outside the cell by halving the step (the box of a boat put inside the ground would collide with it).
+     IF WS-HIT = 1 AND WS-SOLID = 1
+         COMPUTE WS-HI = WS-T - 0.02
+         COMPUTE WS-LO = WS-HI - 0.02
+         IF WS-LO < 0
+             MOVE 0 TO WS-LO
+         END-IF
+         PERFORM VARYING WS-ITER FROM 1 BY 1 UNTIL WS-ITER > 12
+             COMPUTE WS-T = (WS-LO + WS-HI) / 2
+             COMPUTE WS-PX = PL-X(WS-ROW) + WS-DX * WS-T
+             COMPUTE WS-PY = PL-Y(WS-ROW) + 1.62 + WS-DY * WS-T
+             COMPUTE WS-PZ = PL-Z(WS-ROW) + WS-DZ * WS-T
+             COMPUTE WS-CX = FUNCTION INTEGER(WS-PX)
+             COMPUTE WS-CY = FUNCTION INTEGER(WS-PY)
+             COMPUTE WS-CZ = FUNCTION INTEGER(WS-PZ)
+             CALL "GI-SOLID-CELL" USING WS-DIM WS-CX WS-CY WS-CZ WS-SOLID
+             IF WS-SOLID = 1
+                 MOVE WS-T TO WS-HI
+             ELSE
+                 MOVE WS-T TO WS-LO
+             END-IF
+         END-PERFORM
+         COMPUTE WS-PX = PL-X(WS-ROW) + WS-DX * WS-LO
+         COMPUTE WS-PY = PL-Y(WS-ROW) + 1.62 + WS-DY * WS-LO
+         COMPUTE WS-PZ = PL-Z(WS-ROW) + WS-DZ * WS-LO
+     END-IF
      IF WS-HIT = 1
          CALL "ENTITY-BOX-SURFACE" USING WS-DIM WS-TYPE WS-PX WS-PY WS-PZ WS-BOX-HIT WS-TOP
          IF WS-BOX-HIT = 0

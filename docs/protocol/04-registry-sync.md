@@ -111,7 +111,7 @@ Guidance for an original server:
 
 - The simplest correct behaviour is to send Select Known Packs with an empty list, or to skip it. Then send **every entry with Data present**.
 - Data can be omitted only for entries that are byte-for-byte what the client's own copy of a confirmed pack contains. That cannot apply to entries the game defines itself.
-- With the standard world type, a vanilla client could take such entries from its own pack. CobolCraft's own client has no known packs, so the empty-list rule above stays for it.
+- With the standard world type, a vanilla client takes the entries from its own pack. The server offers the one KnownPack (`minecraft`, `core`, `26.3`). When the reply is exactly that list, it sends every entry with **Data absent**; any other reply (CobolCraft's own client has no known packs and answers with an empty list) gets every entry with Data present. All entries of a standard set come from the `vanilla-data` pack, which is that pack's content (22 section 8). The cobolcraft world type offers no pack.
 
 ## 3. Synchronized registries
 

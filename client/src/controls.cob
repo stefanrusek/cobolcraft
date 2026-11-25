@@ -23,6 +23,11 @@
 *>     the button before the eating time (1.5 s) has passed sends release use item (nothing is
 *>     eaten); a later release, or Entity Event 9 for the Player first, ends it with nothing sent.
 *>     The server decides whether eating starts (food below 24, survival).
+*>   - the other items the server uses (lane bugusein; 17 sections 3.14, 3.16, 25 part 7 sections 7 and 9; CONTROLS-USE-KIND): the right button pressed on the world screen with
+*>     a boat, a firework rocket, armor or elytra held sends Use Item (the next sequence number, the facing); with a spyglass, goat horn, potion or ominous bottle held it sends
+*>     Use Item and the Player is using the item (PL-USING) until the button is released, the item is no longer held or the screen is left: then release use item (Player Action 6) is
+*>     sent; with a brush held the right press at a block (its Use Item On) is the use. The block that was aimed at has had its Use Item On first; when it took the click the server ignores that tick's Use Item. A bow, crossbow, trident and shield (also in the
+*>     off hand) are driven by USE-ITEM-INPUT (use-item.cob: ammo, the pose state), not here.
 *>   CONTROLS-SPRINT (every frame in play, before the client tick; US8-2; client-surface §3;
 *>   09 §3.3 Player Command 0x2A): the Player sprints while, on the world screen, Left Control is
 *>   held and the Player moves forward (W without S); start sprinting is sent when that begins and
@@ -55,6 +60,8 @@
  01 WS-ITOOL               PIC X.
  01 WS-IFOOD               BINARY-LONG.
  01 WS-IS-AIR-USE           BINARY-LONG.
+ 01 WS-HOLD-USE             BINARY-LONG.
+ 01 WS-USE-KIND             BINARY-LONG.
  01 WS-NS                  PIC X(16).
  01 WS-PATH                PIC X(40).
  01 WS-MAX                 BINARY-LONG.
@@ -70,17 +77,18 @@
          MOVE PL-SLOT-ITEM(PL-HELD + 1) TO WS-ITEM
      END-IF
      CALL "CL-ITEM-FLAGS" USING CLIENT-STATE WS-ITEM WS-IBLOCK WS-ITOOL WS-IFOOD
-     MOVE 0 TO WS-IS-AIR-USE
+     MOVE 0 TO WS-IS-AIR-USE WS-HOLD-USE
+     MOVE SPACES TO WS-PATH
+     MOVE 0 TO WS-USE-KIND
      IF WS-ITEM > 0
          CALL "CL-ITEM-INFO" USING CLIENT-STATE WS-ITEM WS-NS WS-PATH WS-MAX WS-IB2 WS-IT2 WS-IF2 WS-KNOWN
-         IF WS-PATH = "bucket" OR WS-PATH = "water_bucket" OR WS-PATH = "lava_bucket"
-             MOVE 1 TO WS-IS-AIR-USE
-         END-IF
-*>       The thrown items (THROWN-ITEM-USE: the server throws them on Use Item, with or without a target block; 25 section 6.3, 21 section 8.12).
-         IF WS-PATH = "ender_eye" OR WS-PATH = "ender_pearl" OR WS-PATH = "egg" OR WS-PATH = "snowball"
-                 OR WS-PATH = "splash_potion" OR WS-PATH = "lingering_potion" OR WS-PATH = "fishing_rod"
-             MOVE 1 TO WS-IS-AIR-USE
-         END-IF
+         CALL "CONTROLS-USE-KIND" USING WS-PATH WS-USE-KIND
+     END-IF
+     IF WS-USE-KIND = 1
+         MOVE 1 TO WS-IS-AIR-USE
+     END-IF
+     IF WS-USE-KIND = 2 OR WS-USE-KIND = 3
+         MOVE 1 TO WS-HOLD-USE
      END-IF
      MOVE 0 TO WS-STATE
      IF TG-HIT = 1
@@ -110,7 +118,21 @@
 *>       A bucket (the server casts the fluid ray, 29a section 7.2) or a thrown item (an ender eye, pearl, egg, snowball, potion, fishing rod): Use Item.
          WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND WS-IS-AIR-USE = 1
              CALL "CONTROLS-SEND-BUCKET" USING CLIENT-STATE
+*>       A spyglass, goat horn, brush, potion or ominous bottle: Use Item starts the use, the release ends it.
+         WHEN IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND WS-USE-KIND = 2 AND PL-USING = 0
+             CALL "CONTROLS-SEND-BUCKET" USING CLIENT-STATE
+             MOVE 1 TO PL-USING
      END-EVALUATE
+*>   A brush (17 section 3.5, 25 part 8 section 7): the right press that sent Use Item On at a block with the brush held starts its use on the server; the use goes on while the button is held
+*>   and release use item is sent when it comes up (the server's use lasts 200 ticks otherwise). In the air the brush does nothing.
+     IF IN-BUTTON-PRESSED(CC-BUTTON-RIGHT + 1) = 1 AND SM-SCREEN = SCR-WORLD AND TG-HIT = 1 AND WS-USE-KIND = 3 AND PL-USING = 0
+         MOVE 1 TO PL-USING
+     END-IF
+*>   The use ends with the button, the held item or the screen: release use item.
+     IF PL-USING = 1 AND (IN-BUTTON-DOWN(CC-BUTTON-RIGHT + 1) = 0 OR WS-HOLD-USE = 0 OR SM-SCREEN NOT = SCR-WORLD)
+         MOVE 0 TO PL-USING
+         CALL "CONTROLS-SEND-ITEM-ACTION" USING CLIENT-STATE WS-ACTION6
+     END-IF
 *>   Eating ends when the button is released; early, the server is told.
      IF PL-EATING = 1 AND IN-BUTTON-DOWN(CC-BUTTON-RIGHT + 1) = 0
          MOVE 0 TO PL-EATING
@@ -190,6 +212,67 @@
      END-IF
      GOBACK.
  END PROGRAM CONTROLS-INPUT.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTROLS-USE-KIND.
+*> USING item path (PIC X(40)), kind out: how the right button uses the held item in the air (lane bugusein; the server decides what happens): 0 nothing is sent, 1 Use Item is sent
+*> (buckets, the thrown items of THROWN-ITEM-USE, boats and rafts, firework rockets, armor and elytra: 25 section 6.3, 17 section 3.16), 2 Use Item is sent and the release is sent too
+*> (spyglass, goat horn, potion and ominous bottle: 17 section 3.14, 25 part 7), 3 nothing is sent for the item itself but the right press at a block starts its use (the brush: Use Item
+*> On starts it on the server, 17 section 3.5, and the release is sent when the button is let go). The bow, crossbow, trident and shield are 0 here: USE-ITEM-INPUT drives them.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-START               BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-PATH                 PIC X(40).
+ 01 L-KIND                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-PATH L-KIND.
+     MOVE 0 TO L-KIND
+     COMPUTE WS-LEN = FUNCTION LENGTH(FUNCTION TRIM(L-PATH TRAILING))
+     EVALUATE TRUE
+         WHEN L-PATH = "bucket" OR "water_bucket" OR "lava_bucket"
+             MOVE 1 TO L-KIND
+         WHEN L-PATH = "ender_eye" OR "ender_pearl" OR "egg" OR "snowball" OR "splash_potion" OR "lingering_potion" OR "fishing_rod"
+             MOVE 1 TO L-KIND
+         WHEN L-PATH = "firework_rocket" OR "elytra"
+             MOVE 1 TO L-KIND
+         WHEN L-PATH = "spyglass" OR "goat_horn" OR "potion" OR "ominous_bottle"
+             MOVE 2 TO L-KIND
+         WHEN L-PATH = "brush"
+             MOVE 3 TO L-KIND
+     END-EVALUATE
+     IF L-KIND = 0 AND WS-LEN >= 5
+         COMPUTE WS-START = WS-LEN - 4
+         IF L-PATH(WS-START:5) = "_boat" OR "_raft"
+             MOVE 1 TO L-KIND
+         END-IF
+     END-IF
+     IF L-KIND = 0 AND WS-LEN >= 6
+         COMPUTE WS-START = WS-LEN - 5
+         IF L-PATH(WS-START:6) = "_boots"
+             MOVE 1 TO L-KIND
+         END-IF
+     END-IF
+     IF L-KIND = 0 AND WS-LEN >= 7
+         COMPUTE WS-START = WS-LEN - 6
+         IF L-PATH(WS-START:7) = "_helmet"
+             MOVE 1 TO L-KIND
+         END-IF
+     END-IF
+     IF L-KIND = 0 AND WS-LEN >= 9
+         COMPUTE WS-START = WS-LEN - 8
+         IF L-PATH(WS-START:9) = "_leggings"
+             MOVE 1 TO L-KIND
+         END-IF
+     END-IF
+     IF L-KIND = 0 AND WS-LEN >= 11
+         COMPUTE WS-START = WS-LEN - 10
+         IF L-PATH(WS-START:11) = "_chestplate"
+             MOVE 1 TO L-KIND
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM CONTROLS-USE-KIND.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONTROLS-BREAK-TIME.

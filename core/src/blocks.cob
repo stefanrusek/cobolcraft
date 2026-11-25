@@ -508,6 +508,7 @@
  COPY CORESTATE.
  COPY CBLOCKS.
  COPY CITEMS.
+ COPY CTOOLS.
  01 WS-ROW                 BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
@@ -537,13 +538,15 @@
  01 WS-ROCKET              BINARY-LONG.
  01 WS-BELL                BINARY-LONG.
  01 WS-SIGN                BINARY-LONG.
+ 01 WS-BRUSH               BINARY-LONG.
+ 01 WS-TAKEN               BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
  PROCEDURE DIVISION USING L-ID PLAY-SERVERBOUND.
      MOVE CN-PLAYER(L-ID) TO WS-ROW
      MOVE PL-DIM(WS-ROW) TO WS-DIM
-     MOVE 0 TO WS-PLACED
+     MOVE 0 TO WS-PLACED WS-ROCKET WS-BRUSH
      MOVE PL-HELD(WS-ROW) TO WS-HELD
      MOVE 0 TO WS-ITEM
      IF PL-SLOT-COUNT(WS-ROW, WS-HELD + 1) > 0
@@ -618,6 +621,9 @@
              CONTINUE
          WHEN WS-ITEM > 0 AND IT-KEY(WS-ITEM + 1) = "firework_rocket"
              CALL "RANGED-ROCKET-ON" USING L-ID PLAY-SERVERBOUND WS-ROCKET
+*>       A brush starts its use (25 part 8 section 7; core/src/brush-use.cob).
+         WHEN WS-ITEM > 0 AND IT-KEY(WS-ITEM + 1) = "brush"
+             CALL "BRUSH-START" USING L-ID PLAY-SERVERBOUND WS-BRUSH
          WHEN WS-BONE = 1
              CALL "GB-BONEMEAL-USE" USING L-ID PSB-BX PSB-BY PSB-BZ WS-BONE-USED
 *>       A hand with nothing in it holds no block item: the air item's row names the air block (IT-PLACES-STATE 0), which must never be placed (it would clear a replaceable cell and post block_place).
@@ -627,6 +633,18 @@
              COMPUTE WS-STATE = CR-GLOWTUBE-LIT + CR-GLOWTUBE-UNLIT - WS-STATE
              CALL "BLOCK-CHANGE" USING WS-DIM PSB-BX PSB-BY PSB-BZ WS-STATE
      END-EVALUATE
+*>   A block that took the click (a menu, a switch, a sign, a bell, a bed, a placed block ...) leaves nothing for the held item: the Use Item that the client sends
+*>   after this Use Item On in the same tick is ignored (PLAY-PACKET), so a pearl, snowball or egg used on a door does not also fly (lane bugusein, 29 section 9).
+     MOVE 0 TO WS-TAKEN
+     IF WS-SIGN = 1 OR WS-KNOT = 1 OR WS-NOTE = 1 OR WS-BELL = 1 OR WS-TOOL = 1 OR WS-SWITCH = 1 OR WS-EYE = 1
+             OR WS-DECOR = 1 OR WS-TRAVEL = 1 OR WS-BENCH = 1 OR WS-STATION > 0 OR WS-BED = 1 OR WS-CONT > 0
+             OR WS-SHELF = 1 OR WS-PLACED = 1 OR WS-ROCKET = 1 OR WS-BONE-USED = 1 OR WS-BRUSH = 1
+         MOVE 1 TO WS-TAKEN
+     END-IF
+     IF WS-TAKEN = 1
+         CALL "COMBAT-TS-CHECK" USING WS-ROW
+         COMPUTE TS-CLICK-TICK(WS-ROW) = CW-TICKS + 1
+     END-IF
      CALL "BLOCK-ACK-QUEUE" USING L-ID PSB-SEQUENCE
      IF WS-TRAVEL = 1
          CALL "DIM-USE-PAD" USING L-ID PSB-BX PSB-BY PSB-BZ

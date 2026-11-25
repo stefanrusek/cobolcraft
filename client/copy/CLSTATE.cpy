@@ -553,6 +553,9 @@
        10 PL-USE-START        BINARY-DOUBLE.
        10 PL-USE-DURATION     BINARY-LONG.
        10 PL-USE-SLOT         BINARY-LONG.
+*>     Held-use items of CONTROLS-INPUT (controls.cob, CONTROLS-USE-KIND kind 2): 1 from the Use Item of a spyglass, goat horn, potion or ominous bottle (or the right press at a block with a brush held) until the right button is
+*>     released (or the item is no longer held): then Player Action 6 (release use item) is sent. A bow, crossbow, trident and shield are driven by USE-ITEM-INPUT (PL-USE-KIND above).
+       10 PL-USING           PIC 9.
 *>     Weather (US11; standin-content §14): the rain and thunder levels of the last Game Events 7
 *>     and 8 (2 sets both to 0), and the kind they map to (WX-*).
        10 PL-RAIN            FLOAT-SHORT.
@@ -1035,6 +1038,10 @@
           15 RK-REQ-COUNT    BINARY-LONG.    *> crafting requirements (one item each); 0 and RK-REQ-PRESENT 0 = never craftable
           15 RK-REQ-PRESENT  PIC 9.
           15 RK-REQ-ITEM     BINARY-LONG OCCURS 9 TIMES.
+          15 RK-REQ-ALT      OCCURS 9 TIMES.  *> a requirement is an HolderSet (05b): a tag, a list of up to 8 items or the one item above
+             20 RK-REQ-N        BINARY-LONG.    *> items of the list, 0 = none
+             20 RK-REQ-LIST     BINARY-LONG OCCURS 8 TIMES.
+             20 RK-REQ-TAG-IX   BINARY-LONG.    *> 0 = not a tag, else the row of RK-TAG-NAME, -1 = a tag the table had no room for (never met)
           15 RK-SLOTS        BINARY-LONG.    *> ingredient slots
           15 RK-SLOT-ITEM    BINARY-LONG OCCURS 9 TIMES. *> the item each slot shows, -1 none
           15 RK-RES-ITEM     BINARY-LONG.
@@ -1071,6 +1078,8 @@
        10 RK-GHOST-ITEM      BINARY-LONG OCCURS 9 TIMES.
        10 RK-TOAST-UNTIL     BINARY-DOUBLE.  *> CL-NOW-MS until which the toast shows, 0 none
        10 RK-GHEAD           BINARY-LONG OCCURS 4096 TIMES.
+       10 RK-TAG-COUNT       BINARY-LONG.    *> the distinct item tags of the requirements (RK-TAG-INDEX)
+       10 RK-TAG-NAME        PIC X(64) OCCURS 256 TIMES.
 *>  ---- packs (08 §3, §10): stack, language, font ----
 *>  The stack (08 §3.1; stack.cob, source.cob): bottom first, the built-in pack at the bottom, then
 *>  the enabled local packs (user order), then the server packs (newest on top). A local or server

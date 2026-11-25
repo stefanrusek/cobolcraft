@@ -43,9 +43,11 @@
 *> A Cookie Response is
 *> unsolicited: Disconnect multiplayer.disconnect.unexpected_query_response (09 §4, 02). Resource
 *> Pack Response (0x32) is in the 09 §3 inventory but means nothing in play (a pack is offered only
-*> during configuration, config-phase.cob), so it is discarded unread; any other packet id this
-*> module does not decode, a malformed packet or one with bytes left over closes the connection
-*> (09 §4, 01 §5: CORE-BAD-PACKET).
+*> during configuration, config-phase.cob), so it is discarded unread, as is every other packet of
+*> 05c (ids 0 to 68) that this module does not decode and a vanilla client sends in ordinary play
+*> (Punch, Pick Item, Seen Advancements and so on). Configuration Acknowledged (0x10) and Pong
+*> (0x2D) answer packets the server never sends: they, an id above 68, a malformed packet or one
+*> with bytes left over close the connection (09 §4, 01 §5: CORE-BAD-PACKET).
 *>
 *> Entry points:
 *>   PLAY-JOIN USING connection id
@@ -166,16 +168,18 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY PLAYPKT.
+ COPY CTOOLS.
  COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
  01 WS-OUTCOME             BINARY-LONG.
  01 WS-ROW                 BINARY-LONG.
  01 WS-WORN                BINARY-LONG.
  01 WS-HAT-OLD             BINARY-LONG.
  01 WS-HAT-NEW             BINARY-LONG.
-*> Serverbound play ids 0 to 68 (05c): "1" where the packet is in the 09 §3 inventory and is
-*> discarded unread in play (0x32 Resource Pack Response).
+*> Serverbound play ids 0 to 68 (05c): "1" where a packet the decoder does not read is discarded
+*> unread in play (09 §4: 0x32 Resource Pack Response and the packets a vanilla client sends in
+*> ordinary play).
  01 WS-LATER               PIC X(69) VALUE
-     "000000000000000000000000000000000000000000000000001000000000000000000".
+     "001111101010000000001011110001000000111000000010001101011011110111001".
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ID                   BINARY-LONG.
@@ -191,6 +195,10 @@
      END-IF
      MOVE CN-PLAYER(L-ID) TO WS-ROW
      CALL "PLAY-DECODE" USING L-PACKET-ID PB-BUFFER PLAY-SERVERBOUND WS-OUTCOME
+*>   The spent click of a Use Item On (TS-CLICK-TICK) is for the Use Item that follows it at once: any other packet ends it.
+     IF WS-ROW > 0 AND L-PACKET-ID NOT = 66 AND L-PACKET-ID NOT = 67
+         MOVE 0 TO TS-CLICK-TICK(WS-ROW)
+     END-IF
      EVALUATE TRUE
          WHEN WS-OUTCOME = 1
              CALL "CORE-BAD-PACKET" USING L-ID
@@ -282,12 +290,24 @@
          WHEN L-PACKET-ID = 35
              CALL "BOAT-PADDLE" USING L-ID PLAY-SERVERBOUND
          WHEN L-PACKET-ID = 67
-             CALL "BUCKET-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
+*>           The click of a Use Item On in this tick that a block took is spent (lane bugusein): the held item is not used as well.
+             MOVE 0 TO WS-WORN
+             CALL "COMBAT-TS-CHECK" USING WS-ROW
+             IF TS-CLICK-TICK(WS-ROW) = CW-TICKS + 1
+                 MOVE 1 TO WS-WORN
+                 MOVE 0 TO TS-CLICK-TICK(WS-ROW)
+             END-IF
+             IF WS-WORN = 0
+                 CALL "BUCKET-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
+             END-IF
              IF WS-WORN = 0
                  CALL "BOAT-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
              END-IF
              IF WS-WORN = 0
                  CALL "RANGED-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
+             END-IF
+             IF WS-WORN = 0
+                 CALL "HORN-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
              END-IF
              IF WS-WORN = 0
                  CALL "THROWN-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN

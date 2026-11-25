@@ -850,6 +850,37 @@
  END PROGRAM CONTENT-TAG-MEMBERS.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. CONTENT-TAG-AT.
+*> USING index (BINARY-LONG, from 1), registry out (PIC X(48), without "minecraft:"), tag key out (PIC X(112)),
+*> status out (CT-OK; CT-NOT-FOUND past the last bound tag or below 1; CT-NOT-OPEN): the bound tags of the set
+*> one by one.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ COPY CTSTORE.
+ LINKAGE SECTION.
+ 01 L-INDEX                BINARY-LONG.
+ 01 L-REGISTRY             PIC X(48).
+ 01 L-TAG                  PIC X(112).
+ 01 L-STATUS               BINARY-LONG.
+ PROCEDURE DIVISION USING L-INDEX L-REGISTRY L-TAG L-STATUS.
+     MOVE SPACES TO L-REGISTRY L-TAG
+     IF CT-OPEN = 0
+         MOVE CT-NOT-OPEN TO L-STATUS
+         GOBACK
+     END-IF
+     IF CT-TAG-ADDR = NULL OR L-INDEX < 1 OR L-INDEX > CT-TAG-COUNT
+         MOVE CT-NOT-FOUND TO L-STATUS
+         GOBACK
+     END-IF
+     SET ADDRESS OF B-TAGS TO CT-TAG-ADDR
+     MOVE BT-REGISTRY(L-INDEX) TO L-REGISTRY
+     MOVE BT-KEY(L-INDEX) TO L-TAG
+     MOVE CT-OK TO L-STATUS
+     GOBACK.
+ END PROGRAM CONTENT-TAG-AT.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. TAGS-FREE.
 *> No parameters: releases the bound tags of the set and zeroes CT-TAG-COUNT and CT-TAG-ADDR. Safe with none.
  DATA DIVISION.

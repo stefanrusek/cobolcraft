@@ -258,6 +258,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CBLOCKS.
+ COPY FARMLAND.
  01 WS-REGISTRY            PIC X(48) VALUE "block".
  01 WS-SUPPRESSES          PIC X(112) VALUE "minecraft:suppresses_bounce".
  01 WS-EV-HIT              PIC X(32) VALUE "hit_ground".
@@ -286,6 +287,9 @@
          END-IF
          IF EN-FALL-DIST(MV-ROW) > 0
              IF WS-NEVER = 0
+*>               Block.fallOn is called with the fall distance (29b part 2 section 9.3, farmland): FARM-LANDED takes the note after the move is stored.
+                 MOVE MV-ROW TO FT-LAND-ROW
+                 MOVE EN-FALL-DIST(MV-ROW) TO FT-LAND-D
                  CALL "GAME-EVENT" USING MV-DIM MV-X MV-Y MV-Z WS-EV-HIT MV-ROW L-SUPPORT
              END-IF
              MOVE 0 TO EN-FALL-DIST(MV-ROW)
@@ -319,6 +323,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY GEMOVE.
+ COPY FARMLAND.
  01 WS-EV-SPLASH           PIC X(32) VALUE "splash".
  01 WS-NO-STATE            BINARY-LONG VALUE -1.
  01 WS-EMITS               BINARY-LONG.
@@ -338,6 +343,7 @@
  01 L-Z                    FLOAT-LONG.
  01 L-ON-GROUND            BINARY-LONG.
  PROCEDURE DIVISION USING L-ROW L-X L-Y L-Z L-ON-GROUND.
+     MOVE 0 TO FT-LAND-ROW
      COMPUTE MV-DX = L-X - EN-X(L-ROW)
      COMPUTE MV-DY = L-Y - EN-Y(L-ROW)
      COMPUTE MV-DZ = L-Z - EN-Z(L-ROW)

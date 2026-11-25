@@ -446,11 +446,23 @@
              IF BU-R-EFFECT(LS-I) = 9
                  CALL "SW-BUTTON-RELEASE" USING L-DIM L-X L-Y L-Z
              END-IF
+             IF BU-R-EFFECT(LS-I) = 11
+                 CALL "BRUSH-BLOCK-TICK" USING L-DIM L-X L-Y L-Z
+             END-IF
              IF BU-R-EFFECT(LS-I) = 10
                  CALL "EGG-BLOCK-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
              END-IF
              IF BU-R-EFFECT(LS-I) = 11
                  CALL "DG-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE
+             END-IF
+             IF BU-R-EFFECT(LS-I) = 12
+                 CALL "LEAF-RT" USING L-DIM L-X L-Y L-Z
+             END-IF
+             IF BU-R-EFFECT(LS-I) = 13
+                 CALL "LEAF-TICK" USING L-DIM L-X L-Y L-Z
+             END-IF
+             IF BU-R-EFFECT(LS-I) = 14
+                 CALL "LEAF-SU" USING L-DIM L-X L-Y L-Z L-STATE L-A L-B
              END-IF
              IF BU-R-EFFECT(LS-I) = 3
                  CALL "BT-SCHEDULE" USING L-DIM WS-SCHEDULE-TYPE LS-BLOCK L-X L-Y L-Z BU-R-FLAGS(LS-I) WS-NORMAL
@@ -471,6 +483,10 @@
 *>   A block that needs support (support-29.cob) becomes air when its neighbour change took the support away (the update engine destroys it with its drops).
      IF L-KIND = 4 AND L-OUT = L-STATE
          CALL "SUP-SHAPE" USING L-DIM L-X L-Y L-Z L-STATE L-OUT
+     END-IF
+*>   A kelp head with kelp above it becomes a body, a body that lost what was above it becomes a head (29b part 4 section 3.2 steps 7 and 10; kelp-29b.cob).
+     IF L-KIND = 4 AND L-OUT = L-STATE
+         CALL "KELP-SHAPE" USING L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
      END-IF
      GOBACK.
  END PROGRAM BU-HOOK.

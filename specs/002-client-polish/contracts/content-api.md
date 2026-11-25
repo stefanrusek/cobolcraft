@@ -27,6 +27,7 @@ generated tables under `content/copy/gen/` (R2, R3; not hand-edited). Package `c
 | `CONTENT-ENTITY-BY-KEY`, `CONTENT-STATIC-ID` | registry key, entry key -> id | 46 id tables. |
 | `CONTENT-REGISTRY-ENTRY`, `CONTENT-REGISTRY-COUNT` | registry, index -> entry | Entries for the Registry Data packets and for rules (recipes, loot, enchantments, biomes, damage types). |
 | `CONTENT-TAG-HAS`, `CONTENT-TAG-MEMBERS` | tag key, entry id -> 0/1 / list | Tag resolution of 23 §6; the same programs serve the client's network-form tags (23 §6.6). |
+| `CONTENT-TAG-AT` | index, registry out, tag key out, status | The bound tags of the set one by one (index from 1; `CT-NOT-FOUND` past the last), for the server's Update Tags (23 §6.6). |
 | `CONTENT-CLIENT-REGISTRY-ADD`, `CONTENT-CLIENT-FINISH` | Registry Data / Update Tags packet bodies | The client's load from the network (23 §4) and the decision of the world type from `minecraft:dimension_type` at Finish Configuration (world-types.md WT-16). |
 
 ## 3. Rules

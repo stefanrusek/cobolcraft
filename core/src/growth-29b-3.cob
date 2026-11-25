@@ -1,6 +1,6 @@
 *> Spreading, decay, leaves, snow, ice and sponges (docs/protocol/29b part 3) as programs of plain numbers (GC3- prefix): the decisions of each section take the
 *> facts the caller read from the level (flags, light values, the random draws) and return the decision, as the part 1 helpers do (growth-29b-1.cob). Like part 1
-*> sections 5 to 7 they are helpers: nothing here is wired into the block-update hooks. Section 1 (the block-to-section table and the tag members of 1.4) and
+*> sections 5 to 7 they are helpers: nothing here is wired into the block-update hooks, except the leaves of section 5, which core/src/leaves-29b.cob wires (distance, decay, placement). Section 1 (the block-to-section table and the tag members of 1.4) and
 *> section 2 (the shared tests: light gets through, the draws, the direction orders, the breadth-first traversal) come first; the sections follow in order.
 
  IDENTIFICATION DIVISION.
