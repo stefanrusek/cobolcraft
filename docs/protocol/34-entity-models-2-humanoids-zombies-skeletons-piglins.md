@@ -448,14 +448,16 @@ Flags per pose (constructor argument pairs `(twoHanded, affectsOffhandPose)`): E
 BOW_AND_ARROW (yes, yes), THROW_TRIDENT (no, yes), CROSSBOW_CHARGE (yes, yes), CROSSBOW_HOLD (yes, yes), SPYGLASS, TOOT_HORN, BRUSH, SPEAR
 (all no, no).
 
-Order: let A = (isUsingItem ? the arm of `useItemHand` : the opposite of the main arm); if pose(A) is twoHanded, A = the main arm.
+Order: let A = the arm of `useItemHand` when `isUsingItem` (no substitution in this case); when the entity is not using an item, A = the
+opposite of the main arm, and if pose(A) is twoHanded, A = the main arm (corrected in round 58: the main-arm substitution applies only in the
+not-using case; 58 §5.3 and §7).
 Pose arm A first; then pose the other arm unless pose(A).affectsOffhandPose. Because a bow or crossbow pose sets both arms in one
 call, the other arm's pose is not applied after it.
 
 Arm pose effects (head = the head part after step 2; the left arm mirrors the sign where marked): EMPTY: yRot = 0. ITEM: xRot = xRot × 0.5
 − 0.31415927; yRot = 0. BOW_AND_ARROW (right-handed): R.yRot = −0.1 + head.yRot, L.yRot = 0.1 + head.yRot + 0.4, both xRot = −1.5707964
 + head.xRot (left-handed: L.yRot = 0.1 + head.yRot, R.yRot = −0.1 + head.yRot − 0.4, both xRot the same). THROW_TRIDENT: xRot = xRot × 0.5 −
-3.1415927; yRot = 0. CROSSBOW_CHARGE and CROSSBOW_HOLD, SPYGLASS, TOOT_HORN, BRUSH, BLOCK: 12 §7.5 holds the formula of each (SPYGLASS: xRot = clamp(head.xRot − 1.9198622 − (0.2617994 when crouching), −2.4, 3.3), yRot = head.yRot − 0.2617994; TOOT_HORN: xRot = clamp(head.xRot, −1.2, 1.2) − 1.4835298, yRot = head.yRot − 0.5235988; BRUSH: xRot = xRot × 0.5 − 0.62831855, yRot = 0; BLOCK: xRot = xRot × 0.5 − 0.9424779 + clamp(head.xRot, −1.3962634, 0.43633232), yRot = ∓30° + clamp(head.yRot, −0.5235988, 0.5235988), also in 12 §7.5; of the two other constants of `HumanoidModel`, 0.9424779 occurs only in `poseBlockingArm` (the BLOCK row above) and 6.2831855 (2π) only in `setupAttackAnimation` (the body-yaw sine argument √p × 2π of 4.4); a spear-helper constant is not in `HumanoidModel`, see 34-1 §3.8); the piglin's CROSSBOW pair is in 4.9 (the CROSSBOW pair, which the piglin
+3.1415927; yRot = 0. CROSSBOW_CHARGE and CROSSBOW_HOLD, SPYGLASS, TOOT_HORN, BRUSH, BLOCK: 12 §7.5 holds the formula of each (SPYGLASS: xRot = clamp(head.xRot − 1.9198622 − (0.2617994 when crouching), −2.4, 3.3), the same for both arms, yRot = head.yRot − 0.2617994 for the right arm and head.yRot + 0.2617994 for the left arm; TOOT_HORN: xRot = clamp(head.xRot, −1.2, 1.2) − 1.4835298, the same for both arms, yRot = head.yRot − 0.5235988 for the right arm and head.yRot + 0.5235988 for the left arm (corrected in round 58; 58 §5.4); BRUSH: xRot = xRot × 0.5 − 0.62831855, yRot = 0; BLOCK: xRot = xRot × 0.5 − 0.9424779 + clamp(head.xRot, −1.3962634, 0.43633232), yRot = ∓30° + clamp(head.yRot, −0.5235988, 0.5235988), also in 12 §7.5; of the two other constants of `HumanoidModel`, 0.9424779 occurs only in `poseBlockingArm` (the BLOCK row above) and 6.2831855 (2π) only in `setupAttackAnimation` (the body-yaw sine argument √p × 2π of 4.4); a spear-helper constant is not in `HumanoidModel`, see 34-1 §3.8); the piglin's CROSSBOW pair is in 4.9 (the CROSSBOW pair, which the piglin
 also uses, is in 4.9). SPEAR: `SpearAnimations.thirdPersonHandUse` (34-1 §3.8); `animateZombieArms` returns without
 changing anything when either arm is SPEAR.
 

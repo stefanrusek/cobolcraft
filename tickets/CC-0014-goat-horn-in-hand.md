@@ -71,3 +71,37 @@ Read of the docs and of the code, no code changed yet. Findings:
   section 7.5, 34-2 section 4.2: xRot = clamp(head.xRot, -1.2, 1.2) - 1.4835298, yRot = head.yRot - 0.5235988; constants
   in client/src/entmodel-34-1.cob) exists in EMD-A-POSE-ARM but nothing selects pose 8 (entities-models.cob sets ITEM
   and BLOCK only).
+
+## Doc gap closed (clean-room round 58, 2026-11-25)
+
+The DOC GAP above is answered by the new document docs/protocol/58-in-use-item-models-and-arm-poses.md (read from the
+artifact recorded in the README header; reader and reviewer rounds, three review rounds, small fix-ups after the third).
+Where each question is answered:
+
+- `using_item` semantics for the local hand and for another entity's held item, the stack identity rule, null owner in
+  the GUI and the other contexts: 58 section 1.1 (entry points and the owner each passes), section 2.5 (the identity the
+  properties test) and section 3.2 (`using_item`). The local player's use state is predicted by the client, not read
+  from the flags (2.4); a remote viewer derives it from entry 8 (2.3). Loop order and which use tick the first rendered
+  frame shows: 2.6.
+- The other item-definition properties with exact arithmetic (`use_duration`, `crossbow/pull`, `use_cycle`, `selected`,
+  `display_context`, `cooldown`, `carried`, the rest): 58 sections 1.2 and 3.1 to 3.13.
+- The goat horn's in-use model, what it shows and its display transforms (first and third person, left and right, head,
+  gui, ground, fixed) as numbers: 58 section 4 (4.1 definition, 4.2 the two models, 4.3 transforms and the difference
+  table). The horn stack a viewer receives must carry the `instrument` component: 58 section 5.2 and 8.1.
+- The third-person arm pose (TOOT_HORN, ordinal 8): which arm and in which order (5.3), the angle values per arm (5.4),
+  where it falls in the animation order (5.5), the held-item layer transform (5.6), the entity pose and the cameras
+  (5.7), the data path from the server (5.8). The living-entity flags are entity metadata entry 8: mask 1 = using an
+  item, mask 2 = the used hand is the off hand, mask 4 = spin attack (58 section 2.1 calls the masks "bit 1" and
+  "bit 2"; they are bit indices 0 and 1 of the byte, as in the Investigation text above). A remote player's main arm,
+  which decides the arm: 5.2.1 (entity data entry 15).
+- One table of in-use item model selection (bow, crossbow, shield, spyglass, trident and spears, brush, horn, food and
+  drink, fishing rod, elytra, bundle): 58 section 6 (6.1 hands drawn in first person, 6.2 brush arm transform, 6.3
+  spyglass head item, 6.4 display transforms of the in-use models). Worked examples for tests: 58 section 8.
+- Corrections to older text made in the same round: 12 section 7.5 (the left arm's yRot sign of the TOOT_HORN and SPYGLASS
+  rows, the idle-bob rule), 34-2 section 4.2 (the arm order rule and the per-arm yRot signs), 18 section 1.4 (entity data
+  slot 15 and 16 owners); the full list is 58 section 7. Pointer lines were added in 08 section 6.3, 12 sections 6.6 and
+  6.13, 25-7 section 12.2 and 57-1 section 3.4.
+- Consequence for the work of this ticket: 12 section 6.13 stays right that the first-person arm transform of a horn is
+  the plain held one; the visible change is the item model (`using_item` switches the model) and, for a viewer, the arm
+  pose of 58 section 5. The core must send entry 8 for a player using an item (58 section 2.2, 5.8) and keep the
+  `instrument` component on the stack it sends. Open questions that stay open are listed in 58 "Open questions" (14).

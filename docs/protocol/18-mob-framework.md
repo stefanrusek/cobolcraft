@@ -363,7 +363,7 @@ Slot numbers are assigned in static-initialiser order up the class chain (the wi
 | 16 | AgeableMob | is baby | BOOLEAN | false |
 | 17 | AgeableMob | age locked | BOOLEAN | false |
 
-Slots 15 and up exist only for Mob subclasses; a plain Entity (such as an item) continues from slot 8 with its own slots. Per-mob slots continue after 15 (Mob), or 17 (AgeableMob and descendants such as Animal). `PathfinderMob` and `Animal` define no slots of their own (their static initialisers define none); `TamableAnimal` defines slots 18 (flags) and 19 (owner), 8.2.
+Slots 15 and up are defined by the three direct subclasses of LivingEntity, each starting its own run at 15: Mob (the table above), the avatar base of the player and the mannequin (15 main arm, 16 model customisation: 58 §5.2.1) and the armor stand (15 client flags, 16 to 21 the six pose rotations); a plain Entity (such as an item) continues from slot 8 with its own slots. Per-mob slots continue after 15 (Mob), or 17 (AgeableMob and descendants such as Animal). `PathfinderMob` and `Animal` define no slots of their own (their static initialisers define none); `TamableAnimal` defines slots 18 (flags) and 19 (owner), 8.2.
 
 Shared flags (slot 0 bits): 0 on fire, 1 shift key down (crouching), 3 sprinting, 4 swimming, 5 invisible, 6 glowing, 7 fall flying (bit 2 is unused by this version's constants).
 Living flags (slot 8): 1 is using an item, 2 off-hand, 4 spin attack.

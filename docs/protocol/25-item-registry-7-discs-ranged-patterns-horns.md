@@ -482,6 +482,8 @@ Tags (data): `regular_goat_horns` = ponder, sing, seek, feel (in that order); `s
 
 `getUseDuration(stack)` = `floor(use_duration x 20)` of the stack's instrument, 0 if none. The horn has no `max_damage`, so step 3 never runs for vanilla data.
 
+How the held horn is drawn while it is in use (the `tooting_goat_horn` model, its display transforms, the `TOOT_HORN` arm pose, the entity flags that tell viewers, no entity pose change): 58 §4 and §5.
+
 ### 12.3 Creating a horn (`InstrumentItem.create(item, holder)` and `Goat.createHorn`)
 
 `InstrumentItem.create(item, holder)` = a new stack of the item with `instrument` set to the holder. `Goat.createHorn()`: a `SingleThreadedRandomSource` (a 48-bit LCG, 11 and 34 section 7) created by `RandomSource.createThreadLocalInstance(long)` and seeded with the `hashCode` of the goat's UUID widened to long (`i2l`; all read); the tag is `screaming_goat_horns` for a screaming goat, else `regular_goat_horns`; pick
