@@ -2,7 +2,7 @@
 spile: ticket
 id: CC-0021
 type: bug
-status: implementing
+status: unverified
 owner: stefanrusek
 resolution:
 blocked_by: []
@@ -108,3 +108,27 @@ here so that they are merged, re-gated and closed or re-opened as separate bugs.
   through the single-player host path, 4 cases). The lane's last case failed in its worktree (y 6.625) because the test ran 100 ticks and sinking in water is 0.025
   a tick (105 ticks from y 9); it now runs 160 ticks and the debug DISPLAY lines are gone. There is no production change, so cover-changed does not apply.
   Results on the tip: test_physics_water_stand passed 5 failed 0; acc_bugwaterstand_pool passed 4 failed 0; client and convergence lint 0 failed.
+- bugupdateorder, core part (21a8c0be excluded above; uncommitted support-29.cob, acc_plant_columns_standard, acc_update_order_standard): the falling-block half of the brief is
+  already on the tip. acc_update_order_standard (the operator's stack: dirt, lantern, sand, sand; the lantern breaks first inside the removal of the dirt, the sand schedules
+  its fall with delay 2 and becomes a falling_block entity two ticks later, the two sand blocks end stacked on the ground, one lantern item, no sand item; creative and
+  survival, gravel, torch, sign, button, carpet and concrete powder variants; the fall distance per tick against the table of 29b part 1 section 8.1; a drop of ten cells
+  takes many ticks for every falling kind) did not compile as saved in the lane worktree (STRING of a BINARY-LONG; fixed) and passes on the tip with no production
+  change (FB-SPAWN, FB-STEP, FB-TICK of mob-21-8.cob). It is kept as a regression test. The plant half: acc_plant_columns_standard was a trace without assertions; it now asserts
+  the column right after the break (the cascade runs inside the tick of the break) and after three ticks for kelp, sugar cane, bamboo, cactus, weeping vines, twisting vines and
+  cave vines, plus three cases where a block placed beside an intact vine piece changes nothing. On the tip the kelp, cane, bamboo and cactus cases already pass; the three vine
+  cases were red (6 failed of 20: weeping and cave vines left the pieces below the break standing and the body above it stayed a body; twisting vines left the head floating and
+  the body below it stayed a body). Root cause in core: support-29.cob had no survive rule for the growing plants of 29b part 4 section 3.2 other than kelp. Fix: rule 26
+  (twisting vines: head or body of the family below, or a solid top) and rule 27 (weeping and cave vines: head or body of the family above, or a solid underside; SP-ARG 1 nether
+  vines, 2 cave vines, so a weeping body does not hold on a cave vine), and SUP-SHAPE turns the top body piece whose growth cell is no longer a piece of its family into its
+  head with age nextInt(25) (cave vines copy berries). The lane draft used rule numbers 25 and 26; the tip uses 25 for the bed, so they became 26 and 27. The kelp conversion of
+  that draft was dropped: KELP-SHAPE (bugkelpplace) does it. Results: acc_plant_columns_standard passed 26 failed 0 (red before the support-29 change: passed 13 failed 7, one of them a
+  wrong expectation of mine about water flowing into the cane's sand cell, fixed); acc_update_order_standard and acc_plant_columns_standard cover-changed: 0 uncovered changed lines;
+  regression (acc_support_standard, test_support_rules, test_cove_b_support, acc_kelp_*, acc_place_*, acc_us4_place*, test_blockupd_29_*, test_growth_29b_4_*, acc_us12_growth_crops,
+  acc_bugleafdecay, acc_stack_place, acc_bugfluidwalls_connect) passed 1051 failed 0; core lint 0 failed; gen_tables --check clean.
+- Not done, recorded: the head-to-body conversion of vines (29b part 4 section 3.2 step 7: a head with a family piece in its growth direction becomes a body) and the placement
+  rule of vines (step 3) are not wired; no report asks for them (growth by random tick and bone meal of vines are not in this ticket). Doc observation: the docs say the shape
+  update of a body or head whose support went only SCHEDULES a block tick with delay 1 (3.2 steps 7a, 10a) and the tick destroys it; the tip destroys every such piece inside the
+  tick of the break (the operator asked for a cascade in one tick for kelp, bamboo and cane, and the tests assert that for all of them). If vanilla timing is wanted instead, that
+  needs an operator decision, not a guess. The scaffolding stack placement is CC-0031 (exists). Lane lines T62612 and T40210 are not in this ticket's scope.
+- Status: every lane item is landed, found already on the tip or dropped with the reason above; set unverified (the operator verifies by playing: sea pickle, candle, turtle egg
+  and snow stacking, kelp in flowing water and kelp columns, leaf decay after cutting a tree, vine columns).
