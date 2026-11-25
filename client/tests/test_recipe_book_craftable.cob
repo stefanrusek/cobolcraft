@@ -135,6 +135,19 @@
      MOVE WS-OK TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+*>   An entry of more than nine requirements (a grid holds nine) is judged by its first nine.
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 9
+         MOVE 0 TO RK-REQ-N(1, WS-I) RK-REQ-TAG-IX(1, WS-I)
+         MOVE 5 TO RK-REQ-ITEM(1, WS-I)
+     END-PERFORM
+     MOVE 12 TO RK-REQ-COUNT(1)
+     MOVE 9 TO WS-ST-COUNT(1)
+     PERFORM CHECK-ROW
+     MOVE "craftable given twelve requirements counted as nine for item 5 and nine units of it when checked then craftable (the first nine are judged)" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE WS-OK TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
 *>   No requirements at all: nothing is missing.
      MOVE 0 TO RK-REQ-COUNT(1)
      PERFORM CHECK-ROW

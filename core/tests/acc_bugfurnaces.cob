@@ -113,6 +113,10 @@
        10 WS-SV-KEY           PIC X(24).
        10 WS-SV-TYPE          PIC 99.
  01 WS-DBURN BINARY-LONG.
+ 01 WS-HALF                BINARY-LONG.
+ 01 WS-LEFT                BINARY-LONG.
+ 01 WS-RIGHT               BINARY-LONG.
+ 01 WS-FX2                 BINARY-LONG.
  01 WS-DSPEED FLOAT-LONG.
  01 WS-ORBS                BINARY-LONG.
  01 WS-ORB-TYPE            BINARY-LONG.
@@ -216,7 +220,63 @@
      END-PERFORM
      PERFORM FUEL-PROVIDERS
      PERFORM SURVEY
+     PERFORM DOUBLE-CHEST
      STOP RUN.
+
+*> A double chest the world generator wrote (both halves, no block entity on either): opening the left half makes both entities and opens the 9 x 6 menu (type 5) over the pair.
+ DOUBLE-CHEST.
+     MOVE "chest" TO WS-KEY
+     PERFORM FIND-STATE
+     MOVE 0 TO WS-HALF
+     PERFORM VARYING WS-E FROM 1 BY 1 UNTIL WS-E > CB-BLOCK-COUNT
+         IF FUNCTION TRIM(CB-KEY(WS-E)) = "chest"
+             MOVE CB-FIRST-STATE(WS-E) TO WS-HALF
+         END-IF
+     END-PERFORM
+     COMPUTE WS-LEFT = WS-HALF + 3
+     COMPUTE WS-RIGHT = WS-HALF + 5
+     COMPUTE WS-FX = WS-BX + 3
+     COMPUTE WS-FX2 = WS-FX + 1
+     COMPUTE WS-FY = WS-FLOOR + 1
+     COMPUTE WS-FZ = WS-BZ + 4
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX WS-FY WS-FZ WS-LEFT
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-FX2 WS-FY WS-FZ WS-RIGHT
+     CALL "BE-FIND" USING WS-DIM WS-FX WS-FY WS-FZ WS-BE
+     IF WS-BE > 0
+         MOVE 0 TO BE-USED(WS-BE)
+     END-IF
+     CALL "BE-FIND" USING WS-DIM WS-FX2 WS-FY WS-FZ WS-BE
+     IF WS-BE > 0
+         MOVE 0 TO BE-USED(WS-BE)
+     END-IF
+     COMPUTE PL-X(WS-PLAYER) = WS-FX + 0.5
+     COMPUTE PL-Y(WS-PLAYER) = WS-FLOOR + 1
+     COMPUTE PL-Z(WS-PLAYER) = WS-FZ + 3.5
+     MOVE 0 TO PL-SLOT-COUNT(WS-PLAYER, 1)
+     MOVE 1 TO WS-FACE
+     ADD 1 TO WS-SEQ
+     PERFORM SCAN
+     CALL "TEST-USE-ON" USING WS-CONN WS-FX WS-FY WS-FZ WS-FACE WS-SEQ
+     PERFORM SCAN
+     MOVE "acceptance bugfurnaces: right-clicking the left half of a generated double chest opens the 9 x 6 menu (type 5)" TO WS-CASE
+     MOVE 5 TO WS-EXPECT
+     MOVE 99 TO WS-OBSERVE
+     IF WS-SCREENS = 1
+         MOVE WS-SCREEN-TYPE TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     CALL "BE-FIND" USING WS-DIM WS-FX2 WS-FY WS-FZ WS-BE
+     MOVE "acceptance bugfurnaces: the other half of the generated double chest got its block entity too" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE 0 TO WS-OBSERVE
+     IF WS-BE > 0
+         MOVE 1 TO WS-OBSERVE
+     END-IF
+     PERFORM CHECK-N
+     IF MN-WINDOW(WS-PLAYER) > 0
+         CALL "TEST-CLOSE-WIN" USING WS-CONN
+         PERFORM SCAN
+     END-IF.
 
 *> The shipped fuel providers (31-2 section 3.3): coal burns 1600 ticks and cooks at speed 1.0 in a furnace, burns 800 ticks and cooks at speed 2.0 in a smoker or a blast furnace.
  FUEL-PROVIDERS.
