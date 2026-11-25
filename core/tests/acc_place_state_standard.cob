@@ -3,7 +3,8 @@
 *> otherwise) at its middle, sets the player's view (yaw, pitch) and the item in the hand, uses the item on a face of the support block at a height of the face (Use Item On with the cursor of the case) and compares the
 *> block at the target cell (or at the support's cell for blocks that replace it) with the expected block and its listed properties, "air" for nothing placed. The families: logs (axis), slabs (half, double slabs),
 *> stairs (facing, half, corner shape), levers, buttons and grindstones, ladders, standing and wall signs, hanging signs, banners, skulls, coral fans, lanterns, vines and other multiface blocks, doors (hinge),
-*> trapdoors, gates and the blocks that face the player (furnace, anvil, dispenser, piston, observer, repeater, pot, loom, lectern, shelf, lightning rod, amethyst cluster).
+*> trapdoors, gates and the blocks that face the player (furnace, anvil, dispenser, piston, observer, repeater, pot, loom, lectern, shelf, lightning rod, amethyst cluster, glazed terracotta),
+*> and hoppers (the opposite of a horizontal clicked face, else down). Chests (acc_us12_containers, acc_us12_sneak) and beds (acc_bed_halves) have their own tests.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-PLACE-STATE-STANDARD.
  DATA DIVISION.
@@ -1646,8 +1647,138 @@
     05 FILLER PIC X(100) VALUE "crafter[orientation=down_north]                                                                     ".
     05 FILLER PIC X(3) VALUE "050".
     05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a hopper on a top face points down                                                              ".
+    05 FILLER PIC X(32) VALUE "hopper                          ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "hopper[facing=down]                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a hopper on a north face points south (the opposite of the clicked face)                        ".
+    05 FILLER PIC X(32) VALUE "hopper                          ".
+    05 FILLER PIC X(1) VALUE "2".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "hopper[facing=south]                                                                                ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a hopper on a south face points north                                                           ".
+    05 FILLER PIC X(32) VALUE "hopper                          ".
+    05 FILLER PIC X(1) VALUE "3".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "hopper[facing=north]                                                                                ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a hopper on an east face points west                                                            ".
+    05 FILLER PIC X(32) VALUE "hopper                          ".
+    05 FILLER PIC X(1) VALUE "5".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "hopper[facing=west]                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a hopper on a west face points east                                                             ".
+    05 FILLER PIC X(32) VALUE "hopper                          ".
+    05 FILLER PIC X(1) VALUE "4".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "hopper[facing=east]                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a hopper on the underside points down                                                           ".
+    05 FILLER PIC X(32) VALUE "hopper                          ".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "hopper[facing=down]                                                                                 ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a glazed terracotta faces opposite to the player (north when the player looks south)            ".
+    05 FILLER PIC X(32) VALUE "white_glazed_terracotta         ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "white_glazed_terracotta[facing=north]                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a glazed terracotta (player looks west: faces east)                                             ".
+    05 FILLER PIC X(32) VALUE "white_glazed_terracotta         ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+090".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "white_glazed_terracotta[facing=east]                                                                ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a glazed terracotta (player looks north: faces south)                                           ".
+    05 FILLER PIC X(32) VALUE "white_glazed_terracotta         ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "+180".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "white_glazed_terracotta[facing=south]                                                               ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
+    05 FILLER PIC X(96) VALUE "a glazed terracotta of another colour (player looks east: faces west)                           ".
+    05 FILLER PIC X(32) VALUE "red_glazed_terracotta           ".
+    05 FILLER PIC X(1) VALUE "1".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(4) VALUE "-090".
+    05 FILLER PIC X(4) VALUE "+000".
+    05 FILLER PIC X(48) VALUE "stone                                           ".
+    05 FILLER PIC X(1) VALUE "T".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(56) VALUE "                                                        ".
+    05 FILLER PIC X(100) VALUE "red_glazed_terracotta[facing=west]                                                                  ".
+    05 FILLER PIC X(3) VALUE "050".
+    05 FILLER PIC X(1) VALUE "0".
  01 WS-CASE-TABLE REDEFINES WS-CASES.
-    05 WS-ROW OCCURS 121 TIMES.
+    05 WS-ROW OCCURS 131 TIMES.
        10 WS-C-LABEL        PIC X(96).
        10 WS-C-ITEM         PIC X(32).
        10 WS-C-FACE         PIC 9.
@@ -1715,7 +1846,7 @@
      COMPUTE WS-PX = WS-BX + 6
      COMPUTE WS-PY = WS-FLOOR + 4
      COMPUTE WS-PZ = WS-BZ + 6
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 121
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 131
          PERFORM RUN-CASE
      END-PERFORM
      STOP RUN.
