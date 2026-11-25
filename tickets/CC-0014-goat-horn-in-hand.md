@@ -71,3 +71,44 @@ Read of the docs and of the code, no code changed yet. Findings:
   section 7.5, 34-2 section 4.2: xRot = clamp(head.xRot, -1.2, 1.2) - 1.4835298, yRot = head.yRot - 0.5235988; constants
   in client/src/entmodel-34-1.cob) exists in EMD-A-POSE-ARM but nothing selects pose 8 (entities-models.cob sets ITEM
   and BLOCK only).
+
+## Bug wave, round 2 (2026-11-25): the core half is built, the pose half waits on the docs
+
+Checked first: `git log origin/003-play-test-bugs -- docs` has no commit after 2026-11-23 and nothing in docs/protocol states the
+in-use item model, so only what the docs already say was built. The ticket stays `implementing`.
+
+- Client Use Item: already done by CC-0017. controls.cob (CONTROLS-USE-KIND kind 2, `spyglass`, `goat_horn`, `potion`,
+  `ominous_bottle`) sends Use Item on the right press with the horn in a hand and Player Action 6 on release (client/tests/
+  test_use_items.cob case 12). USE-ITEM-CLASS needs no horn class: it names only the classes of USE-ITEM-INPUT (bow, crossbow,
+  trident, shield) that pose the hand, and the horn has no pose of 12 section 6.6.
+- Core (new): `HORN-ITEM-USE` in core/src/horn-use.cob, called from the Use Item dispatch of core/src/play.cob after
+  RANGED-ITEM-USE, with `TS-HORN-COOLDOWN` in core/copy/CTOOLS.cpy (cleared by COMBAT-TS-CHECK in core/src/combat.cob).
+  Per 25 part 7 section 12.2: a goat_horn in the hand that uses (hand 0 the held slot, hand 1 the off-hand) on its cooldown is
+  passed on; else Sound 0x77 of `item.goat_horn.sound.0` (holder 846 = id 845 + 1, source records 2, position in eighths,
+  volume 16.0, pitch 1.0) goes to every viewer except the player, the game event `instrument_play` is posted at the player with
+  the player as source, and the horn gets a cooldown of floor(7.0 x 20) = 140 ticks, told to the player with Cooldown 0x16
+  (group `minecraft:goat_horn`, 17 section on `use_cooldown`). A spectator, a stone in the hand and an empty hand do nothing.
+- Red first: core/tests/acc_bughorn_use.cob (15 cases) with the dispatch left out failed 7 of 15 (the sound, the game event, the
+  Cooldown packet, the replay after 140 ticks, another player's horn, the off-hand, the survival replay), the other 8 hold
+  trivially. Green with the dispatch: passed 15 failed 0.
+- Checks: `CC_GENERATED_DIR=.../scratchpad/integ2/gen JOBS=3 make cover-changed SINCE=origin/003-play-test-bugs ONLY=acc_bughorn_use`
+  0 uncovered changed lines; `make -C core lint` 2781 files 0 failed; `gen_tables.py --check` clean; regression (the tests that copy
+  CTOOLS or call COMBAT-TS-CHECK: acc_us14_combat_wire2, acc_us14_bow, acc_us14_tools_wire, acc_us14_elytra, acc_us15_emitters3,
+  acc_us14_spear, acc_us14_trident, acc_us15_ravager_shield, acc_wrapc_bowevents, test_arrow_shield, acc_bugusein_click) passed 295
+  failed 0 together with the new test.
+
+What waits on a clean-room documentation round (not guessed):
+
+1. The item in use on the client: what the item definition condition `using_item` reads (08 section 6.3 names it only, 12
+   section 6.12 describes the shield case alone), which model the goat horn's definition switches to while it is used, its display
+   transform, and what another entity's held item shows.
+2. The rule that selects the humanoid arm pose 8 TOOT_HORN (12 section 7.5, 34-2 section 4.2 hold the formula, entities-models.cob
+   sets ITEM and BLOCK only): which hand, which use animation, from which entity state.
+3. The core's use state of a player (startUsingItem for the horn: 140 ticks, ends on release, completion or a held slot change)
+   and its viewers' flags: Set Entity Data entry 8 bit 0 (using item) and bit 1 (off hand) for a player in core/src/poses.cob
+   (which sends entries 0, 6, 15 and 16 only), plus the `item_interact_start` and `item_interact_finish` events that pair with
+   it (30 part 8 section 14.3.8). 25 section 12.2 and 30-8 name the events and the 140 ticks, but the state is to be built once
+   with the in-use model of the docs round so that bow, shield, eating and horn share it.
+4. The instrument of a stack: 25 section 12.1 lists the eight instruments and the tag orders but no table of the sound event each
+   one plays, nor the registry order of the `instrument` entries (wire id of the component), so every horn plays the default
+   `ponder_goat_horn` sound; a horn dropped by a goat carries no instrument in the core (M44-GOAT-DROP-HORN, an existing gap).

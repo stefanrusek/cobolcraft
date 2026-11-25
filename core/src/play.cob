@@ -43,9 +43,11 @@
 *> A Cookie Response is
 *> unsolicited: Disconnect multiplayer.disconnect.unexpected_query_response (09 §4, 02). Resource
 *> Pack Response (0x32) is in the 09 §3 inventory but means nothing in play (a pack is offered only
-*> during configuration, config-phase.cob), so it is discarded unread; any other packet id this
-*> module does not decode, a malformed packet or one with bytes left over closes the connection
-*> (09 §4, 01 §5: CORE-BAD-PACKET).
+*> during configuration, config-phase.cob), so it is discarded unread, as is every other packet of
+*> 05c (ids 0 to 68) that this module does not decode and a vanilla client sends in ordinary play
+*> (Punch, Pick Item, Seen Advancements and so on). Configuration Acknowledged (0x10) and Pong
+*> (0x2D) answer packets the server never sends: they, an id above 68, a malformed packet or one
+*> with bytes left over close the connection (09 §4, 01 §5: CORE-BAD-PACKET).
 *>
 *> Entry points:
 *>   PLAY-JOIN USING connection id
@@ -173,10 +175,11 @@
  01 WS-WORN                BINARY-LONG.
  01 WS-HAT-OLD             BINARY-LONG.
  01 WS-HAT-NEW             BINARY-LONG.
-*> Serverbound play ids 0 to 68 (05c): "1" where the packet is in the 09 §3 inventory and is
-*> discarded unread in play (0x32 Resource Pack Response).
+*> Serverbound play ids 0 to 68 (05c): "1" where a packet the decoder does not read is discarded
+*> unread in play (09 §4: 0x32 Resource Pack Response and the packets a vanilla client sends in
+*> ordinary play).
  01 WS-LATER               PIC X(69) VALUE
-     "000000000000000000000000000000000000000000000000001000000000000000000".
+     "001111101010000000001011110001000000111000000010001101011011110111001".
  LINKAGE SECTION.
  COPY PROTO.
  01 L-ID                   BINARY-LONG.
@@ -302,6 +305,9 @@
              END-IF
              IF WS-WORN = 0
                  CALL "RANGED-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
+             END-IF
+             IF WS-WORN = 0
+                 CALL "HORN-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
              END-IF
              IF WS-WORN = 0
                  CALL "THROWN-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN

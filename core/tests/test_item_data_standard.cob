@@ -1,0 +1,61 @@
+*> Implementation test of SET-ENTITY-DATA-ITEM-BUILD (core/src/ground-items.cob; docs/protocol 21 App A, 09 section 3.3): a
+*> standard world's item entity holds its stack in entry 8 (the vanilla layout; entry 0 is the entity flags Byte, and a
+*> vanilla client disconnects on a stack there). The cobolcraft type keeps entry 0 (play-s2c-65-set-entity-data-item).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-ITEM-DATA-STANDARD.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CONTENT.
+ COPY PROTO.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-ENTITY              BINARY-LONG VALUE 254.
+ 01 WS-ITEM                BINARY-LONG VALUE 4.
+ 01 WS-COUNT               BINARY-LONG VALUE 1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-SERIALIZER          BINARY-LONG.
+ 01 WS-E1                  PIC ZZ9.
+ 01 WS-E2                  PIC ZZ9.
+ 01 WS-E3                  PIC ZZ9.
+ 01 WS-OUT                 PIC X(80).
+ PROCEDURE DIVISION.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "CONTENT-CLOSE"
+
+     MOVE 1 TO CT-OPEN
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     MOVE "item-data standard world then the stack is entry 8, serializer 7" TO TL-CASE
+     PERFORM BUILD
+     MOVE "101 8 7" TO TL-EXPECTED
+     PERFORM ASSERT-OUT
+
+     MOVE CT-TYPE-COBOLCRAFT TO CT-SET-TYPE
+     MOVE "item-data cobolcraft world then the stack is entry 0, serializer 7" TO TL-CASE
+     PERFORM BUILD
+     MOVE "101 0 7" TO TL-EXPECTED
+     PERFORM ASSERT-OUT
+
+     CALL "CONTENT-CLOSE"
+     CALL "PB-FREE" USING PB-BUFFER
+     STOP RUN.
+
+ BUILD.
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "SET-ENTITY-DATA-ITEM-BUILD" USING WS-ENTITY WS-ITEM WS-COUNT PB-BUFFER
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-GET-UBYTE" USING PB-BUFFER WS-INDEX
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-SERIALIZER
+     MOVE WS-PACKET-ID TO WS-E1
+     MOVE WS-INDEX TO WS-E2
+     MOVE WS-SERIALIZER TO WS-E3
+     MOVE SPACES TO WS-OUT
+     STRING FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) DELIMITED BY SIZE INTO WS-OUT.
+
+ ASSERT-OUT.
+     MOVE "T" TO TL-MODE
+     MOVE WS-OUT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-ITEM-DATA-STANDARD.

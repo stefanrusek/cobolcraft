@@ -60,6 +60,10 @@ project: CobolCraft
 | [CC-0043](../CC-0043-structure-generation-leftovers.md) | Structure generation leftovers: mineshaft loot, test bookkeeping and the cut families | feature | stefanrusek |  |  |
 | [CC-0044](../CC-0044-client-small-leftovers.md) | Small client leftovers: slot counts, sign editor, bed item, heads, slime bounce | feature | stefanrusek |  |  |
 | [CC-0045](../CC-0045-polish-run-closing-inventory.md) | The open task lines of the polish run are decided: build, cut or keep as tickets | feature | stefanrusek |  |  |
+| [CC-0048](../CC-0048-mob-tick-dimension-zero.md) | A standard world keeps running while its mobs move | bug | stefanrusek |  |  |
+| [CC-0049](../CC-0049-standard-registry-data-for-clients-without-core-pack.md) | A standard world sends NBT Registry Data to a client without the core pack | bug | stefanrusek |  |  |
+| [CC-0050](../CC-0050-real-player-skins.md) | A player's own skin is shown to the others | feature | stefanrusek |  |  |
+| [CC-0051](../CC-0051-vanilla-client-actions-ignored.md) | The actions of a vanilla client that the server discards take effect | feature | stefanrusek |  |  |
 
 ### implementing
 

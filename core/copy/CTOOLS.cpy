@@ -20,3 +20,5 @@
        10 TS-SPIN-TICKS        BINARY-LONG.        *> ticks left of a Riptide spin attack (20 at the launch), 0 none
 *>     --- 002-lane-bugusein: the click Use Item On consumed (core/src/blocks.cob BLOCK-USE-ON, play.cob PLAY-PACKET) ---
        10 TS-CLICK-TICK        BINARY-DOUBLE.      *> CW-TICKS + 1 of the Use Item On that a block took (the Use Item of that tick is ignored), 0 none
+*>     --- CC-0014: the goat horn (core/src/horn-use.cob; 25 part 7 section 12.2) ---
+       10 TS-HORN-COOLDOWN     BINARY-DOUBLE.      *> CW-TICKS + 1 until which the goat horn is on its item cooldown (140 ticks from a use), 0 none

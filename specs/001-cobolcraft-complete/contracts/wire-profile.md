@@ -93,4 +93,5 @@ Command-tree argument parsers used: `brigadier:integer` (3), `brigadier:double` 
 ## 4. Packets CobolCraft never sends
 
 Everything not listed above. Neither side implements packets outside this inventory; receiving one is
-handled as `docs/protocol/01-transport.md` defines for a packet the receiver cannot decode.
+handled as `docs/protocol/01-transport.md` defines for a packet the receiver cannot decode. In play the server
+instead discards the other serverbound packets a vanilla client sends (`docs/protocol/09-cobolcraft-profile.md` §4).
