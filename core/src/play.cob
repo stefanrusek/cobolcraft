@@ -304,6 +304,9 @@
                  CALL "RANGED-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
              END-IF
              IF WS-WORN = 0
+                 CALL "HORN-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
+             END-IF
+             IF WS-WORN = 0
                  CALL "THROWN-ITEM-USE" USING L-ID PLAY-SERVERBOUND WS-WORN
              END-IF
              IF WS-WORN = 0
