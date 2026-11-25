@@ -149,13 +149,13 @@
              MOVE 3.3 TO WS-HIGH
              CALL "EMD-A-CLAMP" USING WS-V WS-LOW WS-HIGH WS-CLAMPED
              MOVE WS-CLAMPED TO MM-CXROT(WS-A)
-             COMPUTE MM-CYROT(WS-A) = WS-HY - 0.2617994
+             COMPUTE MM-CYROT(WS-A) = WS-HY - WS-SIGN * 0.2617994
          WHEN 8
              MOVE -1.2 TO WS-LOW
              MOVE 1.2 TO WS-HIGH
              CALL "EMD-A-CLAMP" USING WS-HX WS-LOW WS-HIGH WS-CLAMPED
              COMPUTE MM-CXROT(WS-A) = WS-CLAMPED - 1.4835298
-             COMPUTE MM-CYROT(WS-A) = WS-HY - 0.5235988
+             COMPUTE MM-CYROT(WS-A) = WS-HY - WS-SIGN * 0.5235988
          WHEN 3
              IF L-S(13) = 1
                  COMPUTE MM-CYROT(L-P(3)) = -0.1 + WS-HY
@@ -203,18 +203,20 @@
     05 L-S                 FLOAT-LONG OCCURS 48 TIMES.
  01 L-PIX.
     05 L-P                 BINARY-LONG OCCURS 8 TIMES.
-*> USING model state pix: arm A = the arm of the use hand when using an item, else the arm opposite the main arm (a two-handed pose moves A to the main arm); pose
-*> arm A, then the other arm unless pose(A) affects the offhand pose (4.2).
+*> USING model state pix: arm A = the arm of the use hand when using an item (no substitution), else the arm opposite the main arm (a two-handed pose of that arm
+*> moves A to the main arm, 58 section 5.3, 34-2 section 4.2 as corrected); pose arm A, then the other arm unless pose(A) affects the offhand pose (4.2).
  PROCEDURE DIVISION USING EMM-MODEL L-STATE L-PIX.
      COMPUTE WS-OPP = 3 - L-S(13)
-     MOVE WS-OPP TO WS-A
      IF L-S(16) NOT = 0
          COMPUTE WS-A = L-S(17)
-     END-IF
-     COMPUTE WS-POSE-A = L-S(13 + WS-A)
-     IF WS-POSE-A = 3 OR WS-POSE-A = 5 OR WS-POSE-A = 6
-         COMPUTE WS-A = L-S(13)
          COMPUTE WS-POSE-A = L-S(13 + WS-A)
+     ELSE
+         MOVE WS-OPP TO WS-A
+         COMPUTE WS-POSE-A = L-S(13 + WS-A)
+         IF WS-POSE-A = 3 OR WS-POSE-A = 5 OR WS-POSE-A = 6
+             COMPUTE WS-A = L-S(13)
+             COMPUTE WS-POSE-A = L-S(13 + WS-A)
+         END-IF
      END-IF
      CALL "EMD-A-POSE-ARM" USING EMM-MODEL L-STATE L-PIX WS-A WS-POSE-A
      IF WS-POSE-A < 3 OR WS-POSE-A > 6
