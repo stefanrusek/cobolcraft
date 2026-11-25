@@ -18,6 +18,7 @@ project: CobolCraft
 | [CC-0015](../CC-0015-player-model-scale.md) | Other players and the third-person figure have the vanilla height | bug | stefanrusek |  |  |
 | [CC-0016](../CC-0016-item-icon-3d-shading.md) | 3D block icons in slots are shaded per face | bug | stefanrusek |  |  |
 | [CC-0017](../CC-0017-use-item-in-air.md) | Boats, bows, shields and other held items start their use from the real window | bug | stefanrusek |  | --- |
+| [CC-0021](../CC-0021-block-and-fluid-fixes-on-lanes.md) | Block placement, update and fluid fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 | [CC-0022](../CC-0022-container-tool-and-ui-fixes-on-lanes.md) | Furnace, brush, recipe book and F3 fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 
 ## Board
@@ -65,7 +66,6 @@ project: CobolCraft
 |---|---|---|---|---|---|
 | [CC-0012](../CC-0012-farmland-trample.md) | Farmland turns to dirt when an entity lands on it | bug | stefanrusek |  |  |
 | [CC-0014](../CC-0014-goat-horn-in-hand.md) | A goat horn in the hand is raised to the mouth when used | bug | stefanrusek |  |  |
-| [CC-0021](../CC-0021-block-and-fluid-fixes-on-lanes.md) | Block placement, update and fluid fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 
 ### unverified
 
@@ -78,6 +78,7 @@ project: CobolCraft
 | [CC-0015](../CC-0015-player-model-scale.md) | Other players and the third-person figure have the vanilla height | bug | stefanrusek |  |  |
 | [CC-0016](../CC-0016-item-icon-3d-shading.md) | 3D block icons in slots are shaded per face | bug | stefanrusek |  |  |
 | [CC-0017](../CC-0017-use-item-in-air.md) | Boats, bows, shields and other held items start their use from the real window | bug | stefanrusek |  | --- |
+| [CC-0021](../CC-0021-block-and-fluid-fixes-on-lanes.md) | Block placement, update and fluid fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 | [CC-0022](../CC-0022-container-tool-and-ui-fixes-on-lanes.md) | Furnace, brush, recipe book and F3 fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 
 ## Recently Closed
