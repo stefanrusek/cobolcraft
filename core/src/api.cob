@@ -426,7 +426,9 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY COREAPI.
+ COPY FLATSET.
  01 WS-FOUND               BINARY-LONG.
+ 01 WS-GENERATOR           BINARY-LONG.
  01 WS-TEXT                PIC X(32).
  01 WS-FILE                PIC X(1100).
  01 WS-INFO                PIC X(16).
@@ -439,6 +441,7 @@
  01 L-STATUS               BINARY-LONG.
  PROCEDURE DIVISION USING L-REQUEST L-TYPE L-STATUS.
      MOVE CORE-WO-OK TO L-STATUS
+     MOVE 0 TO FS-FALLBACK
      MOVE SPACES TO L-TYPE WS-FILE
      STRING CW-FOLDER(1:CW-FOLDER-LENGTH) "/level.dat" X"00" DELIMITED BY SIZE INTO WS-FILE
      CALL "CBL_CHECK_FILE_EXIST" USING WS-FILE WS-INFO
@@ -469,9 +472,22 @@
          EVALUATE TRUE
              WHEN WS-FOUND = 1
                  MOVE WS-TEXT TO L-TYPE
-*>           A level.dat of a real 26.3 game (compound Data, no WorldType): a standard world (33 section 10).
+*>           A level.dat of a real 26.3 game (compound Data, no WorldType): the world of the generator its world_gen_settings.dat declares for the
+*>           overworld (56 section 5.1: flat is a superflat world, debug the debug world, noise the standard world; a generator this core cannot make
+*>           gives void chunks, FS-FALLBACK: lane bugskyblock), else a standard world (33 section 10).
              WHEN WS-FOUND = 3
-                 MOVE "standard" TO L-TYPE
+                 CALL "LEVEL-PEEK-GENERATOR" USING WS-GENERATOR
+                 EVALUATE WS-GENERATOR
+                     WHEN 1
+                         MOVE "superflat" TO L-TYPE
+                     WHEN 2
+                         MOVE "debug" TO L-TYPE
+                     WHEN 3
+                         MOVE "superflat" TO L-TYPE
+                         MOVE 1 TO FS-FALLBACK
+                     WHEN OTHER
+                         MOVE "standard" TO L-TYPE
+                 END-EVALUATE
              WHEN WS-FOUND = 0 AND WS-HAS-MINECRAFT = 0
                  MOVE "cobolcraft" TO L-TYPE
              WHEN OTHER

@@ -1,5 +1,5 @@
 *> Acceptance test of CC-0012, the player half (docs/protocol/29b part 2 section 9.3 trampling, 9.4 turnToBaseBlock, 9.5 pushEntitiesUp, 14.7): a player who lands on farmland with a
-*> fall distance d tramples it when one draw of the level random is below d - 0.5 (so never at 0.4, half of the landings at 1.0, three in four at 1.25, always from 1.5), the farmland
+*> fall distance d tramples it when one draw of the level random is below d - 0.5 (so never at 0.4, half of the landings at 1.0, three in four at 1.25, always from 1.5; the game rule mob_griefing does not stop a player), the farmland
 *> becomes dirt, the player standing on the top of the farmland (15/16) is lifted onto the dirt by a Player Position, and the crop above loses its ground and breaks. The level random
 *> is seeded for each case (java.util.Random: the first nextFloat of the seeds 1000003, 7000021, 2000006 is 0.3745, 0.5815, 0.9399, computed independently). Alice is a survival player
 *> in a world of the standard set; every case is a landing on its own farmland cell.
@@ -43,6 +43,9 @@
  01 WS-TP                  BINARY-LONG.
  01 WS-TP-D                PIC 9.
  01 WS-TICKS               BINARY-LONG.
+ 01 WS-RULE-NAME           PIC X(40) VALUE "mob_griefing".
+ 01 WS-RULE-INDEX          BINARY-LONG.
+ 01 WS-RULE-VALUE          BINARY-DOUBLE.
  PROCEDURE DIVISION.
      CALL "TEST-SETTINGS" USING CORE-SETTINGS
      MOVE 0 TO CS-DEFAULT-MODE
@@ -59,8 +62,8 @@
      MOVE "wheat" TO WS-KEY
      MOVE "age=7" TO WS-PAIRS
      CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-WHEAT
-*>   Eight farmland cells (x 20, 22, ... 34), each with a wheat crop above it.
-     PERFORM VARYING WS-X FROM 20 BY 2 UNTIL WS-X > 34
+*>   Nine farmland cells (x 20, 22, ... 36), each with a wheat crop above it.
+     PERFORM VARYING WS-X FROM 20 BY 2 UNTIL WS-X > 36
          CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-FARM
          CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y1 WS-Z WS-WHEAT
      END-PERFORM
@@ -138,6 +141,32 @@
      MOVE 7000021 TO WS-SEED
      PERFORM LAND
      MOVE "dirt y 101000 tp 1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance CC-0012 given the game rule mob_griefing off when a survival player lands after a fall of 4.0 then the farmland becomes dirt (the rule stops mobs, not players; acc_bugfarmtrample_mobs)" TO TL-CASE
+     MOVE 0 TO PL-MODE(WS-ROW)
+     CALL "BR-RULE-FIND" USING WS-RULE-NAME WS-RULE-INDEX
+     MOVE 0 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+     MOVE 36 TO WS-X
+     MOVE 4.0 TO WS-D
+     MOVE 2000006 TO WS-SEED
+     PERFORM LAND
+     MOVE 1 TO WS-RULE-VALUE
+     CALL "BR-RULE-SET" USING WS-RULE-INDEX WS-RULE-VALUE
+     MOVE "dirt y 101000 tp 1" TO TL-EXPECTED
+     PERFORM CHECK
+
+     MOVE "acceptance CC-0012 given a landing after a fall of 4.0 on a dirt path (the same 15/16 shape, no farmland) then the path stays and nothing is lifted" TO TL-CASE
+     MOVE 38 TO WS-X
+     MOVE "dirt_path" TO WS-KEY
+     MOVE SPACES TO WS-PAIRS
+     CALL "BLOCKS-STATE-OF" USING WS-KEY WS-PAIRS WS-STATE
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-X WS-Y WS-Z WS-STATE
+     MOVE 4.0 TO WS-D
+     MOVE 2000006 TO WS-SEED
+     PERFORM LAND
+     MOVE "dirt_path y 100938 tp 0" TO TL-EXPECTED
      PERFORM CHECK
      STOP RUN.
 

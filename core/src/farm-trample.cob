@@ -15,6 +15,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CITEMS.
+ COPY STDMOBS.
  COPY FARMLAND.
  01 WS-DIM                 BINARY-LONG.
  01 WS-BX                  BINARY-LONG.
@@ -26,6 +27,7 @@
  01 WS-F                   FLOAT-LONG.
  01 WS-PLAYER              BINARY-LONG.
  01 WS-M                   BINARY-LONG.
+ 01 WS-LIVING              BINARY-LONG.
  01 WS-BABY                BINARY-LONG.
  01 WS-WOOL                BINARY-LONG.
  01 WS-NEEDED              BINARY-LONG.
@@ -81,13 +83,18 @@
 *>       MOVE-POSE-BOX gives the half width.
          COMPUTE WS-WIDTH = WS-WIDTH * 2
      ELSE
-         CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
-         IF WS-M > 0
+         CALL "ENTITY-IS-LIVING" USING L-ROW WS-LIVING
+         IF WS-LIVING > 0
              MOVE 1 TO WS-IN-LIVING
          END-IF
          COMPUTE WS-WIDTH = ET-WIDTH-MILLI(EN-TYPE(L-ROW) + 1) / 1000
          COMPUTE WS-HEIGHT = ET-HEIGHT-MILLI(EN-TYPE(L-ROW) + 1) / 1000
+*>       A baby has half the box: the animals by the baby flag (MOB-DATA-VALUES), the zombie family by its variant 1 (STDMOB-VARIANT-BUILD).
          CALL "MOB-DATA-VALUES" USING L-ROW WS-BABY WS-WOOL WS-NEEDED
+         CALL "STDMOB-INDEX" USING EN-TYPE(L-ROW) WS-M
+         IF WS-M > 0 AND EN-VARIANT(L-ROW) = 1 AND (SM-KEY(WS-M) = "zombie" OR "zombie_villager" OR "husk")
+             MOVE 1 TO WS-BABY
+         END-IF
          IF WS-BABY = 1
              COMPUTE WS-WIDTH = WS-WIDTH / 2
              COMPUTE WS-HEIGHT = WS-HEIGHT / 2

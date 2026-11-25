@@ -18,6 +18,8 @@
 *>                   flowers; the terrain fill skips it and a fill_layer feature writes it, 56 section 4.4), 1 = a fluid, 2 = a block of the tag
 *>                   blocks_motion_in_heightmap. Only the lowest 384 layers exist in the overworld (56 section 4.3)
 *>   FS-STATE        the default state of the layer's block per layer index (0 for an unknown block)
+*>   FS-FALLBACK     1 when the open world is a world of a real 26.3 game whose overworld generator this core cannot make (a type of a mod, noise settings of another
+*>                   namespace; WORLD-TYPE-DECIDE): it is opened as a superflat world with the void preset of 56 section 3.2 and its world_gen_settings.dat is kept as found
  78 FS-MAX-LAYERS         VALUE 64.
  78 FS-MAX-OVERRIDES      VALUE 24.
  78 FS-MAX-STACK          VALUE 384.
@@ -40,3 +42,4 @@
     05 FS-VOID               BINARY-LONG.
     05 FS-KIND               BINARY-LONG OCCURS 384 TIMES.
     05 FS-STATE              BINARY-LONG OCCURS 384 TIMES.
+    05 FS-FALLBACK           BINARY-LONG.
