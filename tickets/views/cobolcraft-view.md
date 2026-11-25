@@ -60,6 +60,10 @@ project: CobolCraft
 | [CC-0044](../CC-0044-client-small-leftovers.md) | Small client leftovers: slot counts, sign editor, bed item, heads, slime bounce | feature | stefanrusek |  |  |
 | [CC-0045](../CC-0045-polish-run-closing-inventory.md) | The open task lines of the polish run are decided: build, cut or keep as tickets | feature | stefanrusek |  |  |
 | [CC-0047](../CC-0047-first-chunk-fill-step-within-tick-budget.md) | The first fill step of a freshly loaded chunk stays inside the per-tick step budget | bug | stefanrusek |  |  |
+| [CC-0048](../CC-0048-mob-tick-dimension-zero.md) | A standard world keeps running while its mobs move | bug | stefanrusek |  |  |
+| [CC-0049](../CC-0049-standard-registry-data-for-clients-without-core-pack.md) | A standard world sends NBT Registry Data to a client without the core pack | bug | stefanrusek |  |  |
+| [CC-0050](../CC-0050-real-player-skins.md) | A player's own skin is shown to the others | feature | stefanrusek |  |  |
+| [CC-0051](../CC-0051-vanilla-client-actions-ignored.md) | The actions of a vanilla client that the server discards take effect | feature | stefanrusek |  |  |
 
 ### implementing
 

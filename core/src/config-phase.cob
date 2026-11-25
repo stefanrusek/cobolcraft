@@ -4,7 +4,8 @@
 *>      sends, as 03's startConfiguration does: Custom Payload minecraft:brand, Update Enabled
 *>      Features, then Select Known Packs, which opens the synchronize_registries task.
 *>   2. The client's Select Known Packs completes that task: one Registry Data per registry with
-*>      entries (18, standin §4.2), then Update Tags. No code of conduct follows. When the
+*>      entries (18, standin §4.2), then Update Tags. A standard world offers the vanilla core pack
+*>      (04 §2): a client that echoes it gets the entries without Data, any other reply with Data. No code of conduct follows. When the
 *>      settings offer a pack (CS-PACK-OFFERED, FR-009), the server_resource_pack task sends
 *>      Resource Pack Push (CONFIG-PACK-PUSH-BUILD) and waits for the client's Resource Pack
 *>      Response for that pack id with a terminal action (03; 08 §9.2, §9.7: 0, 1, 2, 5, 6, 7; 3
@@ -72,6 +73,7 @@
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY CONFIGPKT.
+ COPY CONTENT.
  COPY MESSAGES.
  COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
  01 CONFIG-STEPS EXTERNAL.
@@ -120,7 +122,11 @@
                  CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
                  PERFORM VARYING WS-NUMBER FROM 0 BY 1 UNTIL WS-NUMBER >= 32
                      CALL "PB-RESET" USING PK-BUFFER
-                     CALL "REGISTRY-PACKET-BUILD" USING WS-NUMBER PK-BUFFER
+                     IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT AND CSB-CORE-PACK = 1
+                         CALL "REGISTRY-KEYS-BUILD" USING WS-NUMBER PK-BUFFER
+                     ELSE
+                         CALL "REGISTRY-PACKET-BUILD" USING WS-NUMBER PK-BUFFER
+                     END-IF
                      IF PK-LENGTH > 0
                          CALL "CORE-SEND" USING L-ID PK-BUFFER
                      END-IF
@@ -184,6 +190,7 @@
  01 WS-REST                BINARY-LONG.
  01 WS-I                   BINARY-LONG.
  01 WS-J                   BINARY-LONG.
+ 01 WS-CORE-PARTS          BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  COPY CONFIGPKT.
@@ -235,12 +242,22 @@
              IF CSB-KNOWN-PACKS < 0 OR CSB-KNOWN-PACKS > 64
                  MOVE 1 TO PB-ERROR
              ELSE
+                 MOVE 0 TO WS-CORE-PARTS
                  PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CSB-KNOWN-PACKS
                      PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 3
                          CALL "PB-GET-STRING" USING PB-BUFFER WS-MAX-STRING WS-STRING
                              WS-STRING-CAPACITY WS-STRING-LENGTH
+                         EVALUATE TRUE
+                             WHEN WS-J = 1 AND WS-STRING-LENGTH = 9 AND WS-STRING(1:9) = "minecraft"
+                             WHEN WS-J = 2 AND WS-STRING-LENGTH = 4 AND WS-STRING(1:4) = "core"
+                             WHEN WS-J = 3 AND WS-STRING-LENGTH = 4 AND WS-STRING(1:4) = "26.3"
+                                 ADD 1 TO WS-CORE-PARTS
+                         END-EVALUATE
                      END-PERFORM
                  END-PERFORM
+                 IF CSB-KNOWN-PACKS = 1 AND WS-CORE-PARTS = 3
+                     MOVE 1 TO CSB-CORE-PACK
+                 END-IF
              END-IF
          WHEN OTHER
              MOVE 2 TO L-OUTCOME
@@ -291,31 +308,133 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONFIG-KNOWN-PACKS-BUILD.
-*> USING PB-BUFFER: Select Known Packs 0x0F with an empty list (standin §4.1).
+*> USING PB-BUFFER: Select Known Packs 0x0F (04 section 2). A standard world offers the one pack
+*> minecraft core 26.3; otherwise (the cobolcraft type, standin §4.1) the list is empty.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CONTENT.
  01 WS-PACKET-ID           BINARY-LONG VALUE 15.
- 01 WS-COUNT               BINARY-LONG VALUE 0.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-NAMESPACE           PIC X(9) VALUE "minecraft".
+ 01 WS-NAMESPACE-LENGTH    BINARY-LONG VALUE 9.
+ 01 WS-PACK                PIC X(4) VALUE "core".
+ 01 WS-VERSION             PIC X(4) VALUE "26.3".
+ 01 WS-FOUR                BINARY-LONG VALUE 4.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
  LINKAGE SECTION.
  COPY PROTO.
  PROCEDURE DIVISION USING PB-BUFFER.
+     MOVE 0 TO WS-COUNT
+     IF CT-OPEN = 1 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+         MOVE 1 TO WS-COUNT
+     END-IF
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-COUNT
+     IF WS-COUNT = 1
+         CALL "PB-PUT-STRING" USING PB-BUFFER WS-NAMESPACE WS-NAMESPACE-LENGTH WS-MAX
+         CALL "PB-PUT-STRING" USING PB-BUFFER WS-PACK WS-FOUR WS-MAX
+         CALL "PB-PUT-STRING" USING PB-BUFFER WS-VERSION WS-FOUR WS-MAX
+     END-IF
      GOBACK.
  END PROGRAM CONFIG-KNOWN-PACKS-BUILD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CONFIG-TAGS-BUILD.
-*> USING PB-BUFFER: Update Tags 0x0E with zero registries (standin §6).
+*> USING PB-BUFFER: Update Tags 0x0E (04 section 1, 23 section 6.6). A standard world sends the bound
+*> tags of the synchronized registries (SYNCREG.cpy) and of the static registries that have tags in
+*> the data, a registry without tags left out; no other registry (the client does not know it). The
+*> cobolcraft type sends zero registries.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CONTENT.
+ COPY SYNCREG.
+ 78 TB-REGISTRIES          VALUE 38.
+ 01 WS-STATIC.
+    05 FILLER              PIC X(48) VALUE "minecraft:block".
+    05 FILLER              PIC X(48) VALUE "minecraft:item".
+    05 FILLER              PIC X(48) VALUE "minecraft:entity_type".
+    05 FILLER              PIC X(48) VALUE "minecraft:fluid".
+    05 FILLER              PIC X(48) VALUE "minecraft:game_event".
+    05 FILLER              PIC X(48) VALUE "minecraft:point_of_interest_type".
+ 01 WS-STATIC-TABLE REDEFINES WS-STATIC.
+    05 WS-STATIC-NAME      PIC X(48) OCCURS 6 TIMES.
+ 01 WS-SENT.
+    05 WS-S OCCURS 38 TIMES.
+       10 WS-S-FULL        PIC X(48).
+       10 WS-S-TAGS        BINARY-LONG.
+ 01 WS-IDS-TABLE.
+    05 WS-ID               BINARY-LONG OCCURS 65536 TIMES.
+ 01 WS-ID-CAPACITY         BINARY-LONG VALUE 65536.
+ 01 WS-ID-COUNT            BINARY-LONG.
  01 WS-PACKET-ID           BINARY-LONG VALUE 14.
- 01 WS-COUNT               BINARY-LONG VALUE 0.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-REGISTRY            PIC X(48).
+ 01 WS-FULL                PIC X(48).
+ 01 WS-FULL-LENGTH         BINARY-LONG.
+ 01 WS-TAG                 PIC X(112).
+ 01 WS-TAG-LENGTH          BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-MEMBER-STATUS       BINARY-LONG.
  LINKAGE SECTION.
  COPY PROTO.
  PROCEDURE DIVISION USING PB-BUFFER.
      CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
-     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-COUNT
+     MOVE 0 TO WS-COUNT
+     IF CT-OPEN = 0 OR CT-SET-TYPE = CT-TYPE-COBOLCRAFT
+         CALL "PB-PUT-TAGS-HEAD" USING PB-BUFFER WS-COUNT
+         GOBACK
+     END-IF
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > TB-REGISTRIES
+         IF WS-R <= REG-COUNT
+             MOVE REG-NAME(WS-R) TO WS-S-FULL(WS-R)
+         ELSE
+             COMPUTE WS-I = WS-R - REG-COUNT
+             MOVE WS-STATIC-NAME(WS-I) TO WS-S-FULL(WS-R)
+         END-IF
+         MOVE 0 TO WS-S-TAGS(WS-R)
+     END-PERFORM
+*>   How many tags each of these registries has (a bound tag names its registry without "minecraft:").
+     MOVE CT-OK TO WS-STATUS
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-STATUS NOT = CT-OK
+         CALL "CONTENT-TAG-AT" USING WS-I WS-REGISTRY WS-TAG WS-STATUS
+         IF WS-STATUS = CT-OK
+             MOVE SPACES TO WS-FULL
+             STRING "minecraft:" FUNCTION TRIM(WS-REGISTRY) DELIMITED BY SIZE INTO WS-FULL
+             PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > TB-REGISTRIES
+                 IF WS-S-FULL(WS-R) = WS-FULL
+                     ADD 1 TO WS-S-TAGS(WS-R)
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-PERFORM
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > TB-REGISTRIES
+         IF WS-S-TAGS(WS-R) > 0
+             ADD 1 TO WS-COUNT
+         END-IF
+     END-PERFORM
+     CALL "PB-PUT-TAGS-HEAD" USING PB-BUFFER WS-COUNT
+     PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > TB-REGISTRIES
+         IF WS-S-TAGS(WS-R) > 0
+             MOVE WS-S-FULL(WS-R) TO WS-FULL
+             MOVE 0 TO WS-FULL-LENGTH
+             INSPECT WS-FULL TALLYING WS-FULL-LENGTH FOR CHARACTERS BEFORE INITIAL SPACE
+             MOVE WS-S-TAGS(WS-R) TO WS-ID-COUNT
+             CALL "PB-PUT-TAG-REGISTRY-HEAD" USING PB-BUFFER WS-FULL WS-FULL-LENGTH WS-ID-COUNT
+             MOVE CT-OK TO WS-STATUS
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-STATUS NOT = CT-OK
+                 CALL "CONTENT-TAG-AT" USING WS-I WS-REGISTRY WS-TAG WS-STATUS
+                 IF WS-STATUS = CT-OK AND WS-REGISTRY = WS-FULL(11:38)
+                     CALL "CONTENT-TAG-MEMBERS" USING WS-REGISTRY WS-TAG WS-ID-COUNT WS-IDS-TABLE
+                         WS-ID-CAPACITY WS-MEMBER-STATUS
+                     MOVE 0 TO WS-TAG-LENGTH
+                     INSPECT WS-TAG TALLYING WS-TAG-LENGTH FOR CHARACTERS BEFORE INITIAL SPACE
+                     CALL "PB-PUT-TAG" USING PB-BUFFER WS-TAG WS-TAG-LENGTH WS-IDS-TABLE WS-ID-COUNT
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-PERFORM
      GOBACK.
  END PROGRAM CONFIG-TAGS-BUILD.
 

@@ -1,0 +1,404 @@
+*> Implementation test of the standard world's configuration packets (core/src/config-phase.cob, core/src/registries.cob;
+*> docs/protocol/04 section 2, 09 section 3.1, 23 section 6.6): Select Known Packs offers the vanilla core pack; a client
+*> that echoes it gets every Registry Data entry without Data, any other reply gets them with Data; Update Tags carries
+*> the set's tags of the synchronized and static registries only. The cobolcraft type offers no pack and sends no tags.
+*> The standard set is a small one built from packets (CONTENT-CLIENT-REGISTRY-ADD) and TAG-PUT: no generated packs.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-KNOWN-PACKS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY TESTLIB.
+ COPY CORESTATE.
+ COPY COREAPI.
+ COPY CONTENT.
+ COPY CONFIGPKT.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==ST-==.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==PK-==.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 256.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-ID                  BINARY-LONG.
+ 01 WS-PHASE               BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-NAME                PIC X(16) VALUE "Alice".
+ 01 WS-NAME-LENGTH         BINARY-LONG VALUE 5.
+ 01 WS-UUID                PIC X(16) VALUE ALL "U".
+ 01 WS-CLOSE               BINARY-LONG.
+ 01 WS-THRESHOLD           BINARY-LONG VALUE -1.
+ 01 WS-PACKET-ID           BINARY-LONG.
+ 01 WS-OUTCOME             BINARY-LONG.
+ 01 WS-DECODED             BINARY-LONG.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-TAGS                BINARY-LONG.
+ 01 WS-VALUE               BINARY-LONG.
+ 01 WS-MAX                 BINARY-LONG VALUE 32767.
+ 01 WS-TEXT                PIC X(112).
+ 01 WS-TEXT-CAPACITY       BINARY-LONG VALUE 112.
+ 01 WS-TEXT-LENGTH         BINARY-LONG.
+ 01 WS-REPLY.
+    05 WS-R-COUNT          BINARY-LONG.
+    05 WS-R-NAMESPACE      PIC X(16).
+    05 WS-R-PACK           PIC X(16).
+    05 WS-R-VERSION        PIC X(16).
+ 01 WS-REGISTRY            PIC X(48).
+ 01 WS-TAG                 PIC X(112).
+ 01 WS-IDS-TABLE.
+    05 WS-TAG-ID           BINARY-LONG OCCURS 16 TIMES.
+ 01 WS-ID-CAPACITY         BINARY-LONG VALUE 16.
+ 01 WS-ID-COUNT            BINARY-LONG.
+ 01 WS-OUT                 PIC X(600).
+ 01 WS-PTR                 BINARY-LONG.
+ 01 WS-EDIT                PIC -(9)9.
+ 01 B-BODY                 PIC X(4096) BASED.
+ PROCEDURE DIVISION.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING ST-BUFFER WS-CAPACITY
+     CALL "PB-INIT" USING PK-BUFFER WS-CAPACITY
+     CALL "TEST-SETTINGS" USING CORE-SETTINGS
+     CALL "TEST-OPEN-WORLD" USING CORE-SETTINGS
+
+*>   ---- The cobolcraft type ------------------------------------------------------------------
+     MOVE "known-packs cobolcraft world then Select Known Packs is an empty list" TO TL-CASE
+     PERFORM BUILD-OFFER
+     MOVE "15 0" TO TL-EXPECTED
+     PERFORM ASSERT-OUT
+
+     MOVE "known-packs cobolcraft world then Update Tags names no registry" TO TL-CASE
+     PERFORM BUILD-TAGS
+     MOVE "14 registries=0" TO TL-EXPECTED
+     PERFORM ASSERT-OUT
+
+     MOVE "known-packs cobolcraft world given the core pack echoed then entries keep their Data" TO TL-CASE
+     PERFORM OPEN-CONFIG
+     PERFORM REPLY-CORE-PACK
+     PERFORM FEED-REPLY
+     PERFORM DRAIN-FIRST-REGISTRY
+     MOVE "first entry present=1" TO TL-EXPECTED
+     PERFORM ASSERT-OUT
+     CALL "CORE-CONN-CLOSED" USING WS-ID
+
+*>   ---- A standard set: two registries and four tags -----------------------------------------
+     CALL "CONTENT-CLOSE"
+     MOVE "minecraft:chat_type" TO WS-TEXT
+     MOVE 19 TO WS-TEXT-LENGTH
+     PERFORM ADD-REGISTRY
+     MOVE "minecraft:dimension_type" TO WS-TEXT
+     MOVE 24 TO WS-TEXT-LENGTH
+     PERFORM ADD-REGISTRY
+     MOVE "block" TO WS-REGISTRY
+     MOVE "minecraft:logs" TO WS-TAG
+     MOVE 2 TO WS-ID-COUNT
+     MOVE 5 TO WS-TAG-ID(1)
+     MOVE 9 TO WS-TAG-ID(2)
+     PERFORM PUT-TAG
+     MOVE "chat_type" TO WS-REGISTRY
+     MOVE "minecraft:spoken" TO WS-TAG
+     MOVE 1 TO WS-ID-COUNT
+     MOVE 1 TO WS-TAG-ID(1)
+     PERFORM PUT-TAG
+     MOVE "worldgen/feature" TO WS-REGISTRY
+     MOVE "minecraft:server_only" TO WS-TAG
+     PERFORM PUT-TAG
+     MOVE "block" TO WS-REGISTRY
+     MOVE "minecraft:nothing" TO WS-TAG
+     MOVE 0 TO WS-ID-COUNT
+     PERFORM PUT-TAG
+
+     MOVE "known-packs standard world then Select Known Packs offers minecraft core 26.3" TO TL-CASE
+     PERFORM BUILD-OFFER
+     MOVE "15 1 minecraft core 26.3" TO TL-EXPECTED
+     PERFORM ASSERT-OUT
+
+     MOVE "known-packs standard world then Update Tags has the synced and static registries only" TO TL-CASE
+     PERFORM BUILD-TAGS
+     MOVE "14 registries=2 minecraft:chat_type minecraft:spoken=1; minecraft:block minecraft:logs=5,9; minecraft:nothing=;"
+         TO TL-EXPECTED
+     PERFORM ASSERT-OUT
+
+     MOVE "known-packs reply with the core pack alone is recognised" TO TL-CASE
+     PERFORM REPLY-CORE-PACK
+     PERFORM DECODE-REPLY
+     MOVE "outcome=0 core=1" TO TL-EXPECTED
+     PERFORM ASSERT-OUT
+
+     MOVE "known-packs empty reply is not the core pack" TO TL-CASE
+     PERFORM REPLY-CORE-PACK
+     MOVE 0 TO WS-R-COUNT
+     PERFORM DECODE-REPLY
+     MOVE "outcome=0 core=0" TO TL-EXPECTED
+     PERFORM ASSERT-OUT
+
+     MOVE "known-packs reply of another version is not the core pack" TO TL-CASE
+     PERFORM REPLY-CORE-PACK
+     MOVE "26.2" TO WS-R-VERSION
+     PERFORM DECODE-REPLY
+     MOVE "outcome=0 core=0" TO TL-EXPECTED
+     PERFORM ASSERT-OUT
+
+     MOVE "known-packs reply of another namespace is not the core pack" TO TL-CASE
+     PERFORM REPLY-CORE-PACK
+     MOVE "elsewhere" TO WS-R-NAMESPACE
+     PERFORM DECODE-REPLY
+     MOVE "outcome=0 core=0" TO TL-EXPECTED
+     PERFORM ASSERT-OUT
+
+     MOVE "known-packs reply of another pack id is not the core pack" TO TL-CASE
+     PERFORM REPLY-CORE-PACK
+     MOVE "extra" TO WS-R-PACK
+     PERFORM DECODE-REPLY
+     MOVE "outcome=0 core=0" TO TL-EXPECTED
+     PERFORM ASSERT-OUT
+
+     MOVE "known-packs reply with two packs is not exactly the offered list" TO TL-CASE
+     PERFORM REPLY-CORE-PACK
+     MOVE 2 TO WS-R-COUNT
+     PERFORM DECODE-REPLY
+     MOVE "outcome=0 core=0" TO TL-EXPECTED
+     PERFORM ASSERT-OUT
+
+     MOVE "known-packs standard world given the core pack echoed then every entry has no Data" TO TL-CASE
+     PERFORM OPEN-CONFIG
+     PERFORM REPLY-CORE-PACK
+     PERFORM FEED-REPLY
+     PERFORM DRAIN-ALL
+     MOVE "7 minecraft:chat_type test:a=0 test:b=0; 7 minecraft:dimension_type test:a=0 test:b=0; 14; 3;"
+         TO TL-EXPECTED
+     PERFORM ASSERT-OUT
+     CALL "CORE-CONN-CLOSED" USING WS-ID
+
+     MOVE "known-packs standard world given an empty reply then every entry has its Data" TO TL-CASE
+     PERFORM OPEN-CONFIG
+     PERFORM REPLY-CORE-PACK
+     MOVE 0 TO WS-R-COUNT
+     PERFORM FEED-REPLY
+     PERFORM DRAIN-ALL
+     MOVE "7 minecraft:chat_type test:a=1 test:b=1; 7 minecraft:dimension_type test:a=1 test:b=1; 14; 3;"
+         TO TL-EXPECTED
+     PERFORM ASSERT-OUT
+     CALL "CORE-CONN-CLOSED" USING WS-ID
+
+     MOVE "known-packs a registry number outside the synchronized list builds nothing" TO TL-CASE
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE -1 TO WS-N
+     CALL "REGISTRY-KEYS-BUILD" USING WS-N PB-BUFFER
+     MOVE 32 TO WS-N
+     CALL "REGISTRY-KEYS-BUILD" USING WS-N PB-BUFFER
+     MOVE 2 TO WS-N
+     CALL "REGISTRY-KEYS-BUILD" USING WS-N PB-BUFFER
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PB-LENGTH TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+     CALL "CONTENT-CLOSE"
+     CALL "PB-FREE" USING PB-BUFFER
+     CALL "PB-FREE" USING ST-BUFFER
+     CALL "PB-FREE" USING PK-BUFFER
+     STOP RUN.
+
+*> Registry Data of the registry WS-TEXT with the entries test:a and test:b, each an empty compound, into the set.
+ ADD-REGISTRY.
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER WS-TEXT WS-TEXT-LENGTH
+     MOVE 2 TO WS-N
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     MOVE "test:a" TO WS-TEXT
+     PERFORM ADD-ENTRY
+     MOVE "test:b" TO WS-TEXT
+     PERFORM ADD-ENTRY
+     MOVE 7 TO WS-PACKET-ID
+     SET ADDRESS OF B-BODY TO PB-ADDR
+     CALL "CONTENT-CLIENT-REGISTRY-ADD" USING WS-PACKET-ID B-BODY PB-LENGTH WS-STATUS.
+
+ ADD-ENTRY.
+     MOVE 6 TO WS-TEXT-LENGTH
+     CALL "PB-PUT-IDENTIFIER" USING PB-BUFFER WS-TEXT WS-TEXT-LENGTH
+     MOVE 1 TO WS-N
+     CALL "PB-PUT-BOOL" USING PB-BUFFER WS-N
+     MOVE 10 TO WS-N
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-N
+     MOVE 0 TO WS-N
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-N.
+
+ PUT-TAG.
+     CALL "TAG-PUT" USING WS-REGISTRY WS-TAG WS-ID-COUNT WS-TAG-ID(1) WS-STATUS.
+
+ BUILD-OFFER.
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "CONFIG-KNOWN-PACKS-BUILD" USING PK-BUFFER
+     PERFORM START-OUT
+     CALL "PB-GET-VARINT" USING PK-BUFFER WS-N
+     PERFORM ADD-NUM
+     CALL "PB-GET-VARINT" USING PK-BUFFER WS-COUNT
+     MOVE WS-COUNT TO WS-N
+     PERFORM ADD-NUM
+     COMPUTE WS-COUNT = WS-COUNT * 3
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         MOVE SPACES TO WS-TEXT
+         CALL "PB-GET-STRING" USING PK-BUFFER WS-MAX WS-TEXT WS-TEXT-CAPACITY WS-TEXT-LENGTH
+         STRING " " WS-TEXT(1:WS-TEXT-LENGTH) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+     END-PERFORM.
+
+ BUILD-TAGS.
+     CALL "PB-RESET" USING PK-BUFFER
+     CALL "CONFIG-TAGS-BUILD" USING PK-BUFFER
+     PERFORM START-OUT
+     CALL "PB-GET-VARINT" USING PK-BUFFER WS-N
+     PERFORM ADD-NUM
+     CALL "PB-GET-TAGS-HEAD" USING PK-BUFFER WS-COUNT
+     MOVE WS-COUNT TO WS-EDIT
+     STRING " registries=" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         MOVE SPACES TO WS-TEXT
+         CALL "PB-GET-TAG-REGISTRY-HEAD" USING PK-BUFFER WS-TEXT WS-TEXT-CAPACITY WS-TEXT-LENGTH WS-TAGS
+         STRING " " WS-TEXT(1:WS-TEXT-LENGTH) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+         PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > WS-TAGS
+             MOVE SPACES TO WS-TEXT
+             CALL "PB-GET-TAG" USING PK-BUFFER WS-TEXT WS-TEXT-CAPACITY WS-TEXT-LENGTH WS-IDS-TABLE
+                 WS-ID-CAPACITY WS-ID-COUNT
+             STRING " " WS-TEXT(1:WS-TEXT-LENGTH) "=" DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-ID-COUNT
+                 IF WS-K > 1
+                     STRING "," DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+                 END-IF
+                 MOVE WS-TAG-ID(WS-K) TO WS-EDIT
+                 STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+             END-PERFORM
+             STRING ";" DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+         END-PERFORM
+     END-PERFORM.
+
+*> The reply a vanilla client gives to the offer: one pack, minecraft core 26.3.
+ REPLY-CORE-PACK.
+     MOVE 1 TO WS-R-COUNT
+     MOVE "minecraft" TO WS-R-NAMESPACE
+     MOVE "core" TO WS-R-PACK
+     MOVE "26.3" TO WS-R-VERSION.
+
+*> WS-REPLY as the body of Select Known Packs in PB-BUFFER (WS-R-COUNT entries, all alike).
+ PUT-REPLY-BODY.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-R-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-R-COUNT
+         MOVE SPACES TO WS-TEXT
+         MOVE WS-R-NAMESPACE TO WS-TEXT
+         PERFORM PUT-REPLY-STRING
+         MOVE SPACES TO WS-TEXT
+         MOVE WS-R-PACK TO WS-TEXT
+         PERFORM PUT-REPLY-STRING
+         MOVE SPACES TO WS-TEXT
+         MOVE WS-R-VERSION TO WS-TEXT
+         PERFORM PUT-REPLY-STRING
+     END-PERFORM.
+
+ PUT-REPLY-STRING.
+     MOVE 0 TO WS-TEXT-LENGTH
+     INSPECT WS-TEXT TALLYING WS-TEXT-LENGTH FOR CHARACTERS BEFORE INITIAL SPACE
+     CALL "PB-PUT-STRING" USING PB-BUFFER WS-TEXT WS-TEXT-LENGTH WS-MAX.
+
+ DECODE-REPLY.
+     CALL "PB-RESET" USING PB-BUFFER
+     PERFORM PUT-REPLY-BODY
+     MOVE 7 TO WS-PACKET-ID
+     CALL "CONFIG-DECODE" USING WS-PACKET-ID PB-BUFFER CONFIG-SERVERBOUND WS-DECODED
+     PERFORM START-OUT
+     MOVE WS-DECODED TO WS-EDIT
+     STRING "outcome=" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+     MOVE CSB-CORE-PACK TO WS-EDIT
+     STRING " core=" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR.
+
+ FEED-REPLY.
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE 7 TO WS-N
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-N
+     PERFORM PUT-REPLY-BODY
+     CALL "TEST-FEED-BUFFER" USING WS-ID PB-BUFFER.
+
+*> A new memory connection in the configuration phase with a player row, after CONFIG-START, its output drained.
+ OPEN-CONFIG.
+     MOVE CORE-CONN-MEMORY TO WS-KIND
+     CALL "CORE-CONN-OPEN" USING WS-KIND WS-ID
+     MOVE PH-LOGIN TO CN-PHASE(WS-ID)
+     CALL "PLAYER-CREATE" USING WS-ID WS-NAME WS-NAME-LENGTH WS-UUID WS-ROW
+     MOVE PH-CONFIG TO WS-PHASE
+     CALL "CORE-SET-PHASE" USING WS-ID WS-PHASE
+     CALL "CONFIG-START" USING WS-ID
+     CALL "PB-RESET" USING ST-BUFFER
+     CALL "TEST-DRAIN" USING WS-ID ST-BUFFER WS-CLOSE.
+
+*> The Data flag of the first entry of the first Registry Data packet queued.
+ DRAIN-FIRST-REGISTRY.
+     CALL "PB-RESET" USING ST-BUFFER
+     CALL "TEST-DRAIN" USING WS-ID ST-BUFFER WS-CLOSE
+     CALL "TEST-NEXT-PACKET" USING ST-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+     MOVE SPACES TO WS-TEXT
+     CALL "PB-GET-IDENTIFIER" USING PK-BUFFER WS-TEXT WS-TEXT-CAPACITY WS-TEXT-LENGTH
+     CALL "PB-GET-VARINT" USING PK-BUFFER WS-COUNT
+     CALL "PB-GET-IDENTIFIER" USING PK-BUFFER WS-TEXT WS-TEXT-CAPACITY WS-TEXT-LENGTH
+     CALL "PB-GET-BOOL" USING PK-BUFFER WS-VALUE
+     PERFORM START-OUT
+     MOVE WS-VALUE TO WS-EDIT
+     STRING "first entry present=" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR.
+
+*> Every packet queued: "<id>;", a Registry Data one as "7 <registry> <key>=<present> ...;" (a present entry's
+*> two bytes of empty compound are read over).
+ DRAIN-ALL.
+     CALL "PB-RESET" USING ST-BUFFER
+     CALL "TEST-DRAIN" USING WS-ID ST-BUFFER WS-CLOSE
+     PERFORM START-OUT
+     MOVE 0 TO WS-OUTCOME
+     PERFORM UNTIL WS-OUTCOME NOT = 0
+         CALL "TEST-NEXT-PACKET" USING ST-BUFFER PK-BUFFER WS-THRESHOLD WS-PACKET-ID WS-OUTCOME
+         IF WS-OUTCOME = 0
+             IF WS-PTR > 1
+                 STRING " " DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+             END-IF
+             MOVE WS-PACKET-ID TO WS-EDIT
+             STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+             IF WS-PACKET-ID = 7
+                 PERFORM DESCRIBE-REGISTRY
+             END-IF
+             STRING ";" DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+         END-IF
+     END-PERFORM.
+
+ DESCRIBE-REGISTRY.
+     MOVE SPACES TO WS-TEXT
+     CALL "PB-GET-IDENTIFIER" USING PK-BUFFER WS-TEXT WS-TEXT-CAPACITY WS-TEXT-LENGTH
+     STRING " " WS-TEXT(1:WS-TEXT-LENGTH) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+     CALL "PB-GET-VARINT" USING PK-BUFFER WS-COUNT
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT
+         MOVE SPACES TO WS-TEXT
+         CALL "PB-GET-IDENTIFIER" USING PK-BUFFER WS-TEXT WS-TEXT-CAPACITY WS-TEXT-LENGTH
+         CALL "PB-GET-BOOL" USING PK-BUFFER WS-VALUE
+         MOVE WS-VALUE TO WS-EDIT
+         STRING " " WS-TEXT(1:WS-TEXT-LENGTH) "=" FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE
+             INTO WS-OUT WITH POINTER WS-PTR
+         IF WS-VALUE = 1
+             CALL "PB-GET-UBYTE" USING PK-BUFFER WS-N
+             CALL "PB-GET-UBYTE" USING PK-BUFFER WS-N
+         END-IF
+     END-PERFORM.
+
+ START-OUT.
+     MOVE SPACES TO WS-OUT
+     MOVE 1 TO WS-PTR.
+
+ ADD-NUM.
+     IF WS-PTR > 1
+         STRING " " DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR
+     END-IF
+     MOVE WS-N TO WS-EDIT
+     STRING FUNCTION TRIM(WS-EDIT) DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR.
+
+ ASSERT-OUT.
+     MOVE "T" TO TL-MODE
+     MOVE WS-OUT TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-KNOWN-PACKS.
+
+ COPY CORETEST.
