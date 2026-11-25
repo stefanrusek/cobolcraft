@@ -792,6 +792,8 @@
      IF WS-X NOT = EN-X(WS-ROW) OR WS-Y NOT = EN-Y(WS-ROW) OR WS-Z NOT = EN-Z(WS-ROW)
              OR L-YAW NOT = EN-YAW(WS-ROW)
          CALL "ENTITY-MOVE" USING WS-ROW WS-X WS-Y WS-Z L-YAW WS-PITCH WS-GROUND
+*>       A landing on farmland tramples it (29b part 2 section 9.3).
+         CALL "FARM-LANDED" USING WS-ROW
      END-IF
      MOVE WS-GROUND TO EN-ON-GROUND(WS-ROW)
      GOBACK.
