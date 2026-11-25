@@ -2,7 +2,7 @@
 spile: ticket
 id: CC-0021
 type: bug
-status: draft
+status: implementing
 owner: stefanrusek
 resolution:
 blocked_by: []
@@ -11,7 +11,9 @@ relations:
   depends_on: []
   relates_to: [CC-0001, CC-0009, CC-0031]
   supersedes: []
-implementation: []
+implementation:
+  branch: 003-play-test-bugs
+  pr:
 ---
 
 # CC-0021: Block placement, update and fluid fixes saved on lanes reach the tree
@@ -65,3 +67,10 @@ here so that they are merged, re-gated and closed or re-opened as separate bugs.
   commits behind origin at 2026-11-23), finish the uncommitted lanes, and write the scaffolding stack placement as
   CC-0031. Open lane lines: T62612 (bed item in third person, in another hand, frame, shelf), T40210 (placement
   blocked by entities other than players and mobs: partly done).
+
+## Bug wave notes (2026-11-25, agent C, branch 003-play-test-bugs)
+
+- bugstackplace (912a9c1f, c33c0f6a): still present on the tip (acc_stack_place red: passed 28 failed 57). Root cause in core: BLOCK-PLACE put
+  the item into the neighbouring cell instead of adding one to the clicked block. Cherry-picked cleanly (lane file dropped: the ticket is the
+  record): core/src/place-stack.cob (new), core/src/blocks.cob, core/tests/acc_stack_place.cob. Results: acc_stack_place passed 89 failed 0;
+  `make cover-changed SINCE=origin/003-play-test-bugs ONLY=acc_stack_place`: 0 uncovered changed lines; core lint 0 failed; gen_tables --check clean.
