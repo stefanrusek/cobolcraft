@@ -64,6 +64,7 @@ project: CobolCraft
 | [CC-0049](../CC-0049-standard-registry-data-for-clients-without-core-pack.md) | A standard world sends NBT Registry Data to a client without the core pack | bug | stefanrusek |  |  |
 | [CC-0050](../CC-0050-real-player-skins.md) | A player's own skin is shown to the others | feature | stefanrusek |  |  |
 | [CC-0051](../CC-0051-vanilla-client-actions-ignored.md) | The actions of a vanilla client that the server discards take effect | feature | stefanrusek |  |  |
+| [CC-0052](../CC-0052-mob-tick-within-tick-cpu-budget.md) | A mob tick stays inside the per-tick CPU budget however many chunks are loaded | bug | stefanrusek |  |  |
 
 ### implementing
 
