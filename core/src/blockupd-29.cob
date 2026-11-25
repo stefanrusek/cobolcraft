@@ -455,6 +455,15 @@
              IF BU-R-EFFECT(LS-I) = 11
                  CALL "DG-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE
              END-IF
+             IF BU-R-EFFECT(LS-I) = 12
+                 CALL "LEAF-RT" USING L-DIM L-X L-Y L-Z
+             END-IF
+             IF BU-R-EFFECT(LS-I) = 13
+                 CALL "LEAF-TICK" USING L-DIM L-X L-Y L-Z
+             END-IF
+             IF BU-R-EFFECT(LS-I) = 14
+                 CALL "LEAF-SU" USING L-DIM L-X L-Y L-Z L-STATE L-A L-B
+             END-IF
              IF BU-R-EFFECT(LS-I) = 3
                  CALL "BT-SCHEDULE" USING L-DIM WS-SCHEDULE-TYPE LS-BLOCK L-X L-Y L-Z BU-R-FLAGS(LS-I) WS-NORMAL
                      LS-RESULT

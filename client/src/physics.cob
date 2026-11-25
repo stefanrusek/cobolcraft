@@ -123,6 +123,7 @@
  01 WS-STEPPED             BINARY-LONG.
  01 WS-CLIMB               BINARY-LONG.
  01 WS-NEW-VY              FLOAT-LONG.
+ 01 WS-LANDED              BINARY-LONG.
  01 WS-MOVED               FLOAT-LONG.
  01 WS-CONN                BINARY-LONG VALUE 1.
  LINKAGE SECTION.
@@ -271,9 +272,13 @@
      MOVE 2 TO WS-AXIS
      CALL "PHYS-MOVE" USING CLIENT-STATE WS-AXIS PL-VY WS-BLOCKED
 *>   A downward move stopped by a floor: the speed becomes the bounce of the block (slime, a bed: physics-bounce.cob) or 0.
+*>   That is a landing (docs/protocol/18 section 3: Entity.move sets onGround when the vertical movement was blocked while moving down, the move going along y
+*>   first): the tick reports the ground even when the horizontal move that follows takes the box off the step it landed on.
+     MOVE 0 TO WS-LANDED
      IF WS-BLOCKED = 1
          MOVE 0 TO WS-NEW-VY
          IF WS-DY < 0 AND PL-FLYING = 0
+             MOVE 1 TO WS-LANDED
              COMPUTE WS-MOVED = PL-Y - WS-SY
              CALL "PHYS-BOUNCE" USING CLIENT-STATE WS-DY WS-MOVED WS-SNEAK WS-NEW-VY
          END-IF
@@ -404,6 +409,9 @@
      MOVE PL-ON-GROUND TO WS-WAS-GROUND
      CALL "PHYS-COLLIDES" USING CLIENT-STATE PL-X WS-BELOW PL-Z WS-HIT
      MOVE WS-HIT TO PL-ON-GROUND
+     IF WS-LANDED = 1
+         MOVE 1 TO PL-ON-GROUND
+     END-IF
 *>   Landing (13 section 1.4): a flying Player that comes down onto the ground stops flying (a spectator
 *>   keeps flying) and Player Abilities is sent.
      IF PL-FLYING = 1 AND WS-WAS-GROUND = 0 AND PL-ON-GROUND = 1 AND PL-MODE NOT = 3

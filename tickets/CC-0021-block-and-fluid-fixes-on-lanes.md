@@ -84,3 +84,27 @@ here so that they are merged, re-gated and closed or re-opened as separate bugs.
   expected age 0). Results: acc_kelp_* passed 97 failed 0; cover-changed ONLY=the three kelp tests: 0 uncovered changed lines; regression family (acc_place_*, acc_support_*,
   acc_us4_place*, acc_us9_place*, acc_crop_place_standard, acc_wrapb_*, test_blockupd_29_*, test_support_rules, test_cove_b_support, test_place_more,
   acc_bugfluidwalls_connect) passed 753 failed 1 before the acc_support_standard fix, then 0 failed; core lint 0 failed; gen_tables --check clean.
+- bugleafdecay (d46996d3, a9353e2a): still present on the tip. The GC3-LEAF-* helpers of growth-29b-3.cob are called by nothing, so leaves never
+  recompute their distance and never decay, and placed leaves are not persistent. Root cause in core. The lane test needs LEAF-CLASS and LEAF-RULES-OPEN, so the red
+  run on the tip used two throwaway no-op stubs of them: passed 7 failed 12 (the symptom: distances stay 7, 73 leaves of a log-less canopy never decay, placed
+  leaves are persistent=false). Cherry-picked d46996d3 with three hand-resolved conflicts (api.cob, blockupd-29.cob, place-state.cob): the hook effects 11 (taken by
+  DG-HOOK on the tip) became 12 (random tick), 13 (scheduled tick), 14 (shape update); the place-state family numbers on the tip are 17 cocoa, 18 bed, 19 crafter,
+  20 kelp, so leaves is family 21 (table 48 rows). New: core/src/leaves-29b.cob, core/tests/acc_bugleafdecay.cob; api.cob calls LEAF-RULES-OPEN. a9353e2a (the lane
+  task list) is dropped: the ticket is the record. Results: acc_bugleafdecay passed 19 failed 0; cover-changed ONLY=acc_bugleafdecay: 0 uncovered changed lines;
+  regression (test_growth_29b_*, test_blockupd_29_*, test_feat_tree*, acc_gen_trees_worker, acc_us12_*, test_worldsim_*, the place, support, kelp and stack
+  families) passed 1936 failed 0; core lint 0 failed; gen_tables --check clean.
+- bugfluidwalls (f617b81f): already on the tip as 51703cf0 (same subject; the later commits ae0e1457, d74577a3, f45193da extend it). Nothing to apply.
+  acc_bugfluidwalls_connect passes on the tip (part of the regression runs above, 0 failed).
+- bugbeditem (48b44f9d): already on the tip (SUP-PLACE-OK lets a bed foot through under rule 25, core/src/support-29.cob line 835). Nothing to apply.
+  acc_bed_halves, acc_bed_sleep and acc_bugvlbed_house pass on the tip (129 passed, 0 failed). Open lane line T62612 (bed item in third person, in another hand,
+  frame, shelf) is client item rendering, not part of this ticket.
+- bugupdateorder, client part (21a8c0be, falling_block entities drawn by FALLING-BLOCKS-MESH): dropped, superseded. The tip draws falling blocks through
+  ENTITY-FALLING-EMIT (client/src/entities-blocks9.cob, commit 8eec702e, 34-9 section 13) with tests test_entity_blocks_9, test_entity_edges_9, test_entmodel_34_9_1;
+  the replica keeps the Add Entity data in EN-BSTATE (entities-replica.cob line 264). Applying 21a8c0be would draw each falling block twice.
+- bugwaterstand (uncommitted: CTBSDATA.cpy, client test, convergence test): the report "the player can stand on water" does not reproduce on the tip. The
+  CTBSDATA change (four SeaPickleBlock rows, collision as the outline) is already on the tip (rows from T4506, commit 43aad246), so it is dropped. The two lane tests
+  are kept as regression tests: client/tests/test_physics_water_stand.cob (no level of water or lava has a collision shape, a Player put at the surface sinks, one
+  dropped over the pool lands on the floor, Space rises, a Player over one sea pickle stands at 6.375) and tests/convergence/acc_bugwaterstand_pool.cob (the same
+  through the single-player host path, 4 cases). The lane's last case failed in its worktree (y 6.625) because the test ran 100 ticks and sinking in water is 0.025
+  a tick (105 ticks from y 9); it now runs 160 ticks and the debug DISPLAY lines are gone. There is no production change, so cover-changed does not apply.
+  Results on the tip: test_physics_water_stand passed 5 failed 0; acc_bugwaterstand_pool passed 4 failed 0; client and convergence lint 0 failed.
