@@ -102,8 +102,7 @@
              ADD 1 TO WS-CAN
          END-IF
      END-PERFORM
-     MOVE "acceptance bugrecipebook given a survival player holding oak_log, cobblestone, iron_ingot, stick, coal, string, wheat and sand "
-         & "(64 each) when the book is refreshed for the 3 x 3 grid then the 64 crafting recipes the inventory supplies are craftable" TO TL-CASE
+     MOVE "acceptance bugrecipebook given a survival player with the starting kit and 64 each of 8 items when the book is refreshed for the 3 x 3 grid then the 64 craftable crafting recipes are marked" TO TL-CASE
      MOVE 64 TO TL-EXPECTED-N
      MOVE WS-CAN TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
