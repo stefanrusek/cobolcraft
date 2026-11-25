@@ -168,11 +168,9 @@
      MOVE 1 TO WS-EXPECT
      MOVE "acceptance kelp column: the placed head has an age of 0 to 24" TO WS-CASE
      PERFORM CHECK-N
-*>   The client was told: the Block Updates of the last placement hold the new head and the old head's change to a body.
-     COMPUTE WS-E = WS-FLOOR + 3
-     MOVE WS-PLANT TO WS-STATE
-     PERFORM BLOCK-UPDATE-SEEN
-     MOVE "acceptance kelp column: the client got a Block Update turning the old head into a kelp_plant" TO WS-CASE
+*>   The client was told: the new head and the old head's change to a body are two changed positions of one section, sent as one Section Blocks Update.
+     PERFORM SECTION-UPDATE-SEEN
+     MOVE "acceptance kelp column: the client got a Section Blocks Update for the new head and the old head turned kelp_plant" TO WS-CASE
      PERFORM CHECK-N
      CALL "TEST-TICKS" USING WS-TICKS
      MOVE "kelp_plant" TO WS-WANT
@@ -256,17 +254,13 @@
      CALL "TEST-USE-ON" USING WS-CONN WS-UX WS-UY WS-UZ WS-FACE WS-SEQ
      CALL "TEST-DRAIN-BLOCKS" USING WS-CONN WS-BLOCKS-TEXT.
 
-*> WS-OBSERVE: 1 when the text of the last drain holds the Block Update "8(WS-CX,WS-E,WS-CZ=WS-STATE)".
- BLOCK-UPDATE-SEEN.
-     MOVE WS-CX TO WS-E1
-     MOVE WS-E TO WS-E2
-     MOVE WS-CZ TO WS-E3
-     MOVE WS-STATE TO WS-E4
+*> WS-OBSERVE: 1 when the last drain holds a Section Blocks Update (packet 86, "86" in the drain text between spaces). Two changed positions of one section in a tick (the new head and the old
+*> head that became a body) are broadcast as one Section Blocks Update built from the section, not as two Block Updates (29 section 7.2); the states in it are the ones the checks read from the level.
+ SECTION-UPDATE-SEEN.
      MOVE SPACES TO WS-PATTERN
-     STRING "8(" FUNCTION TRIM(WS-E1 LEADING) "," FUNCTION TRIM(WS-E2 LEADING) "," FUNCTION TRIM(WS-E3 LEADING) "=" FUNCTION TRIM(WS-E4 LEADING) ")"
-         DELIMITED BY SIZE INTO WS-PATTERN
+     STRING " " FUNCTION TRIM(WS-BLOCKS-TEXT) " " DELIMITED BY SIZE INTO WS-PATTERN
      MOVE 0 TO WS-HITS
-     INSPECT WS-BLOCKS-TEXT TALLYING WS-HITS FOR ALL FUNCTION TRIM(WS-PATTERN)
+     INSPECT WS-PATTERN TALLYING WS-HITS FOR ALL " 86 "
      MOVE 0 TO WS-OBSERVE
      IF WS-HITS > 0
          MOVE 1 TO WS-OBSERVE
