@@ -817,6 +817,9 @@
  01 WS-NEW                 BINARY-LONG.
  01 WS-DIM                 BINARY-LONG.
  01 WS-FACING              FLOAT-LONG.
+ 01 WS-LO                  FLOAT-LONG.
+ 01 WS-HI                  FLOAT-LONG.
+ 01 WS-ITER                BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -868,6 +871,33 @@
          END-IF
          ADD 0.02 TO WS-T
      END-PERFORM
+*>   The ray stopped inside a solid cell, up to a step past the surface: the boat is created at the surface itself (the exact hit location, 44 part 8), so the point is brought back
+*>   to the last place outside the cell by halving the step (the box of a boat put inside the ground would collide with it).
+     IF WS-HIT = 1 AND WS-SOLID = 1
+         COMPUTE WS-HI = WS-T - 0.02
+         COMPUTE WS-LO = WS-HI - 0.02
+         IF WS-LO < 0
+             MOVE 0 TO WS-LO
+         END-IF
+         PERFORM VARYING WS-ITER FROM 1 BY 1 UNTIL WS-ITER > 12
+             COMPUTE WS-T = (WS-LO + WS-HI) / 2
+             COMPUTE WS-PX = PL-X(WS-ROW) + WS-DX * WS-T
+             COMPUTE WS-PY = PL-Y(WS-ROW) + 1.62 + WS-DY * WS-T
+             COMPUTE WS-PZ = PL-Z(WS-ROW) + WS-DZ * WS-T
+             COMPUTE WS-CX = FUNCTION INTEGER(WS-PX)
+             COMPUTE WS-CY = FUNCTION INTEGER(WS-PY)
+             COMPUTE WS-CZ = FUNCTION INTEGER(WS-PZ)
+             CALL "GI-SOLID-CELL" USING WS-DIM WS-CX WS-CY WS-CZ WS-SOLID
+             IF WS-SOLID = 1
+                 MOVE WS-T TO WS-HI
+             ELSE
+                 MOVE WS-T TO WS-LO
+             END-IF
+         END-PERFORM
+         COMPUTE WS-PX = PL-X(WS-ROW) + WS-DX * WS-LO
+         COMPUTE WS-PY = PL-Y(WS-ROW) + 1.62 + WS-DY * WS-LO
+         COMPUTE WS-PZ = PL-Z(WS-ROW) + WS-DZ * WS-LO
+     END-IF
      IF WS-HIT = 1
          CALL "ENTITY-BOX-SURFACE" USING WS-DIM WS-TYPE WS-PX WS-PY WS-PZ WS-BOX-HIT WS-TOP
          IF WS-BOX-HIT = 0

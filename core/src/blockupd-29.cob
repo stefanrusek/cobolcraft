@@ -446,6 +446,9 @@
              IF BU-R-EFFECT(LS-I) = 9
                  CALL "SW-BUTTON-RELEASE" USING L-DIM L-X L-Y L-Z
              END-IF
+             IF BU-R-EFFECT(LS-I) = 11
+                 CALL "BRUSH-BLOCK-TICK" USING L-DIM L-X L-Y L-Z
+             END-IF
              IF BU-R-EFFECT(LS-I) = 10
                  CALL "EGG-BLOCK-HOOK" USING L-KIND L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
              END-IF
