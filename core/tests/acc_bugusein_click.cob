@@ -174,6 +174,22 @@
      MOVE 0 TO WS-EXPECT
      MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-OBSERVE
      PERFORM CHECK-N
+
+*>   A boat used with the eye inside the ground (the ray starts in a solid cell, so no point outside it exists on the ray) is refused as in Minecraft, where the box of a boat
+*>   that collides with a block is not placed (44 part 8, BoatItem.use): no second boat, and the stack is kept.
+     MOVE "oak_boat" TO WS-KEY
+     CALL "RT-GIVE1" USING WS-PLAYER WS-KEY WS-ONE
+     COMPUTE PL-Y(WS-PLAYER) = WS-FLOOR - 1
+     CALL "RT-USE-ITEM-AT" USING WS-CONN WS-YAW0 WS-PITCH60
+     CALL "RT-COUNT" USING WS-TYPE-BOAT WS-COUNT WS-ROW
+     MOVE "acceptance bugusein 44-8: a boat used with the eye inside the stone ground places no second boat" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE WS-COUNT TO WS-OBSERVE
+     PERFORM CHECK-N
+     MOVE "acceptance bugusein 44-8: and the boat stays in the pack" TO WS-CASE
+     MOVE 1 TO WS-EXPECT
+     MOVE PL-SLOT-COUNT(WS-PLAYER, 1) TO WS-OBSERVE
+     PERFORM CHECK-N
      STOP RUN.
 
  PUT-BLOCK.

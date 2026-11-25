@@ -1,6 +1,6 @@
 *> Implementation test of the client half of the items that the server uses with Use Item (operator report "boats, bows ... do nothing from the real window"; lane bugusein T63300;
 *> docs/protocol/17 sections 3.5, 3.14, 3.16, 25 part 7 and section 6.3, 09 section 3.3 Use Item 0x43 and Player Action 6 RELEASE_USE_ITEM): with no target block, the right
-*> button sends Use Item (main hand, sequence, yaw, pitch) for a boat, a raft, a firework rocket, elytra and each armor piece, and releasing it sends nothing more; for a spyglass, goat
+*> button sends Use Item (main hand, sequence, yaw, pitch) for a boat, a raft, a bucket, a firework rocket, elytra and each armor piece, and releasing it sends nothing more; for a spyglass, goat
 *> horn, potion and ominous bottle it sends Use Item and the release of the button sends release use item (Player Action 6); a brush in the air sends nothing (its use is the Use Item On
 *> at a block: acc_bugbrush_control); a trident, driven by USE-ITEM-INPUT, sends exactly one
 *> Use Item and one release (CONTROLS-INPUT must not send a second); changing the held item while the button is down releases at once; a stone sends nothing. The bow, crossbow and
@@ -44,7 +44,7 @@
      MOVE "T" TO TL-MODE
      MOVE "stone" TO WS-KEY
      CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-STONE WS-ROW WS-STATUS
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 17
          EVALUATE WS-I
              WHEN 1 MOVE "oak_boat" TO WS-KEY
              WHEN 2 MOVE "bamboo_raft" TO WS-KEY
@@ -54,13 +54,14 @@
              WHEN 6 MOVE "iron_helmet" TO WS-KEY
              WHEN 7 MOVE "iron_leggings" TO WS-KEY
              WHEN 8 MOVE "iron_boots" TO WS-KEY
-             WHEN 9 MOVE "trident" TO WS-KEY
-             WHEN 10 MOVE "spyglass" TO WS-KEY
-             WHEN 11 MOVE "goat_horn" TO WS-KEY
-             WHEN 12 MOVE "potion" TO WS-KEY
-             WHEN 13 MOVE "ominous_bottle" TO WS-KEY
-             WHEN 14 MOVE "brush" TO WS-KEY
-             WHEN 15 MOVE "stone" TO WS-KEY
+             WHEN 9 MOVE "bucket" TO WS-KEY
+             WHEN 10 MOVE "trident" TO WS-KEY
+             WHEN 11 MOVE "spyglass" TO WS-KEY
+             WHEN 12 MOVE "goat_horn" TO WS-KEY
+             WHEN 13 MOVE "potion" TO WS-KEY
+             WHEN 14 MOVE "ominous_bottle" TO WS-KEY
+             WHEN 15 MOVE "brush" TO WS-KEY
+             WHEN 16 MOVE "stone" TO WS-KEY
              WHEN OTHER MOVE "diamond_sword" TO WS-KEY
          END-EVALUATE
          CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-ID WS-ROW WS-STATUS
@@ -70,7 +71,7 @@
          CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-TEXT WS-THRESHOLD
          MOVE WS-TEXT TO TL-OBSERVED
          MOVE SPACES TO TL-EXPECTED TL-CASE
-         IF WS-I <= 13
+         IF WS-I <= 14
              ADD 1 TO WS-SEQ
              COMPUTE WS-SEQ-START = WS-SEQ * 2 + 1
              STRING "4300" WS-SEQ-TABLE(WS-SEQ-START:2) "0000000000000000" DELIMITED BY SIZE INTO TL-EXPECTED
@@ -86,7 +87,7 @@
          CALL "TEST-SERVER-READ-HEX" USING WS-SERVER WS-TEXT WS-THRESHOLD
          MOVE WS-TEXT TO TL-OBSERVED
          MOVE SPACES TO TL-EXPECTED TL-CASE
-         IF WS-I >= 9 AND WS-I <= 13
+         IF WS-I >= 10 AND WS-I <= 14
              MOVE WS-RELEASE TO TL-EXPECTED
              STRING "client use items: " FUNCTION TRIM(WS-KEY) " and the button released: release use item (Player Action 6) is sent"
                  DELIMITED BY SIZE INTO TL-CASE
