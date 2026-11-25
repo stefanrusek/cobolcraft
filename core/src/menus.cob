@@ -1186,6 +1186,7 @@
  01 WS-AMOUNT              BINARY-LONG.
  01 WS-SV                  BINARY-LONG.
  01 WS-LIMIT               BINARY-LONG.
+ 01 WS-TWO                 BINARY-LONG VALUE 2.
  LINKAGE SECTION.
  01 L-ROW                  BINARY-LONG.
  01 L-SLOT                 BINARY-LONG.
@@ -1220,6 +1221,11 @@
              GOBACK
          END-IF
      END-IF
+*>   A furnace's result slot (own slot 2): what the click takes out of it pays the experience of the recipes used (40-2 section 2.4).
+     MOVE 0 TO WS-SI WS-SC
+     IF MN-WINDOW(L-ROW) > 0 AND MN-CFAMILY(L-ROW) = 8
+         CALL "MENU-GET-X" USING L-ROW WS-TWO WS-SI WS-SC WS-SV
+     END-IF
      EVALUATE TRUE
          WHEN (L-TYPE = 0 OR L-TYPE = 1) AND L-BUTTON >= 0 AND L-BUTTON <= 1
              CALL "MENU-CLICK-PICK" USING L-ROW L-SLOT L-BUTTON L-TYPE
@@ -1241,6 +1247,12 @@
                  CALL "MENU-CLICK-PICKUP-ALL" USING L-ROW L-SLOT L-BUTTON
              END-IF
      END-EVALUATE
+     IF MN-WINDOW(L-ROW) > 0 AND MN-CFAMILY(L-ROW) = 8 AND WS-SC > 0
+         CALL "MENU-GET-X" USING L-ROW WS-TWO WS-ITEM WS-COUNT WS-SV
+         IF WS-COUNT < WS-SC
+             CALL "FURN-TAKEN" USING L-ROW
+         END-IF
+     END-IF
      CALL "MENU-CRAFT-UPDATE" USING L-ROW
      GOBACK.
  END PROGRAM MENU-CLICK.
