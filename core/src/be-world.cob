@@ -508,6 +508,10 @@
              IF WS-OLD-TYPE = 24
                  CALL "BE-SHULKER-DROP" USING WS-INDEX WS-OLD-BLOCK WS-HANDLED
              END-IF
+*>           A brushable block entity (type 40) is not a container: its buried item and loot table go with the block (31-4 section 7.2, 29b part 1 section 3.5).
+             IF WS-OLD-TYPE = 40
+                 MOVE 1 TO WS-HANDLED
+             END-IF
              IF WS-HANDLED = 0
                  CALL "BE-DROP-CONTENTS" USING WS-INDEX
              END-IF

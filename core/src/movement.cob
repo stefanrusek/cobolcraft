@@ -325,6 +325,8 @@
          MOVE PL-ON-GROUND(WS-ROW) TO WS-ON-GROUND
          CALL "ENTITY-MOVE" USING PL-ENTITY-ROW(WS-ROW) PL-X(WS-ROW) PL-Y(WS-ROW) PL-Z(WS-ROW)
              PL-YAW(WS-ROW) PL-PITCH(WS-ROW) WS-ON-GROUND
+*>       A landing on farmland tramples it (29b part 2 section 9.3).
+         CALL "FARM-LANDED" USING PL-ENTITY-ROW(WS-ROW)
      END-IF
 *>   Exhaustion of sprinting (0.1 per metre; walking costs nothing) and of a jump (17 section 4.9).
      CALL "POSE-UPDATE" USING WS-ROW

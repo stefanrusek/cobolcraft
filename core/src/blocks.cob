@@ -537,6 +537,7 @@
  01 WS-ROCKET              BINARY-LONG.
  01 WS-BELL                BINARY-LONG.
  01 WS-SIGN                BINARY-LONG.
+ 01 WS-BRUSH               BINARY-LONG.
  LINKAGE SECTION.
  COPY PLAYPKT.
  01 L-ID                   BINARY-LONG.
@@ -618,6 +619,9 @@
              CONTINUE
          WHEN WS-ITEM > 0 AND IT-KEY(WS-ITEM + 1) = "firework_rocket"
              CALL "RANGED-ROCKET-ON" USING L-ID PLAY-SERVERBOUND WS-ROCKET
+*>       A brush starts its use (25 part 8 section 7; core/src/brush-use.cob).
+         WHEN WS-ITEM > 0 AND IT-KEY(WS-ITEM + 1) = "brush"
+             CALL "BRUSH-START" USING L-ID PLAY-SERVERBOUND WS-BRUSH
          WHEN WS-BONE = 1
              CALL "GB-BONEMEAL-USE" USING L-ID PSB-BX PSB-BY PSB-BZ WS-BONE-USED
 *>       A hand with nothing in it holds no block item: the air item's row names the air block (IT-PLACES-STATE 0), which must never be placed (it would clear a replaceable cell and post block_place).
