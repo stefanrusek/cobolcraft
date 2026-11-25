@@ -12,6 +12,7 @@ project: CobolCraft
 | ID | Title | Type | Owner | Blocked | PR |
 |---|---|---|---|---|---|
 | [CC-0001](../CC-0001-client-polish.md) | Client polish: visuals, controls and missing gameplay | feature | stefanrusek |  | 2 |
+| [CC-0009](../CC-0009-block-placement-orientation-attachment.md) | Block placement honours orientation and attachment | bug | stefanrusek |  |  |
 | [CC-0010](../CC-0010-swim-crawl-mining-target.md) | Mining, placing and attacking while swimming or crawling hit the block in front | bug | stefanrusek |  |  |
 | [CC-0011](../CC-0011-stairs-fall-damage.md) | Walking down stairs or an incline fast deals no fall damage | bug | stefanrusek |  |  |
 | [CC-0012](../CC-0012-farmland-trample.md) | Farmland turns to dirt when an entity lands on it | bug | stefanrusek |  |  |
@@ -23,6 +24,7 @@ project: CobolCraft
 | [CC-0021](../CC-0021-block-and-fluid-fixes-on-lanes.md) | Block placement, update and fluid fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 | [CC-0022](../CC-0022-container-tool-and-ui-fixes-on-lanes.md) | Furnace, brush, recipe book and F3 fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 | [CC-0023](../CC-0023-superflat-spawn-rates.md) | Superflat worlds spawn slimes and hostile mobs at the standard rates | bug | stefanrusek |  | --- |
+| [CC-0046](../CC-0046-older-play-test-reports-unverified.md) | Play-test reports of try8 to try11 are checked against a current build | bug | stefanrusek |  | --- |
 
 ## Board
 
@@ -33,7 +35,6 @@ project: CobolCraft
 | [CC-0002](../CC-0002-chunk-meshing-performance.md) | Chunk mesh building fast enough to play | feature | stefanrusek |  |  |
 | [CC-0004](../CC-0004-shutdown-disconnect-delivery.md) | Players reliably see why the server shut down | bug | stefanrusek |  |  |
 | [CC-0007](../CC-0007-lighting-sky-and-clouds.md) | Lighting, sky, fog and clouds | feature | stefanrusek |  |  |
-| [CC-0009](../CC-0009-block-placement-orientation-attachment.md) | Block placement honours orientation and attachment | bug | stefanrusek |  |  |
 | [CC-0019](../CC-0019-sleeping-on-the-client.md) | Sleeping in a bed works on the client and with villagers | feature | stefanrusek |  |  |
 | [CC-0020](../CC-0020-ci-workflow.md) | Continuous integration builds and tests the packages that need no client jar | feature | stefanrusek |  |  |
 | [CC-0024](../CC-0024-block-shapes-doc-51-round-4.md) | Block shapes follow doc 51 round 4: offset rule, scaffolding, shulker lid, light data, step-up | feature | stefanrusek |  |  |
@@ -58,7 +59,6 @@ project: CobolCraft
 | [CC-0043](../CC-0043-structure-generation-leftovers.md) | Structure generation leftovers: mineshaft loot, test bookkeeping and the cut families | feature | stefanrusek |  |  |
 | [CC-0044](../CC-0044-client-small-leftovers.md) | Small client leftovers: slot counts, sign editor, bed item, heads, slime bounce | feature | stefanrusek |  |  |
 | [CC-0045](../CC-0045-polish-run-closing-inventory.md) | The open task lines of the polish run are decided: build, cut or keep as tickets | feature | stefanrusek |  |  |
-| [CC-0046](../CC-0046-older-play-test-reports-unverified.md) | Play-test reports of try8 to try11 are checked against a current build | bug | stefanrusek |  |  |
 | [CC-0047](../CC-0047-first-chunk-fill-step-within-tick-budget.md) | The first fill step of a freshly loaded chunk stays inside the per-tick step budget | bug | stefanrusek |  |  |
 
 ### implementing
@@ -72,6 +72,7 @@ project: CobolCraft
 | ID | Title | Type | Owner | Blocked | PR |
 |---|---|---|---|---|---|
 | [CC-0001](../CC-0001-client-polish.md) | Client polish: visuals, controls and missing gameplay | feature | stefanrusek |  | 2 |
+| [CC-0009](../CC-0009-block-placement-orientation-attachment.md) | Block placement honours orientation and attachment | bug | stefanrusek |  |  |
 | [CC-0010](../CC-0010-swim-crawl-mining-target.md) | Mining, placing and attacking while swimming or crawling hit the block in front | bug | stefanrusek |  |  |
 | [CC-0011](../CC-0011-stairs-fall-damage.md) | Walking down stairs or an incline fast deals no fall damage | bug | stefanrusek |  |  |
 | [CC-0012](../CC-0012-farmland-trample.md) | Farmland turns to dirt when an entity lands on it | bug | stefanrusek |  |  |
@@ -83,6 +84,7 @@ project: CobolCraft
 | [CC-0021](../CC-0021-block-and-fluid-fixes-on-lanes.md) | Block placement, update and fluid fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 | [CC-0022](../CC-0022-container-tool-and-ui-fixes-on-lanes.md) | Furnace, brush, recipe book and F3 fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 | [CC-0023](../CC-0023-superflat-spawn-rates.md) | Superflat worlds spawn slimes and hostile mobs at the standard rates | bug | stefanrusek |  | --- |
+| [CC-0046](../CC-0046-older-play-test-reports-unverified.md) | Play-test reports of try8 to try11 are checked against a current build | bug | stefanrusek |  | --- |
 
 ## Recently Closed
 
