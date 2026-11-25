@@ -1074,7 +1074,7 @@ With an empty main hand (and the player visible) the right/left arm model is dra
 
 ### 6.6 Using items (`submitArmWithItem`)
 
-While the local player uses an item with that hand (and the use has ticks remaining), the arm transform is chosen by the item's use animation. All use-poses start from the arm transform of 6.3 step 1 (`applyItemArmTransform`) except where noted, and the item is then drawn as in 6.3 step 3. Notation: s = +1 for the right arm and −1 for the left; u = remaining use ticks; f = the frame's partial tick; d = the total use duration; e = d − (u − f + 1) = elapsed use time in ticks. "Bob" below means the chain B(h): when h > 0.1, with k = sin((e − 0.1) × 1.3) × (h − 0.1), translate (0, k × 0.004, 0).
+While the local player uses an item with that hand (and the use has ticks remaining), the arm transform is chosen by the item's use animation. (The local player's "is using" state and used hand are predicted by the client, not read from the server's metadata flags: 58 §2.4. The in-use models and the arm branch of every use animation are tabulated in 58 §6.) All use-poses start from the arm transform of 6.3 step 1 (`applyItemArmTransform`) except where noted, and the item is then drawn as in 6.3 step 3. Notation: s = +1 for the right arm and −1 for the left; u = remaining use ticks; f = the frame's partial tick; d = the total use duration; e = d − (u − f + 1) = elapsed use time in ticks. "Bob" below means the chain B(h): when h > 0.1, with k = sin((e − 0.1) × 1.3) × (h − 0.1), translate (0, k × 0.004, 0).
 
 - **Eating and drinking** (`applyEatTransform`): a = u − f + 1; t = a / d. When t < 0.8 translate (0, |cos(a / 4 × π) × 0.1|, 0). Then k = 1 − t^27: translate (s × k × 0.6, k × (−0.5), 0); rotate Y by s × k × 90; rotate X by k × 10; rotate Z by s × k × 30. Then 6.3 step 1.
 - **Bow**: step 1, then translate (s × (−0.2785682), 0.18344387, 0.15731531); rotate X by −13.935; rotate Y by s × 35.3; rotate Z by s × (−9.785). Let h = min(1, (m² + 2m) / 3) with m = e / 20. Apply B(h); translate (0, 0, h × 0.04); scale (1, 1, 1 + h × 0.2); rotate Y by −s × 45.
@@ -1082,7 +1082,7 @@ While the local player uses an item with that hand (and the use has ticks remain
 - **Crossbow, not being used**: step 1, then the swing of 6.3 step 2 for the swinging hand; when the crossbow is charged and the swing progress p < 0.001 and this is the main hand: translate (s × (−0.641864), 0, 0) and rotate Y by s × 10.
 - **Trident** (thrown, charging): step 1, then translate (s × (−0.5), 0.7, 0.1); rotate X by −55; rotate Y by s × 35.3; rotate Z by s × (−9.785). Let h = min(1, e / 10). Apply B(h); translate (0, 0, h × 0.2); scale (1, 1, 1 + h × 0.2); rotate Y by −s × 45.
 - **Blocking with an item that is not a shield** (the `block` use animation): step 1, then translate (s × (−0.14142136), 0.08, 0.14142136); rotate X by −102.25; rotate Y by s × 13.365; rotate Z by s × 78.05. A shield item (the test is `instanceof ShieldItem`) is only given step 1 (its model is posed by its own display transform, 6.12).
-- **Brush**: `applyBrushTransform` (not reproduced; Open question 6). **Spear/thrust items**: `SpearAnimations` (`firstPersonUse` and `firstPersonAttack` are written in 34-1 §3.8; Open question 6 lists only the brush). The spear animation is flagged as having a custom arm transform, so the step 1 translate is not applied before the switch; its branch itself translates by (s × 0.56, −0.52, −0.72) (no equip term) and then calls `SpearAnimations.firstPersonUse` (6.13).
+- **Brush**: `applyBrushTransform` (now read: 58 §6.2). **Spear/thrust items**: `SpearAnimations` (`firstPersonUse` and `firstPersonAttack` are written in 34-1 §3.8; Open question 6 lists only the brush). The spear animation is flagged as having a custom arm transform, so the step 1 translate is not applied before the switch; its branch itself translates by (s × 0.56, −0.52, −0.72) (no equip term) and then calls `SpearAnimations.firstPersonUse` (6.13).
 - **Spyglass**: while scoping, neither hand is drawn at all (`isScoping` returns early); the spyglass overlay takes over the screen.
 - A use animation that matches none of the above gets only step 1. The mapping of the use animations to the branches is resolved in 6.13: `none`, `spyglass`, `toot_horn` and a crossbow-animation item that is not the crossbow item get nothing beyond step 1; `bundle` gets the swing of 6.3 step 2.
 - **Auto spin attack** (riptide): step 1, then translate (s × (−0.4), 0.8, 0.3); rotate Y by s × 65; rotate Z by s × (−85).
@@ -1297,6 +1297,8 @@ The item stack decides in this order (this resolves the mapping that Open questi
 
 Then the item is submitted with the transform of 6.7.2 (the render state of the hand's item: the `ItemStackRenderState` built for the context of 6.3 step 3) with the light coordinate of 6.10.
 
+In-use item models (the `using_item`, `use_duration`, `crossbow/pull` and `use_cycle` properties), the local player's predicted use state, the hand selection of the first-person pass and one table of every in-use item with its models, display transforms and arm branch: 58 §2, §3 and §6.
+
 ### 6.14 What makes a naive implementation of 6.1 to 6.6 look scrambled
 
 Checklist, each row stating the rule of the artifact:
@@ -1398,7 +1400,7 @@ All angles in radians; walkPos = the walk animation position, walkSpeed = the wa
 - Right leg xRot = cos(walkPos × 0.6662) × 1.4 × walkSpeed / speedValue; left leg xRot = cos(walkPos × 0.6662 + π) × 1.4 × walkSpeed / speedValue. Legs also get yRot ±0.005 and zRot ±0.005 (right +, left −).
 - Crouching: body xRot 0.5; arms xRot += 0.4; legs z += 4; head y += 4.2; body and arms y += 3.2.
 - Riding: arms xRot += −0.62831855 (−π/5); legs xRot −1.4137167, yRot ±0.31415927, zRot ±0.07853982 (right +, left −).
-- **Idle arm bob** (`AnimationUtils.bobModelPart(part, ageInTicks, sign)`), applied after the poses to both arms (right sign +1, left sign −1) unless that arm holds a spyglass: part.zRot += sign × (cos(age × 0.09) × 0.05 + 0.05); part.xRot += sign × sin(age × 0.067) × 0.05.
+- **Idle arm bob** (`AnimationUtils.bobModelPart(part, ageInTicks, sign)`), applied after the poses to both arms (right sign +1, left sign −1), skipped for an arm whose **pose** is `SPYGLASS` (the arm whose hand is using a spyglass with remaining ticks > 0, 58 §5.1 step 3; an arm that merely holds a spyglass has the pose `ITEM` and is bobbed; corrected in round 58): part.zRot += sign × (cos(age × 0.09) × 0.05 + 0.05); part.xRot += sign × sin(age × 0.067) × 0.05.
 - **Arm poses by held-item state** (`poseRightArm` / `poseLeftArm`, chosen from the arm's `ArmPose`; head is the head part's current rotation; the left arm mirrors the sign of yRot terms):
 
 | ArmPose | Effect on the posed arm |
@@ -1410,8 +1412,8 @@ All angles in radians; walkPos = the walk animation position, walkSpeed = the wa
 | THROW_TRIDENT | xRot = xRot × 0.5 − π; yRot = 0 |
 | CROSSBOW_CHARGE (`animateCrossbowCharge`, with right = the holding arm) | holding arm: yRot = −0.8 (right) or +0.8 (left), xRot = −0.97079635; other arm: xRot = the holding arm's xRot, then with d = clamp(ticksUsing, 0, maxCharge) / maxCharge: other.yRot = lerp(d, 0.4, 0.85) × (+1 for right, −1 for left) and other.xRot = lerp(d, other.xRot, −π/2) |
 | CROSSBOW_HOLD (`animateCrossbowHold`) | holding arm: yRot += head.yRot + (−0.3 right, +0.3 left); other arm: yRot += head.yRot + (0.6 right-holding, −0.6 left-holding); holding arm xRot = −π/2 + head.xRot + 0.1; other arm xRot = −1.5 + head.xRot |
-| SPYGLASS | xRot = clamp(head.xRot − 1.9198622 − (0.2617994 when crouching, else 0), −2.4, 3.3); yRot = head.yRot − 0.2617994 |
-| TOOT_HORN | xRot = clamp(head.xRot, −1.2, 1.2) − 1.4835298; yRot = head.yRot − 0.5235988 |
+| SPYGLASS | xRot = clamp(head.xRot − 1.9198622 − (0.2617994 when crouching, else 0), −2.4, 3.3) (assigned, both arms, the same for both); yRot = head.yRot − 0.2617994 for the **right** arm and head.yRot + 0.2617994 for the **left** arm (corrected in round 58: the left sign is mirrored, as for TOOT_HORN); zRot untouched. The pose conditions: 58 §5.1; the head-held item: 58 §6.3 |
+| TOOT_HORN | xRot = clamp(head.xRot, −1.2, 1.2) − 1.4835298 (assigned, both arms); yRot = head.yRot − 0.5235988 for the **right** arm and head.yRot + 0.5235988 for the **left** arm (corrected in round 58: the left sign is mirrored); zRot untouched. Which arm is posed, the order against walk, crouch and bob, and the held-item layer: 58 §5 |
 | BRUSH | xRot = xRot × 0.5 − 0.62831855 (π/5); yRot = 0 |
 | SPEAR | `SpearAnimations.thirdPersonHandUse` (not reproduced; Open question 6) |
 
@@ -1674,7 +1676,7 @@ The final colour of a texel is texture × tint × this brightness × the light-m
 3. **Weather layers.** The grey brightness of `blend_to_gray` and the colour blended into `visual/sky_light_color` in rain and thunder, the exact meaning of the layer weight (assumed equal to the smoothed rain and thunder levels), and the star-brightness layer (3.5).
 4. **Crumbling depth bias.** Whether the 10.0 passed to the crumbling pipeline's depth state is a slope-scaled or a constant bias (4.3).
 5. **Disabled button text colour** and the over-wide label scrolling rule (5.9).
-6. **Item-use arm poses not reproduced.** Brush (`applyBrushTransform`) was not read. The spear animations are written in 34-1 §3.8. The mapping of the toot-horn, bundle and none animations to the first-person branches is given in 6.13.
+6. **Item-use arm poses not reproduced.** Brush (`applyBrushTransform`) was not read here; it is written in 58 §6.2. The spear animations are written in 34-1 §3.8. The mapping of the toot-horn, bundle and none animations to the first-person branches is given in 6.13.
 7. **Third-person arm animation.** The `stab` swing and the last statements of the `whack` branch of `setupAttackAnimation`; swimming, elytra and crawling poses; the cape, elytra and armour layers; the skin-parts bits other than the listed layers (7.5, 7.6).
 8. **Biome colour tinting** (grass, foliage, water, the `tintindex` sources for blocks, and the `biomeBlendRadius` averaging) is not covered here; 08 has the item tint sources.
 9. **Camera and field of view.** The default of the `camera_distance` attribute for the player (4.0 inferred) and the player's field-of-view modifier (`AbstractClientPlayer.getFieldOfViewModifier`, 6.9) were not read. Given in 6.9: the near plane (0.05), the far plane, the death and fluid modification, and the fixed 70° hand field of view.

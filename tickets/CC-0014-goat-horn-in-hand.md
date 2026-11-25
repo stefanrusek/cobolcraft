@@ -112,3 +112,69 @@ What waits on a clean-room documentation round (not guessed):
 4. The instrument of a stack: 25 section 12.1 lists the eight instruments and the tag orders but no table of the sound event each
    one plays, nor the registry order of the `instrument` entries (wire id of the component), so every horn plays the default
    `ponder_goat_horn` sound; a horn dropped by a goat carries no instrument in the core (M44-GOAT-DROP-HORN, an existing gap).
+
+## Doc gap closed (clean-room round 58, 2026-11-25)
+
+The DOC GAP above is answered by the new document docs/protocol/58-in-use-item-models-and-arm-poses.md (read from the
+artifact recorded in the README header; reader and reviewer rounds, three review rounds, small fix-ups after the third).
+Where each question is answered:
+
+- `using_item` semantics for the local hand and for another entity's held item, the stack identity rule, null owner in
+  the GUI and the other contexts: 58 section 1.1 (entry points and the owner each passes), section 2.5 (the identity the
+  properties test) and section 3.2 (`using_item`). The local player's use state is predicted by the client, not read
+  from the flags (2.4); a remote viewer derives it from entry 8 (2.3). Loop order and which use tick the first rendered
+  frame shows: 2.6.
+- The other item-definition properties with exact arithmetic (`use_duration`, `crossbow/pull`, `use_cycle`, `selected`,
+  `display_context`, `cooldown`, `carried`, the rest): 58 sections 1.2 and 3.1 to 3.13.
+- The goat horn's in-use model, what it shows and its display transforms (first and third person, left and right, head,
+  gui, ground, fixed) as numbers: 58 section 4 (4.1 definition, 4.2 the two models, 4.3 transforms and the difference
+  table). The horn stack a viewer receives must carry the `instrument` component: 58 section 5.2 and 8.1.
+- The third-person arm pose (TOOT_HORN, ordinal 8): which arm and in which order (5.3), the angle values per arm (5.4),
+  where it falls in the animation order (5.5), the held-item layer transform (5.6), the entity pose and the cameras
+  (5.7), the data path from the server (5.8). The living-entity flags are entity metadata entry 8: mask 1 = using an
+  item, mask 2 = the used hand is the off hand, mask 4 = spin attack (58 section 2.1 calls the masks "bit 1" and
+  "bit 2"; they are bit indices 0 and 1 of the byte, as in the Investigation text above). A remote player's main arm,
+  which decides the arm: 5.2.1 (entity data entry 15).
+- One table of in-use item model selection (bow, crossbow, shield, spyglass, trident and spears, brush, horn, food and
+  drink, fishing rod, elytra, bundle): 58 section 6 (6.1 hands drawn in first person, 6.2 brush arm transform, 6.3
+  spyglass head item, 6.4 display transforms of the in-use models). Worked examples for tests: 58 section 8.
+- Corrections to older text made in the same round: 12 section 7.5 (the left arm's yRot sign of the TOOT_HORN and SPYGLASS
+  rows, the idle-bob rule), 34-2 section 4.2 (the arm order rule and the per-arm yRot signs), 18 section 1.4 (entity data
+  slot 15 and 16 owners); the full list is 58 section 7. Pointer lines were added in 08 section 6.3, 12 sections 6.6 and
+  6.13, 25-7 section 12.2 and 57-1 section 3.4.
+- Consequence for the work of this ticket: 12 section 6.13 stays right that the first-person arm transform of a horn is
+  the plain held one; the visible change is the item model (`using_item` switches the model) and, for a viewer, the arm
+  pose of 58 section 5. The core must send entry 8 for a player using an item (58 section 2.2, 5.8) and keep the
+  `instrument` component on the stack it sends. Open questions that stay open are listed in 58 "Open questions" (14).
+
+## Bug wave, round 3 (2026-11-25), core half: the use state and the viewers' flags (doc 58)
+
+Root cause of the missing viewer pose: core. The core had no use state of a horn and no living entity flags (entry 8) and sent no Set
+Equipment for a player at all. Built from docs/protocol/58 sections 2.1, 2.2, 5.2, 5.8 and 6:
+
+- `core/src/horn-use.cob`: `HORN-ITEM-USE` now starts the use (LivingEntity.startUsingItem: 140 ticks, `TS-HORN-USE-START` and `TS-HORN-USE-HAND` of
+  `core/copy/CTOOLS.cpy`, ignored while another item is in use, `item_interact_start` at the player, then the existing sound, `instrument_play` and
+  cooldown). New `HORN-USE-STOP` (stopUsingItem: `item_interact_finish` when a use was going) and `HORN-USE-TICK` (the used hand must still hold a
+  goat_horn, completion at 140 ticks, then `USE-FLAGS-SYNC`). `HUNGER-CANCEL` (the shared stop of Player Action 6, a changed held slot, death,
+  dimension change, a menu) calls `HORN-USE-STOP`; `HUNGER-TICK` calls `HORN-USE-TICK` once a tick for every alive player.
+- `core/src/poses.cob`: `USE-FLAGS-GET` derives the byte of entry 8 from the use states that exist (a raised shield `TS-BLOCK-START` with its hand, a bow, crossbow or
+  trident being drawn `TS-USE-START`, eating `PL-EATING-ITEM`, the horn): 1 = using an item, 2 = the used hand is the off hand, and with nothing in use bit 2
+  of the byte last sent is kept (58 section 2.1: only the next start rewrites it). `USE-FLAGS-SYNC` sends a changed byte as Set Entity Data entry 8
+  (`LIVING-DATA-BUILD`) to the players who see the player and to the player itself (18 section 9.2); when bit 1 rises it first sends Set Equipment (0x68) of
+  the used hand (slot 0 or 1, the stack with its component patch through `SP-EXPORT`), the order of 58 section 2.2 and 2.3 (the viewer's start test needs the stack in the hand).
+- The `instrument` component: 58 section 5.2 says the stack a viewer receives needs it and that leaving the prototype default in place is enough (a patch that
+  removes it is the only way to lose it). The core sends the stack with the patch it has (an empty patch for a creative or given horn), so the prototype default
+  stands and nothing is written; M44-GOAT-DROP-HORN needs no change for the viewer's 140 ticks. NOT BUILT (Open question, not guessed): the instrument a goat's
+  horn carries (the registry order of the `instrument` entries and the sound event of each one are in no document; data component type `instrument` is id 63 in 46
+  section 8.1), so every horn still plays `item.goat_horn.sound.0`.
+- Gaps found, not built: (1) the core sends no Set Equipment of a player's hands or armour at any other time (join pairing, a held-slot change, an item swap): a viewer
+  sees an empty hand until the first use of an item sets that hand's stack; the general equipment sync of players needs its own ticket. (2) A viewer who starts tracking a
+  player already using an item is not sent entry 8 (58 section 2.3: the vanilla pairing order makes that start fail too). (3) Potion drinking and the brush are not part of
+  the flags (no `TS-` state of the same shape; 58 section 6 lists them, behaviour not added).
+- Red first: `core/tests/acc_bughorn_state.cob` (24 cases, real packets through the play path, a second player as the viewer) failed 19 of 24 with the core half
+  removed (log scratchpad/bwb-r4/red1.log), passes 24 of 24 with it (green1.log). `acc_bughorn_use` expects `instrument_play` as the second event now (item_interact_start first).
+- Checks: regression of 27 core modules that copy CTOOLS or call the use hooks (acc_bughorn_state, acc_bughorn_use, acc_bugusein_click, acc_eat_standard, acc_itemcomp_drink,
+  acc_itemcomp_food, acc_us14_bow, acc_us14_crossbow, acc_us14_elytra, acc_us14_spear, acc_us14_tools_wire, acc_us14_combat_wire2, acc_us14_trident, acc_us15_emitters,
+  acc_us15_emitters3, acc_us15_ravager_shield, acc_us16_throw_item, acc_us8_creative, acc_us8_eat, acc_us7_death_respawn, acc_wrapc_bowevents, acc_wrapc_windcharge,
+  test_arrow_shield, test_poses, test_pose_eye, test_player_parts, test_tool_special_shield) passed 478 failed 0; `make -C core lint` 2787 files 0 failed;
+  `gen_tables.py --check` 0 differing files.

@@ -87,12 +87,12 @@
      STRING "found 1 holder 846 source 2 at " FUNCTION TRIM(WS-E1) " " FUNCTION TRIM(WS-E2) " " FUNCTION TRIM(WS-E3) " vol 16 pitch 1"
          DELIMITED BY SIZE INTO TL-EXPECTED
      PERFORM CHECK-TEXT
-     MOVE "acceptance bughorn 25-7 12.2: the game event instrument_play is posted once at the player with the player as its source" TO WS-CASE
+     MOVE "acceptance bughorn 25-7 12.2: the game event instrument_play is the last event of the use (after item_interact_start, 58 2.2), posted at the player with the player as its source" TO WS-CASE
      MOVE PL-ENTITY-ROW(WS-PLAYER) TO WS-E4
      MOVE GE-SOURCE TO WS-E5
      COMPUTE WS-E6 = GE-COUNT - WS-BEFORE
      MOVE SPACES TO TL-EXPECTED
-     STRING "instrument_play row " FUNCTION TRIM(WS-E4) " posted 1" DELIMITED BY SIZE INTO TL-EXPECTED
+     STRING "instrument_play row " FUNCTION TRIM(WS-E4) " posted 2" DELIMITED BY SIZE INTO TL-EXPECTED
      MOVE SPACES TO WS-TEXT
      STRING FUNCTION TRIM(GE-NAME) " row " FUNCTION TRIM(WS-E5) " posted " FUNCTION TRIM(WS-E6) DELIMITED BY SIZE INTO WS-TEXT
      PERFORM CHECK-TEXT

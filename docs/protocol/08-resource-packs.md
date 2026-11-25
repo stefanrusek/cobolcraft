@@ -644,7 +644,9 @@ expanded here.
 ### 6.3 Property ids (names only)
 
 These are **[engine name]** dispatch keys. Each reads client-side state. Their extra fields are out of
-scope here.
+scope here. The exact semantics of every property that a shipped item definition uses (`using_item`,
+`use_duration`, `crossbow/pull`, `use_cycle`, `charge_type`, `display_context`, `compass`, `time` and the rest), the
+threshold arithmetic, the use state they read and the shipped in-use models are in 58 §1 to §3 and §6.
 
 | Used by | Property ids |
 |---|---|

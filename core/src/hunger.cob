@@ -138,6 +138,8 @@
      MOVE 0 TO PL-EATING-ITEM(L-ROW)
      MOVE 0 TO PL-BRUSH-ACTIVE(L-ROW)
      CALL "POTION-DRINK-CANCEL" USING L-ROW
+*>   A goat horn in use ends with the rest (58 section 2.2 stopUsingItem; CC-0014).
+     CALL "HORN-USE-STOP" USING L-ROW
      GOBACK.
  END PROGRAM HUNGER-CANCEL.
 
@@ -178,6 +180,8 @@
  PROCEDURE DIVISION USING L-ROW.
      MOVE L-ROW TO WS-ROW
      CALL "POTION-DRINK-TICK" USING WS-ROW
+*>   The use state of a goat horn and the flags of whatever item is in use go to the viewers (CC-0014, 58 sections 2.1 and 2.2).
+     CALL "HORN-USE-TICK" USING WS-ROW
      IF PL-MODE(WS-ROW) NOT = 0
          MOVE 0 TO PL-EATING-ITEM(WS-ROW)
          GOBACK

@@ -180,7 +180,7 @@ The head does **not** enter the charge pose (no head term); the head's own rotat
 | `ticksUsingItem` (float) | `LivingEntity.getTicksUsingItem(partialTick)` = 0 when not using an item, else (use duration of the used stack − remaining use ticks) + partialTick; the crossbow's use duration is 72000 (44-5 §2.3), so this is the number of ticks since use started plus the partial tick |
 | `mainArm` | the mob's main arm (left-handed flag) |
 
-Note `ticksUsingItem` is 0 whenever the piglin's "using item" state is off. On the client the using-item state comes from the living-entity flags metadata (the same replication as any entity; 18 §1); it is **only** true during the charge, because the brain behaviour (§3.5) starts using the item at the beginning of the charge and releases it at its end.
+Note `ticksUsingItem` is 0 whenever the piglin's "using item" state is off. On the client the using-item state comes from the living-entity flags metadata (the same replication as any entity; 18 §1); it is **only** true during the charge, because the brain behaviour (§3.5) starts using the item at the beginning of the charge and releases it at its end. (Hand-held use state in general, including the local player's predicted state and the flags of metadata entry 8: 58 §2.)
 
 ### 3.5 The state machine that drives it (closes the `CrossbowAttack` half of 44-6 Open question 5)
 
