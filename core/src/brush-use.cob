@@ -5,7 +5,7 @@
 *> block with a block entity (suspicious sand or gravel), the brush of 31-4 section 7.4 (BE4-BRUSH): the loot is rolled with the archaeology parameter
 *> set (BRUSH-UNPACK, 7.5), a counted brush schedules the 2-tick block tick and moves the block's dusted value (the Block Update), the tenth completes
 *> (BRUSH-COMPLETE, 7.7): the buried item drops at the neighbouring cell's centre without motion, level event 3008, the block becomes sand or gravel and
-*> the brush loses 1 durability. The block tick (BRUSH-BLOCK-TICK, BU-HOOK effect 11, registered by GB-RULES-OPEN) is checkReset (7.6) and the fall of
+*> the brush loses 1 durability. The block tick (BRUSH-BLOCK-TICK, BU-HOOK effect 15, registered by GB-RULES-OPEN) is checkReset (7.6) and the fall of
 *> the block with cancelDrop. Breaking the block drops nothing from its block entity (BE-BLOCK-SET leaves a brushable block entity's item alone: it is not
 *> a container).
 *> Not done here (stand-ins): the dust particles and the brushing sounds are the client's cosmetic effects in vanilla (25 part 8 section 7.1); this client has no brush
@@ -527,7 +527,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BRUSH-BLOCK-TICK.
-*> USING dimension row, x, y, z: the scheduled block tick of a suspicious sand or gravel block (BU-HOOK effect 11; 31-4 section 7.6 and 29b part 1 section 3.5 ST): checkReset
+*> USING dimension row, x, y, z: the scheduled block tick of a suspicious sand or gravel block (BU-HOOK effect 15; 31-4 section 7.6 and 29b part 1 section 3.5 ST): checkReset
 *> (progress decays by 2 every 4 ticks from 40 ticks after the last brush, the dusted value follows, another 2-tick tick is scheduled while progress remains), then,
 *> when the cell below is free, the block falls as a falling block entity with cancelDrop.
  DATA DIVISION.

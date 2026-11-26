@@ -572,7 +572,7 @@
              MOVE 2 TO WS-DELAY
              MOVE 0 TO WS-FOUND
              PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > BU-RULE-COUNT
-                 IF BU-R-KIND(WS-R) = 7 AND BU-R-BLOCK(WS-R) = WS-BLOCK AND BU-R-EFFECT(WS-R) = 11
+                 IF BU-R-KIND(WS-R) = 7 AND BU-R-BLOCK(WS-R) = WS-BLOCK AND BU-R-EFFECT(WS-R) = 15
                      MOVE 1 TO WS-FOUND
                  END-IF
              END-PERFORM
@@ -583,7 +583,7 @@
                  MOVE 4 TO WS-KIND
                  CALL "BU-RULE-ADD" USING WS-KIND WS-BLOCK WS-EFFECT WS-ZERO WS-DELAY
                  MOVE 7 TO WS-KIND
-                 MOVE 11 TO WS-EFFECT
+                 MOVE 15 TO WS-EFFECT
                  CALL "BU-RULE-ADD" USING WS-KIND WS-BLOCK WS-EFFECT WS-ZERO WS-ZERO2
              END-IF
          END-IF
