@@ -45,7 +45,23 @@ yet and is agreed before any code changes.
 
 > [!NOTE]
 > Reported on 2026-11-26: a steady frame rate of about 15 on an M1 MacBook Air, with the vanilla client at 60 on the
-> same machine and no other load. Build, world type, view distance and single-player or server were not recorded.
+> same machine and no other load. The build was v0.2.0 with Minecraft content; view distance, window size and
+> single-player or server were not recorded.
 > Measured so far (M4 Pro, -O2 build of main aba05242, `acc_perfframe_bench`, view 12, 24 mobs): mean CPU time of one
 > frame step 8541 us, slowest 35383 us. The window submit and the present are not in that number and are not measured
 > on any machine yet. They can only be measured with a window on the screen; that check is the operator's.
+>
+> Windowed measurements of 2026-11-26 (M4 Pro, release build of main aba05242, `CC_GPU_STATS=1`, single-player view
+> distance 8, load average 7 to 10 from other work; logs in the operator's gatefast-logs/perfround folder):
+> - Standard world, settled, vsync: 60 fps; app 5.64 ms and GPU 5.05 ms a frame, render list 2.58 ms, core tick 1.96 ms a
+>   frame, 1518 draws, 3,594,864 vertices.
+> - The same without vsync (`CC_VK_PRESENT=immediate`): 118 fps (the display's 120); app 4.07 ms, GPU 3.89 ms a frame.
+> - Standard world while its chunks load: 44 to 100 fps without vsync, 28 to 54 with it, for about 100 s after the join.
+>   The frame is bound by the main thread: of 4508 main-thread samples, `MESH-DIRTY` 1157, `CORE-TICK` 1107
+>   (`WORLDSIM-TICK` 479, `CHUNK-FEED-TICK` 298, `GEN-QUEUE-TICK` 211), `NET-PUMP` 425, `RENDER-LIST-BUILD` 227. The mesh
+>   phase took 6 to 15 ms a frame: its 4000 us limit is checked between sections and doubles near unmeshed sections
+>   (`client/src/mesher.cob`).
+> - Old stand-in world, standing: 60 fps with vsync (app 2.5 ms, GPU 1.0 ms, 285 draws, 488 thousand vertices).
+> - The present path is not the limit on this machine (submit waits only for the display).
+> Not measured: anything on the M1 Air. One `CC_GPU_STATS=1` run there tells whether its frame is bound by the GPU
+> (`gpu ms/frame`), the main thread (`app` and the phase line) or the present (`submit`, `fence`).
