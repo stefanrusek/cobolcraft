@@ -281,7 +281,7 @@ packet: the client discards chunks outside the radius around this center (inferr
 | Field | Type | Notes |
 |---|---|---|
 | Entity id | VarInt | |
-| Velocity | LpVec3 | The low-precision vector (`Vec3.LP_STREAM_CODEC`, implemented in `LpVec3`). See the composite types section. |
+| Velocity | LpVec3 | The low-precision vector (`Vec3.LP_STREAM_CODEC`, implemented in `LpVec3`). See the composite types section. The client **replaces** all three components of the named entity's velocity with it, its own player included (`Entity.lerpMotion`, which the local player does not override; 59 section 13) |
 
 ## 0x68 (104) Clientbound Set Equipment (ClientboundSetEquipmentPacket)
 
@@ -581,7 +581,7 @@ AttributeModifier:
 | Entity id | VarInt | |
 | Effect | RegistryId<mob_effect> | |
 | Amplifier | VarInt | |
-| Duration | VarInt | Ticks. The server presumably uses −1 for infinite (inferred). |
+| Duration | VarInt | Ticks; −1 is infinite (`MobEffectInstance.isInfiniteDuration`). When the server sends this packet: 59 section 11.5 |
 | Flags | Byte | 0x01 = ambient, 0x02 = visible (particles), 0x04 = show icon, 0x08 = blend. |
 
 ## 0x88 (136) Clientbound Update Recipes (ClientboundUpdateRecipesPacket)
@@ -708,7 +708,7 @@ the mask is `1 << bit`. A flag is set when *(value & mask) == mask*.
 | 5 | 0x020 | DELTA_X |
 | 6 | 0x040 | DELTA_Y |
 | 7 | 0x080 | DELTA_Z |
-| 8 | 0x100 | ROTATE_DELTA (rotate the velocity vector by the rotation change) (inferred meaning) |
+| 8 | 0x100 | ROTATE_DELTA (rotate the current velocity by the rotation change before the delta rules; read in `PositionMoveRotation.calculateAbsolute`, formula in 59 section 13.2) |
 
 A set bit means the corresponding component in PositionMoveRotation is relative (added to the current
 value). A clear bit means it is absolute (inferred meaning).

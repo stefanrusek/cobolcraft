@@ -116,7 +116,7 @@ collision) of the same tick. It runs on the client for the local player and on t
 side decides on its own. Consequences: the pose chosen in tick t is first used by the movement and collision of tick t+1,
 and the swimming flag (§4) it reads was set at the start of tick t.
 
-Order of one tick for the pieces this document covers: `Player.tick` start (eyes-in-water bookkeeping), `Entity.baseTick`
+The full ordered list of the local player's tick is 59 section 2.2. Order of one tick for the pieces this document covers: `Player.tick` start (eyes-in-water bookkeeping), `Entity.baseTick`
 (fluid state, `updateSwimming`), `LivingEntity.aiStep` (on the client: key read, sprint start/stop, jump, `travel`),
 packet sending (client), `updatePlayerPose`.
 
@@ -440,8 +440,9 @@ Then the normal travel runs (below). When the player is a passenger, `Player.tra
 
 ### 9.2 In-fluid travel
 
-`LivingEntity.travel` picks the fluid branch when the entity's block holds fluid (the fluid at `blockPosition`), the entity
-is in a liquid, is affected by fluids (a flying player is not), and cannot stand on the fluid. Otherwise: fall flying, else
+`LivingEntity.travel` picks the fluid branch when the entity is in a liquid (water or lava touching its box), is affected
+by fluids (a flying player is not), and cannot stand on the fluid at its block position (players never can). The block at
+the feet position need not hold fluid (correction: an earlier text required it). Otherwise: fall flying, else
 air. A player that is crawling on land (flag clear) therefore uses air travel (13 §1.3 ground rules with the 0.3 input
 factor); a swimming-pose player in water uses the water branch below even when the flag is clear.
 
@@ -455,7 +456,7 @@ factor); a swimming-pose player in water uses the water branch below even when t
 6. If horizontally blocked and on a climbable, y velocity becomes 0.2.
 7. Drag: x and z multiplied by d, y multiplied by 0.8 (the `multiply(d, 0.8, d)`).
 8. Fluid falling adjustment (`getFluidFallingAdjustedMovement`), applied only when the effective gravity is not 0 **and the entity is not sprinting** (so a swimming player gets none): if the entity was falling (y velocity <= 0) and |vy - 0.005| >= 0.003 and |vy - g/16| < 0.003 then vy = -0.003, else vy = vy - g/16, with g the effective gravity (0.08, so g/16 = 0.005).
-9. Jump out of fluid: if horizontally collided and the box shifted to (vx, vy + 0.6 - (current y - startY), vz) is free of collisions, then vy = 0.3 (the swim-up assist against a ledge).
+9. Jump out of fluid: if horizontally collided and the box shifted by (vx, vy + 0.6 - (current y - startY), vz) is free (no collision **and** no fluid in any cell it touches), then vy = 0.3 (the swim-up assist against a ledge; 59 section 7.6).
 
 Swim-up and sink keys: Space adds +0.04 vertical velocity per tick while in water and (not on the ground, or the fluid is deeper than the jump threshold; the threshold is 0 when the eye height is below 0.4, else 0.4) (`jumpInLiquid`, 13 §1.3 step 3); Shift adds -0.04 (`goDownInWater`, client). Both are applied in `aiStep` before `travel`.
 

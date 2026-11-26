@@ -137,7 +137,7 @@ fields are listed there. Associated item, loot table and correct-tool tag are gi
 | 455 | 574 | poplar_stairs | StairBlock | 80 | facing[4] half[2] shape[5] waterlogged[2] | 14139 | 14150 | 2.0 | 3.0 | no | 0 | COLOR_LIGHT_GRAY | WOOD | PUSH_PULL | BASS | ignitedByLava legacyCopy(poplar_planks) viewBlocking:nearPlane |
 | 456 | 575 | bamboo_stairs | StairBlock | 80 | facing[4] half[2] shape[5] waterlogged[2] | 14219 | 14230 | 2.0 | 3.0 | no | 0 | COLOR_YELLOW | BAMBOO_WOOD | PUSH_PULL | BASS | ignitedByLava legacyCopy(bamboo_planks) viewBlocking:nearPlane |
 | 457 | 576 | bamboo_mosaic_stairs | StairBlock | 80 | facing[4] half[2] shape[5] waterlogged[2] | 14299 | 14310 | 2.0 | 3.0 | no | 0 | COLOR_YELLOW | BAMBOO_WOOD | PUSH_PULL | BASS | ignitedByLava legacyCopy(bamboo_mosaic) viewBlocking:nearPlane |
-| 458 | 577 | slime_block | SlimeBlock | 1 | - | 14379 | 14379 | 0 | 0 | no | 0 | GRASS | SLIME_BLOCK | PUSH_PULL | HARP | bounce:1.0 noOcclusion |
+| 458 | 577 | slime_block | SlimeBlock | 1 | - | 14379 | 14379 | 0 | 0 | no | 0 | GRASS | SLIME_BLOCK | PUSH_PULL | HARP | friction:0.8 bounce:1.0 noOcclusion |
 | 459 | 578 | barrier | BarrierBlock | 2 | waterlogged[2] | 14380 | 14381 | -1.0 | 3600000.8 | no | 0 | waterlogged?WATER:NONE | STONE | IMMOVEABLE | HARP | noLootTable noOcclusion validSpawn:never noTerrainParticles |
 | 460 | 579 | light | LightBlock | 32 | level[16] waterlogged[2] | 14382 | 14413 | -1.0 | 3600000.8 | no | level property | waterlogged?WATER:NONE | STONE | PUSH_PULL | HARP | replaceable noLootTable noOcclusion |
 | 461 | 580 | iron_trapdoor | TrapDoorBlock | 64 | facing[4] half[2] open[2] powered[2] waterlogged[2] | 14414 | 14429 | 5.0 | 5.0 | yes | 0 | METAL | IRON (ctor) | PUSH_PULL | HARP | noOcclusion validSpawn:never |
@@ -155,7 +155,7 @@ fields are listed there. Associated item, loot table and correct-tool tag are gi
 | 473 | 592 to 607 | carpet | WoolCarpetBlock | 1 | - | 14743 to 14758 | 14743 + k*1 | see 5 | see 5 | see 5 | see 5 | see 5 | see 5 | see 5 | see 5 | see 5 |
 | 474 | 608 | terracotta | Block | 1 | - | 14759 | 14759 | 1.25 | 4.2 | yes | 0 | COLOR_ORANGE | STONE | PUSH_PULL | BASEDRUM | - |
 | 475 | 609 | coal_block | Block | 1 | - | 14760 | 14760 | 5.0 | 6.0 | yes | 0 | COLOR_BLACK | STONE | PUSH_PULL | BASEDRUM | - |
-| 476 | 610 | packed_ice | Block | 1 | - | 14761 | 14761 | 0.5 | 0.5 | no | 0 | ICE | GLASS | PUSH_PULL | CHIME | - |
+| 476 | 610 | packed_ice | Block | 1 | - | 14761 | 14761 | 0.5 | 0.5 | no | 0 | ICE | GLASS | PUSH_PULL | CHIME | friction:0.98 |
 | 477 | 611 | sunflower | TallFlowerBlock | 2 | half[2] | 14762 | 14763 | 0 | 0 | no | 0 | PLANT | GRASS | POPPED | HARP | noCollision offset:XZ ignitedByLava |
 | 478 | 612 | lilac | TallFlowerBlock | 2 | half[2] | 14764 | 14765 | 0 | 0 | no | 0 | PLANT | GRASS | POPPED | HARP | noCollision offset:XZ ignitedByLava |
 | 479 | 613 | rose_bush | TallFlowerBlock | 2 | half[2] | 14766 | 14767 | 0 | 0 | no | 0 | PLANT | GRASS | POPPED | HARP | noCollision offset:XZ ignitedByLava |

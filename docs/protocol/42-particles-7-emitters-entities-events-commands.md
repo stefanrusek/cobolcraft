@@ -174,7 +174,7 @@ On receiving the packet (05a section 0x24, Clientbound Explode, id 36):
 1. If the play-sound flag is set, a local sound at the centre (volume 4, pitch (1 + (nextFloat - nextFloat) * 0.2) * 0.7); sound is out of scope.
 2. `addParticle(packet particle, centre, velocity (1, 0, 0))` once, through the normal entry (42-1 §7.1). For `explosion` the velocity x is the particle's size parameter; for `explosion_emitter` the spawned seed particle uses its own rules (42-2 section 3.12 for the particle classes).
 3. The tracker records (centre, radius, block count, weighted block particles) unless the weighted list is empty.
-4. The knockback optional is applied to the local player.
+4. The knockback optional is applied to the local player: when present, the vector is **added** to all three components of its velocity (`Entity.pushFromExplosion`); nothing else changes. What the server puts there, and the Set Entity Motion that may follow and replace the velocity: 59 section 13.
 
 `ClientExplosionTracker.tick`, called once per client level tick (after the sky flash, before the chunk source tick), first clears everything if the player's particle setting is not ALL (decreased and minimal show no block-explosion particles). Otherwise:
 - total weight W = sum of block counts of all recorded explosions; the number of particles N = min(W, 512) (**512 per tick maximum**);
