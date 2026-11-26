@@ -67,6 +67,9 @@ project: CobolCraft
 | [CC-0050](../CC-0050-real-player-skins.md) | A player's own skin is shown to the others | feature | stefanrusek |  |  |
 | [CC-0051](../CC-0051-vanilla-client-actions-ignored.md) | The actions of a vanilla client that the server discards take effect | feature | stefanrusek |  |  |
 | [CC-0053](../CC-0053-other-players-see-held-items-and-armour.md) | Other players see what a player holds and wears at all times | bug | stefanrusek |  |  |
+| [CC-0054](../CC-0054-external-pushes-move-the-player.md) | Pistons, opening shulker boxes and crowding entities push the Player | feature | stefanrusek |  |  |
+| [CC-0055](../CC-0055-auto-jump-option.md) | The Auto-Jump option makes the Player jump up obstacles | feature | stefanrusek |  |  |
+| [CC-0056](../CC-0056-spectator-passes-through-blocks.md) | A spectator flies through blocks | bug | stefanrusek |  |  |
 
 ### unverified
 
