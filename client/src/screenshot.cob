@@ -178,7 +178,11 @@
              MOVE LOW-VALUES TO WS-LINE
              IF WS-LENGTH > 0
                  MOVE CL-CMD-TEXT(WS-START:WS-LENGTH) TO WS-LINE(1:WS-LENGTH)
-                 CALL "CORE-CONSOLE" USING WS-LINE
+                 IF SP-PROCESS = 1
+                     CALL "SPP-CONSOLE" USING CLIENT-STATE WS-LINE
+                 ELSE
+                     CALL "CORE-CONSOLE" USING WS-LINE
+                 END-IF
              END-IF
              COMPUTE WS-START = WS-POS + 1
          END-IF

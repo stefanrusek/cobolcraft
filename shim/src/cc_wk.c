@@ -8,9 +8,12 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <mach-o/dyld.h>
+#include <limits.h>
 #include <signal.h>
+#include <spawn.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -196,4 +199,178 @@ void cc_wk_child_exit(void) {
 int32_t cc_wk_cpus(void) {
     long n = sysconf(_SC_NPROCESSORS_ONLN);
     return n < 1 ? 1 : (int32_t)n;
+}
+
+/* Child programs (shim-abi section 15, cc_wk_proc_*): the single-player host starts the server program as a child with a pipe on its
+ * standard input (the parent's control lines; end of input is the parent's death) and one on its standard output (the child's
+ * lines). Glue only: posix_spawn and an argument vector cannot be written in COBOL. The descriptors of the parent (window, GPU,
+ * sockets, the worker pipes) are not inherited (POSIX_SPAWN_CLOEXEC_DEFAULT); standard error is. */
+#define PROC_SLOTS 4
+#define PROC_ARGS 16
+
+typedef struct {
+    pid_t pid; /* 0 = free */
+    int to_child;
+    int from_child;
+    int ended;
+    int status;
+} proc_slot;
+
+static proc_slot procs[PROC_SLOTS];
+extern char **environ;
+
+static proc_slot *proc_of(int32_t slot) {
+    if (slot < 1 || slot > PROC_SLOTS || procs[slot - 1].pid == 0) {
+        return NULL;
+    }
+    return &procs[slot - 1];
+}
+
+int32_t cc_wk_proc_spawn(const char *exe, const char *args, int32_t *slot_out) {
+    int32_t id = 0;
+    for (int i = 0; i < PROC_SLOTS && id == 0; i++) {
+        if (procs[i].pid == 0) {
+            id = i + 1;
+        }
+    }
+    int down[2];
+    int up[2];
+    if (id == 0 || pipe(down) != 0) {
+        return CC_NOTFOUND;
+    }
+    if (pipe(up) != 0) {
+        close(down[0]);
+        close(down[1]);
+        return CC_NOTFOUND;
+    }
+    char text[1024];
+    strncpy(text, args, sizeof text - 1);
+    text[sizeof text - 1] = 0;
+    char *argv[PROC_ARGS + 2];
+    int argc = 0;
+    argv[argc++] = (char *)exe;
+    char *save = NULL;
+    for (char *t = strtok_r(text, " ", &save); t != NULL && argc < PROC_ARGS + 1; t = strtok_r(NULL, " ", &save)) {
+        argv[argc++] = t;
+    }
+    argv[argc] = NULL;
+    posix_spawn_file_actions_t actions;
+    posix_spawnattr_t attr;
+    posix_spawn_file_actions_init(&actions);
+    posix_spawnattr_init(&attr);
+    posix_spawnattr_setflags(&attr, POSIX_SPAWN_CLOEXEC_DEFAULT);
+    posix_spawn_file_actions_adddup2(&actions, down[0], 0);
+    posix_spawn_file_actions_adddup2(&actions, up[1], 1);
+    posix_spawn_file_actions_addinherit_np(&actions, 2);
+    signal(SIGPIPE, SIG_IGN);
+    pid_t pid;
+    int rc = posix_spawn(&pid, exe, &actions, &attr, argv, environ);
+    posix_spawn_file_actions_destroy(&actions);
+    posix_spawnattr_destroy(&attr);
+    close(down[0]);
+    close(up[1]);
+    if (rc != 0) {
+        close(down[1]);
+        close(up[0]);
+        return CC_NOTFOUND;
+    }
+    fcntl(up[0], F_SETFL, fcntl(up[0], F_GETFL) | O_NONBLOCK);
+    procs[id - 1] = (proc_slot){pid, down[1], up[0], 0, 0};
+    *slot_out = id;
+    return 0;
+}
+
+int32_t cc_wk_proc_write(int32_t slot, const uint8_t *buf, int32_t n) {
+    proc_slot *p = proc_of(slot);
+    if (p == NULL || p->to_child < 0) {
+        return -1;
+    }
+    int32_t put = 0;
+    while (put < n) {
+        ssize_t w = write(p->to_child, buf + put, (size_t)(n - put));
+        if (w > 0) {
+            put += (int32_t)w;
+        } else if (w < 0 && errno != EINTR) {
+            return -1;
+        }
+    }
+    return put;
+}
+
+int32_t cc_wk_proc_read(int32_t slot, uint8_t *buf, int32_t cap, int32_t *got_out) {
+    proc_slot *p = proc_of(slot);
+    if (p == NULL) {
+        return CC_CLOSED;
+    }
+    ssize_t r = read(p->from_child, buf, (size_t)cap);
+    if (r > 0) {
+        *got_out = (int32_t)r;
+        return 0;
+    }
+    if (r < 0 && (errno == EAGAIN || errno == EINTR)) {
+        return CC_AGAIN;
+    }
+    return CC_CLOSED;
+}
+
+void cc_wk_proc_close_input(int32_t slot) {
+    proc_slot *p = proc_of(slot);
+    if (p != NULL && p->to_child >= 0) {
+        close(p->to_child);
+        p->to_child = -1;
+    }
+}
+
+int32_t cc_wk_proc_wait(int32_t slot, int32_t timeout_ms, int32_t *status_out) {
+    proc_slot *p = proc_of(slot);
+    if (p == NULL) {
+        return -1;
+    }
+    for (int32_t waited = 0; !p->ended; waited += 2) {
+        int status;
+        pid_t r = waitpid(p->pid, &status, WNOHANG);
+        if (r == p->pid) {
+            p->ended = 1;
+            p->status = WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
+        } else if (waited >= timeout_ms) {
+            return CC_AGAIN;
+        } else {
+            usleep(2000);
+        }
+    }
+    *status_out = p->status;
+    return 0;
+}
+
+int32_t cc_wk_proc_stop(int32_t slot) {
+    proc_slot *p = proc_of(slot);
+    if (p == NULL) {
+        return -1;
+    }
+    if (!p->ended) {
+        kill(p->pid, SIGKILL);
+        int status;
+        while (waitpid(p->pid, &status, 0) < 0 && errno == EINTR) {
+        }
+    }
+    cc_wk_proc_close_input(slot);
+    close(p->from_child);
+    p->pid = 0;
+    return 0;
+}
+
+int32_t cc_wk_self_dir(uint8_t *buf, int32_t cap) {
+    char raw[PATH_MAX];
+    char real[PATH_MAX];
+    uint32_t size = sizeof raw;
+    int32_t n = -1;
+    if (_NSGetExecutablePath(raw, &size) == 0 && realpath(raw, real) != NULL) {
+        char *slash = strrchr(real, '/');
+        int32_t length = slash == NULL ? 0 : (int32_t)(slash - real);
+        if (length <= cap) {
+            memcpy(buf, real, (size_t)length);
+            n = length;
+        }
+    }
+    return n;
 }

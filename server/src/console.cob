@@ -7,7 +7,8 @@
 *> each to CORE-CONSOLE as a z-string: a command of the command set without a leading "/", run with
 *> operator permission; its result or error is printed with the drained console lines (US15-1,
 *> US15-3). A blank line runs nothing. At the end of input the console is no longer read
-*> (SV-CONSOLE-OPEN 0) and the server goes on as before (operator-surface §4).
+*> (SV-CONSOLE-OPEN 0) and the server goes on as before (operator-surface §4). In the single-player role (SV-HOSTED, hosted.cob) a line
+*> starting with "@" is a control message of the client (SV-CONTROL) and the end of input is a stop.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY SVSTATE.
@@ -23,11 +24,19 @@
              BY REFERENCE WS-LENGTH RETURNING WS-RC
          IF WS-RC = 0 AND WS-LENGTH > 0
              MOVE X"00" TO WS-LINE(WS-LENGTH + 1:1)
-             CALL "CORE-CONSOLE" USING WS-LINE
+             IF SV-HOSTED = 1 AND WS-LINE(1:1) = "@"
+                 CALL "SV-CONTROL" USING WS-LINE
+             ELSE
+                 CALL "CORE-CONSOLE" USING WS-LINE
+             END-IF
          END-IF
      END-PERFORM
      IF WS-RC = CC-CLOSED
          MOVE 0 TO SV-CONSOLE-OPEN
+*>       The single-player client ended (or was killed): the world is saved and the program ends.
+         IF SV-HOSTED = 1
+             MOVE 1 TO SV-STOP-WANTED
+         END-IF
      END-IF
      GOBACK.
  END PROGRAM SV-CONSOLE-READ.

@@ -54,12 +54,18 @@
          GOBACK
      END-IF
      IF SP-ACTIVE = 1
-         CALL "GEN-LOAD-PROGRESS" USING WS-STATE WS-READY WS-TOTAL WS-PERMILLE WS-FX WS-FZ
+*>       A world hosted by a child process (sp-proc.cob) reports the progress with its "@load" lines (SP-LOAD-*, the grid in SM-LOAD-CELLS).
+         IF SP-PROCESS = 1
+             MOVE SP-LOAD-STATE TO WS-STATE
+             MOVE SP-LOAD-PERMILLE TO WS-PERMILLE
+         ELSE
+             CALL "GEN-LOAD-PROGRESS" USING WS-STATE WS-READY WS-TOTAL WS-PERMILLE WS-FX WS-FZ
+         END-IF
          IF WS-STATE > 0
              MOVE 1 TO SM-LOAD-SHOWN
          END-IF
          IF SM-LOAD-SHOWN = 1
-             IF CL-NOW-MS - SM-LOAD-GRID-MS >= 100 OR SM-LOAD-GRID-MS = 0
+             IF SP-PROCESS = 0 AND (CL-NOW-MS - SM-LOAD-GRID-MS >= 100 OR SM-LOAD-GRID-MS = 0)
                  CALL "GEN-LOAD-GRID" USING SM-LOAD-CELLS
                  MOVE CL-NOW-MS TO SM-LOAD-GRID-MS
              END-IF
