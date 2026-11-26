@@ -43,6 +43,11 @@
  01 WS-E3                  PIC -(9)9.
  01 WS-E4                  PIC -(9)9.
  01 WS-TEXT                PIC X(256).
+ 01 WS-FILL-KEY            PIC X(48) VALUE "minecraft:ender_chest".
+ 01 WS-FILL-LEN            BINARY-LONG VALUE 21.
+ 01 WS-FILL-TYPE           BINARY-LONG VALUE 3.
+ 01 WS-FILL-INDEX          BINARY-LONG VALUE 1.
+ 01 WS-DETACHED            BINARY-LONG VALUE 0.
  01 WS-CHEST               BINARY-LONG.
  01 WS-BARREL              BINARY-LONG.
  01 WS-ENDER               BINARY-LONG.
@@ -298,12 +303,22 @@
      MOVE "window 1 openers 0 0" TO TL-EXPECTED
      PERFORM CHECK
 
-     MOVE "acceptance US12 containers edges given a chest block whose entity is missing when it is used then nothing opens, and an "
-         & "open chest that is removed closes at the next tick" TO TL-CASE
+*>   A chest the world generator wrote has no block entity: the first use makes it as if the block had been placed and opens it (CC-0022, MENU-CONT-OPEN).
+     MOVE "acceptance US12 containers edges given a chest block whose entity is missing when it is used then the entity is made and the menu opens, "
+         & "and an open chest that is removed closes at the next tick" TO TL-CASE
      CALL "TEST-BE-AT" USING WS-DIM WS-BX WS-BY WS-BZ WS-BE
      MOVE 0 TO BE-USED(WS-BE)
      PERFORM USE-BLOCK
-     MOVE MN-WINDOW(WS-ROW) TO WS-E1
+     PERFORM FLAG-WINDOW
+     MOVE WS-S TO WS-E1
+     CALL "BE-FIND" USING WS-DIM WS-BX WS-BY WS-BZ WS-BE
+     IF WS-BE > 0
+         MOVE 1 TO WS-E4
+     ELSE
+         MOVE 0 TO WS-E4
+     END-IF
+     CALL "TEST-CLOSE-WIN" USING WS-CONN
+     CALL "TEST-DRAIN-IDS" USING WS-CONN WS-IDS
      COMPUTE WS-X = WS-BX + 2
      PERFORM USE-BLOCK
      PERFORM FLAG-WINDOW
@@ -314,9 +329,33 @@
      CALL "TEST-TICKS" USING WS-OFFSET
      MOVE MN-WINDOW(WS-ROW) TO WS-E3
      MOVE SPACES TO WS-TEXT
-     STRING "missing " FUNCTION TRIM(WS-E1) " open " FUNCTION TRIM(WS-E2) " after removal " FUNCTION TRIM(WS-E3)
+     STRING "missing opens " FUNCTION TRIM(WS-E1) " made " FUNCTION TRIM(WS-E4) " open " FUNCTION TRIM(WS-E2) " after removal " FUNCTION TRIM(WS-E3)
          DELIMITED BY SIZE INTO WS-TEXT
-     MOVE "missing 0 open 1 after removal 0" TO TL-EXPECTED
+     MOVE "missing opens 1 made 1 open 1 after removal 0" TO TL-EXPECTED
+     PERFORM CHECK
+
+*>   No free entity of the table: the entity of the chest cannot be made (MENU-CONT-OPEN), nothing opens. The table is filled with detached ender chests (dimension 0) and emptied again.
+     MOVE "acceptance US12 containers edges given a chest block whose entity is missing and no free block entity when it is used then nothing opens" TO TL-CASE
+     CALL "TEST-BE-AT" USING WS-DIM WS-BX WS-BY WS-BZ WS-BE
+     MOVE 0 TO BE-USED(WS-BE)
+     MOVE 1 TO WS-FILL-INDEX
+     PERFORM UNTIL WS-FILL-INDEX = 0
+         CALL "BE-CREATE" USING WS-DETACHED WS-DETACHED WS-DETACHED WS-DETACHED WS-FILL-TYPE WS-FILL-KEY WS-FILL-LEN WS-FILL-INDEX
+     END-PERFORM
+     MOVE WS-BX TO WS-X
+     MOVE WS-BY TO WS-Y
+     MOVE WS-BZ TO WS-Z
+     PERFORM USE-BLOCK
+     PERFORM FLAG-WINDOW
+     MOVE WS-S TO WS-E1
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BE-MAX
+         IF BE-USED(WS-I) = 1 AND BE-DIM(WS-I) = 0
+             MOVE 0 TO BE-USED(WS-I)
+         END-IF
+     END-PERFORM
+     MOVE SPACES TO WS-TEXT
+     STRING "window " FUNCTION TRIM(WS-E1) DELIMITED BY SIZE INTO WS-TEXT
+     MOVE "window 0" TO TL-EXPECTED
      PERFORM CHECK
 
      MOVE "acceptance US12 containers edges given every ender chest slot of the table taken when Alice opens an ender chest then it "

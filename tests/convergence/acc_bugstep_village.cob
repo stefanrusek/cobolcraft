@@ -7,7 +7,7 @@
 *> the core refuses a position it finds wrong with Player Position (a teleport: the shake). Counted per run: the teleports the core sent
 *> (expected 0), the frames where the Player's z went backwards (expected 0) and whether the Player got over the feature (a step of at most 0.6
 *> by walking; a higher one by jumping). A farmland the Player lands on from a jump may be trampled (CC-0012): the core lifts the Player onto the dirt by a Player Position, which counts as
-*> expected, one teleport per trampled cell. BS_FEATURE=n runs only that feature, BS_TRACE=1 prints every frame.
+*> expected: at most one teleport per trampled cell (a Player whose feet stand on the neighbouring floor touches the cell's top layer without overlapping it and is not lifted, 29b part 2 section 9.5). BS_FEATURE=n runs only that feature, BS_TRACE=1 prints every frame.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-BUGSTEP-VILLAGE.
  DATA DIVISION.
@@ -182,7 +182,8 @@
      CALL "BS-TELEPORTS" USING WS-TP1
      COMPUTE WS-TELEPORTS = WS-TP1 - WS-TP0
 *>   Farmland: a landing on it (a jump) tramples it with the chance d - 0.5 and the core lifts the Player onto the dirt by one Player Position (docs/protocol/29b part 2
-*>   sections 9.3 to 9.5, CC-0012): those teleports are legitimate, exactly one per trampled cell. Any other teleport is still the shake.
+*>   sections 9.3 to 9.5, CC-0012): those teleports are legitimate, at most one per trampled cell (the lift is for a box that overlaps the top layer of the cell: a Player landing at the edge, half on the floor beside the farmland,
+*>   stands at the floor's height and is not lifted). Any other teleport is still the shake.
      MOVE 0 TO WS-TRAMPLED
      IF WS-FEATURE = 6
          CALL "BS-DIRT-COUNT" USING WS-ZS WS-DEPTH WS-TRAMPLED
@@ -234,7 +235,7 @@
          DELIMITED BY SIZE INTO TL-CASE
      MOVE "teleports 0 backward 0 passed ok" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
-     IF WS-TELEPORTS = WS-TRAMPLED AND WS-BACK = 0 AND WS-PASSED = WS-WANT
+     IF WS-TELEPORTS <= WS-TRAMPLED AND WS-BACK = 0 AND WS-PASSED = WS-WANT
          MOVE TL-EXPECTED TO TL-OBSERVED
      ELSE
          MOVE WS-TRAMPLED TO WS-D6
