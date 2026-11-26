@@ -835,7 +835,7 @@
              PERFORM BODY-TO-HEAD
          END-IF
      END-IF
-     GOBACK.
+     GO TO MAIN-EXIT.
 
 *> A body piece (its key ends in _plant) with no piece of its family in the growth direction (up for kelp and twisting vines, down for weeping and cave vines) becomes its head.
  BODY-TO-HEAD.
@@ -872,6 +872,9 @@
              END-IF
          END-IF
      END-IF.
+
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM SUP-SHAPE.
 
  IDENTIFICATION DIVISION.
