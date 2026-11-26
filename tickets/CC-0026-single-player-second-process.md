@@ -68,3 +68,12 @@ the core ticks run on another processor core while the client renders. The in-pr
 - Taken up on the operator's word while measuring CC-0054: the core tick is 2.9 to 5.3 ms of the client's frame on an M1
   Air once settled and 6.4 to 12.8 ms while chunks load (CC-0054 notes). Branch 002-lane-spproc is merged into
   004-perf-frame for this; the default stays the in-process host until the operator decides.
+- Merged 002-lane-spproc into 004-perf-frame (one conflict, client/src/sp-host.cob). Adapted to main: the stop command is
+  no command of a hosted world, so `@stop-requested` is removed and acc_spproc_control SPC-6 expects the world to run on;
+  the pause screens of main (book, command block, form) pause the child too.
+- Gates on 004-perf-frame (debug, JOBS=6, FPFAST=1): the lane's tests pass (83 cases); `make gate` ran 143242 passed, 41
+  failed, none in the lane's tests: the real jar and Faithful zip were missing from the worktree (tmp/). With tmp/ linked
+  the failed programs pass on a rerun (acc_f2us2_world_type and acc_bugmesh_faces after one more run: the intermittent
+  crash of CC-0048); coverage is 0 uncovered lines of 1105 objects.
+- bench_spproc_frame (debug build, village, view 4, 300 frames), client CPU per frame in microseconds: in process mean
+  14922, median 14025, p99 20442; child process mean 5726, median 5348, p99 6690.
