@@ -79,3 +79,10 @@ yet and is agreed before any code changes.
 >   `RENDER-LIST-BUILD` 1742 (`ENTITIES-MESH` 901, `HAND-MESH` 156, `SECTION-MATRIX` 146), `MESH-DIRTY` 575;
 >   `SUBMIT-FRAME` 2507, of which 1775 waiting for the next drawable (vsync).
 > Not measured: the Air with the vanilla client running beside it, or a player who moves (new chunks keep arriving).
+>
+> M1 Air again, as the operator's own player at its saved position (9.9, 67.0, 72.9) in the same save; the game window
+> was not the front application in these two runs: not reproduced either. Settled (1609 draws, 3,649,524 vertices):
+> 59.5 fps with vsync (app 9.33 ms, GPU 8.55 ms a frame; render list 4.49 ms, core tick 2.88 ms), 104 to 118 fps with
+> `CC_VK_PRESENT=immediate`. While chunks load: 27 to 55 fps for about 85 s with vsync and about 110 s without (app 20
+> to 26 ms a frame: mesh phase 6.2 to 10.8, core tick 7.0 to 8.3, render list 4.1 to 5.5). Sample of the settled state
+> (7569): `RENDER-LIST-BUILD` 2001 (`ENTITIES-MESH` 928), `CORE-TICK` 1312 (`MOBS-TICK` 654), `MESH-DIRTY` 1070.
