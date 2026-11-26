@@ -55,6 +55,7 @@ Console output (server console lines US13-3, US15; logged failures FR-012) is CO
 | Function | Behaviour |
 |---|---|
 | `int32_t cc_net_listen(int32_t port, int32_t *handle_out, int32_t *port_out)` | Binds `0.0.0.0:port` (port 0 = system-chosen, used by US17), listens. `port_out` = actual port. Returns 0, or `CC_ADDR_IN_USE = 2`. |
+| `int32_t cc_net_listen_loopback(int32_t port, int32_t *handle_out, int32_t *port_out)` | As `cc_net_listen`, bound to `127.0.0.1` only (the single-player child process, docs/design/singleplayer-process.md: no other machine may reach it). |
 | `int32_t cc_net_accept(int32_t listener, int32_t *handle_out)` | 0 with a new non-blocking connection handle, or `CC_AGAIN = 1`. |
 | `int32_t cc_net_connect(const char *host, int32_t port, int32_t *handle_out)` | Resolves `host` (blocking DNS), starts a non-blocking connect. 0 = started; `CC_UNRESOLVED = 3`. Completion is observed through `cc_net_poll` (writable) then `cc_net_status`. |
 | `int32_t cc_net_status(int32_t h)` | 0 connected, `CC_AGAIN = 1` still connecting, `CC_CLOSED = 4` refused/reset/closed. |
@@ -161,6 +162,17 @@ without blocking: bytes, 0 when nothing yet, -1 at end of file or unknown slot),
 kills first; -1 unknown slot). The child: `cc_wk_child_read` (exactly n bytes; 0 at end of input; -1 error),
 `cc_wk_child_write` (all n bytes or -1), `cc_wk_child_exit` (`_exit` after dumping coverage counters when instrumented). A
 `cc_wk_cpus` returns the processors online (at least 1). A child closes the pipe ends of every other slot, so end of input reaches it when the parent ends. SIGPIPE is ignored.
+
+Child programs (docs/design/singleplayer-process.md: the single-player host starts the server program): `cc_wk_proc_spawn(exe,
+args, *slot)` starts the program at path `exe` with the space-separated arguments `args` (a z-string, at most 16 words), a pipe
+on its standard input and one on its standard output; none of the caller's other descriptors is inherited, standard error is.
+It returns 0 with a slot (1 to 4), or `CC_NOTFOUND` (no slot, no pipe, or the program cannot be started). `cc_wk_proc_write`
+writes all n bytes to the child's input (n, or -1); `cc_wk_proc_read` reads its output without blocking (0 with `got_out` > 0,
+`CC_AGAIN` when nothing is there, `CC_CLOSED` at end of output or for an unknown slot); `cc_wk_proc_close_input` ends its
+input; `cc_wk_proc_wait(slot, timeout_ms, *status)` waits up to that long for it to end (0 with its exit status, a signal as
+128 + signal; `CC_AGAIN` while it runs; -1 for an unknown slot); `cc_wk_proc_stop` kills it when it still runs, reaps it,
+closes its pipes and frees the slot (-1 for an unknown slot). `cc_wk_self_dir(buf, cap)` writes the directory of the running
+executable (no trailing slash) and returns its length, or -1.
 
 ## 10. Contract tests
 
