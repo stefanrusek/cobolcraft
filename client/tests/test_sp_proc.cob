@@ -25,6 +25,8 @@
  01 WS-CONSOLE             PIC X(257).
  01 WS-EMPTY               PIC X(257).
  01 WS-ENV-NAME            PIC X(16) VALUE Z"CC_SERVER_BIN".
+ 01 WS-ENV-PROCESS         PIC X(16) VALUE Z"CC_SP_PROCESS".
+ 01 WS-ENV-ONE             PIC X(4) VALUE Z"1".
  01 WS-ENV-SH              PIC X(16) VALUE Z"/bin/sh".
  01 WS-ENV-BAD             PIC X(40) VALUE Z"/nonexistent/cobolcraft-server".
  01 WS-EXE-ECHO            PIC X(16) VALUE Z"/bin/echo".
@@ -198,6 +200,22 @@
      MOVE "found 1 /bin/sh missing 0" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      STRING "found " FUNCTION TRIM(WS-E1) " " WS-SHORT " missing " FUNCTION TRIM(WS-E2) DELIMITED BY SIZE INTO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+
+*>   CC_SP_PROCESS=1 asks for the child process mode (SP-DEFAULTS, called by CL-INIT); without it the in-process host stays.
+     CALL "SP-DEFAULTS" USING CLIENT-STATE
+     MOVE SP-PROCESS-PREF TO WS-E1
+     CALL STATIC "setenv" USING WS-ENV-PROCESS WS-ENV-ONE BY VALUE WS-ONE
+     CALL "SP-DEFAULTS" USING CLIENT-STATE
+     MOVE SP-PROCESS-PREF TO WS-E2
+     CALL STATIC "unsetenv" USING WS-ENV-PROCESS
+     CALL "SP-DEFAULTS" USING CLIENT-STATE
+     MOVE SP-PROCESS-PREF TO WS-E3
+     MOVE "sp proc CC_SP_PROCESS=1 selects the child process mode and is off by default" TO TL-CASE
+     MOVE "unset 0 set 1 unset again 0" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     STRING "unset " FUNCTION TRIM(WS-E1) " set " FUNCTION TRIM(WS-E2) " unset again " FUNCTION TRIM(WS-E3)
+         DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM TEST-SP-PROC.
