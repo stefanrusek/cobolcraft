@@ -1,6 +1,6 @@
 *> Implementation test of client/src/sp-proc.cob (the single-player child process, docs/design/singleplayer-process.md): the lines of the
-*> child's output are understood (@load fills the loading progress and decodes the grid letters, @opened gives the port, @stop-requested
-*> asks for the quit, an unknown control line is ignored, a console line is displayed), output arrives in pieces and a line without its
+*> child's output are understood (@load fills the loading progress and decodes the grid letters, @opened gives the port,
+*> an unknown control line (@stop-requested of an older child among them) is ignored, a console line is displayed), output arrives in pieces and a line without its
 *> newline is kept until it is complete, the pause holds on the pause menu and the open-to-others screen of a world not opened to
 *> others only, and the server program is found by $CC_SERVER_BIN alone when it is set. A real child (echo, printf, cat) stands in
 *> for the server program.
@@ -84,15 +84,16 @@
          DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   @opened, @stop-requested, an unknown control line and a console line.
+*>   @opened, unknown control lines (@stop-requested was one of an earlier design: the stop command is no command of a hosted world) and a console line.
      MOVE "@opened 4242" TO SP-LINE
      MOVE 12 TO SP-LINE-LENGTH
      CALL "SPP-LINE" USING CLIENT-STATE
      MOVE SP-PORT TO WS-E1
+     MOVE SP-PROC-STATE TO WS-E2
      MOVE "@stop-requested" TO SP-LINE
      MOVE 15 TO SP-LINE-LENGTH
      CALL "SPP-LINE" USING CLIENT-STATE
-     MOVE SP-STOP-ASKED TO WS-E2
+     MOVE SP-PROC-STATE TO WS-E4
      MOVE "@mystery 7" TO SP-LINE
      MOVE 10 TO SP-LINE-LENGTH
      CALL "SPP-LINE" USING CLIENT-STATE
@@ -100,10 +101,10 @@
      MOVE 21 TO SP-LINE-LENGTH
      CALL "SPP-LINE" USING CLIENT-STATE
      MOVE SP-PORT TO WS-E3
-     MOVE "sp proc @opened gives the port, @stop-requested asks for the quit, an unknown control line and a console line change nothing" TO TL-CASE
-     MOVE "port 4242 asked 1 port 4242" TO TL-EXPECTED
+     MOVE "sp proc @opened gives the port; unknown control lines (@stop-requested, @mystery) and a console line change nothing" TO TL-CASE
+     MOVE "port 4242 state 1 state 1 port 4242" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
-     STRING "port " FUNCTION TRIM(WS-E1) " asked " FUNCTION TRIM(WS-E2) " port " FUNCTION TRIM(WS-E3)
+     STRING "port " FUNCTION TRIM(WS-E1) " state " FUNCTION TRIM(WS-E2) " state " FUNCTION TRIM(WS-E4) " port " FUNCTION TRIM(WS-E3)
          DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 

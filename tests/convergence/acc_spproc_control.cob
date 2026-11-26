@@ -2,7 +2,7 @@
 *> the pause menu pauses the child's ticks (an explicit @pause and @resume, no signals), the game time of the hosted world standing
 *> still while it is open and running on after Resume; Open to Others in this mode moves the child's listener to every interface
 *> (a second client joins on the reported port as a guest in the chosen game mode) and the pause menu no longer pauses; the stop
-*> command ends the world through the client's quit path (the child reports it, the client answers with @stop). The game time
+*> command is no command of a hosted world (57-client-closures-4 section 3.4), so the world runs on and ends through the quit-world control. The game time
 *> comes from the world's own console (time query gametime), sent to the child and read from the lines it prints back.
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ACC-SPPROC-CONTROL.
@@ -27,6 +27,8 @@
  01 WS-JOINED2             BINARY-LONG.
  01 WS-PID                 BINARY-LONG.
  01 WS-GONE                BINARY-LONG.
+ 01 WS-ALIVE               BINARY-LONG.
+ 01 WS-PTR                 BINARY-LONG.
  01 WS-T0                  BINARY-LONG.
  01 WS-T1                  BINARY-LONG.
  01 WS-T2                  BINARY-LONG.
@@ -188,26 +190,36 @@
          DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   The stop command: the host's chat command ends the world through the client's quit path.
+*>   The stop command is no command of a hosted world (57-client-closures-4 section 3.4: stop is registered for a dedicated server only), in a child as in
+*>   process: the world runs on, and it ends through the quit-world control.
      MOVE ACT-RESUME TO WS-ACTION
      CALL "CV-CLICK" USING CONVH WS-ALICE WS-ACTION WS-ARG WS-FOUND
      MOVE "/stop" TO WS-LINE
      MOVE 5 TO WS-LINE-LENGTH
      CALL "CV-SAY" USING CONVH WS-ALICE WS-LINE WS-LINE-LENGTH
-     MOVE SCR-TITLE TO WS-SCREEN
-     CALL "CV-UNTIL-SCREEN" USING CONVH WS-ALICE WS-SCREEN WS-REACHED
+     CALL "PS-STEPS" USING CONVH WS-FRAMES
+     CALL "PS-ALIVE" USING WS-PID WS-ALIVE
+     SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
+     MOVE SM-SCREEN TO WS-E1
+     MOVE SP-ACTIVE TO WS-E2
+     MOVE WS-ALIVE TO WS-E3
+     MOVE CN-PHASE(CONN-GAME) TO WS-E4
+     CALL "SP-QUIT-MENU" USING CONVH WS-ALICE
      CALL "PS-WAIT-GONE" USING WS-PID WS-GONE
      SET ADDRESS OF CLIENT-STATE TO CV-ADDR(WS-ALICE)
-     MOVE "acceptance SPC-6 given a world in a child when the host runs the stop command then the client quits to the title "
-         & "screen and the child is gone" TO TL-CASE
-     MOVE "title 1 hosting 0 child 0 gone 1" TO TL-EXPECTED
-     MOVE WS-REACHED TO WS-E1
+     MOVE "acceptance SPC-6 given a world in a child when the host types the stop command then the world runs on (no command of a "
+         & "hosted world) and the quit-world control ends it: title screen, child gone" TO TL-CASE
+     MOVE "after stop: screen 5 hosting 1 child alive 1 phase 5; after quit: screen 1 hosting 0 child 0 gone 1" TO TL-EXPECTED
+     MOVE SPACES TO TL-OBSERVED
+     MOVE 1 TO WS-PTR
+     STRING "after stop: screen " FUNCTION TRIM(WS-E1) " hosting " FUNCTION TRIM(WS-E2) " child alive " FUNCTION TRIM(WS-E3)
+         " phase " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
+     MOVE SM-SCREEN TO WS-E1
      MOVE SP-ACTIVE TO WS-E2
      MOVE SP-CHILD TO WS-E3
      MOVE WS-GONE TO WS-E4
-     MOVE SPACES TO TL-OBSERVED
-     STRING "title " FUNCTION TRIM(WS-E1) " hosting " FUNCTION TRIM(WS-E2) " child " FUNCTION TRIM(WS-E3)
-         " gone " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED
+     STRING "; after quit: screen " FUNCTION TRIM(WS-E1) " hosting " FUNCTION TRIM(WS-E2) " child " FUNCTION TRIM(WS-E3)
+         " gone " FUNCTION TRIM(WS-E4) DELIMITED BY SIZE INTO TL-OBSERVED WITH POINTER WS-PTR
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      STOP RUN.
  END PROGRAM ACC-SPPROC-CONTROL.

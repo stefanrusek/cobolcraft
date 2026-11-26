@@ -64,10 +64,10 @@ on the client's terminal. No game logic.
 
    End of standard input (the client ended or was killed: the OS closes the pipe) is the same as `@stop`: the child saves and
    exits. That is the no-orphan guarantee, the same trick as the generation workers (end of input ends the worker).
-6. **Child to parent, other lines**: `@stop-requested` (the `/stop` command ran: run state 1; the child does not stop on its
-   own, the client answers with its quit-world path, as the in-process `SP-PUMP` does, so the Disconnect text the player sees
-   is the same), every other line is a console line (`CORE-CONSOLE-DRAIN`, printed on the client's terminal without the
-   server's time stamp).
+6. **Child to parent, other lines**: every other line is a console line (`CORE-CONSOLE-DRAIN`, printed on the client's
+   terminal without the server's time stamp). An earlier design had `@stop-requested` here for the `/stop` command; `/stop` is
+   no command of a hosted world (57-client-closures-4 section 3.4: registered for a dedicated server only), so the child never
+   reaches run state 1 and the message is gone, as the run state 1 branch of the in-process `SP-PUMP` is.
 
 The child's loop is the server's (`SV-ITERATE`) with the in-process host's pacing: at most 3 ticks an iteration and a debt of more than 250 ms
 dropped, so a slow tick never keeps the program from its input (the control lines and the end of input). Without that a world whose ticks cost more
@@ -79,8 +79,8 @@ than 50 ms (a new standard world's spawn area in a debug build) falls behind for
 builds the same settings, spawns, writes the handshake and shows the connecting screen (`SP-PROCESS` 1). `SP-PUMP` in this mode
 runs `SPP-PUMP` instead of ticking a core: it reads the child's lines (partial lines kept in `SP-LINE-BUF`), on `@ready`
 opens `CONN-GAME` with `NET-OPEN` to the loopback port, sends `@pause` or `@resume` when `SP-PAUSED` changes, detects a dead child
-(`cc_wk_proc_wait`) and turns it into the disconnect screen (`connecting.lost` text, no orphan: the slot is reaped), and
-handles `@stop-requested` with `SP-QUIT`. `SP-STOP` (also the quit-world control and the window closing) sends `@stop`, closes the
+(`cc_wk_proc_wait`) and turns it into the disconnect screen (`connecting.lost` text, no orphan: the slot is reaped).
+`SP-STOP` (also the quit-world control and the window closing) sends `@stop`, closes the
 game connection, waits for the child (15 s, then kill) so the saved world is on disk before the world list reads it.
 
 ## Inventory of what the client calls in the core
@@ -97,7 +97,7 @@ becomes in process mode:
 | `CORE-TICK` | `SP-PUMP` | child's loop; pause by control channel |
 | `CORE-CONSOLE` | `STARTUP-COMMANDS` (screenshot runs) | control channel: a console line on the child's input |
 | `CORE-CONSOLE-DRAIN` | `SP-CONSOLE` | child prints, the client forwards the lines |
-| `CORE-STATUS-GET` | `SP-PUMP` (run state 1 = `/stop`; the online count is not read) | control channel: `@stop-requested`; end of the child's output and its exit status replace state 2 |
+| `CORE-STATUS-GET` | `SP-PUMP` (run state 1 = `/stop`; the online count is not read) | none needed (`/stop` is no command of a hosted world); end of the child's output and its exit status replace state 2 |
 | `CORE-STOP` | `SP-STOP`, `SP-QUIT`, window close | control channel: `@stop` |
 | `CORE-OPEN-TO-OTHERS` | `SP-OPEN-OTHERS` | control channel: `@open`; listener and port are the child's (`@opened`), addresses stay `cc_net_local_addresses` in the client |
 | `CORE-PACKS-STATUS` | `PACKS-STATUS-CHECK` | in-process only: reads the generated directory, no world state |

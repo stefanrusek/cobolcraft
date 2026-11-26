@@ -31,7 +31,7 @@
  COPY SVSTATE.
  01 WS-I                   BINARY-LONG.
  PROCEDURE DIVISION.
-     MOVE 0 TO SV-LISTENER SV-BOUND-PORT SV-TICKS SV-HOSTED SV-LOOPBACK SV-PAUSED SV-STOP-WANTED SV-STOP-ASKED
+     MOVE 0 TO SV-LISTENER SV-BOUND-PORT SV-TICKS SV-HOSTED SV-LOOPBACK SV-PAUSED SV-STOP-WANTED
          SV-LOAD-STATE SV-LOAD-MS
      MOVE 1 TO SV-CONSOLE-OPEN
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > SV-MAX-CONNS
@@ -120,17 +120,12 @@
      CALL "TCP-FLUSH"
      CALL "SV-DRAIN"
      CALL "SV-HOSTED-LOAD"
-*>   A stop requested by the stop command (run state 1) is carried out now (US15-2); the single-player client is told and
-*>   answers with its own quit (@stop), as the in-process host does. The client's @stop or the end of its input stops at once.
+*>   A stop requested by the stop command (run state 1) is carried out now (US15-2). In the single-player role the stop command does not exist
+*>   (57-client-closures-4 section 3.4: a dedicated server's command only); there the client's @stop or the end of its input stops at once.
      CALL "CORE-STATUS-GET" USING CORE-STATUS
-     EVALUATE TRUE
-         WHEN SV-STOP-WANTED = 1
-             CALL "SV-STOP"
-         WHEN CST-RUN-STATE = 1 AND SV-HOSTED = 1
-             CALL "SV-HOSTED-ASK"
-         WHEN CST-RUN-STATE = 1
-             CALL "SV-STOP"
-     END-EVALUATE
+     IF SV-STOP-WANTED = 1 OR CST-RUN-STATE = 1
+         CALL "SV-STOP"
+     END-IF
      GOBACK.
  END PROGRAM SV-ITERATE.
 

@@ -1,7 +1,7 @@
 *> Test of the single-player role of the server program (server/src/hosted.cob, loop.cob, console.cob; docs/design/singleplayer-process.md): the control lines
 *> @pause and @resume hold and release the tick clock (a paused iteration runs no tick, resuming does not catch up), an unknown control line is ignored,
 *> in the role at most 3 ticks run an iteration and a debt of more than 250 ms is dropped, lines of the console starting with @ are control lines (the
-*> others commands) and the end of input asks for a stop, "@stop-requested" is printed once, the @load line is printed while the spawn is prepared and once
+*> others commands) and the end of input asks for a stop, the @load line is printed while the spawn is prepared and once
 *> more when it has ended, @open moves the listener, the console lines carry no time stamp, and @stop makes the next iteration run the stop sequence
 *> (run state 2). The standard input (test_sv_hosted_control.stdin) holds "@pause", the command "list" and the end of input. Runs in build/server-test-hosted.
  IDENTIFICATION DIVISION.
@@ -112,12 +112,10 @@
      STRING "ticks " FUNCTION TRIM(WS-EDIT) " dropped " WS-HELD DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   Console lines have no time stamp in this role; @stop-requested is printed once; the @load line ends the progress once.
+*>   Console lines have no time stamp in this role; the @load line ends the progress once.
      CALL "SVT-CAPTURE-START" USING WS-CAPTURE
      MOVE "hello" TO WS-NOTE
      CALL "SV-NOTE" USING WS-NOTE
-     CALL "SV-HOSTED-ASK"
-     CALL "SV-HOSTED-ASK"
      MOVE 1 TO SV-LOAD-STATE
      CALL "SV-NOW-MS" USING WS-NOW
      COMPUTE SV-LOAD-MS = WS-NOW - 500
@@ -125,8 +123,8 @@
      CALL "SV-HOSTED-LOAD"
      CALL "SVT-CAPTURE-STOP" USING WS-CAPTURE WS-CAPTURED
      MOVE SV-LOAD-STATE TO WS-EDIT2
-     MOVE "test sv hosted the console line has no time stamp and @stop-requested is printed once" TO TL-CASE
-     MOVE "hello | @stop-requested state 0" TO TL-EXPECTED
+     MOVE "test sv hosted the console line has no time stamp" TO TL-CASE
+     MOVE "hello state 0" TO TL-EXPECTED
      MOVE SPACES TO TL-OBSERVED
      STRING FUNCTION TRIM(WS-CAPTURED) " state " FUNCTION TRIM(WS-EDIT2) DELIMITED BY SIZE INTO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

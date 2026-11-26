@@ -97,7 +97,7 @@
      END-IF
      IF L-STARTED = 1
          MOVE 1 TO SP-PROCESS SP-PROC-STATE
-         MOVE 0 TO SP-CHILD-PID SP-PAUSE-SENT SP-STOP-ASKED SP-LINE-LENGTH SP-LOAD-READY SP-LOAD-PERMILLE SP-LOAD-FX SP-LOAD-FZ SP-PORT
+         MOVE 0 TO SP-CHILD-PID SP-PAUSE-SENT SP-LINE-LENGTH SP-LOAD-READY SP-LOAD-PERMILLE SP-LOAD-FX SP-LOAD-FZ SP-PORT
          MOVE 1 TO SP-LOAD-STATE
          MOVE 49 TO SP-LOAD-TOTAL
          MOVE LOW-VALUES TO SM-LOAD-CELLS
@@ -217,7 +217,6 @@
 *>   @refused <n>              the core refused the world: the child is freed, the world list shows the refusal
 *>   @load ...                 SP-LOAD-* and SM-LOAD-CELLS of the loading screen
 *>   @opened <port>            SP-PORT of the world opened to others
-*>   @stop-requested           SP-STOP-ASKED (SPP-PUMP answers with the quit-world path)
 *>   anything else             a console line, displayed on the terminal
  DATA DIVISION.
  WORKING-STORAGE SECTION.
@@ -279,8 +278,6 @@
              MOVE WS-GRID TO SM-LOAD-CELLS
          WHEN WS-WORD = "@opened"
              COMPUTE SP-PORT = FUNCTION NUMVAL(WS-A)
-         WHEN WS-WORD = "@stop-requested"
-             MOVE 1 TO SP-STOP-ASKED
 *>       any other control line (an @ready while stopping, a message of a newer child) is ignored
          WHEN WS-WORD(1:1) = "@"
              CONTINUE
@@ -328,8 +325,8 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SPP-PUMP.
 *> USING CLIENT-STATE (hosting in a child): the frame's work of SP-PUMP without ticks: the child's output (SPP-READ), the pause
-*> (@pause or @resume when SP-PAUSED changed, once the game connection is open), the end of the child (SPP-LOST), the stop
-*> command (@stop-requested: SP-QUIT, as SP-PUMP does for run state 1), and the end of the game connection (SP-STOP).
+*> (@pause or @resume when SP-PAUSED changed, once the game connection is open), the end of the child (SPP-LOST) and the end of the
+*> game connection (SP-STOP). The stop command is no command of a hosted world (57-client-closures-4 section 3.4), as in SP-PUMP.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
@@ -360,10 +357,6 @@
          EVALUATE TRUE
              WHEN WS-RC = 0
                  CALL "SPP-LOST" USING CLIENT-STATE
-             WHEN SP-STOP-ASKED = 1
-*>               What the child sent before is received first.
-                 CALL "NET-PUMP" USING CLIENT-STATE WS-CONN
-                 CALL "SP-QUIT" USING CLIENT-STATE
              WHEN SP-PROC-STATE = 2 AND CN-PHASE(CONN-GAME) = PH-NONE
                  CALL "SP-STOP" USING CLIENT-STATE
          END-EVALUATE

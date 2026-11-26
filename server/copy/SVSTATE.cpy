@@ -25,13 +25,11 @@
 *>  The single-player role (docs/design/singleplayer-process.md, hosted.cob): SV-HOSTED 1 when the client started this
 *>  program with --hosted; SV-LOOPBACK 1 while the listener binds 127.0.0.1 only (0 once the world is opened to others);
 *>  SV-PAUSED 1 between the client's @pause and @resume (no ticks, the clock is held); SV-STOP-WANTED 1 once the client
-*>  said @stop or its end of input came (SV-ITERATE then runs the stop sequence); SV-STOP-ASKED 1 once @stop-requested
-*>  was printed for the stop command; SV-LOAD-STATE and SV-LOAD-MS the state and clock (SV-NOW-MS) of the last @load line.
+*>  said @stop or its end of input came (SV-ITERATE then runs the stop sequence); SV-LOAD-STATE and SV-LOAD-MS the state and clock (SV-NOW-MS) of the last @load line.
     05 SV-HOSTED           BINARY-LONG.
     05 SV-LOOPBACK         BINARY-LONG.
     05 SV-PAUSED           BINARY-LONG.
     05 SV-STOP-WANTED      BINARY-LONG.
-    05 SV-STOP-ASKED       BINARY-LONG.
     05 SV-LOAD-STATE       BINARY-LONG.
     05 SV-LOAD-MS          BINARY-DOUBLE.
     05 SV-CONN OCCURS 128 TIMES.

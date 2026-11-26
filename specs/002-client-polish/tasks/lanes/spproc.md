@@ -21,6 +21,7 @@ Design: docs/design/singleplayer-process.md. Mode switch: CC_SP_PROCESS=1 (SP-PR
 - [X] T60222 [spproc] failures: child killed (disconnect screen, reaped), child dying at start, refused world (@refused returns to the screen the world was opened from), packs refusal, lost connection, hosted program without handshake, loading progress (@load) of a new standard world: tests/convergence/acc_spproc_failure.cob
 - [X] T60223 [spproc] the child paces its ticks as the in-process host does (3 an iteration, a debt over 250 ms dropped), so a slow tick never keeps it from its input: server/tests/test_sv_hosted_control.cob
 - [X] T60224 [spproc] client/tests/test_sp_proc.cob: @load decode, @opened, @stop-requested, partial lines, pause rules, CC_SERVER_BIN
+- [X] T60225 [spproc] merged onto 004-perf-frame (CC-0026): the stop command is no command of a hosted world (57-client-closures-4 section 3.4), so @stop-requested, SV-HOSTED-ASK and SP-STOP-ASKED are removed as the run state 1 branch of SP-PUMP was; acc_spproc_control SPC-6 expects the world to run on after /stop and to end through the quit-world control; SP-PAUSE-UPDATE pauses on the book, command block and form screens as SP-PUMP did on main
 
 ### Stage D: measurements
 

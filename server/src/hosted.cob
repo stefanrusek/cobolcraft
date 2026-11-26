@@ -9,12 +9,11 @@
 *>   @load <state> <ready> <total> <permille> <fx> <fz> <grid>   the spawn search and spawn area progress (GEN-LOAD-PROGRESS) and the
 *>              35 x 35 cells of GEN-LOAD-GRID, each one letter A plus the cell code, at most every 100 ms while it runs and once
 *>              more with state 0
-*>   @stop-requested           the stop command ran (run state 1): the client answers with @stop
 *>   @opened <port>            the world was opened to others: the listener is now on every interface at that port
 *>   any other line            a console line of the core (printed without the server's time stamp)
 *>   control lines (client to child): @pause, @resume, @open <guest mode> <guest operator>, @stop; any other line is a console
 *>              command (CORE-CONSOLE). End of input is a stop: the world is saved and the program ends.
-*> Host state: SVSTATE.cpy (SV-HOSTED, SV-LOOPBACK, SV-PAUSED, SV-STOP-WANTED, SV-STOP-ASKED, SV-LOAD-*).
+*> Host state: SVSTATE.cpy (SV-HOSTED, SV-LOOPBACK, SV-PAUSED, SV-STOP-WANTED, SV-LOAD-*).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SV-HOSTED-ARG.
@@ -203,20 +202,6 @@
      DISPLAY "@opened " FUNCTION TRIM(WS-PORT)
      GOBACK.
  END PROGRAM SV-HOSTED-OPEN.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. SV-HOSTED-ASK.
-*> The stop command ran in the single-player role: prints "@stop-requested" once; the client answers with @stop.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY SVSTATE.
- PROCEDURE DIVISION.
-     IF SV-STOP-ASKED = 0
-         MOVE 1 TO SV-STOP-ASKED
-         DISPLAY "@stop-requested"
-     END-IF
-     GOBACK.
- END PROGRAM SV-HOSTED-ASK.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SV-HOSTED-LOAD.
