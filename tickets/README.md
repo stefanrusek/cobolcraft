@@ -2,7 +2,7 @@
 spile: project
 project: CobolCraft
 prefix: CC
-counter: 55
+counter: 56
 ---
 
 # CobolCraft tickets

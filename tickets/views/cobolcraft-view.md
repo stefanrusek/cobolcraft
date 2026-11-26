@@ -68,6 +68,7 @@ project: CobolCraft
 | [CC-0053](../CC-0053-other-players-see-held-items-and-armour.md) | Other players see what a player holds and wears at all times | bug | stefanrusek |  |  |
 | [CC-0054](../CC-0054-steady-client-frame-rate.md) | The client holds a steady frame rate at the agreed target in a standard world | bug | stefanrusek |  |  |
 | [CC-0055](../CC-0055-keep-alive-across-finish-configuration.md) | A keep-alive due while Finish Configuration is on its way is still answered | bug | stefanrusek |  |  |
+| [CC-0056](../CC-0056-registry-data-is-network-nbt.md) | Registry Data of a standard world is network NBT for every registry | bug | stefanrusek |  | --- |
 
 ### implementing
 
