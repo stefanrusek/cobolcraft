@@ -65,3 +65,17 @@ yet and is agreed before any code changes.
 > - The present path is not the limit on this machine (submit waits only for the display).
 > Not measured: anything on the M1 Air. One `CC_GPU_STATS=1` run there tells whether its frame is bound by the GPU
 > (`gpu ms/frame`), the main thread (`app` and the phase line) or the present (`submit`, `fence`).
+>
+> M1 Air, 2026-11-26 (8 GB, 8 GPU cores, 2560 x 1600, AC power; v0.2.0 release download b0259ecb; the operator's
+> standard save, a new player standing at the spawn point, no input; nothing else of the operator's running, load
+> average 3.8 to 7.9): the steady 15 fps was not reproduced.
+> - Settled (from about 95 s after the world appears; 1159 draws, 3,182,442 vertices): 57.9 fps with vsync (app 12.24 ms,
+>   GPU 7.71 ms a frame; core tick 5.26 ms a frame at 0.3 ticks a frame, render list 4.00 ms, mesh phase 1.93 ms);
+>   about 110 fps with `CC_VK_PRESENT=immediate` (app 7.81 ms, GPU 4.75 ms).
+> - While chunks load (about 90 s): 30 to 50 fps in both present modes; app 18 to 26 ms a frame (core tick 6.4 to 12.8,
+>   mesh phase 6.6 to 7.3, render list 3.3 to 4.0), GPU 5 to 7 ms.
+> - Main-thread sample of the settled state with vsync (7730 samples): `CL-STEP` 5186 = `SP-PUMP` 2608 (`CORE-TICK` 2606:
+>   `MOBS-TICK` 1683 with `MOB-PUSH-TICK` 1045, `WORLDSIM-TICK` 224, `MOBS-SPAWN-TICK` 204, `REDSTONE-ENTITY-TICK` 197),
+>   `RENDER-LIST-BUILD` 1742 (`ENTITIES-MESH` 901, `HAND-MESH` 156, `SECTION-MATRIX` 146), `MESH-DIRTY` 575;
+>   `SUBMIT-FRAME` 2507, of which 1775 waiting for the next drawable (vsync).
+> Not measured: the Air with the vanilla client running beside it, or a player who moves (new chunks keep arriving).
