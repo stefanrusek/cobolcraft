@@ -68,6 +68,7 @@ project: CobolCraft
 | [CC-0051](../CC-0051-vanilla-client-actions-ignored.md) | The actions of a vanilla client that the server discards take effect | feature | stefanrusek |  |  |
 | [CC-0053](../CC-0053-other-players-see-held-items-and-armour.md) | Other players see what a player holds and wears at all times | bug | stefanrusek |  |  |
 | [CC-0054](../CC-0054-steady-client-frame-rate.md) | The client holds a steady frame rate at the agreed target in a standard world | bug | stefanrusek |  |  |
+| [CC-0055](../CC-0055-keep-alive-across-finish-configuration.md) | A keep-alive due while Finish Configuration is on its way is still answered | bug | stefanrusek |  |  |
 
 ### unverified
 
