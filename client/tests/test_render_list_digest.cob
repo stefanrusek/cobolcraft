@@ -1,3 +1,4 @@
+*> Taken again for CC-0013 (4748648f): the section opaque draws use the pipeline CC-PIPE-OPAQUE-CULL (6, back faces culled) instead of CC-PIPE-OPAQUE. With the pipeline of those draws (37172 of the 50078 draw records) put back to CC-PIPE-OPAQUE before the CRC, the code of this test made the previous digest 7402413475844806013 again: nothing else of the render list (slots, textures, matrices, draw counts, uploads, projection, view, fog) moved.
 *> Equivalence and cost test of RENDER-LIST-BUILD (lane perfframe): a replica of 625 chunk rows (view distance 12) whose 24 sections each hold, by a fixed hash, an opaque
 *> mesh, a translucent mesh, both or none, is drawn from 60 eyes (position, yaw, pitch over the whole turn, one eye under the surface), and the draw records of every frame
 *> (slot, pipeline, texture and the 16 floats of the matrix; the draw count) and the upload slots and counts are digested (CRC-32, summed with the frame as weight).
@@ -154,7 +155,7 @@
      MOVE "T" TO TL-MODE
      MOVE "test render list digest: the draw records of 60 views of a 625-chunk replica have the digest taken before the optimisations" TO TL-CASE
      MOVE SPACES TO TL-EXPECTED TL-OBSERVED
-     MOVE "7402413475844806013" TO TL-EXPECTED
+     MOVE "6945433695109576613" TO TL-EXPECTED
      MOVE WS-DIGEST TO WS-D19
      MOVE FUNCTION TRIM(WS-D19) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

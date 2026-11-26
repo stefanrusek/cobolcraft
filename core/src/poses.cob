@@ -10,6 +10,10 @@
 *> Entry points:
 *>   POSE-DATA-BUILD USING entity id, flags, pose, skin parts, hand, PB-BUFFER
 *>   POSE-UPDATE USING player row
+*>   POSE-EYE USING player row, eye height out (FLOAT-LONG)
+*>   LIVING-DATA-BUILD USING entity id, living flags, PB-BUFFER (CC-0014, docs/protocol/58 section 2.1)
+*>   USE-FLAGS-GET USING player row, in use out (1 when an item is in use), living flags out
+*>   USE-FLAGS-SYNC USING player row (once a tick)
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. POSE-DATA-BUILD.
@@ -187,3 +191,176 @@
      END-IF
      GOBACK.
  END PROGRAM POSE-UPDATE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. POSE-EYE.
+*> USING player row, eye height out (FLOAT-LONG, above the feet): the eye of the player's current pose, the origin of every look ray the server tests
+*> a player's interaction from (docs/protocol/53 sections 2.1 and 7: the entity's own eye height, not smoothed, "what the server and the picking ray use";
+*> the client's PHYS-EYE gives the same value): standing 1.62 and crouching (5) 1.27 with a standard or debug content set, 1.6 and 1.25 for the
+*> cobolcraft stand-in set (RULE-ATTACK-EYE-MILLI, standin-content section 3); swimming or crawling (3) and fall flying (1) 0.4; sleeping (2) 0.2.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CONTENT.
+ COPY RULES.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-EYE                  FLOAT-LONG.
+ PROCEDURE DIVISION USING L-ROW L-EYE.
+     COMPUTE L-EYE = RULE-ATTACK-EYE-MILLI / 1000
+     EVALUATE PL-POSE(L-ROW)
+         WHEN 5
+             MOVE 1.25 TO L-EYE
+             IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+                 MOVE 1.27 TO L-EYE
+             END-IF
+         WHEN 3
+             MOVE 0.4 TO L-EYE
+         WHEN 1
+             MOVE 0.4 TO L-EYE
+         WHEN 2
+             MOVE 0.2 TO L-EYE
+         WHEN OTHER
+             IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
+                 MOVE 1.62 TO L-EYE
+             END-IF
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM POSE-EYE.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. LIVING-DATA-BUILD.
+*> USING entity id, living flags (BINARY-LONG), PB-BUFFER (CC-0014, docs/protocol/58 section 2.1): Set Entity Data 0x65 with the one entry 8 (BYTE: the living entity flags, 1 using an item,
+*> 2 the used hand is the off hand, 4 spin attack), 0xFF.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ 01 WS-PACKET-ID           BINARY-LONG VALUE 101.
+ LINKAGE SECTION.
+ COPY PROTO.
+ 01 L-ENTITY-ID            BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ENTITY-ID L-FLAGS PB-BUFFER.
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-ID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ENTITY-ID
+     INITIALIZE MD-METADATA-ENTRY
+     MOVE 8 TO MD-MD-INDEX
+     MOVE MD-MDS-BYTE TO MD-MD-SERIALIZER
+     MOVE L-FLAGS TO MD-MD-INT
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     MOVE MD-MD-END TO MD-MD-INDEX
+     CALL "PB-PUT-ENTITY-METADATA" USING PB-BUFFER MD-METADATA-ENTRY
+     GOBACK.
+ END PROGRAM LIVING-DATA-BUILD.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. USE-FLAGS-GET.
+*> USING player row, in use out, living flags out (docs/protocol/58 section 2.1): the item a player uses is one of the use states of the tools: a raised shield (TS-BLOCK-START, its hand
+*> TS-BLOCK-HAND), a bow, crossbow or trident being drawn (TS-USE-START), eating (PL-EATING-ITEM) and a goat horn (TS-HORN-USE-START, TS-HORN-USE-HAND); all but the shield and the horn
+*> use the main hand. The flags byte is 1 + 2 when the used hand is the off hand while an item is in use; with none in use it is the bit 2 of the byte last sent (startUsingItem
+*> sets or clears it and stopUsingItem leaves it).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CTOOLS.
+ 01 WS-OFF                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ 01 L-ACTIVE               BINARY-LONG.
+ 01 L-FLAGS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW L-ACTIVE L-FLAGS.
+     CALL "COMBAT-TS-CHECK" USING L-ROW
+     MOVE 0 TO L-ACTIVE WS-OFF
+     EVALUATE TRUE
+         WHEN TS-HORN-USE-START(L-ROW) > 0
+             MOVE 1 TO L-ACTIVE
+             MOVE TS-HORN-USE-HAND(L-ROW) TO WS-OFF
+         WHEN TS-BLOCK-START(L-ROW) > 0
+             MOVE 1 TO L-ACTIVE
+             MOVE TS-BLOCK-HAND(L-ROW) TO WS-OFF
+         WHEN TS-USE-START(L-ROW) > 0 OR PL-EATING-ITEM(L-ROW) > 0
+             MOVE 1 TO L-ACTIVE
+     END-EVALUATE
+     IF L-ACTIVE = 1
+         COMPUTE L-FLAGS = 1 + 2 * WS-OFF
+     ELSE
+         COMPUTE L-FLAGS = 2 * FUNCTION MOD(FUNCTION INTEGER(TS-LIVING-SENT(L-ROW) / 2), 2)
+     END-IF
+     GOBACK.
+ END PROGRAM USE-FLAGS-GET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. USE-FLAGS-SYNC.
+*> USING player row: once a tick the living entity flags of the player (USE-FLAGS-GET) are compared with the byte last sent (TS-LIVING-SENT); a change goes to the players who see the
+*> player and to the player as Set Entity Data entry 8 (docs/protocol/58 sections 2.1, 2.2 and 5.8). When an item comes into use (bit 1 rises) the Set Equipment of the used hand
+*> (0x68: slot 0 main hand, 1 off hand, the stack with its components, so a horn keeps the instrument of its prototype, 58 section 5.2) goes out first: the viewer's use start needs the stack
+*> in the hand when the flags arrive (58 section 2.3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CORESTATE.
+ COPY CTOOLS.
+ COPY CMENU.
+ COPY PROTO.
+ 01 WS-READY               PIC 9 VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 8192.
+ 01 WS-ACTIVE              BINARY-LONG.
+ 01 WS-FLAGS               BINARY-LONG.
+ 01 WS-OLD-USING           BINARY-LONG.
+ 01 WS-PACKET-EQUIP        BINARY-LONG VALUE 104.
+ 01 WS-HAND                BINARY-LONG.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ITEM                BINARY-LONG.
+ 01 WS-COUNT               BINARY-LONG.
+ 01 WS-VAR                 BINARY-LONG.
+ 01 WS-TRACKER             BINARY-LONG.
+ 01 WS-VIEWER              BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-ROW                  BINARY-LONG.
+ PROCEDURE DIVISION USING L-ROW.
+     CALL "USE-FLAGS-GET" USING L-ROW WS-ACTIVE WS-FLAGS
+     IF WS-FLAGS = TS-LIVING-SENT(L-ROW) OR PL-ENTITY-ROW(L-ROW) = 0
+         GOBACK
+     END-IF
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     MOVE PL-ENTITY-ROW(L-ROW) TO WS-TRACKER
+     MOVE FUNCTION MOD(TS-LIVING-SENT(L-ROW), 2) TO WS-OLD-USING
+     IF WS-ACTIVE = 1 AND WS-OLD-USING = 0
+*>       startUsingItem sends the used hand's stack at once (58 section 2.2 step 1).
+         COMPUTE WS-HAND = FUNCTION INTEGER(WS-FLAGS / 2)
+         IF WS-HAND = 0
+             COMPUTE WS-SLOT = PL-HELD(L-ROW) + 1
+             MOVE PL-SLOT-ITEM(L-ROW, WS-SLOT) TO WS-ITEM
+             MOVE PL-SLOT-COUNT(L-ROW, WS-SLOT) TO WS-COUNT
+             MOVE PL-SLOT-VAR(L-ROW, WS-SLOT) TO WS-VAR
+         ELSE
+             MOVE MN-EQUIP-ITEM(L-ROW, 5) TO WS-ITEM
+             MOVE MN-EQUIP-COUNT(L-ROW, 5) TO WS-COUNT
+             MOVE MN-EQUIP-VAR(L-ROW, 5) TO WS-VAR
+         END-IF
+         CALL "SP-EXPORT" USING WS-ITEM WS-COUNT WS-VAR PB-ITEMSTACK-X
+         CALL "PB-RESET" USING PB-BUFFER
+         CALL "PB-PUT-VARINT" USING PB-BUFFER WS-PACKET-EQUIP
+         CALL "PB-PUT-VARINT" USING PB-BUFFER EN-ID(WS-TRACKER)
+         CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-HAND
+         CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+         PERFORM VARYING WS-VIEWER FROM 1 BY 1 UNTIL WS-VIEWER > CORE-MAX-PLAYERS
+             IF VW-SEEN(WS-VIEWER)(WS-TRACKER:1) = "1"
+                 CALL "CORE-SEND" USING PL-CONN(WS-VIEWER) PB-BUFFER
+             END-IF
+         END-PERFORM
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "LIVING-DATA-BUILD" USING EN-ID(WS-TRACKER) WS-FLAGS PB-BUFFER
+     PERFORM VARYING WS-VIEWER FROM 1 BY 1 UNTIL WS-VIEWER > CORE-MAX-PLAYERS
+         IF VW-SEEN(WS-VIEWER)(WS-TRACKER:1) = "1" AND WS-VIEWER NOT = L-ROW
+             CALL "CORE-SEND" USING PL-CONN(WS-VIEWER) PB-BUFFER
+         END-IF
+     END-PERFORM
+*>   The player itself gets its own flags too (the tracker pass sends dirty data to the trackers and to the player, 18 section 9.2; its client predicts a use and ends it on the clear flag, 58 section 2.4).
+     CALL "CORE-SEND" USING PL-CONN(L-ROW) PB-BUFFER
+     MOVE WS-FLAGS TO TS-LIVING-SENT(L-ROW)
+     GOBACK.
+ END PROGRAM USE-FLAGS-SYNC.

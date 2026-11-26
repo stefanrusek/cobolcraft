@@ -604,8 +604,24 @@
      MOVE 80 TO PSB-PITCH
      CALL "BOAT-ITEM-USE" USING WS-CONN PLAY-SERVERBOUND WS-DONE
      PERFORM FIND-BOATS
-     MOVE "acceptance US15 21§8.8 3.10 aimed at the floor the boat's box would collide: no boat, the stack is kept" TO WS-CASE
-     MOVE 11 TO WS-E
+*>   The ray ends in the floor: the boat is created at the surface where it meets it (44 section 8, the hit location; T63305), its box rests on the floor and does not collide:
+*>   a second boat, one more item used.
+     MOVE "acceptance US15 21§8.8 3.10 aimed at the floor the boat is put at the surface where the ray meets it and one item is used" TO WS-CASE
+     MOVE 20 TO WS-E
+     COMPUTE WS-O = WS-COUNT * 10 + PL-SLOT-COUNT(WS-PLAYER, PL-HELD(WS-PLAYER) + 1)
+     PERFORM CHECK-N
+*>   Aimed level at a wall the hit location is on the wall's face and the boat's box (1.375 wide) reaches into it: it collides, no boat, the stack is kept (44 section 8).
+     MOVE WS-BOAT-ITEM TO PL-SLOT-ITEM(WS-PLAYER, PL-HELD(WS-PLAYER) + 1)
+     MOVE 1 TO PL-SLOT-COUNT(WS-PLAYER, PL-HELD(WS-PLAYER) + 1)
+     COMPUTE WS-CX = FUNCTION INTEGER(PL-X(WS-PLAYER)) + 3
+     COMPUTE WS-CY = WS-FY + 2
+     MOVE FUNCTION INTEGER(PL-Z(WS-PLAYER)) TO WS-J
+     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-J WS-STONE
+     MOVE 0 TO PSB-PITCH
+     CALL "BOAT-ITEM-USE" USING WS-CONN PLAY-SERVERBOUND WS-DONE
+     PERFORM FIND-BOATS
+     MOVE "acceptance US15 21§8.8 3.10 aimed at a wall the boat's box would collide: no boat, the stack is kept" TO WS-CASE
+     MOVE 21 TO WS-E
      COMPUTE WS-O = WS-COUNT * 10 + PL-SLOT-COUNT(WS-PLAYER, PL-HELD(WS-PLAYER) + 1)
      PERFORM CHECK-N
      MOVE "minecraft:stone" TO WS-KEY

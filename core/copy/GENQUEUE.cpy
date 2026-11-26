@@ -67,3 +67,7 @@
     05 GQ-SP-OZ             BINARY-LONG.
 *>   1 keeps the spiral of the search centred on chunk (0, 0) (the tests of the core build their circuits and floors around the origin; TEST-OPEN-WORLD sets it), 0 or 2 centres it on the origin chunk
     05 GQ-SP-PIN            BINARY-LONG.
+*> GQ-DEFER-READS is 1 while the mob tick runs (MOBS-TICK, CC-0052): a block read of an unloaded chunk of the standard pipeline is void and queues the chunk (WORLD-GET-DEFER), as it is while
+*> workers serve the chunks, so that a mob at the edge of the loaded chunks never makes a whole chunk inside the tick. 0 at all other times: the read generates the chunk where it stands.
+ 01 GEN-DEFER EXTERNAL.
+    05 GQ-DEFER-READS       BINARY-LONG.

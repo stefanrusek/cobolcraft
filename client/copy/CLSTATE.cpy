@@ -18,6 +18,8 @@
     05 CL-GUI-SCALE          BINARY-LONG.     *> window pixels per GUI pixel, 1 to CL-MAX-GUI-SCALE (SCREEN-BUILD)
     05 CL-SWING-AT           BINARY-DOUBLE.   *> the clock when the hand last began to swing (0 = never)
     05 CL-HAND-ITEM          BINARY-LONG.     *> the stack the hand shows: item id + 1, 0 none (equip animation, hand.cob; 12 section 6.2)
+    05 CL-HAND-SHOWN         BINARY-LONG.     *> the item the main hand is drawn as (HAND-EQUIP): CL-HAND-ITEM, or the in-use variant of its id while the local player uses it (ITEM-IN-USE-ID, 58 section 4)
+    05 CL-OHAND-SHOWN        BINARY-LONG.     *> the same for the off hand
     05 CL-HAND-H             FLOAT-LONG.      *> the equip height 0 to 1 and its value one client tick (50 ms) earlier
     05 CL-HAND-OH            FLOAT-LONG.
     05 CL-HAND-KEY-ITEM      BINARY-LONG.     *> what the vertices in RL-HAND-VERTEX were built for (hand.cob reuses them while it is unchanged and no swing runs)
@@ -553,6 +555,9 @@
        10 PL-USE-START        BINARY-DOUBLE.
        10 PL-USE-DURATION     BINARY-LONG.
        10 PL-USE-SLOT         BINARY-LONG.
+*>     Held-use items of CONTROLS-INPUT (controls.cob, CONTROLS-USE-KIND kind 2): 1 from the Use Item of a spyglass, goat horn, potion or ominous bottle (or the right press at a block with a brush held) until the right button is
+*>     released (or the item is no longer held): then Player Action 6 (release use item) is sent. A bow, crossbow, trident and shield are driven by USE-ITEM-INPUT (PL-USE-KIND above).
+       10 PL-USING           PIC 9.
 *>     Weather (US11; standin-content §14): the rain and thunder levels of the last Game Events 7
 *>     and 8 (2 sets both to 0), and the kind they map to (WX-*).
        10 PL-RAIN            FLOAT-SHORT.
@@ -789,6 +794,12 @@
           15 EN-FLAGS        BINARY-LONG.
           15 EN-POSE         BINARY-LONG.
           15 EN-LIVING       BINARY-LONG.   *> the living entity flags byte (entry 8: bit 0 uses an item, bit 1 with the off hand), 12 section 7.5
+*>        The viewer's use state of that entity (58 section 2.3, ENTITY-USE-ENTRY8 and ENTITY-USE-TICK): EN-USE-ACTIVE 1 while the viewer's `useItem` is not empty (the start test of
+*>        an entry 8 with bit 0 set found a stack in the used hand), EN-USE-ITEM its item registry id and EN-USE-LEFT `useItemRemaining` (140 at the start of a goat horn, 0 for
+*>        a horn stack whose instrument component was removed, 0 for any other item: no count is modelled for them; it goes negative once spent).
+          15 EN-USE-ACTIVE   BINARY-LONG.
+          15 EN-USE-ITEM     BINARY-LONG.
+          15 EN-USE-LEFT     BINARY-LONG.
           15 EN-SWIM         FLOAT-LONG.    *> the swim amount 0 to 1 (53 section 12: 0.09 a tick toward 1 while the pose is swimming)
           15 EN-PARTS        BINARY-LONG.   *> a player's skin parts byte (entry 16, BYTE, 47 section 5.3: bit 0 cape, 1 jacket, 2 left sleeve, 3 right sleeve, 4 left pants leg, 5 right pants leg, 6 hat; 0 until set)
 *>        The walk animation of a living entity (docs/protocol/54 section 1.1): the speed one tick ago, the speed, the position, the position scale (3 for a
@@ -929,6 +940,7 @@
              20 EN-EQ-TRIM-MAT BINARY-LONG.
              20 EN-EQ-TRIM-PAT BINARY-LONG.
              20 EN-EQ-FOIL     BINARY-LONG.
+             20 EN-EQ-NOINST   BINARY-LONG.   *> 1 when the stack's patch removes the instrument component (type 63; a goat horn then has a use duration of 0, 58 section 5.2)
           15 EN-HB OCCURS 2 TIMES.
              20 EN-HB-BASE     BINARY-LONG.
              20 EN-HB-COUNT    BINARY-LONG.
@@ -1035,6 +1047,10 @@
           15 RK-REQ-COUNT    BINARY-LONG.    *> crafting requirements (one item each); 0 and RK-REQ-PRESENT 0 = never craftable
           15 RK-REQ-PRESENT  PIC 9.
           15 RK-REQ-ITEM     BINARY-LONG OCCURS 9 TIMES.
+          15 RK-REQ-ALT      OCCURS 9 TIMES.  *> a requirement is an HolderSet (05b): a tag, a list of up to 8 items or the one item above
+             20 RK-REQ-N        BINARY-LONG.    *> items of the list, 0 = none
+             20 RK-REQ-LIST     BINARY-LONG OCCURS 8 TIMES.
+             20 RK-REQ-TAG-IX   BINARY-LONG.    *> 0 = not a tag, else the row of RK-TAG-NAME, -1 = a tag the table had no room for (never met)
           15 RK-SLOTS        BINARY-LONG.    *> ingredient slots
           15 RK-SLOT-ITEM    BINARY-LONG OCCURS 9 TIMES. *> the item each slot shows, -1 none
           15 RK-RES-ITEM     BINARY-LONG.
@@ -1071,6 +1087,8 @@
        10 RK-GHOST-ITEM      BINARY-LONG OCCURS 9 TIMES.
        10 RK-TOAST-UNTIL     BINARY-DOUBLE.  *> CL-NOW-MS until which the toast shows, 0 none
        10 RK-GHEAD           BINARY-LONG OCCURS 4096 TIMES.
+       10 RK-TAG-COUNT       BINARY-LONG.    *> the distinct item tags of the requirements (RK-TAG-INDEX)
+       10 RK-TAG-NAME        PIC X(64) OCCURS 256 TIMES.
 *>  ---- packs (08 §3, §10): stack, language, font ----
 *>  The stack (08 §3.1; stack.cob, source.cob): bottom first, the built-in pack at the bottom, then
 *>  the enabled local packs (user order), then the server packs (newest on top). A local or server
@@ -1311,6 +1329,13 @@
 *>     The GUI icon of a block item whose model has elements (ITEM-GUI-BAKE, item-gui.cob; 12 section 8.1): the quads of its model after the gui display transform that face the viewer,
 *>     far to near, in a pool shared by the items: item i has IS-GUI-COUNT(i + 1) quads from IG-QUAD number IS-GUI-FIRST(i + 1) (0 = none: the flat icon of the item's sprite is
 *>     drawn). IG-USED quads of the pool are taken. A corner is in GUI pixels of the 16 pixel icon cell (x right, y down), u and v are sprite units 0 to 16.
+*>     The items that have a model of their own while they are in use (ITEM-IN-USE-ID; 58 sections 3.2 and 4: a definition that is a `condition` on `using_item` with a plain `on_true` model):
+*>     IS-USE-STATE(i + 1) 0 not read yet, 1 none, 2 mapped; IS-USE-VIRT(i + 1) the virtual item id of the variant (2048 - n, the last CL-USE-VIRT ids, which no real item reaches);
+*>     IS-USE-REAL(n) the real item id of the virtual id 2048 - n (ITEM-SPRITE-OF reads that item's `model.on_true.model`); IS-USE-COUNT the virtual ids given out.
+       10 IS-USE-STATE        PIC 9 OCCURS 2048 TIMES.
+       10 IS-USE-VIRT         BINARY-LONG OCCURS 2048 TIMES.
+       10 IS-USE-REAL         BINARY-LONG OCCURS 8 TIMES.
+       10 IS-USE-COUNT        BINARY-LONG.
        10 IS-GUI-FIRST       BINARY-LONG OCCURS 2048 TIMES.
        10 IS-GUI-COUNT       BINARY-LONG OCCURS 2048 TIMES.
        10 IG-USED            BINARY-LONG.

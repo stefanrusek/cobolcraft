@@ -1,3 +1,4 @@
+*> Taken again for CC-0015 (d271886c, the player model drawn at the 0.9375 scale of doc 12 section 7.3 step 4): compared with the code before that change, row by row (one row per batch, all four states), only the player rows differ, with the same 216 vertices each, every position at 0.9375 times its old offset from the entity (within 2e-6) and every texture coordinate unchanged; the code before the change still made the previous digest 1871543665946725500.
 *> Taken again at the merge of the p70 chain (batch16c2): the entity table grew by 14 models (item frames, minecarts, trident, wind charges, leash knot, cushion, spectral arrow) and the dragon draws more, so the entity atlas is taller (every later model's v is a different fraction); a comparison with the code before the merge of every model alone (same vertex counts except the dragon's extra 1440) and of the first vertices of the orb and the arrow showed only v moving.
 *> Equivalence test of the entity mesh (lane perfframe): the vertices ENTITIES-MESH makes for every entity model of the table that has an entity type, in four
 *> states (at rest; walking with a head turn and a pitch; aggressive, baby and swinging; the eye elsewhere), are digested (CRC-32 of the 44-byte vertex records
@@ -176,7 +177,7 @@
      MOVE "test entities digest: the digest of the entity mesh of every model in four states is the one taken before the optimisations" TO TL-CASE
      MOVE "T" TO TL-MODE
      MOVE SPACES TO TL-EXPECTED TL-OBSERVED
-     MOVE "1871543665946725500" TO TL-EXPECTED
+     MOVE "4072936942103741491" TO TL-EXPECTED
      MOVE WS-DIGEST TO WS-D20
      MOVE FUNCTION TRIM(WS-D20) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

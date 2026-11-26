@@ -42,7 +42,9 @@
          PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > 2048
              MOVE 0 TO IS-SPRITE(WS-S)
              MOVE 0 TO IS-GUI-FIRST(WS-S) IS-GUI-COUNT(WS-S)
+             MOVE 0 TO IS-USE-STATE(WS-S) IS-USE-VIRT(WS-S)
          END-PERFORM
+         MOVE 0 TO IS-USE-COUNT
          MOVE 0 TO IG-USED
          GOBACK
      END-IF

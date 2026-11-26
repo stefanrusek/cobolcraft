@@ -202,6 +202,20 @@
              WHEN "minecraft:kelp"
              WHEN "minecraft:kelp_plant"
                  MOVE 11 TO SP-RULE(WS-I)
+*>           Growing plants of 29b part 4 section 3.2: twisting vines grow up (anchored below), weeping vines and cave vines grow down (anchored above); SP-ARG is the family
+*>           (1 nether vines of that direction, 2 cave vines), so that a weeping body does not hold on a cave vine.
+             WHEN "minecraft:twisting_vines"
+             WHEN "minecraft:twisting_vines_plant"
+                 MOVE 26 TO SP-RULE(WS-I)
+                 MOVE 1 TO SP-ARG(WS-I)
+             WHEN "minecraft:weeping_vines"
+             WHEN "minecraft:weeping_vines_plant"
+                 MOVE 27 TO SP-RULE(WS-I)
+                 MOVE 1 TO SP-ARG(WS-I)
+             WHEN "minecraft:cave_vines"
+             WHEN "minecraft:cave_vines_plant"
+                 MOVE 27 TO SP-RULE(WS-I)
+                 MOVE 2 TO SP-ARG(WS-I)
              WHEN "minecraft:bamboo"
              WHEN "minecraft:bamboo_sapling"
                  MOVE 12 TO SP-RULE(WS-I)
@@ -602,6 +616,23 @@
              IF WS-OTHER-SOLID = 1 OR WS-FACE-FOUND = 0
                  MOVE 1 TO L-OK
              END-IF
+*>       a growing plant that grows up (twisting vines): the head or body of its family below, or a block with a solid top (29b part 4 section 3.2 step 1)
+         WHEN 26
+             IF WS-SOLID = 1 OR (WS-BELOW > 0 AND SP-RULE(WS-BELOW) = 26)
+                 MOVE 1 TO L-OK
+             END-IF
+*>       a growing plant that grows down (weeping vines, cave vines): the head or body of its own family above, or a block with a solid underside
+         WHEN 27
+             COMPUTE WS-Y = L-Y + 1
+             CALL "SUP-SOLID-AT" USING L-DIM L-X WS-Y L-Z WS-OTHER-SOLID WS-OTHER WS-OTHER-BITS
+             IF WS-OTHER-SOLID = 1
+                 MOVE 1 TO L-OK
+             END-IF
+             IF WS-OTHER > 0
+                 IF SP-RULE(WS-OTHER) = 27 AND SP-ARG(WS-OTHER) = SP-ARG(WS-BLOCK)
+                     MOVE 1 TO L-OK
+                 END-IF
+             END-IF
 *>       a ceiling hanging sign hangs from a solid block above it
          WHEN 18
              COMPUTE WS-Y = L-Y + 1
@@ -759,9 +790,31 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. SUP-SHAPE.
+*> USING dimension row, x, y, z, state, new state in and out: the state is replaced by air (0) when it cannot survive. A body piece of a nether or cave vine (twisting_vines_plant, weeping_vines_plant,
+*> cave_vines_plant) whose growth cell no longer holds a piece of its family becomes the head of the family with a random age nextInt(25) (29b part 4 section 3.2 step 10b: the top body block becomes
+*> a head; the cave vines copy `berries`), so a column cut in the middle ends in a head that can grow again. The kelp column does the same in kelp-29b.cob (KELP-SHAPE).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ COPY CBLOCKS.
+ COPY SUPSTATE.
  01 WS-OK                  BINARY-LONG.
+ 01 WS-BLOCK               BINARY-LONG.
+ 01 WS-RULE                BINARY-LONG.
+ 01 WS-NY                  BINARY-LONG.
+ 01 WS-SOLID               BINARY-LONG.
+ 01 WS-OTHER               BINARY-LONG.
+ 01 WS-BITS                BINARY-LONG.
+ 01 WS-LEN                 BINARY-LONG.
+ 01 WS-HEAD-KEY            PIC X(112).
+ 01 WS-HEAD-BLOCK          BINARY-LONG.
+ 01 WS-HEAD-STATE          BINARY-LONG.
+ 01 WS-BOUND               BINARY-LONG VALUE 25.
+ 01 WS-AGE                 BINARY-LONG.
+ 01 WS-AGE-EDIT            PIC Z9.
+ 01 WS-AGE-NAME            PIC X(24) VALUE "age".
+ 01 WS-BERRIES-NAME        PIC X(24) VALUE "berries".
+ 01 WS-TEXT                PIC X(32).
+ 01 WS-FOUND               BINARY-LONG.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -773,8 +826,55 @@
      CALL "SUP-SURVIVES" USING L-DIM L-X L-Y L-Z L-STATE WS-OK
      IF WS-OK = 0
          MOVE 0 TO L-NEW
+         GOBACK
      END-IF
-     GOBACK.
+     IF L-STATE > 0 AND L-STATE < CB-STATE-COUNT
+         COMPUTE WS-BLOCK = CB-S-BLOCK(L-STATE + 1) + 1
+         MOVE SP-RULE(WS-BLOCK) TO WS-RULE
+         IF WS-RULE = 26 OR WS-RULE = 27
+             PERFORM BODY-TO-HEAD
+         END-IF
+     END-IF
+     GO TO MAIN-EXIT.
+
+*> A body piece (its key ends in _plant) with no piece of its family in the growth direction (up for kelp and twisting vines, down for weeping and cave vines) becomes its head.
+ BODY-TO-HEAD.
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(CB-KEY(WS-BLOCK))) TO WS-LEN
+     IF WS-LEN > 6 AND CB-KEY(WS-BLOCK)(WS-LEN - 5:6) = "_plant"
+         COMPUTE WS-NY = L-Y + 1
+         IF WS-RULE = 27
+             COMPUTE WS-NY = L-Y - 1
+         END-IF
+         CALL "SUP-SOLID-AT" USING L-DIM L-X WS-NY L-Z WS-SOLID WS-OTHER WS-BITS
+         MOVE 0 TO WS-OK
+         IF WS-OTHER > 0
+             IF SP-RULE(WS-OTHER) = WS-RULE AND SP-ARG(WS-OTHER) = SP-ARG(WS-BLOCK)
+                 MOVE 1 TO WS-OK
+             END-IF
+         END-IF
+         IF WS-OK = 0
+             MOVE SPACES TO WS-HEAD-KEY
+             STRING "minecraft:" CB-KEY(WS-BLOCK)(1:WS-LEN - 6) DELIMITED BY SIZE INTO WS-HEAD-KEY
+             CALL "BLOCKS-ID-OF" USING WS-HEAD-KEY WS-HEAD-BLOCK
+             IF WS-HEAD-BLOCK >= 0
+                 MOVE CB-DEFAULT-STATE(WS-HEAD-BLOCK + 1) TO WS-HEAD-STATE
+                 CALL "LEVEL-RANDOM-INT" USING WS-BOUND WS-AGE
+                 MOVE WS-AGE TO WS-AGE-EDIT
+                 MOVE SPACES TO WS-TEXT
+                 MOVE FUNCTION TRIM(WS-AGE-EDIT) TO WS-TEXT
+                 CALL "PS-PUT" USING WS-HEAD-STATE WS-AGE-NAME WS-TEXT
+                 MOVE SPACES TO WS-TEXT
+                 CALL "PS-GET" USING L-STATE WS-BERRIES-NAME WS-TEXT WS-FOUND
+                 IF WS-FOUND = 1
+                     CALL "PS-PUT" USING WS-HEAD-STATE WS-BERRIES-NAME WS-TEXT
+                 END-IF
+                 MOVE WS-HEAD-STATE TO L-NEW
+             END-IF
+         END-IF
+     END-IF.
+
+ MAIN-EXIT.
+     CONTINUE.
  END PROGRAM SUP-SHAPE.
 
  IDENTIFICATION DIVISION.
@@ -815,10 +915,10 @@
  WORKING-STORAGE SECTION.
  COPY CBLOCKS.
  COPY SUPSTATE.
- 01 WS-MODE                BINARY-LONG VALUE 1.
- 01 WS-NAME                PIC X(24) VALUE "level".
- 01 WS-TEXT                PIC X(32).
- 01 WS-FOUND               BINARY-LONG.
+ 01 WS-FLUID               BINARY-LONG.
+ 01 WS-KIND                BINARY-LONG.
+ 01 WS-AMOUNT              BINARY-LONG.
+ 01 WS-FALLING             BINARY-LONG.
  01 WS-BLOCK               BINARY-LONG.
  01 WS-OLD                 BINARY-LONG.
  LINKAGE SECTION.
@@ -838,18 +938,14 @@
      END-IF
      IF L-OK = 1 AND L-STATE > 0 AND L-STATE < CB-STATE-COUNT
          COMPUTE WS-BLOCK = CB-S-BLOCK(L-STATE + 1) + 1
-*>       A water plant (seagrass, tall seagrass, kelp) is placed only in a water source (LiquidBlockContainer.canPlaceLiquid: a full water).
+*>       A water plant (seagrass, tall seagrass, kelp) is placed only where the fluid of the cell is in tag water and full (29a 5.2, 29b part 4 sections 3.2, 9.2 and 9.3:
+*>       FluidState.isFull is amount 8): a source or a falling cell (levels 8 to 15), not the flowing levels 1 to 7. The plant then holds the water source (lane bugkelpplace).
          IF SP-RULE(WS-BLOCK) = 5 OR SP-RULE(WS-BLOCK) = 7 OR SP-RULE(WS-BLOCK) = 11
              MOVE 0 TO L-OK
              CALL "WORLD-GET-BLOCK" USING L-DIM L-X L-Y L-Z WS-OLD
              IF WS-OLD > 0 AND WS-OLD < CB-STATE-COUNT
-                 IF CB-S-BLOCK(WS-OLD + 1) + 1 = SP-WATER
-                     MOVE SPACES TO WS-TEXT
-                     CALL "BLOCK-STATE-PROP" USING WS-MODE WS-OLD WS-NAME WS-TEXT WS-FOUND
-                     IF FUNCTION TRIM(WS-TEXT) = "0"
-                         MOVE 1 TO L-OK
-                     END-IF
-                 END-IF
+                 CALL "FLUID-OF-STATE" USING WS-OLD WS-FLUID WS-KIND WS-AMOUNT WS-FALLING
+                 CALL "LC-PLANT-PLACEMENT" USING WS-KIND WS-AMOUNT L-OK
              END-IF
          END-IF
      END-IF

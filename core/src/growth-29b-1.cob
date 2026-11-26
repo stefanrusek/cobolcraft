@@ -567,6 +567,26 @@
      CALL "BU-ENSURE"
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT
          CALL "GB-PART" USING CB-KEY(WS-I) WS-PART WS-SECTION
+         IF WS-PART = 1 AND WS-SECTION = 35
+             COMPUTE WS-BLOCK = WS-I - 1
+             MOVE 2 TO WS-DELAY
+             MOVE 0 TO WS-FOUND
+             PERFORM VARYING WS-R FROM 1 BY 1 UNTIL WS-R > BU-RULE-COUNT
+                 IF BU-R-KIND(WS-R) = 7 AND BU-R-BLOCK(WS-R) = WS-BLOCK AND BU-R-EFFECT(WS-R) = 15
+                     MOVE 1 TO WS-FOUND
+                 END-IF
+             END-PERFORM
+             IF WS-FOUND = 0
+                 MOVE 1 TO WS-KIND
+                 MOVE 3 TO WS-EFFECT
+                 CALL "BU-RULE-ADD" USING WS-KIND WS-BLOCK WS-EFFECT WS-ZERO WS-DELAY
+                 MOVE 4 TO WS-KIND
+                 CALL "BU-RULE-ADD" USING WS-KIND WS-BLOCK WS-EFFECT WS-ZERO WS-DELAY
+                 MOVE 7 TO WS-KIND
+                 MOVE 15 TO WS-EFFECT
+                 CALL "BU-RULE-ADD" USING WS-KIND WS-BLOCK WS-EFFECT WS-ZERO WS-ZERO2
+             END-IF
+         END-IF
          IF WS-PART = 1 AND (WS-SECTION = 32 OR WS-SECTION = 33 OR WS-SECTION = 34 OR WS-SECTION = 36)
              COMPUTE WS-BLOCK = WS-I - 1
              MOVE 1 TO WS-BLOCK-KIND

@@ -270,6 +270,8 @@
                  MOVE WS-COV(2) TO EN-ZR(WS-R)
                  MOVE WS-COV(3) TO EN-XR(WS-R)
              END-IF
+*>           The viewer's use count of an item the entity uses (58 section 2.2: right after the entity tick).
+             CALL "ENTITY-USE-TICK" USING CLIENT-STATE WS-R
              ADD 1 TO EN-AGE(WS-R)
              MOVE EN-X(WS-R) TO EN-OX(WS-R)
              MOVE EN-Y(WS-R) TO EN-OY(WS-R)

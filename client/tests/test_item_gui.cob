@@ -82,6 +82,7 @@
  01 WS-C                   BINARY-LONG.
  01 WS-FOUND               BINARY-LONG.
  01 WS-MISS                BINARY-LONG.
+ 01 WS-V                   BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE SPACES TO WS-GEN
      ACCEPT WS-GEN FROM ENVIRONMENT "CC_GENERATED_DIR"
@@ -174,11 +175,26 @@
              IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
                  ADD 1 TO WS-MISS
              END-IF
-             COMPUTE WS-GOT ROUNDED = RL-IC-B((WS-Q - 1) * 6 + 1) * 10000
-             MOVE WS-RW-B(WS-C) TO WS-EXP
-             IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
-                 ADD 1 TO WS-MISS
-             END-IF
+*>           CC-0016: the shade of the face is in the vertex colour (12 section 6.10: vertexColor = colour.rgb x lightAccum; the UI pipeline ignores the vertex brightness, shim-abi
+*>           section 9): the slab is untinted, so red, green and blue of every vertex of the quad are the face's shade and the brightness field is 1.
+             PERFORM VARYING WS-V FROM 1 BY 1 UNTIL WS-V > 6
+                 COMPUTE WS-GOT ROUNDED = RL-IC-R((WS-Q - 1) * 6 + WS-V) * 10000
+                 MOVE WS-RW-B(WS-C) TO WS-EXP
+                 IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+                     ADD 1 TO WS-MISS
+                 END-IF
+                 COMPUTE WS-GOT ROUNDED = RL-IC-G((WS-Q - 1) * 6 + WS-V) * 10000
+                 IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+                     ADD 1 TO WS-MISS
+                 END-IF
+                 COMPUTE WS-GOT ROUNDED = RL-IC-BLUE((WS-Q - 1) * 6 + WS-V) * 10000
+                 IF FUNCTION ABS(WS-GOT - WS-EXP) > 2
+                     ADD 1 TO WS-MISS
+                 END-IF
+                 IF RL-IC-B((WS-Q - 1) * 6 + WS-V) NOT = 1
+                     ADD 1 TO WS-MISS
+                 END-IF
+             END-PERFORM
              IF WS-MISS = 0
                  ADD 1 TO WS-FOUND
              END-IF
@@ -187,7 +203,7 @@
              ADD 1 TO WS-BAD
          END-IF
      END-PERFORM
-     MOVE "bugguiitems an oak slab in a slot: the vertices are the model's corners in the icon cell, shaded" TO TL-CASE
+     MOVE "bugguiitems an oak slab in a slot: the vertices are the model's corners in the icon cell, the face's shade in their colour (brightness 1)" TO TL-CASE
      MOVE 0 TO TL-EXPECTED-N
      MOVE WS-BAD TO TL-OBSERVED-N
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT

@@ -107,7 +107,9 @@
      MOVE "acceptance wrapb powder snow 25-5 5.3 of one" TO WS-CASE
      PERFORM ASSERT-N
 
-*>   C. the empty bucket aimed at powder snow at (3, 103, 5) takes it: air in the cell and the powder snow bucket in the hand
+*>   C. the empty bucket aimed at powder snow at (3, 103, 5) takes it: air in the cell and the powder snow bucket in the hand. The Use Item of the tick of a Use Item On that a block took
+*>   (here B placed the powder snow) is spent with that click (29 section 9, T63303), so the second click comes one tick later, as the client's right button sends it.
+     MOVE 1 TO WS-TICKS PERFORM RUN-TICKS
      MOVE 3 TO WS-X MOVE 103 TO WS-Y MOVE 5 TO WS-Z
      MOVE "powder_snow" TO WS-K PERFORM PUT-DEF
      MOVE WS-BUCKET TO PL-SLOT-ITEM(WS-ROW, 1)

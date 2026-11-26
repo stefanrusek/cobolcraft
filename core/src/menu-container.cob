@@ -289,6 +289,8 @@
  01 WS-NO-STATE            BINARY-LONG VALUE -1.
  01 WS-DIM                 BINARY-LONG.
  01 WS-STATE               BINARY-LONG.
+ 01 WS-PSTATE              BINARY-LONG.
+ 01 WS-AIR                 BINARY-LONG VALUE 0.
  01 WS-FAMILY              BINARY-LONG.
  01 WS-DIR                 BINARY-LONG.
  01 WS-TYPE                BINARY-LONG.
@@ -335,6 +337,12 @@
          GOBACK
      END-IF
      CALL "BE-FIND" USING WS-DIM L-X L-Y L-Z WS-BE
+*>   A block the world generator wrote has no block entity (a structure carries block states, and the entities only of chests with loot and of spawners): the
+*>   container of a village's smoker or blast furnace, of a barrel, a hopper and the like is made now, as if the block had been placed.
+     IF WS-BE = 0
+         CALL "BE-BLOCK-SET" USING WS-DIM L-X L-Y L-Z WS-AIR WS-STATE
+         CALL "BE-FIND" USING WS-DIM L-X L-Y L-Z WS-BE
+     END-IF
      IF WS-BE = 0
          GOBACK
      END-IF
@@ -373,6 +381,12 @@
          COMPUTE WS-PX = L-X + WS-DX
          COMPUTE WS-PZ = L-Z + WS-DZ
          CALL "BE-FIND" USING WS-DIM WS-PX L-Y WS-PZ WS-BE2
+*>       The other half of a generated double chest lacks its entity too.
+         IF WS-BE2 = 0
+             CALL "WORLD-GET-BLOCK" USING WS-DIM WS-PX L-Y WS-PZ WS-PSTATE
+             CALL "BE-BLOCK-SET" USING WS-DIM WS-PX L-Y WS-PZ WS-AIR WS-PSTATE
+             CALL "BE-FIND" USING WS-DIM WS-PX L-Y WS-PZ WS-BE2
+         END-IF
          IF WS-BE2 > 0
              MOVE WS-BE2 TO WS-SECOND
              IF WS-TYPE = 1

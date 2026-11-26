@@ -8,12 +8,15 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ENTITY-HELD-POSED.
-*> USING CLIENT-STATE, replica row, hand (1 right arm, 2 left arm), item registry id, eye (3 FLOAT-LONG).
+*> USING CLIENT-STATE, replica row, hand (1 right arm, 2 left arm), item registry id, eye (3 FLOAT-LONG). An item that the entity is using with that hand (`using_item`, ENTITY-USING-HAND: a goat horn
+*> raised to the mouth) is drawn as its in-use variant (ITEM-IN-USE-ID, 58 section 4): the model of `on_true` with its own display transforms.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CLCONST.
  01 WS-M.
     05 WS-MV               FLOAT-LONG OCCURS 12 TIMES.
+ 01 WS-DRAW-ITEM           BINARY-LONG.
+ 01 WS-USING               BINARY-LONG.
  01 WS-AX                  FLOAT-LONG.
  01 WS-AY                  FLOAT-LONG.
  01 WS-AZ                  FLOAT-LONG.
@@ -97,7 +100,13 @@
          COMPUTE WS-HSLOT = 3 - L-HAND
      END-IF
      MOVE EN-EQ-FOIL(L-ROW, WS-HSLOT) TO WS-HFOIL
-     CALL "ITEM-POSED-DRAW" USING CLIENT-STATE WS-M L-ITEM L-HAND L-ROW L-EYE-TABLE WS-BRIGHT WS-HFOIL
+*>   The in-use variant of the item while the entity uses the stack of this hand (58 section 3.2).
+     MOVE L-ITEM TO WS-DRAW-ITEM
+     CALL "ENTITY-USING-HAND" USING CLIENT-STATE L-ROW WS-HSLOT WS-USING
+     IF WS-USING = 1
+         CALL "ITEM-IN-USE-ID" USING CLIENT-STATE L-ITEM WS-DRAW-ITEM
+     END-IF
+     CALL "ITEM-POSED-DRAW" USING CLIENT-STATE WS-M WS-DRAW-ITEM L-HAND L-ROW L-EYE-TABLE WS-BRIGHT WS-HFOIL
      GOBACK.
  END PROGRAM ENTITY-HELD-POSED.
 

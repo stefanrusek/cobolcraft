@@ -792,6 +792,8 @@
      IF WS-X NOT = EN-X(WS-ROW) OR WS-Y NOT = EN-Y(WS-ROW) OR WS-Z NOT = EN-Z(WS-ROW)
              OR L-YAW NOT = EN-YAW(WS-ROW)
          CALL "ENTITY-MOVE" USING WS-ROW WS-X WS-Y WS-Z L-YAW WS-PITCH WS-GROUND
+*>       A landing on farmland tramples it (29b part 2 section 9.3).
+         CALL "FARM-LANDED" USING WS-ROW
      END-IF
      MOVE WS-GROUND TO EN-ON-GROUND(WS-ROW)
      GOBACK.
@@ -884,11 +886,14 @@
  PROGRAM-ID. MOBS-TICK.
 *> No parameters; step 6 of standin §9.5. While the hostile-mobs setting is off, every hostile mob
 *> is removed first (Remove Entities, US9-6, §12.4). Then MOB-STEP for every mob in ascending
-*> entity id order (insertion by EN-ID into a list of tracker rows).
+*> entity id order (insertion by EN-ID into a list of tracker rows). The block reads of a mob into a chunk that is not loaded (a bat's target within 7 blocks, the cells round an
+*> animal at the edge of the loaded chunks) are void and queue the chunk while the tick runs (GQ-DEFER-READS, WORLD-GET-DEFER), so that no mob makes a whole chunk inside the tick
+*> (CC-0052: 0.6 s of CPU optimised, 1.3 s in a debug build, for one read).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CORESTATE.
  COPY MOBS.
+ COPY GENQUEUE.
  01 WS-ROW                 BINARY-LONG.
  01 WS-M                   BINARY-LONG.
  01 WS-S                   BINARY-LONG.
@@ -903,6 +908,7 @@
  COPY COREAPI.
  PROCEDURE DIVISION.
      SET ADDRESS OF CORE-SETTINGS TO ADDRESS OF CW-SETTINGS
+     MOVE 1 TO GQ-DEFER-READS
      MOVE 0 TO WS-N
      PERFORM VARYING WS-ROW FROM 1 BY 1 UNTIL WS-ROW > EN-COUNT
          MOVE 0 TO WS-M WS-S
@@ -947,5 +953,6 @@
          END-IF
      END-PERFORM
      CALL "BEE-HIVES-TICK"
+     MOVE 0 TO GQ-DEFER-READS
      GOBACK.
  END PROGRAM MOBS-TICK.

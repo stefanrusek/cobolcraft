@@ -211,6 +211,8 @@
  01 WS-FACE-SPRITE         BINARY-LONG OCCURS 6 TIMES.
  01 WS-D                   BINARY-LONG.
  01 WS-SLOT                BINARY-LONG.
+ 01 WS-REAL                BINARY-LONG.
+ 01 WS-VIRTUAL             BINARY-LONG.
  LINKAGE SECTION.
  COPY CLSTATE.
  01 L-ITEM                 BINARY-LONG.
@@ -234,10 +236,17 @@
          MOVE IS-SPRITE(L-ITEM + 1) TO L-SPRITE
          GOBACK
      END-IF
+*>   A virtual id (ITEM-IN-USE-ID) is the in-use variant of a real item: its definition and name are the real item's, its model the `on_true` one (58 section 4.1).
+     MOVE L-ITEM TO WS-REAL
+     MOVE 0 TO WS-VIRTUAL
+     IF L-ITEM >= 2048 - CL-USE-VIRT AND IS-USE-COUNT >= 2048 - L-ITEM
+         MOVE IS-USE-REAL(2048 - L-ITEM) TO WS-REAL
+         MOVE 1 TO WS-VIRTUAL
+     END-IF
      MOVE 1 TO WS-SPRITE
      MOVE 0 TO WS-FACES WS-LAYER1-SPRITE
      MOVE 0 TO MR-FP-PRESENT WS-SPECIAL MR-DX-PRESENT(1) MR-DX-PRESENT(2) MR-DX-PRESENT(3)
-     CALL "CL-ITEM-INFO" USING CLIENT-STATE L-ITEM WS-NS WS-NAME WS-MAX WS-BLOCK WS-TOOL WS-FOOD
+     CALL "CL-ITEM-INFO" USING CLIENT-STATE WS-REAL WS-NS WS-NAME WS-MAX WS-BLOCK WS-TOOL WS-FOOD
          WS-KNOWN
      IF WS-KNOWN = 1
          MOVE SPACES TO WS-PATH
@@ -252,6 +261,12 @@
              MOVE 0 TO WS-ID-LENGTH
              IF JD-ERROR = 0
                  MOVE 0 TO WS-SPECIAL
+                 IF WS-VIRTUAL = 1
+                     MOVE "model.on_true.model" TO WS-JP
+                     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-JP)) TO WS-JP-LENGTH
+                     CALL "JSON-FIND" USING JSON-DOC WS-JP WS-JP-LENGTH WS-NODE
+                     CALL "JSON-STRING" USING JSON-DOC WS-NODE WS-ID WS-CAP WS-ID-LENGTH
+                 END-IF
                  PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 14 OR WS-ID-LENGTH > 0
                      MOVE SPACES TO WS-JP
                      MOVE WS-JPATH(WS-K) TO WS-JP

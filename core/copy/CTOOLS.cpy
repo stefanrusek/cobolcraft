@@ -18,3 +18,11 @@
        10 TS-GLIDE-LAST-Y     FLOAT-LONG.
        10 TS-GLIDE-LAST-Z     FLOAT-LONG.
        10 TS-SPIN-TICKS        BINARY-LONG.        *> ticks left of a Riptide spin attack (20 at the launch), 0 none
+*>     --- 002-lane-bugusein: the click Use Item On consumed (core/src/blocks.cob BLOCK-USE-ON, play.cob PLAY-PACKET) ---
+       10 TS-CLICK-TICK        BINARY-DOUBLE.      *> CW-TICKS + 1 of the Use Item On that a block took (the Use Item of that tick is ignored), 0 none
+*>     --- CC-0014: the goat horn (core/src/horn-use.cob; 25 part 7 section 12.2) ---
+       10 TS-HORN-COOLDOWN     BINARY-DOUBLE.      *> CW-TICKS + 1 until which the goat horn is on its item cooldown (140 ticks from a use), 0 none
+*>     --- CC-0014: the item in use as the viewers see it (docs/protocol/58 sections 2.1, 2.2; core/src/horn-use.cob, core/src/poses.cob USE-FLAGS-SYNC) ---
+       10 TS-HORN-USE-START    BINARY-DOUBLE.      *> CW-TICKS + 1 when the use of a goat horn started (140 ticks), 0 none
+       10 TS-HORN-USE-HAND     BINARY-LONG.        *> the hand of the horn use (0 the held slot, 1 the off-hand)
+       10 TS-LIVING-SENT       BINARY-LONG.        *> the living entity flags byte (entry 8) last sent: 1 using an item, 2 the used hand is the off-hand (kept when the use ends)

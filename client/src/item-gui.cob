@@ -139,7 +139,7 @@
  IDENTIFICATION DIVISION.
  PROGRAM-ID. ITEM-GUI-ICON.
 *> USING CLIENT-STATE, item id, x, y (the icon cell's corner in GUI pixels), dye and potion (the stack's dyed_color RGB and potion id, -1 none: STACK-TINT), drawn out: draws the pooled quads of the item (ITEM-GUI-BAKE, filled by ITEM-SPRITE-OF, which the caller has
-*> called) into the icon layer, a corner at ((x + cell x) times the GUI scale, (y + cell y) times it), in the sprite of the quad, the brightness of its lighting, far to near. Drawn out 1 when
+*> called) into the icon layer, a corner at ((x + cell x) times the GUI scale, (y + cell y) times it), in the sprite of the quad, its lighting folded into the vertex colour (SPECIAL-UI-QUAD), far to near. Drawn out 1 when
 *> the quads are drawn, a quad with a tintindex in the colour of that layer of the item's tint list (43 section 7; ITEM-ICON-TINT: the grass block's top, leaves, a vine); 0 and nothing added for an item with none (a flat item, a stand-in set, a set of the cobolcraft type) or when they do not all fit the icon layer: the caller draws
 *> the flat icon.
  DATA DIVISION.

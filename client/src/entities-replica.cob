@@ -238,6 +238,7 @@
                  MOVE 0 TO EN-BOX-ATTACK(WS-ROW)
                  MOVE 0 TO EN-VANILLA(WS-ROW) EN-MODEL(WS-ROW) EN-VALUE(WS-ROW) EN-SWELL-BASE(WS-ROW) EN-SWELL-MS(WS-ROW)
                  MOVE 0 TO EN-FLAGS(WS-ROW) EN-POSE(WS-ROW) EN-LIVING(WS-ROW) EN-PARTS(WS-ROW)
+                 MOVE 0 TO EN-USE-ACTIVE(WS-ROW) EN-USE-ITEM(WS-ROW) EN-USE-LEFT(WS-ROW)
 *>               The walk animation and the swing start at rest (54 section 1.1); the position of the previous tick is this one.
                  MOVE 0 TO EN-WALK-SPEED-OLD(WS-ROW) EN-WALK-SPEED(WS-ROW) EN-WALK-POS(WS-ROW)
                  MOVE 1 TO EN-WALK-SCALE(WS-ROW)
@@ -275,7 +276,7 @@
                  PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
                      MOVE 0 TO EN-EQ(WS-ROW, WS-I)
                      MOVE -1 TO EN-EQ-DYE(WS-ROW, WS-I)
-                     MOVE 0 TO EN-EQ-TRIM-MAT(WS-ROW, WS-I) EN-EQ-TRIM-PAT(WS-ROW, WS-I) EN-EQ-FOIL(WS-ROW, WS-I)
+                     MOVE 0 TO EN-EQ-TRIM-MAT(WS-ROW, WS-I) EN-EQ-TRIM-PAT(WS-ROW, WS-I) EN-EQ-FOIL(WS-ROW, WS-I) EN-EQ-NOINST(WS-ROW, WS-I)
                  END-PERFORM
                  MOVE -1 TO EN-HB-BASE(WS-ROW, 1) EN-HB-BASE(WS-ROW, 2)
                  MOVE 0 TO EN-HB-COUNT(WS-ROW, 1) EN-HB-COUNT(WS-ROW, 2)
@@ -360,6 +361,8 @@
                  END-IF
                  IF WS-ROW > 0 AND MD-MD-INDEX = 8 AND MD-MD-SERIALIZER = PB-MDS-BYTE
                      MOVE MD-MD-INT TO EN-LIVING(WS-ROW)
+*>                   The viewer's use start and clear tests run for every received entry 8 (58 section 2.3).
+                     CALL "ENTITY-USE-ENTRY8" USING CLIENT-STATE WS-ROW
                  END-IF
 *>               The skin parts byte of a player (entry 16, BYTE, 47 section 5.3): the overlay layers the model shows.
                  IF WS-ROW > 0 AND MD-MD-INDEX = 16 AND MD-MD-SERIALIZER = PB-MDS-BYTE AND EN-KEY(WS-ROW) = "player"
@@ -633,7 +636,7 @@
  COPY PROTO.
  PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-SLOT PB-ITEMSTACK-X.
      MOVE -1 TO EN-EQ-DYE(L-ROW, L-SLOT + 1)
-     MOVE 0 TO EN-EQ-TRIM-MAT(L-ROW, L-SLOT + 1) EN-EQ-TRIM-PAT(L-ROW, L-SLOT + 1) EN-EQ-FOIL(L-ROW, L-SLOT + 1)
+     MOVE 0 TO EN-EQ-TRIM-MAT(L-ROW, L-SLOT + 1) EN-EQ-TRIM-PAT(L-ROW, L-SLOT + 1) EN-EQ-FOIL(L-ROW, L-SLOT + 1) EN-EQ-NOINST(L-ROW, L-SLOT + 1)
      IF L-SLOT < 2
          MOVE -1 TO EN-HB-BASE(L-ROW, L-SLOT + 1)
          MOVE 0 TO EN-HB-COUNT(L-ROW, L-SLOT + 1)
@@ -641,6 +644,12 @@
      IF PB-ISX-COUNT <= 0
          GOBACK
      END-IF
+*>   The patch that removes the instrument component (type 63) leaves a goat horn with a use duration of 0 (58 section 5.2).
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > PB-ISX-REMOVED-COUNT
+         IF PB-ISX-REMOVED(WS-K) = 63
+             MOVE 1 TO EN-EQ-NOINST(L-ROW, L-SLOT + 1)
+         END-IF
+     END-PERFORM
      MOVE -1 TO WS-OVERRIDE
      MOVE 0 TO WS-ENCHANTED
      PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > PB-ISX-ADDED-COUNT

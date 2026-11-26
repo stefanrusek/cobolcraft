@@ -189,8 +189,8 @@
      MOVE "acceptance kelp standard: the upper kelp is still there after the fluid updates" TO WS-CASE
      PERFORM CHECK-KEY
      COMPUTE WS-CY = WS-FLOOR + 1
-     MOVE "kelp" TO WS-WANT
-     MOVE "acceptance kelp standard: the kelp under the new kelp stays (head to plant conversion is not wired into the hooks)" TO WS-CASE
+     MOVE "kelp_plant" TO WS-WANT
+     MOVE "acceptance kelp standard: the kelp under the new kelp became a kelp_plant (29b part 4 section 3.2 step 7)" TO WS-CASE
      PERFORM CHECK-KEY
 
 *>   Kelp on the side of a kelp: the cell beside it, on the seabed

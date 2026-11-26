@@ -508,6 +508,10 @@
              IF WS-OLD-TYPE = 24
                  CALL "BE-SHULKER-DROP" USING WS-INDEX WS-OLD-BLOCK WS-HANDLED
              END-IF
+*>           A brushable block entity (type 40) is not a container: its buried item and loot table go with the block (31-4 section 7.2, 29b part 1 section 3.5).
+             IF WS-OLD-TYPE = 40
+                 MOVE 1 TO WS-HANDLED
+             END-IF
              IF WS-HANDLED = 0
                  CALL "BE-DROP-CONTENTS" USING WS-INDEX
              END-IF
@@ -599,7 +603,8 @@
      MOVE CB-S-BLOCK(L-STATE + 1) TO WS-BLOCK
      CALL "BE-STATE-FIELDS" USING L-STATE WS-FAMILY WS-DIR WS-TYPE WS-FLAG
 *>   A dispenser and a dropper face the opposite of the nearest looking direction, up and down included (24 part 5 section 7.1; PLACE-STATE, place-state.cob), not the horizontal opposite of the look.
-     IF WS-FAMILY = 0 OR WS-FAMILY = 6
+*>   A hopper takes its facing from the clicked face in PLACE-STATE (24 part 5 section 7.8); rebuilt here from the default state it would always face down.
+     IF WS-FAMILY = 0 OR WS-FAMILY = 5 OR WS-FAMILY = 6
          GOBACK
      END-IF
      COMPUTE WS-LOOKED = FUNCTION MOD(FUNCTION INTEGER(PL-YAW(WS-ROW) / 90 + 0.5), 4)

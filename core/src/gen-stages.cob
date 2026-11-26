@@ -1,7 +1,7 @@
 *> The step programs of the resumable chunk generation (gen-job.cob; GENJOB.cpy, GENSTEPS.cpy), one per stage of the TERRAIN
 *> pipeline of docs/protocol/10 section 11.1. Each is called with the job and does the work of step GJ-SUB of its stage,
 *> which is a bounded piece: GEN-STAGE-BIOMES one layer of 4 x 4 quart cells, GEN-STAGE-DENSITY one column of cell corners,
-*> GEN-STAGE-FILL one slab of four block rows. Each increments its counter of GENSTAGE.cpy.
+*> GEN-STAGE-FILL one slab of four block rows. Each increments its counter of GENSTAGE.cpy. GEN-STAGE-BIOMES also carries a slice of the structure start scan of the fill stage (STRUCT-BEARD-AHEAD).
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GEN-STAGE-BIOMES.
@@ -33,6 +33,8 @@
     COPY GENJOB REPLACING LEADING ==GJ-== BY ==J-==.
  PROCEDURE DIVISION USING L-JOB.
      ADD 1 TO GS-CLIMATE
+*>   the scan of the structure starts around the chunk that the fill stage needs (STRUCT-BEARD-PREPARE) is done ahead, a slice of it in each of these steps (CC-0047), so that no one step has it all
+     CALL "STRUCT-BEARD-AHEAD" USING J-CX J-CZ J-SUB
      IF CL-COUNT = 0
          CALL "OVB-BUILD"
      END-IF

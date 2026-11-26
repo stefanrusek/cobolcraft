@@ -327,6 +327,7 @@
  78 CL-MAX-HL-VERTICES      VALUE 144.
  78 CL-MAX-PV-VERTICES      VALUE 288.  *> the preview: 48 faces of 6 vertices
  78 CL-ITEM-COUNT           VALUE 18.  *> item ids 0 to 17 (standin-content §2)
+ 78 CL-USE-VIRT             VALUE 8.   *> virtual item ids 2040 to 2047: the in-use variants of items (IS-USE-*, ITEM-IN-USE-ID)
  78 CL-SLOT-SIZE            VALUE 20.  *> slot widget, GUI pixels (16-pixel icon, 2-pixel inset)
 *> Chat (client-surface §4; 05c Chat Message String(max 256)): messages kept, messages shown, how
 *> long a message shows while chat is closed, the longest line in UTF-16 code units.

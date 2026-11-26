@@ -45,6 +45,11 @@
  01 WS-LENGTH              BINARY-LONG.
  01 WS-OK                  BINARY-LONG.
  01 WS-MARKED              BINARY-LONG.
+ 01 WS-PLANE               FLOAT-SHORT VALUE 6.
+ 01 WS-PLUS                BINARY-LONG.
+ 01 WS-ONE-ROW             BINARY-LONG.
+ 01 WS-ONE-SECTION         BINARY-LONG VALUE 1.
+ 01 WS-MINUS               BINARY-LONG.
  PROCEDURE DIVISION.
      MOVE SPACES TO WS-GEN
      ACCEPT WS-GEN FROM ENVIRONMENT "CC_GENERATED_DIR"
@@ -129,6 +134,16 @@
      MOVE "mesher leaves fancy: oak leaves beside birch leaves draw 12 faces (the one between them twice)" TO TL-CASE
      MOVE 12 TO TL-EXPECTED-N
      MOVE WS-FACES TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   CC-0013: the two quads of the face between the leaf blocks (the plane x = 6, in the section's own coordinates) lie in one plane and face opposite ways: the oak's east face
+*>   (outward normal +x) and the birch's west face (-x), each wound clockwise seen from outside, so that the opaque terrain pass with back-face culling draws only the one that
+*>   looks at the camera (without the culling the two fight for the pixel). The outward normal of a quad wound clockwise from outside is minus the cross product of its first two edges.
+     MOVE WS-ROW(1) TO WS-ONE-ROW
+     CALL "TML-FACE-SIDES" USING WR-OP-ADDR(WS-ONE-ROW, WS-ONE-SECTION) WR-OP-COUNT(WS-ONE-ROW, WS-ONE-SECTION) WS-PLANE WS-PLUS WS-MINUS
+     MOVE "mesher leaves fancy: the face between oak and birch leaves is one quad looking east and one looking west (outward normals +x and -x)" TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE 11 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = WS-PLUS * 10 + WS-MINUS
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
      MOVE 1 TO CL-LEAVES-CULL
      PERFORM MESH-ALL
@@ -263,3 +278,57 @@
      END-PERFORM
      COMPUTE WS-FACES = (WS-TR + WS-OP) / 6.
  END PROGRAM TEST-MESHER-LEAVES.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TML-FACE-SIDES.
+*> USING mesh address (POINTER), vertex count, plane x (FLOAT-SHORT, section-local), quads looking to +x out, quads looking to -x out (BINARY-LONG): of the quads (6 vertices:
+*> 1 2 3, 1 3 4) whose corners all lie in the plane x = L-PLANE, how many have the outward normal +x and how many -x (minus the cross product of the first two edges, wound clockwise
+*> seen from outside).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-Q                   BINARY-LONG.
+ 01 WS-A                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-C                   BINARY-LONG.
+ 01 WS-E1Y                 FLOAT-LONG.
+ 01 WS-E1Z                 FLOAT-LONG.
+ 01 WS-E2Y                 FLOAT-LONG.
+ 01 WS-E2Z                 FLOAT-LONG.
+ 01 WS-CROSS               FLOAT-LONG.
+ 01 B-VERTICES BASED.
+    05 B-VERTEX OCCURS 1000000 TIMES.
+       10 B-X              FLOAT-SHORT.
+       10 B-Y              FLOAT-SHORT.
+       10 B-Z              FLOAT-SHORT.
+       10 B-REST           FLOAT-SHORT OCCURS 8 TIMES.
+ LINKAGE SECTION.
+ 01 L-ADDR                 USAGE POINTER.
+ 01 L-COUNT                BINARY-LONG.
+ 01 L-PLANE                FLOAT-SHORT.
+ 01 L-PLUS                 BINARY-LONG.
+ 01 L-MINUS                BINARY-LONG.
+ PROCEDURE DIVISION USING L-ADDR L-COUNT L-PLANE L-PLUS L-MINUS.
+     MOVE 0 TO L-PLUS L-MINUS
+     IF L-COUNT > 0
+         SET ADDRESS OF B-VERTICES TO L-ADDR
+     END-IF
+     PERFORM VARYING WS-Q FROM 0 BY 6 UNTIL WS-Q >= L-COUNT
+         COMPUTE WS-A = WS-Q + 1
+         COMPUTE WS-B = WS-Q + 2
+         COMPUTE WS-C = WS-Q + 3
+         IF FUNCTION ABS(B-X(WS-A) - L-PLANE) < 0.001 AND FUNCTION ABS(B-X(WS-B) - L-PLANE) < 0.001
+                 AND FUNCTION ABS(B-X(WS-C) - L-PLANE) < 0.001
+             COMPUTE WS-E1Y = B-Y(WS-B) - B-Y(WS-A)
+             COMPUTE WS-E1Z = B-Z(WS-B) - B-Z(WS-A)
+             COMPUTE WS-E2Y = B-Y(WS-C) - B-Y(WS-B)
+             COMPUTE WS-E2Z = B-Z(WS-C) - B-Z(WS-B)
+             COMPUTE WS-CROSS = WS-E1Y * WS-E2Z - WS-E1Z * WS-E2Y
+             IF WS-CROSS < 0
+                 ADD 1 TO L-PLUS
+             ELSE
+                 ADD 1 TO L-MINUS
+             END-IF
+         END-IF
+     END-PERFORM
+     GOBACK.
+ END PROGRAM TML-FACE-SIDES.
