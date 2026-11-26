@@ -2,7 +2,7 @@
 spile: ticket
 id: CC-0026
 type: feature
-status: draft
+status: implementing
 owner: stefanrusek
 resolution:
 blocked_by: []
@@ -11,7 +11,8 @@ relations:
   depends_on: []
   relates_to: [CC-0001, CC-0002]
   supersedes: []
-implementation: []
+implementation:
+  branch: 004-perf-frame
 ---
 
 # CC-0026: The single-player world runs in a second process
@@ -35,10 +36,22 @@ the core ticks run on another processor core while the client renders. The in-pr
 - Given a world in process mode, when I pause, then the child's clock stops; when I open the world to others, then a
   guest joins.
 
+### As a Player, I want single-player to feel the same whichever way the world is hosted
+
+- Given the same world opened once in the in-process host and once in process mode, when I create or open it, play,
+  pause, open it to others, save and quit, then I notice no difference: the same screens in the same order, no extra
+  window, terminal line or system prompt, the same world content and saved files, and no added wait or input delay that
+  I can notice.
+
 ## Functional Requirements
 
 - FR-001: The design of docs/design/singleplayer-process.md holds: spawn glue in the shim (cc_wk_proc_*), server
   --hosted with a handshake and control channel on its pipes, client SPP-* programs.
+
+- FR-002 (operator, 2026-11-26): process mode is no noticeable change for the Player. Checked by the same acceptance
+  scenarios run in both modes with the same expected results, by measured numbers set side by side for both modes (time
+  from choosing the world to the first world frame, frame statistics while chunks load and once settled, time to quit),
+  and by the operator playing it. A difference that a Player can notice is a defect of this ticket.
 
 ## State at the end of the polish run (2026-11-23)
 
@@ -49,3 +62,9 @@ the core ticks run on another processor core while the client renders. The in-pr
   is in /Users/stefanrusek/Code/cobolcraft-spproc.
 - Left: merge, re-gate (shim, contract and ABI gates apply), read the frame bench numbers and have the operator decide
   whether process mode should become the default; nothing here changes the default.
+
+## 2026-11-26
+
+- Taken up on the operator's word while measuring CC-0054: the core tick is 2.9 to 5.3 ms of the client's frame on an M1
+  Air once settled and 6.4 to 12.8 ms while chunks load (CC-0054 notes). Branch 002-lane-spproc is merged into
+  004-perf-frame for this; the default stays the in-process host until the operator decides.

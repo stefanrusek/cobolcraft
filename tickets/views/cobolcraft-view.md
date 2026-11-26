@@ -42,7 +42,6 @@ project: CobolCraft
 | [CC-0020](../CC-0020-ci-workflow.md) | Continuous integration builds and tests the packages that need no client jar | feature | stefanrusek |  |  |
 | [CC-0024](../CC-0024-block-shapes-doc-51-round-4.md) | Block shapes follow doc 51 round 4: offset rule, scaffolding, shulker lid, light data, step-up | feature | stefanrusek |  |  |
 | [CC-0025](../CC-0025-client-closures-doc-57-hud.md) | Chat, title, boss bar and scoreboard HUD, particle options and piglin crossbow pose | feature | stefanrusek |  |  |
-| [CC-0026](../CC-0026-single-player-second-process.md) | The single-player world runs in a second process | feature | stefanrusek |  |  |
 | [CC-0027](../CC-0027-jigsaw-memo-redesign.md) | A jigsaw structure start is not assembled again after an unrelated start | feature | stefanrusek |  |  |
 | [CC-0028](../CC-0028-mob-travel-input.md) | Mob movement uses the travel input of the doc (zza and xxa) | feature | stefanrusek |  |  |
 | [CC-0029](../CC-0029-piston-sculk-crafter-leftovers.md) | Pistons stick to honey, sculk occlusion and the shrieker work, and the redstone leftovers of lane p46h | feature | stefanrusek |  |  |
@@ -69,6 +68,12 @@ project: CobolCraft
 | [CC-0053](../CC-0053-other-players-see-held-items-and-armour.md) | Other players see what a player holds and wears at all times | bug | stefanrusek |  |  |
 | [CC-0054](../CC-0054-steady-client-frame-rate.md) | The client holds a steady frame rate at the agreed target in a standard world | bug | stefanrusek |  |  |
 | [CC-0055](../CC-0055-keep-alive-across-finish-configuration.md) | A keep-alive due while Finish Configuration is on its way is still answered | bug | stefanrusek |  |  |
+
+### implementing
+
+| ID | Title | Type | Owner | Blocked | PR |
+|---|---|---|---|---|---|
+| [CC-0026](../CC-0026-single-player-second-process.md) | The single-player world runs in a second process | feature | stefanrusek |  |  |
 
 ### unverified
 
