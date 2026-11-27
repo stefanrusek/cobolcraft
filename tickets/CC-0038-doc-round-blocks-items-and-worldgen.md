@@ -2,7 +2,7 @@
 spile: ticket
 id: CC-0038
 type: feature
-status: draft
+status: implementing
 owner: stefanrusek
 resolution:
 blocked_by: []
@@ -11,7 +11,8 @@ relations:
   depends_on: []
   relates_to: [CC-0001, CC-0029, CC-0030, CC-0031, CC-0032]
   supersedes: []
-implementation: []
+implementation:
+  branch: 005-doc-rounds
 ---
 
 # CC-0038: Reference docs settle the block, container, item and worldgen conflicts and gaps

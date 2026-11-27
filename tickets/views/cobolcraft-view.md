@@ -52,9 +52,6 @@ project: CobolCraft
 | [CC-0033](../CC-0033-shim-depth-only-pipeline.md) | A depth-only pipeline gives the boat water patch and the painting back depth bias | feature | stefanrusek |  |  |
 | [CC-0034](../CC-0034-glint-and-held-items-rest.md) | Compass and clock glint, fox and panda held items and the creeper swirl | feature | stefanrusek |  |  |
 | [CC-0035](../CC-0035-player-appearance-cape-and-options.md) | Players show their cape, ears and elytra, and the skin options screen exists | feature | stefanrusek |  |  |
-| [CC-0036](../CC-0036-doc-round-mobs-and-entities.md) | Reference docs state the mob and entity behaviour that code had to skip | feature | stefanrusek |  |  |
-| [CC-0037](../CC-0037-doc-round-client-and-rendering.md) | Reference docs state the client rendering and HUD rules that code had to skip | feature | stefanrusek |  |  |
-| [CC-0038](../CC-0038-doc-round-blocks-items-and-worldgen.md) | Reference docs settle the block, container, item and worldgen conflicts and gaps | feature | stefanrusek |  |  |
 | [CC-0039](../CC-0039-wire-uncalled-mob-rule-libraries.md) | The built mob rule functions are called by the tick | feature | stefanrusek |  |  |
 | [CC-0040](../CC-0040-mob-behaviour-long-tail.md) | The remaining mob behaviours of docs 44 and 19 to 21 are built | feature | stefanrusek |  |  |
 | [CC-0041](../CC-0041-game-event-emitters.md) | Game events and vibrations are emitted by the actions that cause them | feature | stefanrusek |  |  |
@@ -67,6 +64,15 @@ project: CobolCraft
 | [CC-0050](../CC-0050-real-player-skins.md) | A player's own skin is shown to the others | feature | stefanrusek |  |  |
 | [CC-0051](../CC-0051-vanilla-client-actions-ignored.md) | The actions of a vanilla client that the server discards take effect | feature | stefanrusek |  |  |
 | [CC-0053](../CC-0053-other-players-see-held-items-and-armour.md) | Other players see what a player holds and wears at all times | bug | stefanrusek |  |  |
+
+### implementing
+
+| ID | Title | Type | Owner | Blocked | PR |
+|---|---|---|---|---|---|
+| [CC-0036](../CC-0036-doc-round-mobs-and-entities.md) | Reference docs state the mob and entity behaviour that code had to skip | feature | stefanrusek |  |  |
+| [CC-0037](../CC-0037-doc-round-client-and-rendering.md) | Reference docs state the client rendering and HUD rules that code had to skip | feature | stefanrusek |  |  |
+| [CC-0038](../CC-0038-doc-round-blocks-items-and-worldgen.md) | Reference docs settle the block, container, item and worldgen conflicts and gaps | feature | stefanrusek |  |  |
+| [CC-0064](../CC-0064-doc-round-sounds-and-music.md) | Reference docs state the game's sound events, sound definitions and music | feature | stefanrusek |  |  |
 
 ### unverified
 

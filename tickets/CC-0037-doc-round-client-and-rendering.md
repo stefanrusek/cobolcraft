@@ -2,7 +2,7 @@
 spile: ticket
 id: CC-0037
 type: feature
-status: draft
+status: implementing
 owner: stefanrusek
 resolution:
 blocked_by: []
@@ -11,7 +11,8 @@ relations:
   depends_on: []
   relates_to: [CC-0001, CC-0034, CC-0035]
   supersedes: []
-implementation: []
+implementation:
+  branch: 005-doc-rounds
 ---
 
 # CC-0037: Reference docs state the client rendering and HUD rules that code had to skip
