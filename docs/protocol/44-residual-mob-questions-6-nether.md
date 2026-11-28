@@ -253,7 +253,7 @@ Item tag `piglin_loved` (read, 26 entries; `#` marks a tag reference): `#gold_or
 `Piglin.wantsToPickUp(level, stack)` = game rule `mob_griefing` is true and `canPickUpLoot` and `PiglinAi.wantsToPickup(piglin, stack)`. The latter, in order:
 
 1. Baby and the stack is in tag `ignored_by_piglin_babies` (`leather`): no.
-2. The stack is in item tag `piglin_repellents`: no.
+2. The stack is in item tag `piglin_repellents`: no. The item tag has exactly three members (read in `data/minecraft/tags/item/piglin_repellents.json`): `soul_torch`, `soul_lantern` and `soul_campfire`; the block tag of the same name (4.1) has five (those three blocks, `soul_fire` and `soul_wall_torch`).
 3. `ADMIRING_DISABLED` present and `ATTACK_TARGET` present: no.
 4. Barter currency: yes exactly when no loved item is in the off hand.
 5. `canAddToInventory(stack)` is computed as `fits`. Gold nugget: `fits`. Food: yes when not `hasEatenRecently` and `fits`. A loved item: yes when no loved item is in the off hand and `fits`.

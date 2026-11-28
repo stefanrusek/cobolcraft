@@ -33,10 +33,13 @@ teleport and includes the position and rotation that resulted.
 | Yaw (yRot) | Float | Degrees. |
 | Pitch (xRot) | Float | Degrees. |
 
-On a matching id, the server snaps the player to its own awaited position and then runs its normal movement handling
-with the values in this packet. If X, Y, Z, yaw or pitch is NaN or infinite, or out of range, the server disconnects with
-`multiplayer.disconnect.invalid_player_movement`. The range test (`containsInvalidValues`) is assumed to be the same
-one the movement packets use (inferred).
+On a matching id, the server first requires an awaited position and values that pass `containsInvalidValues` (an
+awaited position is missing, or X, Y or Z is NaN, or yaw or pitch is not finite: the server disconnects with
+`multiplayer.disconnect.invalid_player_movement`); then it snaps the player to its own awaited position (keeping its own
+rotation), takes that position as the last good one, clears the player's changing-dimension flag (`hasChangedDimension`; the speed test and the moved-wrongly test of 53 section 10.3 rules 5 and 6 skip a player who is still flagged; see 39), clears the awaited position and runs its normal movement handling
+with the values in this packet (on-ground false, horizontal collision false). A packet whose id does not match is
+ignored. The validity test is the same one the movement packets use and has no range limit: see "Movement values: the
+validity test and the server's log lines" below.
 
 ## 0x01 (1) Serverbound Attack (ServerboundAttackPacket)
 
@@ -712,7 +715,7 @@ input and vehicle movement. When the timer expires, the server treats the player
 Loaded delays play by about 3 seconds but does not disconnect. Clients should send it promptly once chunks around the
 spawn point have arrived.
 
-**Client Tick End (0x0D).** The vanilla client sends this every tick. It is not needed to stay connected. The server
+**Client Tick End (0x0D).** The vanilla client sends this every tick, except while a single-player client is paused (40-menus-1 §5.8). It is not needed to stay connected. The server
 uses it to reset per-tick movement state, and sending it after each tick's movement packets matches vanilla behavior.
 
 **Configuration Acknowledged (0x10).** When the server sends Start Configuration during play, the client must reply
@@ -789,11 +792,62 @@ This is a single VarInt `v`. If v is 0, the value is absent. If v > 0, the value
 
 ---
 
+## Movement values: the validity test and the server's log lines
+
+Read in `ServerGamePacketListenerImpl` (`containsInvalidValues`, `clampHorizontal`, `clampVertical`,
+`handleAcceptTeleportPacket`, `handleMovePlayer`, `handlePlayerPositionChange`, `handleMoveVehicle`, `tick`,
+`getMaximumFlyingTicks`). The rules that decide when a move is rejected or corrected are in 53 section 10.3 (player) and
+44-7 section 10.4.1 (ridden vehicle); this section gives the validity test, the disconnects and the log texts.
+
+**The validity test.** `containsInvalidValues(x, y, z, yRot, xRot)` returns true ("invalid") when **x, y or z is NaN**, or
+when **yRot or xRot is not finite** (NaN, positive infinity or negative infinity). Nothing else is tested: the function has
+no world-border, magnitude or range limit, and an **infinite coordinate is not invalid** by this test. A position then
+passes through `clampHorizontal` (x and z limited to the range -3.0E7 to 3.0E7) and `clampVertical` (y limited to -2.0E7
+to 2.0E7), and rotations pass through `Mth.wrapDegrees`, before they are used. Every finite number of any size is
+therefore accepted by the test.
+
+| Packet | When the test runs | On an invalid value |
+|---|---|---|
+| Accept Teleportation (0x00) | only for a packet whose teleport id equals the awaited id; an awaited position must also exist | disconnect `multiplayer.disconnect.invalid_player_movement` (the same disconnect when the id matches but no position is awaited) |
+| Move Player (0x1E to 0x21) | first, before anything else; the fields a variant does not carry are read as 0.0 (position 0, 0, 0, rotation 0, 0), so a packet without position or without rotation is never invalid for that part | `multiplayer.disconnect.invalid_player_movement`; the same disconnect for a second position-carrying packet in one tick (53 section 10.3 rule 1) |
+| Move Vehicle (0x22) | first | disconnect `multiplayer.disconnect.invalid_vehicle_movement` |
+
+**Log lines** (all at WARN level in the server log, except the last; `{}` is replaced in order by the arguments, numbers
+by the default text of a Java `double`; "plain name" is the entity's display name without formatting). These texts are not
+part of the wire protocol; they are listed so that an implementation can produce the same diagnostics.
+
+| Event | Text | Arguments in order |
+|---|---|---|
+| player moved too fast (53 section 10.3 rule 5) | `{} moved too quickly! {},{},{}` | the player's plain name; then dx, dy, dz = the clamped claimed position minus the position at the start of the tick |
+| player moved wrongly (53 section 10.3 rule 6) | `{} moved wrongly!` | the player's plain name |
+| ridden vehicle moved too fast (44-7 section 10.4.1 step 4) | `{} (vehicle of {}) moved too quickly! {},{},{}` | the vehicle's plain name; the player's plain name; dx, dy, dz = the clamped claimed position minus the vehicle's position at the start of the tick |
+| ridden vehicle moved wrongly (step 5) | `{} (vehicle of {}) moved wrongly! {}` | the vehicle's plain name; the player's plain name; the length of the position error (square root of the squared error that exceeded 0.0625) |
+| a vehicle report from a player who is not controlling it (step 2) | `{} was expected to be controlling vehicle {} but was not. Resetting vehicle position.` | the player's plain name; the vehicle's name component `Entity.getName()` passed to the logger as an object, so the log shows its debug form, not its text: for an unnamed vehicle `translation{key='entity.minecraft.<type>', args=[]}` (the entity type's description id); for a custom name, that name component with its click events removed (siblings too), printed as `literal{<name>}` for a literal name, followed by `[style=<style>]`, `[siblings=<list>]` or `[style=<style>,siblings=<list>]` only when the style is not empty or siblings exist |
+| floating too long | `{} was kicked for floating too long!` (player) and `{} was kicked for floating a vehicle too long!` (vehicle); each is followed by the disconnect `multiplayer.disconnect.flying` | the player's plain name |
+| too many move packets (DEBUG level) | `{} is sending move packets too frequently ({} packets since last tick)` | the player's plain name; the packet count (when it exceeds 5 the count used by the speed test is replaced by 1) |
+
+**Floating limit.** The server counts ticks in which the client's reported movement leaves the player (or the ridden
+vehicle) floating (53 section 10.3 rule 7; 44-7 section 10.4.1 step 6). Player count: raised once per server tick of the
+connection while the floating flag holds and the player is not sleeping, not a passenger and not dying; a tick that
+fails one of those tests clears the flag and the count. Vehicle count: raised once per server tick while the vehicle's own
+floating flag holds and the player's root vehicle is controlled by the player; otherwise the vehicle flag and count are
+cleared. The kick happens when the count **exceeds** the
+maximum `ceil(80 x max(0.08 / g, 1.0))`, where `g` is the gravity of the entity (`getGravity()`: 0.08 for a player gives
+80 ticks); an entity whose gravity is below 9.999999747378752E-6 (the float 1.0E-5) is never kicked (the maximum is the
+largest int). For a vehicle the count belongs to the controlling passenger and uses the vehicle's gravity.
+
+**Two further rules of the movement checks.** (1) A moved-wrongly comparison never sees a vertical
+error: the code zeroes the vertical difference whenever it is greater than -0.5 **or** smaller than 0.5, which every
+finite value satisfies, so only the horizontal distance counts, for the player and for the vehicle (53 section 10.3
+rule 6 and 44-7 section 10.4.1 step 5 state the same). (2) The player's speed test, with its packet counter, runs only
+while `TickRateManager.runsNormally()` holds. That flag is recomputed at every tick of the manager as "not frozen, or the
+number of frozen ticks still to run is above 0", so it is also true during a pending `/tick step`: the test is skipped
+only while the tick rate is frozen and no step is pending.
+
 ## Open questions
 
-1. **`containsInvalidValues` bounds.** The server calls a static `containsInvalidValues(DDDFF)` on Accept Teleportation
-   and the move packets. This document does not give its exact coordinate and rotation limits. They are not needed
-   for the wire format, but a client should keep values finite and within world bounds.
+1. Resolved: the validity test is specified in "Movement values" above (NaN coordinates and non-finite rotations are
+   invalid; there is no range limit).
 2. **Argument-signature link indices.** Each signed command argument is probably signed with its own chain link index,
    so the index rises once per argument, but this was inferred and not traced through
    `ClientPacketListener.sendCommand` / `SignedMessageChain$Encoder`. Implementers who need signed commands should
