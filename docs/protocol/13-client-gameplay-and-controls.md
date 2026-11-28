@@ -23,14 +23,22 @@ and double precision otherwise; where it matters it is stated.
 
 ## 1. Movement
 
+The complete tick-by-tick rules of the local player (tick order, every velocity change, every medium and block, effects,
+fall distance, pushes, worked examples) are in
+[59-player-movement-simulation.md](59-player-movement-simulation.md). The text below is the summary; where it is shorter
+than 59, 59 applies.
+
 ### 1.1 Inputs
 
 `KeyboardInput.tick` builds each tick a 7-flag `Input` record (forward, backward, left, right, jump, shift,
 sprint; the same order as the Player Input packet masks 0x01 to 0x40 in 05c). The move vector is
 `(left-right impulse, forward-back impulse)` where each impulse is +1, -1 or 0 (both or neither key = 0), then
 normalised if non-zero. `LocalPlayer.modifyInput` then multiplies it by 0.98; by the item-use slow-down while using
-an item; by the `sneaking_speed` attribute (default 0.3) while sneaking; and finally squares-off the vector
-(`modifyInputSpeedForSquareMovement`: scale by min(1, length x distance-to-unit-square)). `LocalPlayer.applyInput`
+an item and not riding; by the `sneaking_speed` attribute (default 0.3) while **moving slowly** (the client's crouching
+flag or crawling, 53 section 3.3, not simply the sneak key); and finally squares-off the vector
+(`modifyInputSpeedForSquareMovement`: with `u` the unit vector and `l` the length, the result is
+`u x min(1, l x D)`, where the distance to the unit square `D = sqrt(1 + r^2)` and `r` is the smaller of `|u.x|`,
+`|u.z|` divided by the larger; 59 section 3.2). `LocalPlayer.applyInput`
 copies the vector to the strafe/forward impulses and sets `jumping` = the jump flag.
 
 ### 1.2 Constants (attributes and entity values)
@@ -54,18 +62,18 @@ copies the vector to the strafe/forward impulses and sets `jumping` = the jump f
 
 ### 1.3 Per-tick order (`LocalPlayer.aiStep`, `LivingEntity.aiStep`, `LivingEntity.travel*`)
 
-1. `Player.aiStep` (called at the end of `LocalPlayer.aiStep`) decrements `jumpTriggerTime` and, in
-   `LivingEntity.aiStep`, `noJumpDelay` (each if above 0).
+The full ordered list, with the key values each step reads, is 59 section 2.2. In outline:
+
+1. `LocalPlayer.aiStep` handles keys, sprint, the flight toggle, the sneak sink and the flight vertical input, then calls
+   `Player.aiStep`, which decrements `jumpTriggerTime` and calls `LivingEntity.aiStep`, which decrements `noJumpDelay`
+   (each if above 0).
 2. Velocity clean-up: for a player, if the horizontal speed squared is below 9.0E-6 then x and z are set to 0; if
    |y| < 0.003 then y is 0.
-3. The input is applied (1.1). If `jumping`:
-   - on ground (or in a fluid shallow enough, see below) and `noJumpDelay` = 0: `jumpFromGround`, then
-     `noJumpDelay` = 10;
-   - in water and the water is deeper than the fluid jump threshold (0.4 for a player whose eye height is not
-     below 0.4) or the player is not on ground: add +0.04 to vertical velocity (`jumpInLiquid`);
-   - in lava similarly (+0.04);
-   - otherwise nothing. If `jumping` is false, `noJumpDelay` is reset to 0.
-4. `travel` (below), which moves the player by the velocity.
+3. The input is applied (1.1). If `jumping` and the player is affected by fluids (not flying), one of (59 section 6.1):
+   swim up by +0.04 (in water and off the ground or deeper than the fluid jump threshold of 0.4; likewise in lava), or
+   `jumpFromGround` with `noJumpDelay` = 10 (on ground, `noJumpDelay` = 0, fluid not deeper than the threshold).
+   Otherwise (`jumping` false, or flying) `noJumpDelay` is reset to 0.
+4. `travel` (below), which moves the player by the velocity; then the block effect pass (59 section 9).
 
 **The jump rule (answers "no endless climb").** A jump starts only when the player is on the ground (or, for
 liquids, in the cases in step 3) AND `noJumpDelay` is 0. Holding or re-pressing Space in the air does nothing in
@@ -83,15 +91,18 @@ same tick, the player rises 0.42 on the first tick.
 **Walking and falling (`travelInAir`)**, in order, with F = block friction of the block below (only when on
 ground; otherwise F = 1.0):
 1. Horizontal acceleration: input is rotated by yaw and added to velocity scaled by the "friction-influenced
-   speed": on ground, `speed x 0.21600002 / F^3` (`speed` = 0.1, or 0.13 sprinting; with F = 0.6 this is exactly
-   `speed`); in air, the flying speed (0.02 normally, 0.026 sprinting; while the Abilities `flying` flag is set,
+   speed": on ground, `speed x 0.21600002 / F^3` when F is above 0.6 as a double (which includes 0.6f), else
+   `speed` (`speed` = 0.1, or 0.13 sprinting; with F = 0.6 the formula gives exactly `speed`); in air, the flying speed (0.02 normally, 0.026 sprinting; while the Abilities `flying` flag is set,
    Abilities flying speed 0.05, doubled when sprinting).
-2. Climbing (ladder/vine): x and z clamped to +-0.15, y floored at -0.15 (and 0 when sneaking on it).
+2. Climbing (59 section 7.3): x and z clamped to +-0.15, y floored at -0.15 (and 0 when sneaking on it, not on
+   scaffolding).
 3. The move is performed (`Entity.move`, collision resolution, step up to 0.6).
 4. If horizontally blocked while climbing or jumping on a climbable the vertical velocity becomes 0.2.
 5. Vertical velocity = vertical velocity - gravity (0.08). (Slow Falling caps gravity at 0.01 while descending;
    below the dimension minimum Y with no loaded chunk the value is -0.1 or 0 as a guard.)
 6. Drag: x and z multiplied by F x 0.91; y multiplied by 0.98.
+
+The collision response, the bounce and the block speed factor happen inside step 3 (59 section 8).
 
 So the horizontal steady state on ordinary ground is 0.098/(1-0.546) = 0.2158 blocks/tick (4.32 blocks/s) walking
 and 0.2806 (5.61 blocks/s) sprinting; in the air with the Abilities flag clear the horizontal acceleration is the
@@ -99,16 +110,18 @@ and 0.2806 (5.61 blocks/s) sprinting; in the air with the Abilities flag clear t
 
 **Swimming and water (`travelInWater`).** Drag horizontal 0.8 (0.9 while sprinting; 0.96 with Dolphin's Grace),
 vertical 0.8, acceleration 0.02. With the `water_movement_efficiency` attribute (default 0) above 0 the drag and
-acceleration are interpolated toward 0.54600006 and the player's speed (halved when not on ground). After the move
-the y velocity gets the fluid-falling adjustment (gravity/16 style: y - gravity/16, with a -0.003 floor when the
-result is tiny) and a swim-up assist when pushing against a wall with a free block above. Sneaking in water adds
--0.04 vertical velocity per tick (`goDownInWater`); Space adds +0.04 (step 3). While swimming (the Swimming pose,
-`Player.travel`) the y velocity is blended toward the look pitch: if the looking direction's Y is below -0.2 the
-factor is 0.085, else 0.06; added to velocity `(0, (lookY - vy) x factor, 0)` only while looking up
-and not holding Space, with fluid above the head position.
+acceleration are interpolated toward 0.54600006 and the player's speed (the attribute is halved when not on ground).
+After the move and drag, when not sprinting, the y velocity gets the fluid-falling adjustment (y - gravity/16, replaced
+by -0.003 in a narrow window that gravity 0.08 never reaches) and then the ledge assist (59 sections 7.4 and 7.6).
+Sneaking in water adds -0.04 vertical velocity per tick (`goDownInWater`); Space adds +0.04 (step 3). While swimming
+(`Player.travel`) the y velocity is blended toward the look pitch before travel (factor 0.085 when the look direction's
+y is below -0.2, else 0.06); the blend is skipped only when looking up, not holding Space, with no fluid 0.9 above the
+feet (53 section 9.1).
 
-**Lava.** Drag 0.5 horizontally and vertically (`travelFlying` uses 0.5 in lava, 0.8 in water, 0.91 otherwise
-for a flying entity).
+**Lava (`travelInLava`).** Acceleration 0.02. In lava deeper than the jump threshold the whole velocity is halved; in
+shallow lava x and z are halved, y multiplied by 0.8 and the fluid-falling adjustment applied; then y - gravity/4 and
+the ledge assist (59 section 7.5). (`travelFlying`, used by flying mobs, scales by 0.5 in lava, 0.8 in water, 0.91
+otherwise.)
 
 ### 1.4 Double-tap-Space flight toggle (`LocalPlayer.aiStep`)
 
@@ -123,8 +136,8 @@ Algorithm, each tick, evaluated with "jump pressed last tick" = the jump flag of
   double-tap needed).
 - Otherwise, on a rising edge of Space (not pressed last tick, pressed now):
   - if `jumpTriggerTime` is 0 it is set to 7 (first tap);
-  - else (second tap inside the window), and the player is not swimming and not riding a vehicle that jumps:
-    `flying` is toggled; if `flying` became true and the player is on the ground a normal `jumpFromGround` is
+  - else (second tap inside the window), and the player is not swimming and is either not riding or riding a vehicle
+    that can jump: `flying` is toggled; if `flying` became true and the player is on the ground a normal `jumpFromGround` is
     performed; Player Abilities is sent; `jumpTriggerTime` is reset to 0.
 
 `jumpTriggerTime` is decremented once per tick by `Player.aiStep`, after the check, so the window is: the second
@@ -133,7 +146,7 @@ check is 6, 5, ..., 1; on the 7th tick after, it is 0 and counts as a new first 
 the key to have been up on the previous tick, the effective second-tap ticks are the 2nd to the 6th after the
 first (0.1 to 0.3 s).
 
-When `flying` is true:
+When `flying` is true (the full list of what flight switches off is 59 section 7.8):
 - On landing (`onGround`) with `flying` and not spectator, `flying` is cleared and Player Abilities sent (after
   `Player.aiStep` of that tick).
 - Fall distance is reset each tick; swimming is cleared; fluids do not push (`Player.isAffectedByFluids` returns
@@ -169,16 +182,16 @@ double-tap of forward: when the forward impulse appears this tick but was absent
 `sprintTriggerTime` is already > 0, sprinting starts; otherwise `sprintTriggerTime` is set to the option
 `sprintWindow` (default 7 ticks). `sprintTriggerTime` is decremented once per tick at the start of `aiStep`, and is
 reset to 0 when any of these holds (all read from the bytecode): the sneak flag was held (`aiStep` stores
-`input.shift()` in a local before `ClientInput.tick` runs, and the reset uses that stored, pre-tick value), an item
-is being used while not riding, or backward is pressed (this one uses the post-tick input). The "forward impulse
+`input.shift()` in a local before `ClientInput.tick` runs, and the reset uses that stored, pre-tick value), the player
+is slowed by the used item (its `use_effects` forbid sprinting) while not riding, or backward is pressed (this one uses the post-tick input). The "forward impulse
 appeared this tick" test of the double-tap uses the `hasForwardImpulse` value likewise stored before `ClientInput.tick`:
 the double-tap fires when that stored value was false and the current one is true.
 
 **Stop**, evaluated after the start check, while sprinting:
 - on foot (not swimming): stop if sprint is no longer possible (blindness, food <= 6 without `mayfly`, in shallow
   water without flying, vehicle cannot sprint), or there is no forward impulse, or the player has a horizontal
-  collision that is not a minor one (`minorHorizontalCollision`, a collision that auto-jump or a half-block step
-  can resolve);
+  collision that is not a minor one (`minorHorizontalCollision`: the angle between the input direction and the
+  collided movement is below 8 degrees; 59 section 5.4);
 - while swimming: stop if sprint is no longer possible (computed as with `flying` = true, so the shallow-water rule
   is skipped), or the player is not in water, or (no forward impulse AND not on the ground AND not holding sneak).
 Taking damage or stopping hunger is handled by the server through food and by these checks; the client also reports
@@ -1620,8 +1633,9 @@ slot). In the crafting table, shift-clicking planks in hotbar slot 37: they go f
    array for multi-word queries (whether a space is a literal or splits tokens) was not decoded.
 5. Debug-entry lines marked "inferred" in 5.4 and the renderer statistics entries are out of the client scope
    decided in 5.4.
-6. Fluid movement details (the fluid-falling adjustment, swim-up assist, Dolphin's Grace, honey and soul-sand
-   effects) are summarised in 1.3, not complete.
+6. Closed. Fluid movement is in 59 sections 7.4 to 7.6 (the fluid-falling adjustment, the ledge assist, lava) and 53
+   section 9 (swimming); Dolphin's Grace in 59 sections 7.4 and 11; honey and soul sand in 59 sections 8.3, 8.4 and
+   10.4; every other block effect in 59 section 10.
 7. Derived slider mappings marked "inferred" in 7.2 (entity distance scaling, chunk fade, chat delay, mouse wheel,
    FOV-effect squaring, unfocused chat height) come from reading the slider and codec constants, not from running the
    client.

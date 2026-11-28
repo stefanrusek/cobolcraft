@@ -435,7 +435,7 @@ Shared common packet. See 03-configuration.md.
 | Center | Vec3d | Three Doubles |
 | Radius | Float | |
 | Block count | Int | Fixed 4-byte Int |
-| Player knockback | Optional Vec3d | Boolean present flag, then three Doubles |
+| Player knockback | Optional Vec3d | Boolean present flag, then three Doubles. The client **adds** the vector to its own player's velocity (59 section 13.1) |
 | Explosion particle | Particle | See composite types |
 | Explosion sound | Holder<sound_event> | Inline layout: SoundEventInline |
 | Block particles | Prefixed Array of WeightedExplosionParticle | VarInt count, no maximum |

@@ -1,0 +1,25 @@
+# spike_move_f32.cob, run 2026-11-26 on arm64, cobc (GnuCOBOL) 3.2.0
+== fp
+narrow 0.100000000: move=ok compute=ok (got 1036831949 1036831949, want 1036831949)
+narrow 0.980000000: move=ok compute=ok (got 1065017672 1065017672, want 1065017672)
+narrow 0.600000000: move=ok compute=ok (got 1058642330 1058642330, want 1058642330)
+narrow 0.910000000: move=ok compute=ok (got 1063843267 1063843267, want 1063843267)
+narrow 0.216000020: move=ok compute=ok (got 1046294300 1046294300, want 1046294300)
+narrow 0.333333333: move=ok compute=ok (got 1051372203 1051372203, want 1051372203)
+sine table checksum: ok (got 35330999, want 35330999)
+t table HHMMSScc 14552116 -> 14552118
+index of 1.570796400: ok (got 16384, want 16384)
+index of -1.570796400: ok (got 49152, want 49152)
+index of -0.000010000: ok (got 0, want 0)
+== libcob
+narrow 0.100000000: move=ok compute=ok (got 1036831949 1036831949, want 1036831949)
+narrow 0.980000000: move=ok compute=ok (got 1065017672 1065017672, want 1065017672)
+narrow 0.600000000: move=ok compute=ok (got 1058642330 1058642330, want 1058642330)
+narrow 0.910000000: move=ok compute=ok (got 1063843267 1063843267, want 1063843267)
+narrow 0.216000020: move=ok compute=ok (got 1046294300 1046294300, want 1046294300)
+narrow 0.333333333: move=ok compute=ok (got 1051372203 1051372203, want 1051372203)
+sine table checksum: ok (got 35330999, want 35330999)
+t table HHMMSScc 14552148 -> 14552880
+index of 1.570796400: ok (got 16384, want 16384)
+index of -1.570796400: ok (got 49152, want 49152)
+index of -0.000010000: ok (got 0, want 0)

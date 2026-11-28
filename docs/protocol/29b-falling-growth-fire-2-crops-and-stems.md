@@ -5,7 +5,7 @@
 | Covers | Behaviour of the `CropBlock` family (wheat, carrots, potatoes, beetroots, torchflower crop, pitcher crop with its double-block rules), `StemBlock` and `AttachedStemBlock`, `NetherWartBlock`, `CocoaBlock`, `SweetBerryBushBlock`, `FarmlandBlock`, `PathBlock`, `MudBlock`, `RootedDirtBlock`, the sapling variants (`MangrovePropaguleBlock`, `AzaleaBlock`; `SaplingBlock` itself is in part 1 §7), `PumpkinBlock` and the plain `melon`; the can-survive rule of each block and the bone meal behaviour of each. |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (the artifact recorded in `README.md`) |
 | Method | Static reading of the shipped bytecode (`javap -c -p -constants`) and of the data files named below, with no execution. Class and method names are cited to say where a fact was read; they are not a design. |
-| Round | RS11 (GAP-10b of `../design/README.md` Part 5), part 2 |
+| Round | RS11 (GAP-10b of `../design/README.md` Part 5), part 2. Section 9.5 was rewritten (and open questions 4, 9 and 10 and validation item 15 changed or added) in the clean-room round for feature 003-vanilla-movement (gap DG-11) |
 | Data versus code | Tags (`supports_crops`, `grows_crops`, `supports_vegetation`, `supports_azalea`, `supports_cocoa`, `supports_nether_wart`, `supports_pumpkin_stem`, `supports_pumpkin_stem_fruit`, `supports_melon_stem`, `supports_melon_stem_fruit`, `maintains_farmland`, `supports_mangrove_propagule`, `supports_hanging_mangrove_propagule`), loot tables (crop drops, stem seed counts, berry harvest, carved pumpkin) and the tree features are DATA (22, 23, 26, 35). The members of the tags are listed once in 2.2 only so that worked examples can be followed; the engine below reads the tags, it does not hard-code them. Everything else here (ages, probabilities, shapes of the double plant, orderings, constants) is code and is specified completely. |
 
 "Read" means read in the artifact this round. "(inferred)" marks a value deduced from what was read. "(recalled, not verified)" marks something not read; each such item is repeated in the Open questions.
@@ -289,7 +289,66 @@ When all hold: `turnToBaseBlock(entity, state, level, pos)`. After that (whether
 
 ### 9.5 `Block.pushEntitiesUp(oldState, newState, level, pos)`
 
-Inputs: the old and new states at the position. Let `delta` = the part of `newState`'s collision shape that is not in `oldState`'s collision shape (boolean op ONLY_SECOND), moved to `pos`. If `delta` is empty return `newState`. Otherwise for every entity (any entity, `getEntities(null, bounds(delta))`) whose box intersects `bounds(delta)`: compute `dy` = the Y-axis collision distance of that entity's bounding box moved up by 1.0 against `delta`, limited to -1.0; then teleport the entity relatively by `(0, 1 + dy, 0)`. Return `newState`. For farmland to dirt, `delta` is the top 1 pixel (y 15 to 16), so entities that overlap that layer are lifted by their penetration depth (at most 1/16) onto the dirt surface.
+Read in `Block.pushEntitiesUp` and every caller of it, `EntityGetter.getEntities`, `Level.getEntities`, `AABB.intersects`,
+`Shapes.collide`, `VoxelShape.collide` and `collideX`, `Entity.teleportRelative`, `Entity.teleportTo`, `Entity.snapTo`
+and `ServerPlayer.teleportRelative`.
+
+#### 9.5.1 Rule
+
+The method takes the old state, the new state, the level and the position. It does **not** write the block; the caller
+does (before or after, 9.5.3). All arithmetic is double precision.
+
+1. `delta` = the part of the new state's collision shape that is not inside the old state's collision shape (boolean op
+   ONLY_SECOND), both shapes taken at `pos` with the empty collision context, then moved to `pos`. If `delta` is empty,
+   nothing happens.
+2. The candidates are **every entity except spectators** whose bounding box strictly overlaps the bounds of `delta` (the
+   smallest box around it): on each of the three axes `entity.min < bounds.max` and `entity.max > bounds.min`. Boxes that
+   only touch do not count. Players, items, vehicles and ender dragon parts are all included (the dead-or-alive state is
+   not tested).
+3. For each candidate, with `m` = the minimum y of its bounding box: take the box moved up by 1.0 and collide it against
+   `delta` along y with a wanted movement of -1.0. The result `d` is: look only at the parts of `delta` under the moved
+   box in plan view (the overlap must exceed 1.0E-7 on both x and z) whose top `T` satisfies
+   `T <= (m + 1.0) + 1.0E-7`; if there are any, `d = max(-1.0, T - (m + 1.0))` with the highest such `T`; otherwise
+   `d = -1.0`.
+4. `lift = 1.0 + d`, evaluated in that order (`m + 1.0` first, then the subtraction from `T`, then the addition to 1.0),
+   and the entity is teleported relatively by `(0.0, lift, 0.0)`. This is done for **every** candidate, also when `lift`
+   is 0.
+
+The method returns the new state.
+
+For every caller in 9.5.3, `delta` is one box spanning the heights `[B, T]`. For an entity that overlaps it, stands at
+most 1 block below `T` and overlaps it in plan view by more than 1.0E-7, `lift` is `T - m`: it ends with its feet on the
+new top surface. An entity whose feet are more than 1 block below `T`, or that overlaps the bounds by no more than
+1.0E-7 on x or z, gets a lift of 0 (and is still teleported). An entity whose feet are at `T` or higher is not a
+candidate. The box is the only test: the entity need not be on the ground, and it need not be standing on this block.
+For farmland to dirt, `delta` is the top pixel (y 15/16 to 16/16), so a standing entity is lifted by 1/16 = 0.0625.
+
+#### 9.5.2 What the teleport does
+
+| Entity | Effect |
+|---|---|
+| server player | `ServerPlayer.teleportRelative` sends a Player Position packet in which every component is relative, and rewrites the server's record of the player (position and velocity among it). The packet, the client's resolution, the server record and worked examples are in 59 section 13.6 |
+| any other entity | `Entity.teleportRelative` calls `teleportTo(x + 0.0, y + lift, z + 0.0)`, which does nothing outside a server level. On a server it sets the position, keeps yaw and pitch, sets the previous-tick position and rotation to the new ones, rebuilds the bounding box and repositions the passengers. It does not write velocity, fall distance or the on-ground flag. No class other than `ServerPlayer` overrides `teleportRelative` or this `teleportTo` |
+
+#### 9.5.3 The block changes that lift entities (closed list)
+
+A search of every class under `net/minecraft` finds `pushEntitiesUp` called only from the places below, and
+`Entity.teleportRelative` used only by `pushEntitiesUp`. No other block change lifts an entity this way, even when it
+makes a block taller (for example a snow layer stacked with the item). "Pixels" are cell coordinates in sixteenths; x
+and z cover the whole cell unless stated.
+
+| # | Change (old to new) | Where and conditions | `delta` pixels | Greatest lift | Order |
+|---|---|---|---|---|---|
+| 1 | `farmland` to `dirt` | `FarmlandBlock.turnToBaseBlock` (9.4), from: the scheduled tick when the farmland cannot survive (9.1); the random tick when not wet, moisture 0 and the block above is not in `maintains_farmland` (9.2); trampling (9.3) | y 15 to 16 | 0.0625 | lift, then write (flags 3) |
+| 2 | `dirt_path` to `dirt` | `PathBlock.turnToBaseBlock`, from the block's scheduled tick only; the tick converts without testing survival again (10.1) | y 15 to 16 | 0.0625 | lift, then write (flags 3) |
+| 3 | `dirt_path` default state to `dirt`, **at placement** | `PathBlock.getStateForPlacement` when the default path state cannot survive at the position being placed into (10.1). The old state is the path's default state, not the block that is in the world there. It runs while the placement state is computed, **before** `BlockItem`'s obstruction test, so entities are moved even if the placement is then refused, and the obstruction test sees their new positions (computed). A client predicting the placement calls it too, with no effect on its entities (9.5.2) | y 15 to 16 | 0.0625 | lift, then the item's normal placement |
+| 4 | `end_portal_frame` without the eye to with the eye | `EnderEyeItem.useOn` on a frame with no eye, server only (25 part 5) | x and z 4 to 12, y 13 to 16 | 0.1875 | lift, then write (flags 2) |
+| 5 | `snow` with `n` layers to `n + 1` layers | `ServerLevel.tickPrecipitation` snow accumulation (33 section 4.4): raining, rule `max_snow_accumulation_height` = `h` above 0, `shouldSnow` true, the block at the height-map position is a snow layer with `n < min(h, 8)`. Placing the first layer does not call it. With the default `h` = 1 this row never happens | y `2(n - 1)` to `2n` (snow collision is one layer lower than the layer count) | 0.125 | lift, then write (flags 3) |
+| 6 | `mud` to `clay` | `PointedDripstoneBlock.maybeTransferFluid`, from the stalactite's random tick: the drip draw is below 0.17578125, the block is a stalactite start position, the block above the stalactite's root block is `mud` with the `water_evaporates` environment attribute false there, and a tip is found (the drip rule, including the mud-to-clay step: 29b part 6 section 7.2) | y 14 to 16 | 0.125 | write (flags 3), then lift |
+| 7 | a block of the spreader's replaceable tag to `sculk` | `SculkVeinBlock.attemptPlaceSculk`, from a sculk charge cursor on a vein converting a neighbour (35 part 6 section 8.5): in the sculk catalyst's block entity tick, and in the `sculk_patch` feature. During world generation the region returns no entities, so nothing is lifted; the same feature placed into a live level, for example by `/place feature`, runs on the server level and **does** lift entities. Of the members of `sculk_replaceable` (catalyst) and `sculk_replaceable_world_gen` (feature), only `mud` and `soul_sand` give a non-empty `delta`; the others are full collision cubes (51 section 3; `sulfur` and `cinnabar` read in `Blocks`) | y 14 to 16 | 0.125 | write (flags 3), then lift |
+
+The order matters only for what else runs between the two steps; the lift itself uses the two states passed in, not the
+world.
 
 ## 10. Dirt path, mud, rooted dirt
 
@@ -420,6 +479,9 @@ A test suite for this part can check the following, each derived from the text a
 12. Rooted dirt bone meal places `hanging_roots` only into air below.
 13. Azalea: bone meal needs height `minH + 2` inside the build height and empty fluid above; success 0.45.
 14. Mangrove propagule: standing tick `1/7` with no light test; hanging tick advances age to 4 and stops; bone meal always valid unless hanging and age 4.
+15. Lift (9.5): feet at y 63.9375 over farmland at y 63 turning to dirt give lift 0.0625; feet at 64.0 on the full block
+    beside it give no teleport; feet at 63.875 on mud at y 63 turning to clay give lift 0.125; a spectator is never
+    moved.
 
 ### 15.1 Verification
 
@@ -432,8 +494,13 @@ Scope notes: the behaviour of `torchflower` (the fully grown flower) and of `han
 1. `Entity.makeStuckInBlock` (the slowdown vector application and its reset) and the frequency with which `entityInside` is called per tick are specified (or not) in 18 §2.6; only the arguments were read here.
 2. The loot table `blocks/wheat` (and the other crop tables) was not read; the tables cited elsewhere in this part are DATA read only to illustrate (26), and their exact conditions are the data pack's. 26 does not hold these per-block tables; whether it should is for its owner.
 3. The "otherwise" row of the `isSolid` cascade (24 part 1 Open question 16) decides whether farmland and paths survive under partial blocks; the value is inferred false there.
-4. `Block.pushEntitiesUp` was read to the extent given in 9.5 (the collide-up and relative teleport); the exact collision routine (`Shapes.collide`) is a physics helper not read here.
+4. Answered: `Block.pushEntitiesUp`, its collision routine and all its callers are specified in 9.5, and the player's side in 59 section 13.6.
 5. The `BonemealSource.MOB` path (bees) was not read: the crop rules above are written for `INTERACTION`, and the classes read take no branch on the source, except that `MangrovePropaguleBlock` receives it (its methods read make no source test) (part 1 Open question 7).
 6. Which sounds and events accompany growth (the bone meal level event 1505) is 29b part 1 §5.3 and 42; plant block sounds are 24 registry columns.
 7. Two statements in other documents contradict this part and need correction by their owners: 29b part 1 §6 (the shape sentence near its line 407) gives one height formula `2 x (age + 1)` for every crop, but carrots and potatoes are `column(16, 0, 2 + a)` and the torchflower crop is `column(6, 0, 6 + 4a)` (3.1); and the 33 table row for `FarmlandBlock.fallOn` (near its line 597) says the 0.512 volume test applies to non-player entities only, but 9.3 step 4 applies it to players too.
 8. The call sites that supply the `random` parameter of `StemBlock.performBonemeal` (item use, dispenser) were not traced beyond 29b part 1 §5.3; that the parameter equals the level random for callers other than the item flow is inferred (13).
+9. Answered: `sulfur` and `cinnabar` are registered as the plain `Block` class with default collision (read in `Blocks`),
+   so they are full cubes; the other members of the two sculk replaceable tags, `mud` and `soul_sand` apart, are full
+   cubes by 51 section 3.
+10. Row 5 of 9.5.3: which snow layer counts can still be the block found at the `MOTION_BLOCKING` height-map position
+    (and so how far stacking by precipitation can go for a rule value above 2) was not traced.

@@ -1,0 +1,68 @@
+# spike_move_current.cob, run 2026-11-26 on arm64: client library built from the working tree of branch 003-vanilla-movement (aba05242),
+# make -C client lib BUILD=<scratch> RELEASE=1; linked with the other packages' libraries of build/release and client/tests/CLTEST.cpy.
+# Distances in blocks per tick.
+language: 1 lang files, no problem
+ground, W held: 0.200000
+ground, W held: 0.200000
+ground, W held: 0.200000
+ground, W held: 0.200000
+ground, W held: 0.200000
+ground, W held: 0.200000
+ice, W held: 0.020838
+ice, W held: 0.039422
+ice, W held: 0.055995
+ice, W held: 0.070774
+ice, W held: 0.083955
+ice, W held: 0.095709
+ice, W held: 0.106192
+ice, W held: 0.115540
+ice, W held: 0.123877
+ice, W held: 0.131312
+ice, W held: 0.137942
+ice, W held: 0.143855
+ice, W released: 0.128290
+ice, W released: 0.114409
+ice, W released: 0.102030
+ice, W released: 0.090990
+ice, W released: 0.081145
+ice, W released: 0.072365
+ground, W held: 0.200000
+ground, W held: 0.200000
+ground, W held: 0.200000
+ground, W held: 0.200000
+ground, W released: 0.000000
+ground, W released: 0.000000
+ground, W released: 0.000000
+ground, W released: 0.000000
+
+# What the documented rules give for the same crossing (spike_move_reference.py --crossing):
+ground, held: 0.215859
+ground, held: 0.215859
+ground, held: 0.215859
+ice, held: 0.140350
+ice, held: 0.147654
+ice, held: 0.154169
+ice, held: 0.159978
+ice, held: 0.165159
+ice, held: 0.169780
+ice, held: 0.173900
+ice, held: 0.177575
+ice, held: 0.180852
+ice, held: 0.183774
+ice, held: 0.186381
+ice, held: 0.188705
+ice, released: 0.168287
+ice, released: 0.150078
+ice, released: 0.133840
+ice, released: 0.119358
+ice, released: 0.106444
+ice, released: 0.094927
+ice, held: 0.207714
+ice, held: 0.207730
+ice, held: 0.207744
+ground again, held: 0.283267
+ground again, held: 0.252664
+ground again, held: 0.235954
+ground again, held: 0.226831
+ground again, held: 0.221850
+ground again, held: 0.219130

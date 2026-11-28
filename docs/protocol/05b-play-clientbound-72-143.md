@@ -60,9 +60,13 @@ is a `StreamCodec.composite` of three fields.
 
 | Field | Type | Notes |
 |---|---|---|
-| Teleport id | VarInt | Transaction id. The client acknowledges it with serverbound Accept Teleportation (serverbound id 0) (inferred from naming and the serverbound packet; see 05c). |
+| Teleport id | VarInt | Transaction id. The client acknowledges it with serverbound Accept Teleportation (serverbound id 0; 05c, 59 section 13.2). |
 | Change | PositionMoveRotation | Position, velocity, yaw and pitch. See the composite types section. |
-| Relative flags | TeleportFlags | An Int bit set (from `Relative.SET_STREAM_CODEC`). It says which components of *Change* are relative to the client's current values rather than absolute (inferred meaning). |
+| Relative flags | TeleportFlags | An Int bit set (from `Relative.SET_STREAM_CODEC`). It says which components of *Change* are added to the receiver's current values rather than replacing them. |
+
+How the client and the server resolve the values: 59 section 13.2. A player lifted by a growing block (29b part 2
+section 9.5) gets position (0, lift, 0), velocity (0, 0, 0), yaw 0, pitch 0 and flags 0x000001FF, every bit set
+(59 section 13.6).
 
 ## 0x4A (74) Clientbound Player Rotation (ClientboundPlayerRotationPacket)
 
@@ -281,7 +285,7 @@ packet: the client discards chunks outside the radius around this center (inferr
 | Field | Type | Notes |
 |---|---|---|
 | Entity id | VarInt | |
-| Velocity | LpVec3 | The low-precision vector (`Vec3.LP_STREAM_CODEC`, implemented in `LpVec3`). See the composite types section. |
+| Velocity | LpVec3 | The low-precision vector (`Vec3.LP_STREAM_CODEC`, implemented in `LpVec3`). See the composite types section. The client **replaces** all three components of the named entity's velocity with it, its own player included (`Entity.lerpMotion`, which the local player does not override; 59 section 13) |
 
 ## 0x68 (104) Clientbound Set Equipment (ClientboundSetEquipmentPacket)
 
@@ -581,7 +585,7 @@ AttributeModifier:
 | Entity id | VarInt | |
 | Effect | RegistryId<mob_effect> | |
 | Amplifier | VarInt | |
-| Duration | VarInt | Ticks. The server presumably uses −1 for infinite (inferred). |
+| Duration | VarInt | Ticks; −1 is infinite (`MobEffectInstance.isInfiniteDuration`). When the server sends this packet: 59 section 11.5 |
 | Flags | Byte | 0x01 = ambient, 0x02 = visible (particles), 0x04 = show icon, 0x08 = blend. |
 
 ## 0x88 (136) Clientbound Update Recipes (ClientboundUpdateRecipesPacket)
@@ -708,10 +712,11 @@ the mask is `1 << bit`. A flag is set when *(value & mask) == mask*.
 | 5 | 0x020 | DELTA_X |
 | 6 | 0x040 | DELTA_Y |
 | 7 | 0x080 | DELTA_Z |
-| 8 | 0x100 | ROTATE_DELTA (rotate the velocity vector by the rotation change) (inferred meaning) |
+| 8 | 0x100 | ROTATE_DELTA (rotate the current velocity by the rotation change before the delta rules; read in `PositionMoveRotation.calculateAbsolute`, formula in 59 section 13.2) |
 
 A set bit means the corresponding component in PositionMoveRotation is relative (added to the current
-value). A clear bit means it is absolute (inferred meaning).
+value). A clear bit means it is absolute (read in `PositionMoveRotation.calculateAbsolute`; the resulting pitch is
+clamped to -90 to 90 in both cases).
 
 ### LpVec3
 Defined in [00-data-types.md §4.6](00-data-types.md#46-lpvec3-low-precision-velocity-vector).

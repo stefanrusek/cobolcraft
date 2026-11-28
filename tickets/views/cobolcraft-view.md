@@ -67,6 +67,14 @@ project: CobolCraft
 | [CC-0050](../CC-0050-real-player-skins.md) | A player's own skin is shown to the others | feature | stefanrusek |  |  |
 | [CC-0051](../CC-0051-vanilla-client-actions-ignored.md) | The actions of a vanilla client that the server discards take effect | feature | stefanrusek |  |  |
 | [CC-0053](../CC-0053-other-players-see-held-items-and-armour.md) | Other players see what a player holds and wears at all times | bug | stefanrusek |  |  |
+| [CC-0057](../CC-0057-entity-and-hook-pushes.md) | Crowding entities, boats, minecarts and fishing hooks push the Player | feature | stefanrusek |  |  |
+| [CC-0058](../CC-0058-auto-jump-option.md) | The Auto-Jump option makes the Player jump up obstacles | feature | stefanrusek |  |  |
+| [CC-0059](../CC-0059-spectator-passes-through-blocks.md) | A spectator flies through blocks | bug | stefanrusek |  |  |
+| [CC-0060](../CC-0060-movement-and-fall-sources-outside-003.md) | Weapons, commands and teleports change movement and fall damage as in Minecraft | feature | stefanrusek |  |  |
+| [CC-0061](../CC-0061-client-ticks-at-low-frame-rate.md) | The Player moves at full speed when the frame rate is low | bug | stefanrusek |  |  |
+| [CC-0062](../CC-0062-non-player-pushes-by-moving-blocks.md) | Mobs, items and other entities are moved by pistons, shulker boxes and growing blocks as in Minecraft | bug | stefanrusek |  |  |
+| [CC-0063](../CC-0063-moving-piston-blocks-drawn.md) | The Player sees pistons and the blocks they push move | feature | stefanrusek |  |  |
+| [CC-0065](../CC-0065-blocks-that-grow-taller.md) | Farmland, paths, mud, snow and sculk change into taller blocks as in Minecraft | bug | stefanrusek |  |  |
 
 ### unverified
 

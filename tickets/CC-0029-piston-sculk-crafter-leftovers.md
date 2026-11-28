@@ -9,7 +9,7 @@ blocked_by: []
 created: 2026-11-23
 relations:
   depends_on: []
-  relates_to: [CC-0001, CC-0038]
+  relates_to: [CC-0001, CC-0038, CC-0062]
   supersedes: []
 implementation: []
 ---
@@ -50,5 +50,8 @@ docs/protocol 30 part 3, part 5 and part 8 describe.
   version) and T29573 (tags vibrations, dampens_vibrations and occludes_vibration_signals, occlusion 3.6, sneaking and
   spectator sources 3.5, resonance 4.2 step 4, the step-on activation, particles, the shrieker) in lanes/p46h.md. The
   occlusion doc is on branch docs-gameevents (87224845), whose copy on origin should be checked first.
+- Planning of feature `specs/003-vanilla-movement` (2026-11-26) builds the honey carry and the stuck-speed multiplier
+  for Players; for the other entities both stay here. The other open approximations of core/src/piston-push.cob are
+  CC-0062.
 - Doc conflict recorded: 30-3 7.6 names the moving block's blockState keys Name and Properties, 07 7.3 the lowercase
   id and properties of this version; 07 is followed (see CC-0038).

@@ -685,7 +685,7 @@ Inputs: the movement vector `m` = (mx, my, mz) that reached the collision step (
 8. When no candidate wins the result is `r`.
 
 The first candidate that gains horizontal travel is taken, so the step is the lowest sufficient ledge top (or bottom edge) within `H`, not always `H`. Worked example (player, `H` = 0.6, standing at y = 0, `onGround`, box x from 0.35 to 0.95; a bottom slab (collision (0,0,0,16,8,16), top 0.5) in the cell x 1 to 2, y 0 to 1; `m` = (0.2, 0, 0)): `r` = (0.05, 0, 0) (blocked by the slab at x = 1), `xC` true, step tried; the colliders' Y coordinates relative to `B0`.minY are -1 and 0 (the floor block, skipped: below 0 and equal to `dyr` = 0) and 0 and 0.5 (the slab: 0 skipped, 0.5 kept); candidate set {0.5}; `v` = (0.2, 0.5, 0) (up 0.5 is free, then x is free over the slab); 0.04 is greater than 0.0025, so the move is (0.2, 0.5, 0): the player is on the slab in the same tick. With a full block of height 1 in the same place the only candidate is 1.0 > `H`, none is kept, and the result is `r`.
-- Still not read: the rest of `Entity.move` (how `onGround`, `horizontalCollision` and the other flags are set from `r`; 18 section 3.3 and 41 section 3.3 give them), `Level.getEntityCollisions` and `Level.getBlockCollisions` internals (the cell enumeration is 42-1 4.4), `Shapes.collide` internals (42-1).
+- The rest of `Entity.move` (how `onGround`, `horizontalCollision` and the other flags are set from `r`, and the order of what follows) is in 59 section 8.1 and 30 part 8 section 14.1.1. Still not read: `Level.getEntityCollisions` and `Level.getBlockCollisions` internals (the cell enumeration is 42-1 4.4), `Shapes.collide` internals (42-1).
 
 ## 7. Open questions
 
@@ -698,7 +698,7 @@ Each entry names the class or block key and what is missing. The orchestrator ha
 5. Collision overriding the `noCollision` flag: answered (R4), section 1.2 (complete list of overriding classes) and rule R-F13 (the pitcher crop's lower half is solid).
 6. Targeting algorithm: answered (R4), section 1.8.3.
 7. Collision context helpers: answered (R4), section 1.8.2. The meaning of `isDescending` for an entity that is not a player is open (17).
-8. Step-up: answered (R4), section 6.1. Sneaking-edge protection and the poses' box sizes: 53. **Still open**: the rest of `Entity.move` as listed at the end of section 6.1 (flags and the order of the callers), the grid search inside `Shapes.collide` (42-1 open question 12).
+8. Step-up: answered (R4), section 6.1. Sneaking-edge protection and the poses' box sizes: 53. The rest of `Entity.move` (flags and order) is answered by 59 section 8.1. **Still open**: `Level.getEntityCollisions` and `Level.getBlockCollisions` internals, and the grid search inside `Shapes.collide` (42-1 open question 12).
 9. Flower bed and leaf litter height: answered (R4), rule R-F38: 3 and 1.
 10. Bell floor shape: answered (R4), rule R-C19 and section 3.8.4.
 11. Lectern desk boxes: answered (R4), rule R-E5 and section 3.8.6.

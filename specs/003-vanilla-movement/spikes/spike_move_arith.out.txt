@@ -1,0 +1,45 @@
+# spike_move_arith.cob, run 2026-11-26 on arm64, cobc (GnuCOBOL) 3.2.0
+== build with the FPFAST defines of tools/package.mk (production)
+ground: ticks=55 final=8.630606639 max|cobol-double|=4.929e-13 max|cobol-single|=6.990e-07
+ice: ticks=150 final=12.446967209 max|cobol-double|=4.929e-13 max|cobol-single|=4.183e-06
+jump: ticks=12 final=-0.323529192 max|cobol-double|=4.705e-13 max|cobol-single|=9.191e-08
+yawx: ticks=40 final=-5.098230770 max|cobol-double|=4.938e-13 max|cobol-single|=4.239e-04
+ground: step at tick 40=0.215859 glide after release=0.255846
+ice: step at tick 60=0.207646 slide after release=1.686716
+jump: peak=1.252203
+C less a*1e6=      2999.999000000000 result=+0000000001
+C less a*1e6=      2999.999999900000 result=+0000000000
+C less a*1e6=         8.999990000000 result=+0000000001
+C differs base=       100.500000000000 seen=+0000000000
+C   delta=         0.000005000000
+C differs base=     10000.500000000000 seen=+0000000000
+C   delta=         0.000500000000
+C differs base=    100000.500000000000 seen=+0000000000
+C   delta=         0.005000000005
+C differs base=   1000000.500000000000 seen=+0000000000
+C   delta=         0.064999999944
+C differs base=  29999000.500000000000 seen=+0000000000
+C   delta=         0.280000001192
+T 200000 ticks HHMMSScc 13093085 -> 13093110
+== build with libcob arithmetic alone (FPFAST=0)
+ground: ticks=55 final=8.630606639 max|cobol-double|=4.929e-13 max|cobol-single|=6.990e-07
+ice: ticks=150 final=12.446967209 max|cobol-double|=5.400e-13 max|cobol-single|=4.183e-06
+jump: ticks=12 final=-0.323529192 max|cobol-double|=4.705e-13 max|cobol-single|=9.191e-08
+yawx: ticks=40 final=-5.098230770 max|cobol-double|=4.938e-13 max|cobol-single|=4.239e-04
+ground: step at tick 40=0.215859 glide after release=0.255846
+ice: step at tick 60=0.207646 slide after release=1.686716
+jump: peak=1.252203
+C less a*1e6=      2999.999000000000 result=+0000000001
+C less a*1e6=      2999.999999900000 result=+0000000000
+C less a*1e6=         8.999990000000 result=+0000000001
+C differs base=       100.500000000000 seen=+0000000000
+C   delta=         0.000005000000
+C differs base=     10000.500000000000 seen=+0000000000
+C   delta=         0.000499999998
+C differs base=    100000.500000000000 seen=+0000000000
+C   delta=         0.004999999990
+C differs base=   1000000.500000000000 seen=+0000000000
+C   delta=         0.064999999944
+C differs base=  29999000.500000000000 seen=+0000000000
+C   delta=         0.279999997467
+T 200000 ticks HHMMSScc 13093142 -> 13101775
