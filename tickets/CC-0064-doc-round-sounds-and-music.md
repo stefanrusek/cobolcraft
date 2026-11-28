@@ -2,7 +2,7 @@
 spile: ticket
 id: CC-0064
 type: feature
-status: implementing
+status: unverified
 owner: stefanrusek
 resolution:
 blocked_by: []
@@ -72,3 +72,8 @@ operator after this round shows what the artifact does and does not contain.
 - No reader round is running. Existing evidence: CC-0014 notes (the instrument table is in no document), CC-0036 and
   scratchpad/doc-gaps.md (mob sound table), CC-0038 (respawn anchor sound). The core already sends Sound packets by
   registry name for some events; nothing plays them.
+
+## Result of the round (2026-11-28)
+
+- Written on 005-doc-rounds (artifact SHA-256 4508d006, clean-room reader and separate reviewers): new docs 59 (sound data engine and music; 19 numbered open questions, 13 open) and 60 (block entity and event sounds; 8 open questions), README rows, and pointers in 08, 22, 29, 42-6, 46, 57-2.
+- The jar contains no audio and no sound definitions: they come from an external asset folder and index (doc 59). How the client obtains it is an operator decision before any audio code.

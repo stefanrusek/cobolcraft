@@ -25,9 +25,13 @@ project: CobolCraft
 | [CC-0021](../CC-0021-block-and-fluid-fixes-on-lanes.md) | Block placement, update and fluid fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 | [CC-0022](../CC-0022-container-tool-and-ui-fixes-on-lanes.md) | Furnace, brush, recipe book and F3 fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 | [CC-0023](../CC-0023-superflat-spawn-rates.md) | Superflat worlds spawn slimes and hostile mobs at the standard rates | bug | stefanrusek |  | --- |
+| [CC-0036](../CC-0036-doc-round-mobs-and-entities.md) | Reference docs state the mob and entity behaviour that code had to skip | feature | stefanrusek |  |  |
+| [CC-0037](../CC-0037-doc-round-client-and-rendering.md) | Reference docs state the client rendering and HUD rules that code had to skip | feature | stefanrusek |  |  |
+| [CC-0038](../CC-0038-doc-round-blocks-items-and-worldgen.md) | Reference docs settle the block, container, item and worldgen conflicts and gaps | feature | stefanrusek |  |  |
 | [CC-0046](../CC-0046-older-play-test-reports-unverified.md) | Play-test reports of try8 to try11 are checked against a current build | bug | stefanrusek |  | --- |
 | [CC-0047](../CC-0047-first-chunk-fill-step-within-tick-budget.md) | The first fill step of a freshly loaded chunk stays inside the per-tick step budget | bug | stefanrusek |  |  |
 | [CC-0052](../CC-0052-mob-tick-within-tick-cpu-budget.md) | A mob tick stays inside the per-tick CPU budget however many chunks are loaded | bug | stefanrusek |  |  |
+| [CC-0064](../CC-0064-doc-round-sounds-and-music.md) | Reference docs state the game's sound events, sound definitions and music | feature | stefanrusek |  |  |
 
 ## Board
 
@@ -65,15 +69,6 @@ project: CobolCraft
 | [CC-0051](../CC-0051-vanilla-client-actions-ignored.md) | The actions of a vanilla client that the server discards take effect | feature | stefanrusek |  |  |
 | [CC-0053](../CC-0053-other-players-see-held-items-and-armour.md) | Other players see what a player holds and wears at all times | bug | stefanrusek |  |  |
 
-### implementing
-
-| ID | Title | Type | Owner | Blocked | PR |
-|---|---|---|---|---|---|
-| [CC-0036](../CC-0036-doc-round-mobs-and-entities.md) | Reference docs state the mob and entity behaviour that code had to skip | feature | stefanrusek |  |  |
-| [CC-0037](../CC-0037-doc-round-client-and-rendering.md) | Reference docs state the client rendering and HUD rules that code had to skip | feature | stefanrusek |  |  |
-| [CC-0038](../CC-0038-doc-round-blocks-items-and-worldgen.md) | Reference docs settle the block, container, item and worldgen conflicts and gaps | feature | stefanrusek |  |  |
-| [CC-0064](../CC-0064-doc-round-sounds-and-music.md) | Reference docs state the game's sound events, sound definitions and music | feature | stefanrusek |  |  |
-
 ### unverified
 
 | ID | Title | Type | Owner | Blocked | PR |
@@ -92,9 +87,13 @@ project: CobolCraft
 | [CC-0021](../CC-0021-block-and-fluid-fixes-on-lanes.md) | Block placement, update and fluid fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 | [CC-0022](../CC-0022-container-tool-and-ui-fixes-on-lanes.md) | Furnace, brush, recipe book and F3 fixes saved on lanes reach the tree | bug | stefanrusek |  | --- |
 | [CC-0023](../CC-0023-superflat-spawn-rates.md) | Superflat worlds spawn slimes and hostile mobs at the standard rates | bug | stefanrusek |  | --- |
+| [CC-0036](../CC-0036-doc-round-mobs-and-entities.md) | Reference docs state the mob and entity behaviour that code had to skip | feature | stefanrusek |  |  |
+| [CC-0037](../CC-0037-doc-round-client-and-rendering.md) | Reference docs state the client rendering and HUD rules that code had to skip | feature | stefanrusek |  |  |
+| [CC-0038](../CC-0038-doc-round-blocks-items-and-worldgen.md) | Reference docs settle the block, container, item and worldgen conflicts and gaps | feature | stefanrusek |  |  |
 | [CC-0046](../CC-0046-older-play-test-reports-unverified.md) | Play-test reports of try8 to try11 are checked against a current build | bug | stefanrusek |  | --- |
 | [CC-0047](../CC-0047-first-chunk-fill-step-within-tick-budget.md) | The first fill step of a freshly loaded chunk stays inside the per-tick step budget | bug | stefanrusek |  |  |
 | [CC-0052](../CC-0052-mob-tick-within-tick-cpu-budget.md) | A mob tick stays inside the per-tick CPU budget however many chunks are loaded | bug | stefanrusek |  |  |
+| [CC-0064](../CC-0064-doc-round-sounds-and-music.md) | Reference docs state the game's sound events, sound definitions and music | feature | stefanrusek |  |  |
 
 ## Recently Closed
 
