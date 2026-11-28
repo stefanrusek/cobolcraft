@@ -317,7 +317,7 @@ Rows are read from the `getAnalogOutputSignal` / `hasAnalogOutputSignal` overrid
 | cake (`CakeBlock`) | true | `(7 - bites) * 2` for `bites` 0 to 6: 14, 12, 10, 8, 6, 4, 2 |
 | candle cakes (`CandleCakeBlock`) | true | the constant `FULL_CAKE_SIGNAL`, which is the cake value at 0 bites, 14 |
 | beehive and bee nest (`BeehiveBlock`) | true | the `honey_level` property, 0 to 5 |
-| end portal frame (`EndPortalFrameBlock`) | true | 15 when `has_eye` is true, else 0 |
+| end portal frame (`EndPortalFrameBlock`) | true | 15 when `eye` is true, else 0 (the Java field is `HAS_EYE` but the property is named `eye`: `BlockStateProperties.EYE` is created with the name `eye`, and 24 part 4 section 6.20 and 39 use `eye`, not `has_eye`) |
 | respawn anchor (`RespawnAnchorBlock`) | true | `floor( (charges - 0) / 4.0 * 15 )` with float arithmetic and `charges` 0 to 4: 0, 3, 7, 11, 15 |
 | copper bulb (`CopperBulbBlock`, all oxidation and waxing variants) | true | 15 when `lit` is true, else 0 (the state is read again from the level at the position) |
 | copper golem statue (`CopperGolemStatueBlock`) | true | `ordinal(pose) + 1` with the pose order `standing, sitting, running, star`: 1, 2, 3, 4 |

@@ -577,7 +577,7 @@ later rules (section 11.4).
 | `input_predicate` | `rule_test` | required | tested against the **template state** at the absolute position (`test(state, absPos, rng)`) |
 | `location_predicate` | `rule_test` | required | tested against the **world's current state** at the absolute position (`testAgainstWorldState(level, absPos, rng)`, section 8.3) |
 | `position_predicate` | `pos_rule_test` | `always_true` (lenient: an invalid value falls back to the default) | `test(localPos, absPos, anchor, rng)` |
-| `output_state` | block state (`BlockState.CODEC`: either a bare block id string, meaning that block's default state, as every state in the jar's processor data is written, or an object `{"id": block id, "properties": {...}}` with `properties` optional (lenient); not `Name` and `Properties`, which are the keys of the chunk-palette NBT; read in round R1) | required | the state written |
+| `output_state` | block state (`BlockState.CODEC`: either a bare block id string, meaning that block's default state, as every state in the jar's processor data is written, or an object `{"id": block id, "properties": {...}}` with `properties` optional (lenient); not `Name` and `Properties`, which no current-format block-state codec uses; the chunk palette uses the same `BlockState.CODEC`, 07 section 7.3; read) | required | the state written |
 | `block_entity_modifier` | `rule_block_entity_modifier` | `passthrough` (lenient) | how the block entity tag changes |
 
 The rule matches when all three predicates are true, evaluated in the order input, location, position, with short-circuit: when the input

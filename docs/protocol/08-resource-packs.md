@@ -788,8 +788,8 @@ vanilla pack carries (Faithful has none).
 | `atlases/<atlas>.json` | Sprite sources per atlas (7.3). The ids are fixed by the client. | **read** (the twelve atlases, 7.2; the built-in pack defines blocks, items and gui, 10.2) |
 | `lang/<code>.json` | A JSON object mapping translation key to string. Values may use `%s` and `%1$s` placeholders; numeric `%d`/`%f` placeholders are rewritten to `%s` on load. Keys for registry content follow `<kind>.<namespace>.<path with / replaced by .>`, for example `block.cobolcraft.greystone` (`Util.makeDescriptionId`). | **read** (`en_us`, 10.8) |
 | `font/<id>.json` | Font provider definitions. CobolCraft reads the `bitmap` provider type (10.10). | **read** (`minecraft:default`, 10.10) |
-| `sounds.json` | Sound event → sound file list. | not read (sounds are out of scope) |
-| `sounds/**/<name>.ogg` | Ogg audio files. | not read (sounds are out of scope) |
+| `sounds.json` | Sound event → sound file list. | not read (sounds are out of scope); its schema and layering are in 59 §3 |
+| `sounds/**/<name>.ogg` | Ogg audio files. | not read (sounds are out of scope); the audio formats the vanilla client accepts are in 59 §1.4 |
 | `particles/<id>.json` | Particle sprite lists. | not read |
 | `equipment/<id>.json` | Worn-equipment layer textures. | not read |
 | `shaders/**` (`.json`, `.vsh`, `.fsh`, `include/*.glsl`) | GLSL programs. | not applicable (our Vulkan client) |

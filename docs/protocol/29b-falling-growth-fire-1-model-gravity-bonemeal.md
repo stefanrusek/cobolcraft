@@ -334,7 +334,7 @@ Damage reductions (helmets: `damages_helmet` for `falling_block` and `falling_an
 
 | Key | Type | Written | Read default |
 |---|---|---|---|
-| `BlockState` | block state codec (compound `Name`, `Properties`) | always | sand default state |
+| `BlockState` | `BlockState.CODEC` (a string id for a default state, else a compound with lowercase `id` and `properties`, 07 section 7.3; `FallingBlockEntity` reads and writes this field with `BlockState.CODEC`, so `Name` and `Properties` are not used) | always | sand default state |
 | `Time` | int | always | 0 |
 | `DropItem` | byte (boolean) | always | true |
 | `HurtEntities` | byte | always | true when the stored state is in tag `anvil`, else false |

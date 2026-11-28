@@ -2,16 +2,17 @@
 spile: ticket
 id: CC-0037
 type: feature
-status: draft
+status: closed
 owner: stefanrusek
-resolution:
+resolution: done
 blocked_by: []
 created: 2026-11-23
 relations:
   depends_on: []
   relates_to: [CC-0001, CC-0034, CC-0035]
   supersedes: []
-implementation: []
+implementation:
+  branch: 005-doc-rounds
 ---
 
 # CC-0037: Reference docs state the client rendering and HUD rules that code had to skip
@@ -62,3 +63,8 @@ completeness.
 
 - Evidence: scratchpad/doc-gaps.md groups C and D, the task lines named above, and scratchpad/handoffs/wrapA-r3.md and
   wrapA-r6.md.
+
+## Result of the round (2026-11-28)
+
+- Written on 005-doc-rounds (artifact SHA-256 4508d006, clean-room reader and separate reviewers): docs 12, 13, 34-1, 34-3, 34-5, 34-9, 40-1, 40-8, 44-3, 44-8 (section 15 interpolation), 53, 54, 57-5, 05b and README rows. Covered: F3+B hitbox renderer, elytra pose, HUD behind screens, entity interpolation, pause rules, slab and stair items, glint, copper golem, fox and panda items.
+- Open questions stay in each document. Decision for the operator: vanilla draws the whole HUD behind screens, including the hotbar and meters, which the client omits.

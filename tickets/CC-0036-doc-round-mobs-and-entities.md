@@ -2,16 +2,17 @@
 spile: ticket
 id: CC-0036
 type: feature
-status: draft
+status: closed
 owner: stefanrusek
-resolution:
+resolution: done
 blocked_by: []
 created: 2026-11-23
 relations:
   depends_on: []
   relates_to: [CC-0001, CC-0040]
   supersedes: []
-implementation: []
+implementation:
+  branch: 005-doc-rounds
 ---
 
 # CC-0036: Reference docs state the mob and entity behaviour that code had to skip
@@ -66,3 +67,9 @@ contamination and completeness.
 - Evidence: scratchpad/doc-gaps.md (2026-11-18, additions 2026-11-19), the DOC GAP and doc-gap-noted task lines of
   specs/002-client-polish/tasks/lanes/ (p49j-a, p49n, p49v, p49z) and the handoff files in scratchpad/handoffs/
   (wrapI2-r6, wrapC-r*).
+
+## Result of the round (2026-11-28)
+
+- Written on 005-doc-rounds (artifact SHA-256 4508d006, clean-room reader and separate reviewers, up to three review rounds per area): docs 05c, 17, 18, 19, 20, 21, 25-7, 30-4 (dispenser dispatch), 44-4 to 44-7, 53. Covered: movement validation and its log texts and limits (05c), crossbow and multishot arithmetic, turtle egg laying and its tick parity rule, MoveToBlockGoal settings per subclass, nautilus love, horse interaction, eye heights, sulfur cube knockback, copper golem, level entity order.
+- Not re-verified in this round: the other items of the group A list above that no commit of this branch names (entity ticking range, creaking, breeze, warden, fish schooling, wandering trader roll, trident deflection sign). They stay doc gaps.
+- Open questions of each document remain listed in that document. Implementation tickets for the code that diverges from the new text are not yet minted (operator decision).

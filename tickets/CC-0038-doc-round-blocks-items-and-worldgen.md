@@ -2,16 +2,17 @@
 spile: ticket
 id: CC-0038
 type: feature
-status: draft
+status: closed
 owner: stefanrusek
-resolution:
+resolution: done
 blocked_by: []
 created: 2026-11-23
 relations:
   depends_on: []
   relates_to: [CC-0001, CC-0029, CC-0030, CC-0031, CC-0032]
   supersedes: []
-implementation: []
+implementation:
+  branch: 005-doc-rounds
 ---
 
 # CC-0038: Reference docs settle the block, container, item and worldgen conflicts and gaps
@@ -69,3 +70,9 @@ schemas only, a separate reviewer checks for contamination and completeness.
 
 - Evidence: scratchpad/doc-gaps.md groups B and D, and the DOC GAP and doc conflict notes on the task lines named
   above (lanes/p46h.md, wallitems.md, p46c.md, p49z.md).
+
+## Result of the round (2026-11-28)
+
+- Written on 005-doc-rounds (artifact SHA-256 4508d006, clean-room reader and separate reviewers): docs 24, 25, 29b-1, 29b-4 (section 3.2.1 plant tick timeline), 30, 31-4, 35, 36, 37-6, 38, 54, 55, 57-4 (random reset, dialog, test, publish commands), 07, 16, 19, 20, 21. Conflicts between documents were settled in place with one-line notes.
+- Plant destroy timing now follows the jar (a delay-1 scheduled tick for kelp, vines, sugar cane, cactus and bamboo): needs implementation tickets.
+- Open questions stay in each document.

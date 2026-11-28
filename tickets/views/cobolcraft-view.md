@@ -52,9 +52,6 @@ project: CobolCraft
 | [CC-0033](../CC-0033-shim-depth-only-pipeline.md) | A depth-only pipeline gives the boat water patch and the painting back depth bias | feature | stefanrusek |  |  |
 | [CC-0034](../CC-0034-glint-and-held-items-rest.md) | Compass and clock glint, fox and panda held items and the creeper swirl | feature | stefanrusek |  |  |
 | [CC-0035](../CC-0035-player-appearance-cape-and-options.md) | Players show their cape, ears and elytra, and the skin options screen exists | feature | stefanrusek |  |  |
-| [CC-0036](../CC-0036-doc-round-mobs-and-entities.md) | Reference docs state the mob and entity behaviour that code had to skip | feature | stefanrusek |  |  |
-| [CC-0037](../CC-0037-doc-round-client-and-rendering.md) | Reference docs state the client rendering and HUD rules that code had to skip | feature | stefanrusek |  |  |
-| [CC-0038](../CC-0038-doc-round-blocks-items-and-worldgen.md) | Reference docs settle the block, container, item and worldgen conflicts and gaps | feature | stefanrusek |  |  |
 | [CC-0039](../CC-0039-wire-uncalled-mob-rule-libraries.md) | The built mob rule functions are called by the tick | feature | stefanrusek |  |  |
 | [CC-0040](../CC-0040-mob-behaviour-long-tail.md) | The remaining mob behaviours of docs 44 and 19 to 21 are built | feature | stefanrusek |  |  |
 | [CC-0041](../CC-0041-game-event-emitters.md) | Game events and vibrations are emitted by the actions that cause them | feature | stefanrusek |  |  |
@@ -94,6 +91,10 @@ project: CobolCraft
 
 | ID | Title | Resolution |
 |---|---|---|
+| [CC-0064](../CC-0064-doc-round-sounds-and-music.md) | Reference docs state the game's sound events, sound definitions and music | done |
+| [CC-0038](../CC-0038-doc-round-blocks-items-and-worldgen.md) | Reference docs settle the block, container, item and worldgen conflicts and gaps | done |
+| [CC-0037](../CC-0037-doc-round-client-and-rendering.md) | Reference docs state the client rendering and HUD rules that code had to skip | done |
+| [CC-0036](../CC-0036-doc-round-mobs-and-entities.md) | Reference docs state the mob and entity behaviour that code had to skip | done |
 | [CC-0008](../CC-0008-gravity-blocks-fall.md) | Gravity blocks fall when the block beneath them is broken | done |
 | [CC-0006](../CC-0006-creative-cursor-throws.md) | A creative player's carried stack can be thrown out of the inventory window | done |
 | [CC-0005](../CC-0005-tests-free-port.md) | Server tests do not depend on port 25565 being free | done |
