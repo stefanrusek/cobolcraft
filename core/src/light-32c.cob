@@ -50,10 +50,12 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. L32-PUSH-INC.
-*> USING layer, x, y, z, entry: appends a pair to the increase queue (3, 4).
+*> USING layer, x, y, z, entry: appends a pair to the increase queue (3, 4); a full table (50000) first moves the pairs still waiting to the front.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY L32.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-K                    BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -61,6 +63,14 @@
  01 L-Z                    BINARY-LONG.
  01 L-ENTRY                BINARY-LONG.
  PROCEDURE DIVISION USING L-K L-X L-Y L-Z L-ENTRY.
+     IF QU-INC-TAIL(L-K) = 50000 AND QU-INC-HEAD(L-K) > 1
+         PERFORM VARYING WS-I FROM QU-INC-HEAD(L-K) BY 1 UNTIL WS-I > QU-INC-TAIL(L-K)
+             COMPUTE WS-J = WS-I - QU-INC-HEAD(L-K) + 1
+             MOVE QU-INC(L-K, WS-I) TO QU-INC(L-K, WS-J)
+         END-PERFORM
+         COMPUTE QU-INC-TAIL(L-K) = QU-INC-TAIL(L-K) - QU-INC-HEAD(L-K) + 1
+         MOVE 1 TO QU-INC-HEAD(L-K)
+     END-IF
      ADD 1 TO QU-INC-TAIL(L-K)
      MOVE L-X TO QU-INC-X(L-K, QU-INC-TAIL(L-K))
      MOVE L-Y TO QU-INC-Y(L-K, QU-INC-TAIL(L-K))
@@ -71,10 +81,12 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. L32-PUSH-DEC.
-*> USING layer, x, y, z, entry: appends a pair to the decrease queue (3, 4).
+*> USING layer, x, y, z, entry: appends a pair to the decrease queue (3, 4); a full table (50000) first moves the pairs still waiting to the front.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY L32.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
  LINKAGE SECTION.
  01 L-K                    BINARY-LONG.
  01 L-X                    BINARY-LONG.
@@ -82,6 +94,14 @@
  01 L-Z                    BINARY-LONG.
  01 L-ENTRY                BINARY-LONG.
  PROCEDURE DIVISION USING L-K L-X L-Y L-Z L-ENTRY.
+     IF QU-DEC-TAIL(L-K) = 50000 AND QU-DEC-HEAD(L-K) > 1
+         PERFORM VARYING WS-I FROM QU-DEC-HEAD(L-K) BY 1 UNTIL WS-I > QU-DEC-TAIL(L-K)
+             COMPUTE WS-J = WS-I - QU-DEC-HEAD(L-K) + 1
+             MOVE QU-DEC(L-K, WS-I) TO QU-DEC(L-K, WS-J)
+         END-PERFORM
+         COMPUTE QU-DEC-TAIL(L-K) = QU-DEC-TAIL(L-K) - QU-DEC-HEAD(L-K) + 1
+         MOVE 1 TO QU-DEC-HEAD(L-K)
+     END-IF
      ADD 1 TO QU-DEC-TAIL(L-K)
      MOVE L-X TO QU-DEC-X(L-K, QU-DEC-TAIL(L-K))
      MOVE L-Y TO QU-DEC-Y(L-K, QU-DEC-TAIL(L-K))
@@ -210,6 +230,14 @@
 *> has the from-empty-shape flag), store the new level and queue increaseSkipOneDirection (when above 1).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-BIT-INIT            PIC 9 VALUE 0.
+ 01 WS-BIT-TABLE.
+    05 WS-BIT-ROW          OCCURS 64 TIMES.
+       10 WS-BIT-CELL      BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-II                  BINARY-LONG.
+ 01 WS-JJ                  BINARY-LONG.
+ 01 WS-VV                  BINARY-LONG.
+ 01 WS-BR                  BINARY-LONG.
  01 WS-FROM                BINARY-LONG.
  01 WS-BITS                BINARY-LONG.
  01 WS-FROM-EMPTY          BINARY-LONG.
@@ -252,11 +280,18 @@
      IF L-K = 2
          CALL "L32-EMPTY-BELOW" USING L-X L-Y L-Z WS-KE
      END-IF
-     MOVE 1 TO WS-POW
+     IF WS-BIT-INIT = 0
+         MOVE 1 TO WS-BIT-INIT
+         PERFORM VARYING WS-II FROM 0 BY 1 UNTIL WS-II > 63
+             MOVE WS-II TO WS-VV
+             PERFORM VARYING WS-JJ FROM 0 BY 1 UNTIL WS-JJ > 5
+                 DIVIDE WS-VV BY 2 GIVING WS-VV REMAINDER WS-BR
+                 MOVE WS-BR TO WS-BIT-CELL(WS-II + 1, WS-JJ + 1)
+             END-PERFORM
+         END-PERFORM
+     END-IF
      PERFORM VARYING WS-D FROM 0 BY 1 UNTIL WS-D > 5
-         DIVIDE WS-BITS BY WS-POW GIVING WS-T
-         DIVIDE WS-T BY 2 GIVING WS-Q REMAINDER WS-R
-         COMPUTE WS-POW = WS-POW * 2
+         MOVE WS-BIT-CELL(WS-BITS + 1, WS-D + 1) TO WS-R
          IF WS-R = 1
              CALL "L32-DIRECTION" USING WS-D WS-DX WS-DY WS-DZ WS-OPP
              COMPUTE WS-NX = L-X + WS-DX
@@ -304,6 +339,14 @@
 *> neighbour queues increaseOnlyOneDirection back toward this cell. The sky layer has no emission.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-BIT-INIT            PIC 9 VALUE 0.
+ 01 WS-BIT-TABLE.
+    05 WS-BIT-ROW          OCCURS 64 TIMES.
+       10 WS-BIT-CELL      BINARY-LONG OCCURS 6 TIMES.
+ 01 WS-II                  BINARY-LONG.
+ 01 WS-JJ                  BINARY-LONG.
+ 01 WS-VV                  BINARY-LONG.
+ 01 WS-BR                  BINARY-LONG.
  01 WS-FROM                BINARY-LONG.
  01 WS-BITS                BINARY-LONG.
  01 WS-FROM-EMPTY          BINARY-LONG.
@@ -344,11 +387,18 @@
      IF L-K = 2
          CALL "L32-EMPTY-BELOW" USING L-X L-Y L-Z WS-KE
      END-IF
-     MOVE 1 TO WS-POW
+     IF WS-BIT-INIT = 0
+         MOVE 1 TO WS-BIT-INIT
+         PERFORM VARYING WS-II FROM 0 BY 1 UNTIL WS-II > 63
+             MOVE WS-II TO WS-VV
+             PERFORM VARYING WS-JJ FROM 0 BY 1 UNTIL WS-JJ > 5
+                 DIVIDE WS-VV BY 2 GIVING WS-VV REMAINDER WS-BR
+                 MOVE WS-BR TO WS-BIT-CELL(WS-II + 1, WS-JJ + 1)
+             END-PERFORM
+         END-PERFORM
+     END-IF
      PERFORM VARYING WS-D FROM 0 BY 1 UNTIL WS-D > 5
-         DIVIDE WS-BITS BY WS-POW GIVING WS-T
-         DIVIDE WS-T BY 2 GIVING WS-Q REMAINDER WS-R
-         COMPUTE WS-POW = WS-POW * 2
+         MOVE WS-BIT-CELL(WS-BITS + 1, WS-D + 1) TO WS-R
          IF WS-R = 1
              CALL "L32-DIRECTION" USING WS-D WS-DX WS-DY WS-DZ WS-OPP
              COMPUTE WS-NX = L-X + WS-DX
@@ -477,6 +527,9 @@
  01 WS-COL                 BINARY-LONG.
  01 WS-BASE                BINARY-LONG.
  01 WS-I                   BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-J                   BINARY-LONG.
+ 01 WS-SEC                 BINARY-LONG.
  01 WS-ID                  BINARY-LONG.
  01 WS-REST                BINARY-LONG.
  01 WS-X                   BINARY-LONG.
@@ -492,21 +545,28 @@
  01 L-CX                   BINARY-LONG.
  01 L-CZ                   BINARY-LONG.
  PROCEDURE DIVISION USING L-CX L-CZ.
-     COMPUTE WS-COL = (L-CZ + 1) * 4 + L-CX + 2
+     COMPUTE WS-COL = EN-SLOTMAP(FUNCTION MOD(L-CZ + 1, 6) * 6 + FUNCTION MOD(L-CX + 1, 6) + 1)
      MOVE 1 TO LY-ON(1, WS-COL)
-     COMPUTE WS-BASE = (WS-COL - 1) * 16384
-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 16384
-         COMPUTE WS-ID = EN-BLK(WS-BASE + WS-I)
-         MOVE EN-EMIT(WS-ID + 1) TO WS-E
-         IF WS-E NOT = 0
-             COMPUTE WS-Y = (WS-I - 1) / 256
-             COMPUTE WS-REST = WS-I - 1 - WS-Y * 256
-             COMPUTE WS-Z = WS-REST / 16
-             COMPUTE WS-X = L-CX * 16 + WS-REST - WS-Z * 16
-             COMPUTE WS-Z = L-CZ * 16 + WS-Z
-             CALL "L32-IS-EMPTY-SHAPE" USING WS-ID WS-EMPTY
-             CALL "L32-ENTRY" USING WS-KIND WS-E WS-EMPTY WS-NONE WS-ENTRY
-             CALL "L32-PUSH-INC" USING WS-LAYER WS-X WS-Y WS-Z WS-ENTRY
+     COMPUTE WS-BASE = (WS-COL - 1) * EN-NS * 4096
+     PERFORM VARYING WS-S FROM 0 BY 1 UNTIL WS-S >= EN-NS
+         COMPUTE WS-SEC = (WS-COL - 1) * EN-NS + WS-S + 1
+         IF EN-NONAIR(WS-SEC) > 0
+             PERFORM VARYING WS-J FROM 1 BY 1 UNTIL WS-J > 4096
+                 COMPUTE WS-I = WS-S * 4096 + WS-J
+                 COMPUTE WS-ID = EN-BLK(WS-BASE + WS-I)
+                 MOVE EN-EMIT(WS-ID + 1) TO WS-E
+                 IF WS-E NOT = 0
+                     COMPUTE WS-Y = (WS-I - 1) / 256
+                     COMPUTE WS-REST = WS-I - 1 - WS-Y * 256
+                     ADD EN-MINY TO WS-Y
+                     COMPUTE WS-Z = WS-REST / 16
+                     COMPUTE WS-X = L-CX * 16 + WS-REST - WS-Z * 16
+                     COMPUTE WS-Z = L-CZ * 16 + WS-Z
+                     CALL "L32-IS-EMPTY-SHAPE" USING WS-ID WS-EMPTY
+                     CALL "L32-ENTRY" USING WS-KIND WS-E WS-EMPTY WS-NONE WS-ENTRY
+                     CALL "L32-PUSH-INC" USING WS-LAYER WS-X WS-Y WS-Z WS-ENTRY
+                 END-IF
+             END-PERFORM
          END-IF
      END-PERFORM
      GOBACK.
