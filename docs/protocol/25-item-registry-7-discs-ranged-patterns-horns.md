@@ -50,15 +50,15 @@ output) it is quoted as a worked example only.
    attributes, the `equippable` component and stack size 1 and nothing else; there is no `durability`, `repairable`
    or `enchantable` call (compare `wolfArmor`, which does set `durability` and `repairable`). Section 8 states the read
    behaviour, which supersedes the 17 wording for the five rows.
-3. **Crossbow arrows are critical arrows only when a player shoots.** 17 section 3.9 says the crossbow's `createProjectile`
-   passes the constant true. The bytecode of `CrossbowItem.createProjectile` passes its own boolean parameter through to
+3. **Crossbow arrows are critical arrows only when a player shoots.** The bytecode of `CrossbowItem.createProjectile` passes its own boolean parameter through to
    `ProjectileWeaponItem.createProjectile`, and `performShooting` supplies `shooter instanceof Player` for it (section 9.5).
-   A crossbow fired by a mob therefore makes non-critical arrows. Everything else of 17 section 3.9 that was re-read here
-   (charge time, power constants, durability use, multishot offsets) agrees; the sound pitch formulas of section 9.6 are
-   more exact than the values listed in 17.
+   A crossbow fired by a mob therefore makes non-critical arrows. 17 section 3.9 states the same rule and agrees with this
+   document on the charge time (the int tick count `Mth.floor(modified seconds x 20.0f)`), the power constants, the durability use, the multishot
+   offsets, the shot-sound pitch formula and ranges, the rocket creation height 0.15000000596046448, the mob aim vector and
+   the 90-degree axis construction of section 9.6.
 4. The jukebox block and its `has_record` state are 24 section 7.11. The block entity's persistence, ticking and the song player are
    specified here (section 5) because the disc rows are their only input.
-5. Conflict for the owner of 17: 17 section 3.9 (crossbow passes constant true for the crit flag) and 17 section 1.4 (nautilus armor durability multiplier x 16) disagree with the bytecode as read here (corrections 2 and 3); this document is not authoritative over 17's text and the orchestrator should have 17 corrected.
+5. 17 section 3.9 (crit flag) and 17 section 1.4 (horse and nautilus armor have no durability) now agree with the bytecode as read here (items 2 and 3).
 
 ## 2. Id arithmetic and the 45 statements
 
@@ -384,7 +384,7 @@ Consequence: with Multishot (n = 3) and no Infinity, the first arrow costs one i
 
 `shootProjectile(shooter, projectile, index, power, inaccuracy, angle, target)`:
 - **With no target** (a player): `dir` = the shooter's view vector (partial tick 1.0) rotated by `angle` degrees (converted with 0.017453292) about the shooter's up vector (`getUpVector(1.0)`); call `projectile.shoot(dir.x, dir.y, dir.z, power, inaccuracy)` (the shot adds the shooter's movement and the random inaccuracy: 17 section 3.9).
-- **With a target** (a mob): the aim vector is `(target.x - shooter.x, target.getY(0.3333333333333333) - projectile.y + 0.20000000298023224 x horizontalDistance (the float 0.2 widened to a double), target.z - shooter.z)` with `horizontalDistance = sqrt(dx^2 + dz^2)` of the first and third components; it is normalised and rotated by `angle` about an axis computed from cross products with the world up vector, with a fallback to the shooter's up vector when the first cross product is shorter than 1e-3 (squared length at most 1e-7); then `projectile.shoot` as above. The exact rotation composition is Open question 2.
+- **With a target** (a mob): the aim vector is `(target.x - shooter.x, target.getY(0.3333333333333333) - projectile.y + 0.20000000298023224 x horizontalDistance (the float 0.2 widened to a double), target.z - shooter.z)` with `horizontalDistance = sqrt(dx^2 + dz^2)` of the first and third components; it is normalised and rotated by `angle` about an axis computed from cross products with the world up vector, with a fallback to the shooter's up vector when the first cross product is shorter than 1e-3 (squared length at most 1e-7); then `projectile.shoot` as above. The rotation composition (the axis from the cross product with the world up vector, passed without normalising; the 90-degree turn; the angle turn) is stated in 17 section 3.9, "Mob aim"; what stays open (the library's handling of a non-unit axis, the sign) is 17 Open question 24 and Open question 2 here.
 - Then play `item.crossbow.shoot` (the sound event) at the shooter's position with the shooter's sound source, **volume 1.0** and pitch `getShotPitch(random, index)` where the random source is the shooter's.
 
 `getShotPitch(random, index)`: `index == 0` gives **1.0**; otherwise `base = 0.63` when `index` is odd, `0.43` when even, and the pitch is `1.0 / (random.nextFloat() x 0.5 + 1.8) + base`.
@@ -523,7 +523,7 @@ Checks an implementer can run against a loaded registry (all derived from this d
 ## 15. Open questions
 
 1. The order in which `ConsumableListener` components of one stack run (`ItemStack.getAllOfType` iterates the component map); the iteration order of the prototype map was not traced. It affects only the order of effects in the log, not the results.
-2. The exact vector composition of `getProjectileShotVector` for mob shooters (cross products with the world up vector, a 90 degree rotation and the angle rotation): the operations were listed but the axis of the angle rotation was not derived. Players use the simple rule of 9.6.
+2. The exact vector composition of `getProjectileShotVector` for mob shooters (cross products with the world up vector, a 90 degree rotation and the angle rotation) is stated in 17 section 3.9, "Mob aim" (axis `u` = the aim turned 90 degrees about the cross product); the library behaviour for a non-unit axis (`org.joml` is not in the archive) and the sign are 17 Open question 24. Players use the simple rule of 9.6.
 3. Closed: the end-sound lambda is `lambda$onUseTick$2`, read from the bootstrap table (section 9.3).
 4. The registry index used in level event 1010 is the index in the `jukebox_song` registry of the connection; the order of those entries on the wire is by the registry sync (04 section 4, 23) and was not re-derived here.
 5. The HUD "now playing" display (timing, fade) after `Hud.setNowPlaying` was not read (12 section 5 owns HUD details).
@@ -539,4 +539,4 @@ Checks an implementer can run against a loaded registry (all derived from this d
 15. Closed: the only overrider of `LivingEntity.setRecordPlayingNearby` is `Parrot` (archive scan, section 5.4).
 16. The consumer of the banner pattern language keys `item.minecraft.*_banner_pattern.desc` and `.new` (present in `en_us.json`) was not found: searched `ItemStack.addDetailsToTooltip` (no `provides_banner_patterns` branch) and the item classes for the string `.desc` (only `DiscFragmentItem` matches); a user of the keys outside `net/minecraft/world/item` (for example a screen or a data-driven lookup built from a concatenated key) was not searched for.
 17. The tooltip prefix literal used for the nested projectile detail lines (section 9.7) was not decoded beyond "a short literal".
-18. For the owner of 17: section 3.9 (crossbow crit flag is true only for a player shooter, section 1 item 3), section 1.4 (nautilus armor has no durability multiplier, section 1 item 2) and line 545 (charge time is `floor(modified seconds x 20)` already computed by `getChargeDuration`, not `floor(20 x getChargeDuration)`) disagree with this document; the text of 17 must be corrected by its owner. Line 92 of 17 should read "list of item templates" (section 9.7).
+18. Closed: 17 section 3.9 (crit flag true only for a player shooter, section 1 item 3; charge time `Mth.floor(modified seconds x 20.0f)` as an int tick count), 17 section 1.4 (horse and nautilus armor have no durability, section 1 item 2) and line 92 of 17 ("list of item templates", section 9.7) agree with this document.
