@@ -315,9 +315,15 @@ Keep Alive. See "Minimum required serverbound traffic".
 |---|---|---|
 | Flags | UByte | MoveFlags. |
 
-The vanilla client (`LocalPlayer.sendPosition`) picks the variant each tick. It sends a position variant if the
-squared distance moved exceeds 2.0E-4 or a 20-tick reminder counter has expired. It sends a rotation variant if yaw
-or pitch changed. It sends Status Only if only the flags changed (inferred from the comparisons in that method).
+The vanilla client (`LocalPlayer.sendChanges`, then `sendPosition`) picks the variant once per client tick, for a player
+that is not a passenger and is the camera entity, comparing with the values it **last sent**. Until the client counts
+itself as loaded, `sendChanges` returns at once: nothing is sent and the reminder counter does not advance. A position
+is due when the squared distance from the last sent position is above the square of 2.0E-4 (4.0E-8, so a distance above
+0.0002), or when the reminder counter, raised by 1 on each of these calls, has reached 20. A rotation is due when yaw or
+pitch differs. Both due: Pos Rot. Position only: Pos. Rotation only: Rot. Neither, but the on-ground or
+horizontal-collision flag differs from the last tick's: Status Only. Otherwise nothing. A sent position is stored and
+zeroes the counter; a sent rotation is stored; the two flags are stored every time. (corrected in the feature 003 round
+against the jar: an earlier text compared the squared distance with 2.0E-4 itself.)
 
 ## 0x22 (34) Serverbound Move Vehicle (ServerboundMoveVehiclePacket)
 
@@ -695,10 +701,21 @@ arrives, the server disconnects with a timeout. A reply with the wrong id also d
 challenge as soon as it arrives (`handleKeepAlive`).
 
 **Accept Teleportation (0x00).** The server sends a clientbound Player Position on join and on every forced teleport.
-Until it receives a matching Accept Teleportation, it ignores the client's movement packets. It also re-sends the
-teleport every 20 ticks (`updateAwaitingTeleport`). The connection does not drop, but the player stays frozen.
 The vanilla client replies at once, from `handleMovePlayer`, with the teleport id and the position and rotation it
-applied. It does not send a separate Move Player packet for that teleport.
+applied. It does not send a separate Move Player packet for that teleport. Until the server receives a matching Accept
+Teleportation, the teleport is unconfirmed:
+
+- a Move Player packet changes only the server's yaw and pitch; its position and flags are discarded;
+- a Move Vehicle packet is dropped;
+- Use Item On does not use the item or the block (29 section 9.1, steps 9 to 11);
+- the teleport is re-sent only from the handlers of Move Player and Move Vehicle (`updateAwaitingTeleport`), when one of
+  those packets arrives and **strictly more than 20** server ticks have passed since the last send. With neither packet
+  arriving, nothing is re-sent. The re-send is not a copy: it has a new teleport id, no relative flags, zero velocity,
+  the awaited position and the server's current yaw and pitch, and it restarts the 20-tick timer.
+
+The connection does not drop, but the player stays where the server put it. A Move Player packet reaches this test only
+once the server counts the client as loaded (see Player Loaded below). (corrected in the feature 003 round against the
+jar: the teleport is not re-sent every 20 ticks on a timer, and not every effect of a movement packet is ignored.)
 
 **Chunk Batch Received (0x0B).** The server sends chunks in batches framed by Chunk Batch Start / Chunk Batch Finished.
 The vanilla client answers each Chunk Batch Finished with Chunk Batch Received (`handleChunkBatchFinished`). Without

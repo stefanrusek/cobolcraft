@@ -2,9 +2,9 @@
 
 | Item | Value |
 |---|---|
-| Covers | The movement of the local player, tick by tick: the order of everything that changes its input, flags and velocity; the input vector; walking, air, climbing, water, lava, ledge assist and flight; the collision follow-up (bounce, block speed factor); the block effect pass and its cell order; every block behaviour that changes a player's movement; the movement behaviour of Speed, Slowness, Jump Boost, Levitation, Slow Falling, Dolphin's Grace, Blindness, Soul Speed, Depth Strider and Swift Sneak with the attribute and effect updates the server sends; fall distance and fall damage; pushes (Set Entity Motion, Explode, entity pushing) and the velocity the server puts in them |
+| Covers | The movement of the local player, tick by tick: the order of everything that changes its input, flags and velocity; the input vector; walking, air, climbing, water, lava, ledge assist and flight; the collision follow-up (bounce, block speed factor); the block effect pass and its cell order; every block behaviour that changes a player's movement; the movement behaviour of Speed, Slowness, Jump Boost, Levitation, Slow Falling, Dolphin's Grace, Blindness, Soul Speed, Depth Strider and Swift Sneak with the attribute and effect updates the server sends; fall distance and fall damage; pushes (Set Entity Motion, Explode, entity pushing) and the velocity the server puts in them; teleports (Player Position) on the client and on the server with their confirmation; the lift of a player by a growing block |
 | Source artifact | `minecraft-26.3-client.jar`, SHA-256 `4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d` (version 26.3), the artifact recorded in [README.md](README.md) |
-| Method | Static reading of the shipped bytecode (`javap`), with no execution; the data files named in a row were read from the same jar. Classes read include `LocalPlayer`, `KeyboardInput`, `ClientInput`, `Minecraft` (tick order), `ClientPacketListener`, `Entity`, `LivingEntity`, `Player`, `ServerPlayer`, `ServerEntity`, `ServerGamePacketListenerImpl`, `ServerLevel`, `ServerExplosion`, `EntityFluidInteraction`, `BlockGetter`, `BlockPos`, `CollisionGetter`, `Blocks` and the block classes named in section 10, `MobEffect`, `MobEffects`, `MobEffectInstance`, `AttributeInstance`, `EnchantmentHelper`, `Enchantment` |
+| Method | Static reading of the shipped bytecode (`javap`), with no execution; the data files named in a row were read from the same jar. Classes read include `LocalPlayer`, `KeyboardInput`, `ClientInput`, `Minecraft` (tick order), `ClientPacketListener`, `Entity`, `LivingEntity`, `Player`, `ServerPlayer`, `ServerEntity`, `ServerGamePacketListenerImpl`, `ServerLevel`, `ServerExplosion`, `EntityFluidInteraction`, `BlockGetter`, `BlockPos`, `CollisionGetter`, `Blocks` and the block classes named in section 10, `MobEffect`, `MobEffects`, `MobEffectInstance`, `AttributeInstance`, `EnchantmentHelper`, `Enchantment`; for 13.2 and 13.6 also `Block` (`pushEntitiesUp`), `Relative`, `PositionMoveRotation`, `ClientboundPlayerPositionPacket`, `Shapes`, `VoxelShape`, `AABB`, `EntityGetter`, `Level`, `MultiPlayerGameMode`, `BlockStatePredictionHandler` |
 | Extends | 13 section 1 points here. 53 (poses, sneak edge, sneak speed, swimming steering, server validation), 51 section 6.1 (collision and step-up), 29a (fluids), 30 part 8 section 14.1 (the `move` pipeline and the supporting block), 39 section 2.2a (the block effect pass), 17 (damage, knockback), 28 (enchantment engine) |
 
 Conventions. A **tick** is 1/20 s. Velocity is in blocks per tick, per axis `(x, y, z)`, y up. Yaw is in degrees; yaw 0
@@ -908,7 +908,7 @@ cauldrons, crops, tripwire, sculk and similar) make no velocity or fall-distance
 | shulker boxes | the opening lid pushes | 10.5 |
 | `potent_sulfur` (erupting or continuous geyser) | launches upward | 10.5 |
 | suffocating blocks | push the player sideways out | 4.4 |
-| dirt path, farmland, mud-to-clay and other callers of `pushEntitiesUp` | when the block grows taller, the server shifts the entities standing in the new volume up (a position change, no velocity) | 29b part 2 section 9.5 |
+| dirt path, farmland, mud-to-clay and the other callers of `pushEntitiesUp` (closed list) | when the block grows taller, the server moves the entities in the new volume up; a player gets a fully relative teleport, so the client keeps its velocity (the server's own velocity is replaced) | 29b part 2 section 9.5; 13.6 |
 
 ### 10.2 Inside hooks
 
@@ -1338,12 +1338,61 @@ hook adds (1.0, 0, 0): (1.0, -0.0784, 0.2158591).
 
 ### 13.2 Teleports (Player Position)
 
+Read in `PositionMoveRotation.of` and `calculateAbsolute`, `ClientPacketListener.handleMovePlayer` and
+`setValuesFromPositionPacket`, `ServerGamePacketListenerImpl.teleport`, `Entity.teleportSetPosition` and
+`ServerPlayer.getKnownMovement`.
+
+New position, per axis: the packet's value, plus the old position when that axis's flag (`X`, `Y`, `Z`) is set. New yaw:
+the packet's yaw, plus the old yaw with `Y_ROT`. New pitch: the packet's pitch, plus the old pitch with `X_ROT`, then
+clamped to -90 to 90.
+
 New velocity, per axis: the packet's delta, plus the old velocity when that axis's `DELTA_*` flag is set. With
 `ROTATE_DELTA` the old velocity is first rotated: about x by `radians(old pitch - new pitch)`, then about y by
 `radians(old yaw - new yaw)` (float radians, table sine and cosine: x-rotation `y' = y c + z s`, `z' = z c - y s`;
-y-rotation `x' = x c + z s`, `z' = z c - x s`). A passenger ignores the packet's change. A respawn builds a new player;
+y-rotation `x' = x c + z s`, `z' = z c - x s`). When neither yaw nor pitch changes, both rotations are exactly the
+identity. A passenger ignores the packet's change. A respawn builds a new player;
 it copies the old velocity only when the Respawn packet's "keep entity data" bit (0x02) is set, else it is zero. The
 attribute map is copied with all modifiers when bit 0x01 is set; otherwise only the base values are copied.
+
+**What else the client does with a Player Position**, in the packet phase, in this order:
+
+1. Unless it is a passenger: position (the box is rebuilt, no collision test), velocity and rotation are set as above.
+   The previous-tick position and rotation (used to interpolate the drawn frame) are put through the same position and
+   rotation rules, starting from the old previous-tick values, so the drawn frame does not glide across a relative
+   teleport. `onGround`, fall distance and sprint are not written.
+2. Always: it sends Accept Teleportation (05c 0x00) with the id and the position and rotation the player now has. It sends
+   no Move Player packet here; the next tick's position send compares with the **last sent** position, which the
+   teleport did not change.
+3. Always: block-change prediction records the teleport (a predicted block change made earlier no longer moves the player
+   back when the server's answer reverts it), and a block break in progress is stopped (Player Action with the abort
+   status is sent, progress returns to 0 and the attack strength ticker is reset).
+
+**What the server does with its own record** when it sends one (`ServerGamePacketListenerImpl.teleport`): it applies the
+same position, velocity and rotation rules to its player, with the current position and rotation as the old values and
+the **known movement** as the old velocity. The server's own velocity (13.5) is not an input. The known movement is the
+displacement of the last accepted movement packet (the player's position after the packet minus the position before it;
+zero for a packet without a position change), reset to zero when a Client Tick End arrives with no accepted movement
+packet since the previous one, and zero for a new player. (A passenger that does not control its vehicle uses the
+vehicle's known movement instead.) The server also sets head yaw to the new yaw, sets the previous-tick
+position and rotation to the new ones and clears this tick's movement records (9.2); `onGround`, the collision flags and
+fall distance are not written. Then it adds 1 to the teleport id (a result of 2147483647 becomes 0), remembers the new
+position as the awaited position and sends the packet, carrying the change and flags **as given**, not the resolved
+values.
+
+**While a teleport is unacknowledged** (05c, minimum required serverbound traffic), an arriving Move Player changes only
+the server's rotation, its position and ground flag being discarded; a Move Vehicle is dropped; and Use Item On does not
+use the item or the block (29 section 9.1, steps 9 to 11). If a Move Player or Move Vehicle arrives strictly more than
+20 server ticks after the teleport was sent or last re-sent, the server sends a new teleport with a new id: absolute (no
+flags), to the awaited position with the server's current yaw and pitch, **zero delta**, which stops the client. Nothing
+is re-sent while neither packet arrives. Only an Accept Teleportation with the newest id counts; an older id is ignored,
+and a second answer with the newest id, or one with non-finite values, disconnects the player
+(`multiplayer.disconnect.invalid_player_movement`). On a match the server puts the player at the awaited position, makes
+it the last accepted position, and then handles the packet's position and rotation as a movement packet (53 section 10.3
+and the checks there) with the on-ground and horizontal-collision flags **false**.
+
+**A second teleport before the answer** (for example a second lift) gets its own new id, and the awaited position
+becomes the server's position after it; relative changes build on the already changed server record. The client applies
+both in order and answers each. The server ignores the answer with the older id and confirms only on the newest one.
 
 **Teleport Entity** (05b 0x80; `ClientPacketListener.handleTeleportEntity`) acts on the local player in two cases. When
 it names an entity the client no longer has and that was the player's just-removed vehicle, the same position, velocity
@@ -1394,9 +1443,13 @@ Worked: player 0.5 east of a mob, same z: `vx + 0.0353553`. Offset (0.2, 0.1): `
 
 Read in `ServerPlayer.doTick`, `ServerGamePacketListenerImpl.tickPlayer` and `handlePlayerPositionChange`, `Entity.markHurt`, `LivingEntity.hurtServer`, `knockback`, `dealDefaultKnockback`, `ServerEntity.sendChanges`, `Player.attack`, `causeExtraKnockback`, `ServerExplosion.hurtEntities`, `ServerLevel` (the explosion packet), and `MinecraftServer.processPacketsAndTick`, `tickChildren`; the other writers of the mark are `Ravager` and `HoglinBase`; the impulse enchantment effect (`ApplyEntityImpulse`) adds its vector and sends Set Entity Motion to a player at once.
 
-The server keeps its **own** velocity for each player and never copies the client's into it: each server tick the player
+The server keeps its **own** velocity for each player and ordinary movement packets never copy the client's movement
+into it: each server tick the player
 runs the same living-entity tick with **zero input** (clean-up, travel, drag, block effects), after which the position is
-reset to the client's (30 part 8 section 14.1.1, "Players, the server's own tick"). It is also changed by: knockback and
+reset to the client's (30 part 8 section 14.1.1, "Players, the server's own tick"). **Teleports do write it** (13.2):
+each flagged `DELTA_*` axis becomes the client's known movement (rotated if `ROTATE_DELTA`) plus the packet's delta, and
+each unflagged axis becomes the packet's delta (corrected in the feature 003 round against the jar). It is also changed
+by: knockback and
 explosions; pushes by server entities; fluid currents; block effects; a server-side ground jump (with the 0.2 sprint
 boost) when a position packet leaves the ground upward; and the collision response and block speed factor of the replayed
 packet moves. For a player standing still on ordinary ground it is **(0, -0.0784000015, 0)**.
@@ -1461,6 +1514,130 @@ knockback (0.4634350, 0.1876912, 0). A walking client with (0, -0.0784, 0.215859
 movement tick, is (0.2530355, 0.0287054, 0); the following Set Entity Motion (when the explosion happened in the entity
 phase) carries it quantised, (0.2530062, 0.0286883, 0), and replaces the client's velocity.
 
+### 13.6 Lift by a growing block
+
+Read in `Block.pushEntitiesUp`, `ServerPlayer.teleportRelative`, `Relative` (`ALL`), `ClientboundPlayerPositionPacket`,
+and the classes of 13.2. Which block changes lift, which entities are chosen and how the lift amount is computed are in
+29b part 2 section 9.5.
+
+#### The packet
+
+The lifted player is sent exactly one packet by the lift itself: **Player Position** (05b 0x49), sent at once, while the
+block change is still being processed. No Set Entity Motion or entity teleport packet to that player is part of it.
+
+| Field | Value |
+|---|---|
+| Teleport id | the connection's next teleport id (13.2) |
+| X, Y, Z | 0.0, `lift`, 0.0 (`lift` as computed by 29b part 2 section 9.5.1 from the **server's** box; it can be 0.0) |
+| Velocity X, Y, Z | 0.0, 0.0, 0.0 |
+| Yaw, pitch | 0.0, 0.0 |
+| Relative flags | all nine: `X`, `Y`, `Z`, `Y_ROT`, `X_ROT`, `DELTA_X`, `DELTA_Y`, `DELTA_Z`, `ROTATE_DELTA`; Int value 0x000001FF (511) |
+
+It is confirmed like every teleport: the client answers with Accept Teleportation and the server ignores the client's
+movement until the answer arrives (13.2).
+
+#### What the client makes of it
+
+By 13.2: position `(x, y + lift, z)` from **its own** position at the time of receipt, which for a moving player is not
+the server's; velocity unchanged on all three axes (the rotation change is zero, so `ROTATE_DELTA` has no effect, and
+adding a zero delta changes nothing); yaw and pitch unchanged. The previous-tick position rises by the same amount.
+`onGround`, fall distance and sprint are unchanged. A block break in progress is stopped.
+
+#### What the server changes
+
+At the lift:
+
+| Server record | Change |
+|---|---|
+| position | `(x + 0.0, y + lift, z + 0.0)`; box rebuilt; previous-tick position set to it |
+| velocity | **replaced** on all three axes by the known movement (13.2): zero for a player who is standing still, otherwise the displacement of the last accepted movement packet. The server's previous velocity is lost |
+| yaw, pitch, head yaw | yaw and pitch unchanged; head yaw set to the yaw |
+| fall distance, `onGround`, collision flags, supporting block | unchanged |
+| this tick's movement records (9.2) | cleared |
+| teleport state | id advanced; awaited position := the new position |
+
+When the Accept Teleportation arrives, the server puts the player at the awaited position and handles the answer's
+position `P` as a movement packet with the ground flag false (13.2). With `v = P - awaited position`:
+
+| Server record | Change |
+|---|---|
+| position | `v` is replayed and checked as for any movement packet (53 section 10.3); accepted: `P` |
+| `onGround`, horizontal collision | set to **false** (until the next movement packet, or the server's own movement tick, sets them); the supporting block is cleared |
+| fall distance | `v.y < 0`: grows by `-v.y` (12.1, no landing); `v.y > 0`: reset to 0; `v.y = 0`: unchanged |
+| server-side jump | if the server's `onGround` was still true and `v.y > 0`, the server runs the ground jump of 13.5 (server velocity, jump exhaustion, statistic) before the replay |
+| known movement | `v` (zero for a standing player) |
+
+The lift itself deals no damage and does not end a fall.
+
+#### Order against the block change
+
+Lifts from scheduled block ticks, random ticks and precipitation happen before the level tick's block-change broadcast
+(33 section 2.1 steps 6 and 8, section 2.2), and packet flushing is suspended for the whole server tick (33 section
+1.2), so the client gets Player Position and then the block change (Block Update or Section Blocks Update) of the same
+tick together. A lift made during packet handling, outside that suspension (rows 3 and 4 of 29b part 2 section 9.5.3,
+and trampling by a player), is sent before that tick's broadcast (for rows 3 and 4 the Use Item On handler also sends
+Block Update packets right after, 29 section 9.1 step 11). One made after the broadcast step of its level tick (for
+example trampling by a mob, in the entity phase) is sent ahead of the block change, which waits for the next tick's
+broadcast. In both of these cases the two packets can leave in different flushes (Open question 12). Which group a
+`/place feature` lift (row 7) belongs to is not traced: the typed command's packet handler does not run it but hands it
+to the server's task queue (`MinecraftServer.execute`), and when that task runs relative to the tick phases was not
+read.
+
+#### Worked (computed): farmland turns to dirt under a standing player
+
+Farmland at block (10, 63, 20), turned to dirt by a random tick. Server and client: feet (10.5, 63.9375, 20.5), yaw and
+pitch any; client velocity (0, -0.0784000, 0), `onGround` true.
+
+1. Server, lift: `m = 63.9375`, `T = 64.0`, `d = 64.0 - 64.9375 = -0.9375`, `lift = 0.0625`. Position
+   (10.5, 64.0, 20.5). Velocity := the known movement (0, 0, 0). Player Position: change (0, 0.0625, 0), delta (0, 0, 0),
+   rotation (0, 0), flags 0x1FF. The block is then written.
+2. The server's own movement tick, later in the same server tick, turns its velocity back into (0, -0.0784000, 0)
+   (computed).
+3. Client, packet phase: position (10.5, 64.0, 20.5), velocity still (0, -0.0784000, 0), `onGround` still true. It sends
+   Accept Teleportation (id, 10.5, 64.0, 20.5, yaw, pitch). The Block Update makes the cell dirt.
+4. Server, on the answer: `v = (0, 0, 0)`; `onGround` false; fall distance unchanged.
+5. Client, next tick (computed): the move requests y -0.0784000, the dirt top stops it: no movement, `onGround` true,
+   stored velocity (0, -0.0784000, 0). Because the position differs by more than 0.0002 from the last one it sent, it
+   sends Move Player Pos (10.5, 64.0, 20.5) with the ground flag true (the send step of 2.1; its rule is in 05c, after
+   Serverbound Move Player Status Only). The server accepts it and its `onGround` is true again.
+
+A player whose feet are at y 64.0 on a full block next to the farmland, with the box reaching over the farmland cell, is
+not a candidate: nothing is sent.
+
+#### Worked (computed): farmland turns to dirt under a walking player
+
+The same block. The player walks toward +z steadily, yaw 0: stored client velocity (0, -0.0784000, 0.1178591),
+0.2158591 per tick (unrounded 0.215859068; the z values below are 20.5 plus one or two unrounded steps, rounded
+afterwards, so the second is 20.9317181 although adding the rounded figures gives a last digit of 2). The server's last accepted position is (10.5, 63.9375, 20.5), reached by a movement of
+(0, 0, 0.2158591). By the time the packet arrives the client has run one more tick, to z = 20.7158591; its movement packet
+for that tick reaches the server after the lift and is discarded except for rotation.
+
+Server, lift: as above, position (10.5, 64.0, 20.5); velocity := (0, 0, 0.2158591), which its own movement tick that
+follows reduces to (0, -0.0784000, 0.1178591) if its `onGround` is true (computed). The packet is the same as for the
+standing player.
+
+| | A: the next cell (10, 63, 21) is farmland | B: the next cell is a full block, top y 64.0 |
+|---|---|---|
+| client before the packet (computed) | (10.5, 63.9375, 20.7158591) | (10.5, 64.0, 20.7158591): the box passed z = 21 and stepped up |
+| client after the packet | (10.5, 64.0, 20.7158591) | (10.5, 64.0625, 20.7158591) |
+| client velocity | unchanged (0, -0.0784000, 0.1178591) | unchanged |
+| Accept Teleportation position | as after the packet | as after the packet |
+| server `v` | (0, 0, 0.2158591) | (0, 0.0625, 0.2158591) |
+| server on the answer | accepted; `onGround` false until the next movement packet | the same, and, `v.y` being above 0, fall distance reset and a server-side ground jump if its `onGround` was still true (inferred that it was; Open question 14) |
+| client next tick (computed; sends Move Player Pos by the rule in 05c, 2.1 send step) | (10.5, 64.0, 20.9317181): the box still overlaps the new dirt, `onGround` true | moves down 0.0625 and forward: (10.5, 64.0, 20.9317181), `onGround` true |
+
+In both cases the horizontal momentum is kept. In B the player was no longer standing on the changed block on its own
+side, and is still raised, because the change is relative and the server chose it by the older position.
+
+#### Lift by the player's own landing (trampling)
+
+Trampling (29b part 2 section 9.3) runs inside the server's handling of the movement packet that lands. At that moment the
+server position is the landing position, and the known movement is still that of the **previous** accepted packet, so
+that becomes the server velocity. The fall damage of this landing and the reset of the fall distance follow the lift.
+The handler then stores this packet's displacement (without the lift) as the known movement and takes the lifted
+position as the last accepted one. If the landing hurts, the Set Entity Motion of 13.5 carries the server velocity as it
+is when the tracker next processes the player, so it can contain this downward velocity (computed).
+
 ---
 
 ## 14. Where each gap is answered
@@ -1477,6 +1654,7 @@ phase) carries it quantised, (0.2530062, 0.0286883, 0), and replaces the client'
 | DG-8 leaving a fluid, lava adjustment and sprint | 7.5, 7.6 |
 | DG-9 closed list of block behaviours, mud, ice and slime friction | 10 |
 | DG-10 effects and enchantments, updates sent | 11 |
+| DG-11 lift by a growing block: packet, client resolution, server record, block changes, examples | 13.6, 13.2; 29b part 2 section 9.5 |
 | Fall damage | 12 |
 
 ---
@@ -1515,3 +1693,12 @@ phase) carries it quantised, (0.2530062, 0.0286883, 0), and replaces the client'
 11. **Teleport Entity naming the local player** (13.2): the step arithmetic of the client's interpolation, and how the
     player's own movement during it is folded into the target, were not specified; whether a 26.3 server ever sends this
     packet to a player about itself was not traced.
+12. **A client tick between a lift and its Block Update** (13.6): possible when the lift and the block-change broadcast
+    leave the server in different flushes. The client would then simulate the raised position against the old block, and
+    could fall back or end inside the new block when it arrives. Neither the timing nor the outcome was analysed or
+    observed.
+13. **Lift of a riding player** (13.6): the client of a passenger ignores the change and still answers (13.2), while the
+    server's record is moved; what follows for the vehicle and the passenger was not traced.
+14. **The server-side ground jump of walking case B** (13.6): it needs the server's `onGround` to be true when the answer
+    arrives. That it still is, after the player's last movement packet and the server's own movement tick, is inferred;
+    the packet and tick timing was not traced or observed.
