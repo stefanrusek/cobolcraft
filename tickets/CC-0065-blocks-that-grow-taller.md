@@ -1,6 +1,6 @@
 ---
 spile: ticket
-id: CC-0064
+id: CC-0065
 type: bug
 status: draft
 owner: stefanrusek
@@ -14,7 +14,7 @@ relations:
 implementation: []
 ---
 
-# CC-0064: Farmland, paths, mud, snow and sculk change into taller blocks as in Minecraft
+# CC-0065: Farmland, paths, mud, snow and sculk change into taller blocks as in Minecraft
 
 ## Summary
 

@@ -74,7 +74,7 @@ project: CobolCraft
 | [CC-0061](../CC-0061-client-ticks-at-low-frame-rate.md) | The Player moves at full speed when the frame rate is low | bug | stefanrusek |  |  |
 | [CC-0062](../CC-0062-non-player-pushes-by-moving-blocks.md) | Mobs, items and other entities are moved by pistons, shulker boxes and growing blocks as in Minecraft | bug | stefanrusek |  |  |
 | [CC-0063](../CC-0063-moving-piston-blocks-drawn.md) | The Player sees pistons and the blocks they push move | feature | stefanrusek |  |  |
-| [CC-0064](../CC-0064-blocks-that-grow-taller.md) | Farmland, paths, mud, snow and sculk change into taller blocks as in Minecraft | bug | stefanrusek |  |  |
+| [CC-0065](../CC-0065-blocks-that-grow-taller.md) | Farmland, paths, mud, snow and sculk change into taller blocks as in Minecraft | bug | stefanrusek |  |  |
 
 ### unverified
 

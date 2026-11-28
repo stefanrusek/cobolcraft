@@ -172,7 +172,7 @@ of the movement rules; repeat the walk on ice beside a Player using a Minecraft 
   feature.
 - Drawing moving piston blocks is not part of this feature.
 - Which blocks CobolCraft makes grow taller is unchanged by this feature. Farmland drying out and similar block
-  changes it does not perform today are later work (CC-0064).
+  changes it does not perform today are later work (CC-0065).
 - Key bindings, mouse look and the Minecraft client's own movement are unchanged.
 - Frame rate and stutter are outside this feature. The play-test slowdown on the M1 MacBook Air is being
   investigated separately.

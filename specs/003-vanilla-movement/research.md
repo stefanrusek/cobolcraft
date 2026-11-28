@@ -241,6 +241,6 @@ rows and example of §12.4, and the redstone timing examples that move no Player
 
 ### R25 Which block changes lift
 - Decision: one core lift entry, called by the changes of the closed list the server performs (trampling, the eye of
-  ender). The changes it does not perform are not built (CC-0064); mobs are lifted as today (CC-0062).
+  ender). The changes it does not perform are not built (CC-0065); mobs are lifted as today (CC-0062).
 - Rationale: the spec asks for the lift when a block grows taller, not for block growth the server lacks.
 

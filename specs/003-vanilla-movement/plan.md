@@ -90,7 +90,7 @@ fails. One exception, accepted by the operator, is in Complexity Tracking.*
 | II. Spec is the source of truth | Pass | Round `62a2c406` closed DG-1 to DG-10 and the second round closed DG-11 (research section 3). No gap is open. The jar was not read by this phase. The protocol profile (09) gets the rows for what the server newly sends in Foundational |
 | 1.1, 1.2 Artifacts and sessions | Pass | This plan and its companions carry the decisions |
 | 1.3 Markers and tasks gate | Pass | No open marker |
-| 1.4 Deferred work | Pass | Spile tickets (`tickets/`, prefix `CC`): CC-0057 to CC-0064 |
+| 1.4 Deferred work | Pass | Spile tickets (`tickets/`, prefix `CC`): CC-0057 to CC-0065 |
 | 2.5 Sequencing | Pass | One story; slice order below |
 | 2.6 Handoff consumed | Pass | research section 2, H1 to H10 |
 | 3.1 External dependencies probed | Pass with one risk | GnuCOBOL arithmetic, comparisons, narrowing, sine table and program-pointer calls probed; a real Minecraft client cannot be probed (SC-003 is manual) |
@@ -270,7 +270,7 @@ box and sent also when it is 0: a Player Position with change (0, lift, 0), zero
 relative flags. The server's record follows 59 §13.6 (velocity replaced by the known movement, fall distance kept).
 It is called by every change of the closed list that the server performs, in the documented order against the block
 write: trampled farmland (a landing player's own lift coming before that landing's fall damage) and an eye of ender
-filling an end portal frame. The other changes of the list do not happen in CobolCraft today (CC-0064). Mobs and other
+filling an end portal frame. The other changes of the list do not happen in CobolCraft today (CC-0065). Mobs and other
 entities are lifted as today (CC-0062).
 
 ### The client's reaction to the server (59 §13, §11)
@@ -440,7 +440,7 @@ client (SC-003) is a human judgement and stays manual.
 Deduplicated: C2 with S1, K8 with K19, K12 with S3, K13 with S4 and C1, K9 with S5, K14 with S6, K17 with C4 and S13.
 The passes cover content, client, core, proto, server, tests/convergence and the four contracts. Fixed within this
 plan: all of C1 to C4, K1 to K19, S1 to S6, S8, S12 to S15 and S20 to S23; S16 gets a lift at each change the server
-performs, the changes it does not perform being CC-0064; T1, S9 to S11 and S18 are checked by the first task that
+performs, the changes it does not perform being CC-0065; T1, S9 to S11 and S18 are checked by the first task that
 depends on them (T1: if the world cannot open, the test builds it through the core's test settings; S18: if the entry
 is missing, the same slice sends it); T2 is asserted by the SC-004 course and a stop at the edge is fixed in this
 feature. S19 needs nothing (Q-9).
@@ -497,7 +497,7 @@ not merged here), CC-0029 (honey carry and stuck multiplier, for players only).
 | CC-0061 | below 20 frames a second the Player moves slower | the spec excludes frame rate |
 | CC-0062 | pistons, shulker boxes and growing blocks move other entities as in Minecraft | would change how mobs move, which the spec leaves unchanged (Complexity Tracking) |
 | CC-0063 | moving piston blocks are not drawn in motion | out of scope by the operator (Q-11, spec Assumptions) |
-| CC-0064 | farmland drying, paths, mud, snow layers and sculk spread do not turn into taller blocks | block growth behaviour the server lacks; building it changes behaviour the spec leaves unchanged |
+| CC-0065 | farmland drying, paths, mud, snow layers and sculk spread do not turn into taller blocks | block growth behaviour the server lacks; building it changes behaviour the spec leaves unchanged |
 
 ## Risks
 
@@ -526,7 +526,7 @@ not merged here), CC-0029 (honey carry and stuck multiplier, for players only).
 
 - Scenario 20 now lifts any Player whose body is where the block grows, as the documented rule does (29b part 2
   §9.5.1; 59 §13.6, walking case B); the operator chose this wording after the plan was final.
-- Scenario 20's example, farmland turning back into dirt, happens in CobolCraft only by trampling (CC-0064): a standing
+- Scenario 20's example, farmland turning back into dirt, happens in CobolCraft only by trampling (CC-0065): a standing
   Player is lifted when something else tramples the block under them, or after their own landing. The other change the
   server performs that lifts is an eye of ender filling an end portal frame. The operator decided farmland drying stays
   out of this feature (spec Clarifications and Assumptions).

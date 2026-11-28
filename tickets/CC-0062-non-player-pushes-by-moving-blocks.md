@@ -9,7 +9,7 @@ blocked_by: []
 created: 2026-11-26
 relations:
   depends_on: []
-  relates_to: [CC-0029, CC-0057, CC-0064]
+  relates_to: [CC-0029, CC-0057, CC-0065]
   supersedes: []
 implementation: []
 ---
