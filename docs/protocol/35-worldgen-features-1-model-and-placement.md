@@ -919,7 +919,7 @@ Read in this round from `ScatteredOreFeature`, `AbstractOreFeature` and `BlockRe
 
 ### 13.1 Schema
 
-*(Corrected in the R3 round: the `state` row used to read `{"Name", "Properties"}`. The data-JSON codec of a block state is `BlockState.CODEC`: a bare id string or an object with the keys `id` and `properties`; `Name`/`Properties` are the chunk-palette NBT keys of 06 and 07. The jar's own ore files use the bare string.)*
+*(The data-JSON codec of a block state is `BlockState.CODEC`: a bare id string (a default state) or an object with the keys `id` and `properties`. The chunk palette uses the same codec (`PalettedContainerFactory` references it), so a palette entry is a bare string id for a default state or a compound with the lowercase keys `id` and `properties` (07 section 7.3). `Name` and `Properties` are the keys of older data versions only: no current-format block-state serializer or codec uses them. Outside the data-fixer classes (`net.minecraft.util.datafix.fixes`: 13 of its 305 classes have a string constant equal to `Properties`, among them `BlockStateData`, `ChunkPalettedStorageFix` and `BlockStateFieldNamesFix`; counted by scanning each class's string constants) the only code that still names them for a block state is the pair of legacy packing helpers `NbtUtils.packBlockState` and `NbtUtils.unpackBlockState`. They take a data version and use `Name` and `Properties` only for versions below 5006, and `id` and `properties` from 5006 on; the world data version of this artifact is 5023 (read), so `NbtUtils.writeBlockState` and `readBlockState` use `id` and `properties`. The ore files of the jar use the bare string.)*
 
 | Element | Field | Type | Rule |
 |---|---|---|---|

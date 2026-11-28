@@ -630,7 +630,7 @@ to the piston document (design map RS12). Rows of this part use only `PUSH_PULL`
 24 `WITHER_SKELETON`, 25 `PIGLIN`, 26 `CUSTOM_HEAD` (names and order read from the static initialiser). Each has a type (`BASE_BLOCK` for instruments chosen by the block below the note block, `CUSTOM` for the
 head-based ones) and a sound event; those details belong to the note block row (a later part).
 The instrument of a block is the value in the column, default `HARP`. Rows of this part use `HARP`, `BASEDRUM`,
-`SNARE` and `BASS`.
+`SNARE` and `BASS`. Where a row of the 24 documents leaves the Instrument cell blank (wool, beds, flowers and the families that say "see 5"), the complete per-block assignment read from `Blocks` is 30 part 5 section 8.1.1: wool is `GUITAR`, beds and flowers have no `instrument` call and are `HARP`.
 
 ### 8.4 `SoundType`
 

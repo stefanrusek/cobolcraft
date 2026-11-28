@@ -548,7 +548,7 @@ Checkable facts:
 3. Minecart offsets: entity id 1: `s = 493286711`, `offsetSeed = -4132653469018943280`; the three 3-bit fields (shifts 16, 20, 24) are 7, 5, 7 and the offsets `(0.00175, 0.00075, 0.00175)`. Id 2: seed `1916032762656048354`, offsets `(0.00175, -0.00125, 0.00025)`. Id 100: seed `-6310268219801383060`, offsets `(0.00075, 0.00025, -0.00125)`. (Computed from the read formula with 64-bit wrapping arithmetic.)
 4. Item cluster: a stack of 40 renders 4 copies; a stack of 1 renders 1; a stack of 64 renders 5.
 5. TNT swell: `f = 5` gives scale 1.01875; `f = 0` gives 1.3; `isLit(4.9)` true, `isLit(5.0)` false, `isLit(10.0)` true, `isLit(-0.5)` false.
-6. Experience orb: value 1237 gives icon 9, uv `u0 = 0.25, v0 = 0.5`; value 2 gives icon 1.
+6. Experience orb: value 1237 gives icon 9, uv `u0 = 0.25, v0 = 0.5`; value 2 gives icon 0 and value 3 gives icon 1 (read in `ExperienceOrb.getIcon`: below 3 is icon 0; the tier table of the experience orb section agrees).
 7. Fishing line: with offset `(dx, dy, dz) = (4, 0, 0)` the vertex at `t = 0.5` is `P(0.5) = (2, 0 * 0.75 * 0.5 + 0.25, 0) = (2, 0.25, 0)`; with `(4, -2, 0)`: `P(1) = (4, -2 * 2 * 0.5 + 0.25, 0) = (4, -1.75, 0)`.
 8. Item frame on UP: `xRot = -90`, `yRot = 180`; on DOWN: `xRot = +90`.
 9. Painting 2 x 1 (w = 2, h = 1): cell (0, 0) has `x0 = -1, x1 = 0`, `y0 = -0.5, y1 = 0.5`, `uA = getU(1)`, `uB = getU(0.5)`, `vA = getV(1)`, `vB = getV(0)`; cell (1, 0) has `x0 = 0, x1 = 1`, `uA = getU(0.5)`, `uB = getU(0)`. Both cells have the top and bottom edge strips (h = 1); only cell (0, 0) has the `x0` edge and only cell (1, 0) the `x1` edge.

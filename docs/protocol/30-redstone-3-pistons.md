@@ -370,7 +370,7 @@ For entity pushing a second state is used, `getCollisionRelatedBlockState`: when
 
 | Key | Type | Content | Default when absent |
 |---|---|---|---|
-| `blockState` | compound | the block state codec (`Name` and `Properties` as in 07) of `movedState` | air |
+| `blockState` | string or compound | `BlockState.CODEC` of `movedState` (`loadAdditional` and `saveAdditional` both use `BlockState.CODEC`): a string block identifier when the state is the block's default state, else a compound with the lowercase keys `id` and `properties` as in 07 section 7.3 (`StateHolder.ID_TAG` = `id`, `PROPERTIES_TAG` = `properties`; the capitalised keys `Name` and `Properties` are not used) | air |
 | `facing` | byte | `direction` as its 3D data value (`DOWN` 0 … `EAST` 5); the codec (`Direction.LEGACY_ID_CODEC`) is the byte codec mapped through `get3DDataValue` on save and `from3DDataValue` on load (read); `from3DDataValue(n)` indexes the six directions with `abs(n mod 6)`, so out-of-range values wrap as stated in the header | DOWN |
 | `progress` | float | on save the value of **`progressO`**; on load `progress` and `progressO` are both set to it | 0.0 |
 | `extending` | byte (boolean) | | false |

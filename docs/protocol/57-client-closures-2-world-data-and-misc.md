@@ -234,7 +234,7 @@ The select sounds are client-side UI sounds, documented in 40-4: the stonecutter
 
 ### 3.3 What the jar cannot answer
 
-The jar contains no `sounds.json` and no `.ogg` files (checked: `unzip -Z1 | grep -c '\.ogg$'` gives 0, and no `assets/minecraft/sounds*` entry), so which audio files and which per-file volume, pitch and weight variations back these sound events are not in the artifact (they are in the separately downloaded asset index). A client that only needs the events and parameters above is fully specified by this section; the actual samples are an asset question for the resource pack tooling (08, 14).
+The jar contains no `sounds.json` and no `.ogg` files (checked: `unzip -Z1 | grep -c '\.ogg$'` gives 0, and no `assets/minecraft/sounds*` entry), so which audio files and which per-file volume, pitch and weight variations back these sound events are not in the artifact (they are in an asset index that is (inferred) downloaded separately by the launcher; 59 §1 now records from the artifact where the client reads them: an external asset folder passed with `--assetsDir` and `--assetIndex`, read through `IndexedAssetSource`). A client that only needs the events and parameters above is fully specified by this section; the actual samples are an asset question for the resource pack tooling (08, 14).
 
 ---
 

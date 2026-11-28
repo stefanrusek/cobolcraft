@@ -38,7 +38,7 @@ carvers (every End biome has an empty `carvers` list), a surface rule that chang
 
 | Field | Value |
 |---|---|
-| `min_y`, `height`, `logical_height` | 0, 256, 256 (sections 0 to 15). **Re-read from `dimension_type/the_end.json` in round R2 and confirmed**: `min_y` 0, `height` 256, `logical_height` 256 (the Nether file has 0, 256, 128). The terrain generator only fills y 0 to 127 (`noise_settings/end.json`: `noise` `{min_y 0, height 128}`, section 3), so the chunk is 256 blocks high (16 sections) while the terrain volume is 128 high; an implementation that keeps 128 rows of chunk memory for the End is wrong for building, placed features and the dragon fight (the fight reads y up to 128 + 32, 21 section 6.4.5, and the podium and gateways sit above y 64 and below y 255). |
+| `min_y`, `height`, `logical_height` | 0, 256, 256 (sections 0 to 15); read from `dimension_type/the_end.json`. The chunk height and the terrain volume are discussed below the table. |
 | `coordinate_scale` | 1.0 |
 | `has_skylight`, `has_ceiling` | true, false |
 | `has_fixed_time` | true |
@@ -49,6 +49,8 @@ carvers (every End biome has an empty `carvers` list), a surface rule that chang
 | `default_clock` | `minecraft:the_end` (the `world_clock` file is `{}`: a clock that exists but has no configuration) |
 | `timelines` | tag `#minecraft:in_end` = `#minecraft:universal` = `minecraft:villager_schedule` only. The End has none of the day, moon or early-game timelines. |
 | `skybox` | `end` |
+
+**Chunk height versus terrain volume.** The End's dimension type has `height` 256, so a chunk of the End is 256 blocks high (16 sections, y 0 to 255), while the terrain generator only fills y 0 to 127: `noise_settings/end.json` has `noise` `{min_y 0, height 128}` (section 3), the noise volume. An implementation that keeps 128 rows of chunk memory for the End is wrong for building, placed features and the dragon fight (the fight reads y up to 128 + 32, 21 section 6.4.5, and the podium and gateways sit above y 64 and below y 255). Read for comparison: `dimension_type/the_nether.json` has `min_y` 0, `height` 256 and `logical_height` 128, and `noise_settings/nether.json` has the same noise volume `{min_y 0, height 128}`. `logical_height` is a separate field of the dimension type: it is neither a terrain volume nor a chunk height, and this document does not use it. That the chunk memory of the Nether must also be 256 rows tall is (inferred: the chunk height of a dimension follows its dimension type's `height`, which is 256 in `the_nether.json`; how the Nether's chunk storage is sized was not read here, Open question 15).
 
 Attributes (the `attributes` map; 12 section 3 explains how the client reads the visual ones):
 
@@ -437,3 +439,4 @@ For default clock time `t = 1234` (a later window than 0, so parameters are comp
 12. **`Entity.canTeleport(level, level)`** refuses the End-to-Overworld move for a passenger player who has not seen the credits; cross-reference RS23, not read here.
 13. Answered (round R2): section 9.1 (20-tick player scan within 192 blocks of `(0, 128, 0)`; `isArenaLoaded` tests the row z = origin chunk + 8 for x from -8 to +8 and the 3 x 3 chunks around the origin for entities, as read; dragon created on that tick in a new End).
 14. **End city placement vs terrain height** (`has_structure/end_city`) is deferred to RS20. The class-level behaviour of `EndSpikeFeature`, `EndGatewayFeature`, `ChorusPlantFeature`, `EndIslandFeature` and `EndPodiumFeature` is only cross-referenced to 35 part 7 sections 8 to 10 and is acceptable only if 35-7 is complete.
+15. **Nether chunk height** (section 2, inferred): that a Nether chunk is 256 rows tall because `the_nether.json` has `height` 256 follows from the End's rule and was not read in the Nether's own chunk code; the chunk storage of the Nether is outside this document.
