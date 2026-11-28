@@ -2,9 +2,9 @@
 spile: ticket
 id: CC-0064
 type: feature
-status: unverified
+status: closed
 owner: stefanrusek
-resolution:
+resolution: done
 blocked_by: []
 created: 2026-11-27
 relations:
