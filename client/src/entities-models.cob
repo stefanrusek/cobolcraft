@@ -1017,6 +1017,9 @@
              CALL "ENTITY-SQUID-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
          WHEN EN-KEY(WS-ROW) = "cod" OR "salmon" OR "tropical_fish" OR "pufferfish"
              CALL "ENTITY-FISH-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
+*>       In a bed (pose SLEEPING with a sleeping position): lying along the bed (34-1 6.5, 34-2 2.1 and 2.2).
+         WHEN EN-POSE(WS-ROW) = 2 AND EN-BED-SET(WS-ROW) = 1
+             CALL "ENTITY-SLEEP-SEQUENCE" USING CLIENT-STATE WS-ROW WS-SR-OUT
          WHEN OTHER
              CALL "EF7-SETUP-ROTATIONS" USING WS-SR-IN WS-SR-OUT
      END-EVALUATE

@@ -613,6 +613,10 @@
        10 PL-HURT-DIR        FLOAT-LONG.
        10 PL-DEATH-TIME      BINARY-LONG.
        10 PL-SNEAK-SENT      PIC 9.          *> the shift state the server last got in Player Input
+       10 PL-SLEEP           PIC 9.          *> 1 while the server has the player asleep (pose SLEEPING and a sleeping position in Set Entity Data of the own entity)
+       10 PL-BED-X           BINARY-LONG.    *> the bed cell (the head half) the player sleeps in
+       10 PL-BED-Y           BINARY-LONG.
+       10 PL-BED-Z           BINARY-LONG.
        10 PL-SWIM-AMOUNT     FLOAT-LONG.     *> the own model's swim amount (53 section 12)
        10 PL-ANIM-INIT       PIC 9.          *> the own figure's walk animation (54 section 1): set once the previous position is known
        10 PL-ANIM-SPEED      FLOAT-LONG.
@@ -802,6 +806,11 @@
           15 EN-USE-LEFT     BINARY-LONG.
           15 EN-SWIM         FLOAT-LONG.    *> the swim amount 0 to 1 (53 section 12: 0.09 a tick toward 1 while the pose is swimming)
           15 EN-PARTS        BINARY-LONG.   *> a player's skin parts byte (entry 16, BYTE, 47 section 5.3: bit 0 cape, 1 jacket, 2 left sleeve, 3 right sleeve, 4 left pants leg, 5 right pants leg, 6 hat; 0 until set)
+*>        The sleeping position (Set Entity Data entry 14, OPTIONAL_BLOCK_POS, 18 section 1.4): EN-BED-SET 1 and the bed cell while the entity lies in a bed (lane bugsleep).
+          15 EN-BED-SET      PIC 9.
+          15 EN-BED-X        BINARY-LONG.
+          15 EN-BED-Y        BINARY-LONG.
+          15 EN-BED-Z        BINARY-LONG.
 *>        The walk animation of a living entity (docs/protocol/54 section 1.1): the speed one tick ago, the speed, the position, the position scale (3 for a
 *>        baby, else 1) and the position at the previous client tick (ENTITIES-ANIM-TICK). EN-MOB-FLAGS is the mob flags byte (Set Entity Data entry 15: 1 no AI,
 *>        2 left-handed, 4 aggressive), EN-BABY the ageable mob's baby flag (entry 16, BOOLEAN). The swing (54 section 2.1, 12 section 6.4): active, ticks, duration,

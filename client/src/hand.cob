@@ -1028,8 +1028,8 @@
      MOVE CL-HAND-KEY-COUNT TO WS-PREV-COUNT
      MOVE CL-HAND-KEY-GCOUNT TO WS-PREV-GCOUNT
      MOVE 0 TO CL-HAND-KEY-COUNT CL-HAND-KEY-GCOUNT
-*>   The hands are drawn in first person only, and not to a spectator (53 section 15.1).
-     IF SM-SCREEN = SCR-WORLD AND CL-CAMERA = 0 AND PL-MODE NOT = 3
+*>   The hands are drawn in first person only, and not to a spectator (53 section 15.1) or a sleeping player (lane bugsleep).
+     IF SM-SCREEN = SCR-WORLD AND CL-CAMERA = 0 AND PL-MODE NOT = 3 AND PL-SLEEP = 0
          CALL "HAND-EQUIP" USING CLIENT-STATE WS-E WS-EO WS-PART
      ELSE
          GOBACK

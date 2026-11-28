@@ -2,7 +2,7 @@
 *> home bed, the bed's `occupied` property is true on both halves (the foot lies one block behind the head, against the facing), so another villager's AcquirePoi and ValidateNearbyPoi (the bed
 *> validity: villagers_can_sleep_on_bed and not occupied) see it taken. The block change goes to the viewers (BLOCK-CHANGE). VL-SLEEP-DATA gives the villager's entity data while it sleeps (18 section
 *> 1.4: entry 6 the pose, serializer POSE 20, SLEEPING is id 2 (53 section 1); entry 14 the sleeping position, serializer OPTIONAL_BLOCK_POS 11, the head block of the bed).
-*> Gap: the sleeping pose lies the model down at the bed in the real game; here the villager stands where it stopped (within 2 blocks of the bed), the pose and the position are on the wire only.
+*> VL-BRAIN-SLEEP puts the villager on the mattress; waking (VSLEEP-WAKE, sleep-vil.cob) sends the standing pose and no position, and the client lays the model along the bed (lane bugsleep).
 *>   VL-BED-IS-OCCUPIED USING dim, x, y, z (BINARY-LONG block), occupied out     1 when the block there is a bed with occupied = true
 *>   VL-BED-OCCUPY USING entity id, flag (1 occupied, 0 free)                     set the property on both halves of the home bed the villager claims (no bed claimed: nothing)
 *>   VL-SLEEP-DATA USING row, PB-BUFFER                                           the pose and sleeping position entries of a sleeping villager that claims a bed (nothing otherwise)

@@ -230,6 +230,7 @@
  01 WS-OCC-NAME            PIC X(24) VALUE "occupied".
  01 WS-OCC-TEXT            PIC X(32).
  01 WS-OCC-FOUND           BINARY-LONG.
+ 01 WS-KICKED              BINARY-LONG.
  01 WS-KEY40               PIC X(40).
  COPY BRWORLD.
  COPY PROTO.
@@ -261,12 +262,15 @@
      IF WS-HEAD-PART NOT = 2 OR CB-S-BLOCK(WS-HEAD-STATE + 1) NOT = CB-S-BLOCK(WS-STATE + 1)
          GOBACK
      END-IF
-*>   Step 4: an occupied bed is refused (a villager sleeping in it is not kicked out: this core has none sleeping in a bed that a player can click).
+*>   Step 4: an occupied bed: the villagers sleeping in it are kicked out (kickVillagerOutOfBed) and the player goes on; the line "occupied" only when nobody of them was there.
      CALL "PS-GET" USING WS-HEAD-STATE WS-OCC-NAME WS-OCC-TEXT WS-OCC-FOUND
      IF WS-OCC-FOUND = 1 AND FUNCTION TRIM(WS-OCC-TEXT) = "true"
-         MOVE "block.minecraft.bed.occupied" TO WS-KEY40
-         CALL "SLEEP-MESSAGE" USING L-ID WS-KEY40
-         GOBACK
+         CALL "VSLEEP-KICK" USING PL-DIM(WS-ROW) WS-HX L-Y WS-HZ WS-KICKED
+         IF WS-KICKED = 0
+             MOVE "block.minecraft.bed.occupied" TO WS-KEY40
+             CALL "SLEEP-MESSAGE" USING L-ID WS-KEY40
+             GOBACK
+         END-IF
      END-IF
      CALL "WORLDSIM-DARKEN" USING PL-DIM(WS-ROW) WS-DARKEN
      CALL "WC-OUTSIDE" USING WS-FIXED WS-DARKEN WS-SKY WS-BRIGHT WS-DARK WS-EFFECTIVE

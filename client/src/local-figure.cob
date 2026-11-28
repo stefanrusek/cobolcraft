@@ -17,6 +17,15 @@
      MOVE PL-PITCH TO EN-PITCH(L-ROW)
      MOVE 1 TO EN-ON-GROUND(L-ROW)
      MOVE PL-POSE TO EN-POSE(L-ROW)
+*>   A sleeping player lies along its bed (pose SLEEPING with the bed cell, lane bugsleep).
+     MOVE 0 TO EN-BED-SET(L-ROW)
+     IF PL-SLEEP = 1
+         MOVE 2 TO EN-POSE(L-ROW)
+         MOVE 1 TO EN-BED-SET(L-ROW)
+         MOVE PL-BED-X TO EN-BED-X(L-ROW)
+         MOVE PL-BED-Y TO EN-BED-Y(L-ROW)
+         MOVE PL-BED-Z TO EN-BED-Z(L-ROW)
+     END-IF
      MOVE PL-SWIM-AMOUNT TO EN-SWIM(L-ROW)
      COMPUTE EN-FLAGS(L-ROW) = PL-SWIMMING * 16
      MOVE PL-ANIM-SPEED TO EN-WALK-SPEED(L-ROW)

@@ -163,7 +163,6 @@
 *> VL-NEXT-BRAIN) the decisions of VL-BRAIN-BEAT.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
- 01 WS-ZERO                 BINARY-LONG VALUE 0.
  COPY CORESTATE.
  COPY VILSTATE.
  COPY VILPOIX.
@@ -200,11 +199,8 @@
      END-IF
      CALL "Q3-WAKE" USING WS-REST VL-SLEEP(WS-SLOT) WS-STOP
      IF WS-STOP = 1
-         MOVE 0 TO VL-SLEEP(WS-SLOT)
-         MOVE CW-TICKS TO VL-LAST-WOKEN(WS-SLOT)
-         COMPUTE VM-T(WS-SLOT, TM-SLEEP-OK) = CW-TICKS + 40
-         CALL "VL-BED-OCCUPY" USING EN-ID(L-ROW) WS-ZERO
-         CALL "MOB-DATA-SEND" USING L-ROW
+*>       stopSleeping (sleep-vil.cob, lane bugsleep): awake, the bed free, standing beside it, the standing pose and no bed position to the viewers.
+         CALL "VSLEEP-WAKE" USING L-ROW WS-SLOT
      END-IF
 *>   A sleeping villager lies where it started sleeping, on its bed (19 section 22.8): the stroll of the mob step neither starts nor goes on (the cooldown is held at 1 and
 *>   the destination is its own cell), so it does not wander off while it is flagged asleep and refuses a trade (22.4) (lane bugnighttrade).

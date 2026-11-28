@@ -1,0 +1,207 @@
+*> Implementation test, lane bugsleep (recovered on 006-lane-recovery): SLEEP-BED-FACING (client/src/sleeping.cob) for every facing of a bed head half in the replica (12 section 7.2
+*> step 6, 34-2 section 2.1: the step toward the head along the facing, the body yaw and the camera yaw of a sleeper), a cell that is no bed (found 0), and LOCAL-FIGURE-SET
+*> (client/src/local-figure.cob) laying the local figure in its bed while the player sleeps (pose SLEEPING 2 with the bed cell) and standing it up when it is awake.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-SLEEP-BED-FACING.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY TESTLIB.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-BED-ID              BINARY-LONG.
+ 01 WS-BLOCK-ROW           PIC X(819).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-DEFAULT             BINARY-LONG.
+ 01 WS-S                   BINARY-LONG.
+ 01 WS-BLOCK-ID            BINARY-LONG.
+ 01 WS-INDEX               BINARY-LONG.
+ 01 WS-F                   BINARY-LONG.
+ 01 WS-HEAD                BINARY-LONG.
+ 01 WS-X                   BINARY-LONG VALUE 3.
+ 01 WS-Y                   BINARY-LONG VALUE 5.
+ 01 WS-Z                   BINARY-LONG VALUE 4.
+ 01 WS-OTHER-X             BINARY-LONG VALUE 6.
+ 01 WS-FOUND               PIC 9.
+ 01 WS-STEP-X              BINARY-LONG.
+ 01 WS-STEP-Z              BINARY-LONG.
+ 01 WS-YAW-A               FLOAT-LONG.
+ 01 WS-CAM-YAW             FLOAT-LONG.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-SAVED               PIC X(2048).
+ 01 WS-FACINGS.
+    05 FILLER PIC X(8) VALUE "south".
+    05 FILLER PIC X(8) VALUE "west".
+    05 FILLER PIC X(8) VALUE "north".
+    05 FILLER PIC X(8) VALUE "east".
+ 01 WS-FACING-TABLE REDEFINES WS-FACINGS.
+    05 WS-FACING           PIC X(8) OCCURS 4 TIMES.
+*> Expected per facing: step x, step z, body yaw, camera yaw (south, west, north, east).
+ 01 WS-EXPECT-DATA.
+    05 FILLER PIC S9(3) VALUE 0.
+    05 FILLER PIC S9(3) VALUE 1.
+    05 FILLER PIC S9(3) VALUE 90.
+    05 FILLER PIC S9(3) VALUE 180.
+    05 FILLER PIC S9(3) VALUE -1.
+    05 FILLER PIC S9(3) VALUE 0.
+    05 FILLER PIC S9(3) VALUE 0.
+    05 FILLER PIC S9(3) VALUE -90.
+    05 FILLER PIC S9(3) VALUE 0.
+    05 FILLER PIC S9(3) VALUE -1.
+    05 FILLER PIC S9(3) VALUE 270.
+    05 FILLER PIC S9(3) VALUE 0.
+    05 FILLER PIC S9(3) VALUE 1.
+    05 FILLER PIC S9(3) VALUE 0.
+    05 FILLER PIC S9(3) VALUE 180.
+    05 FILLER PIC S9(3) VALUE 90.
+ 01 WS-EXPECT-TABLE REDEFINES WS-EXPECT-DATA.
+    05 WS-EXPECT-ROW OCCURS 4 TIMES.
+       10 WS-E                PIC S9(3) OCCURS 4 TIMES.
+ 01 WS-CASE-PREFIX         PIC X(40).
+ PROCEDURE DIVISION.
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE 0 TO PK-COUNT
+     CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     CALL "CONTENT-SET-COUNTS"
+     MOVE 1 TO CT-OPEN
+     MOVE 0 TO ST-READY
+     CALL "STATE-TABLES-ENSURE" USING CLIENT-STATE
+     MOVE 384 TO PL-HEIGHT
+     MOVE -64 TO PL-MIN-Y
+     MOVE 1 TO PL-HAS-SKY
+     MOVE "red_bed" TO WS-KEY
+     CALL "CONTENT-BLOCK-BY-KEY" USING WS-KEY WS-BED-ID WS-BLOCK-ROW WS-STATUS
+     CALL "CONTENT-STATE-DEFAULT" USING WS-BED-ID WS-DEFAULT WS-STATUS
+     MOVE "N" TO TL-MODE
+     PERFORM VARYING WS-F FROM 1 BY 1 UNTIL WS-F > 4
+         PERFORM FIND-HEAD
+         CALL "WORLD-CLEAR" USING CLIENT-STATE
+         CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-HEAD
+         CALL "SLEEP-BED-FACING" USING CLIENT-STATE WS-X WS-Y WS-Z WS-FOUND WS-STEP-X WS-STEP-Z WS-YAW-A WS-CAM-YAW
+         MOVE SPACES TO WS-CASE-PREFIX
+         STRING "sleep facing " DELIMITED BY SIZE FUNCTION TRIM(WS-FACING(WS-F)) DELIMITED BY SIZE INTO WS-CASE-PREFIX
+         MOVE SPACES TO TL-CASE
+         STRING FUNCTION TRIM(WS-CASE-PREFIX) ": a bed head half is found" DELIMITED BY SIZE INTO TL-CASE
+         MOVE 1 TO TL-EXPECTED-N
+         MOVE WS-FOUND TO TL-OBSERVED-N
+         PERFORM CHECK
+         MOVE SPACES TO TL-CASE
+         STRING FUNCTION TRIM(WS-CASE-PREFIX) ": step x" DELIMITED BY SIZE INTO TL-CASE
+         MOVE WS-E(WS-F, 1) TO TL-EXPECTED-N
+         MOVE WS-STEP-X TO TL-OBSERVED-N
+         PERFORM CHECK
+         MOVE SPACES TO TL-CASE
+         STRING FUNCTION TRIM(WS-CASE-PREFIX) ": step z" DELIMITED BY SIZE INTO TL-CASE
+         MOVE WS-E(WS-F, 2) TO TL-EXPECTED-N
+         MOVE WS-STEP-Z TO TL-OBSERVED-N
+         PERFORM CHECK
+         MOVE SPACES TO TL-CASE
+         STRING FUNCTION TRIM(WS-CASE-PREFIX) ": body yaw" DELIMITED BY SIZE INTO TL-CASE
+         MOVE WS-E(WS-F, 3) TO TL-EXPECTED-N
+         COMPUTE TL-OBSERVED-N = WS-YAW-A
+         PERFORM CHECK
+         MOVE SPACES TO TL-CASE
+         STRING FUNCTION TRIM(WS-CASE-PREFIX) ": camera yaw" DELIMITED BY SIZE INTO TL-CASE
+         MOVE WS-E(WS-F, 4) TO TL-EXPECTED-N
+         COMPUTE TL-OBSERVED-N = WS-CAM-YAW
+         PERFORM CHECK
+     END-PERFORM
+     CALL "SLEEP-BED-FACING" USING CLIENT-STATE WS-OTHER-X WS-Y WS-Z WS-FOUND WS-STEP-X WS-STEP-Z WS-YAW-A WS-CAM-YAW
+     MOVE "sleep facing: an empty cell is no bed" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-FOUND TO TL-OBSERVED-N
+     PERFORM CHECK
+
+*>   The local figure (a spare replica row, given back afterwards as entities-render.cob does).
+     COMPUTE WS-R = EN-COUNT + 1
+     MOVE EN-ENTITY(WS-R) TO WS-SAVED
+     MOVE 1 TO PL-SLEEP
+     MOVE 3 TO PL-BED-X
+     MOVE 5 TO PL-BED-Y
+     MOVE 4 TO PL-BED-Z
+     MOVE 0 TO PL-POSE
+     CALL "LOCAL-FIGURE-SET" USING CLIENT-STATE WS-R
+     MOVE "sleep figure: a sleeping player's figure has the pose SLEEPING" TO TL-CASE
+     MOVE 2 TO TL-EXPECTED-N
+     MOVE EN-POSE(WS-R) TO TL-OBSERVED-N
+     PERFORM CHECK
+     MOVE "sleep figure: and its bed cell is set" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE EN-BED-SET(WS-R) TO TL-OBSERVED-N
+     PERFORM CHECK
+     MOVE "sleep figure: the bed cell is the player's bed (x y z)" TO TL-CASE
+     MOVE 354 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N = EN-BED-X(WS-R) * 100 + EN-BED-Y(WS-R) * 10 + EN-BED-Z(WS-R)
+     PERFORM CHECK
+     MOVE 0 TO PL-SLEEP
+     CALL "LOCAL-FIGURE-SET" USING CLIENT-STATE WS-R
+     MOVE "sleep figure: an awake player's figure keeps its own pose" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-POSE(WS-R) TO TL-OBSERVED-N
+     PERFORM CHECK
+     MOVE "sleep figure: and has no bed cell" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE EN-BED-SET(WS-R) TO TL-OBSERVED-N
+     PERFORM CHECK
+     MOVE WS-SAVED TO EN-ENTITY(WS-R)
+     STOP RUN.
+
+*> The head half of the red bed facing WS-FACING(WS-F), not occupied, from the states round the default one.
+ FIND-HEAD.
+     MOVE 0 TO WS-HEAD
+     COMPUTE WS-S = WS-DEFAULT - 16
+     PERFORM VARYING WS-S FROM WS-S BY 1 UNTIL WS-S > WS-DEFAULT + 16 OR WS-HEAD > 0
+         CALL "CONTENT-BLOCK-OF-STATE" USING WS-S WS-BLOCK-ID WS-INDEX WS-BLOCK-ROW WS-STATUS
+         IF WS-STATUS = CT-OK AND WS-BLOCK-ID = WS-BED-ID
+             CALL "TSBF-IS" USING WS-S WS-FACING(WS-F) WS-FOUND
+             IF WS-FOUND = 1
+                 MOVE WS-S TO WS-HEAD
+             END-IF
+         END-IF
+     END-PERFORM.
+
+ CHECK.
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+ END PROGRAM TEST-SLEEP-BED-FACING.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TSBF-IS.
+*> USING state id, facing text, match out: the state is a head half with that facing and not occupied.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-OK-FACING           PIC 9.
+ 01 WS-OK-PART             PIC 9.
+ 01 WS-OK-FREE             PIC 9.
+ 01 WS-PROPS.
+    05 WS-P-COUNT          BINARY-LONG.
+    05 WS-P-ENTRY OCCURS 16 TIMES.
+       10 WS-P-NAME        PIC X(24).
+       10 WS-P-VALUE       PIC X(32).
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-FACING               PIC X(8).
+ 01 L-MATCH                PIC 9.
+ PROCEDURE DIVISION USING L-STATE L-FACING L-MATCH.
+     MOVE 0 TO WS-OK-FACING WS-OK-PART WS-OK-FREE L-MATCH
+     CALL "CONTENT-STATE-PROPS" USING L-STATE WS-PROPS WS-STATUS
+     PERFORM VARYING WS-P FROM 1 BY 1 UNTIL WS-P > WS-P-COUNT
+         IF WS-P-NAME(WS-P) = "facing" AND WS-P-VALUE(WS-P) = L-FACING
+             MOVE 1 TO WS-OK-FACING
+         END-IF
+         IF WS-P-NAME(WS-P) = "part" AND WS-P-VALUE(WS-P) = "head"
+             MOVE 1 TO WS-OK-PART
+         END-IF
+         IF WS-P-NAME(WS-P) = "occupied" AND WS-P-VALUE(WS-P) = "false"
+             MOVE 1 TO WS-OK-FREE
+         END-IF
+     END-PERFORM
+     IF WS-OK-FACING = 1 AND WS-OK-PART = 1 AND WS-OK-FREE = 1
+         MOVE 1 TO L-MATCH
+     END-IF
+     GOBACK.
+ END PROGRAM TSBF-IS.
+ COPY CLTEST.

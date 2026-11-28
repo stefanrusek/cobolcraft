@@ -237,7 +237,7 @@
 *>               of CL-MODELS that draws it (0 = none); a cobolcraft world's EN-TYPE is a stand-in type.
                  MOVE 0 TO EN-BOX-ATTACK(WS-ROW)
                  MOVE 0 TO EN-VANILLA(WS-ROW) EN-MODEL(WS-ROW) EN-VALUE(WS-ROW) EN-SWELL-BASE(WS-ROW) EN-SWELL-MS(WS-ROW)
-                 MOVE 0 TO EN-FLAGS(WS-ROW) EN-POSE(WS-ROW) EN-LIVING(WS-ROW) EN-PARTS(WS-ROW)
+                 MOVE 0 TO EN-FLAGS(WS-ROW) EN-POSE(WS-ROW) EN-LIVING(WS-ROW) EN-PARTS(WS-ROW) EN-BED-SET(WS-ROW)
                  MOVE 0 TO EN-USE-ACTIVE(WS-ROW) EN-USE-ITEM(WS-ROW) EN-USE-LEFT(WS-ROW)
 *>               The walk animation and the swing start at rest (54 section 1.1); the position of the previous tick is this one.
                  MOVE 0 TO EN-WALK-SPEED-OLD(WS-ROW) EN-WALK-SPEED(WS-ROW) EN-WALK-POS(WS-ROW)
@@ -352,6 +352,11 @@
                  END-IF
 *>               The orb's value (entry 8) and the creeper's swell direction (entry 16), both INT: the swell counter is kept as it was when
 *>               the direction changes (CREEPER-SWELL), then runs from there.
+*>               The pose (entry 6) of the own entity and the sleeping position (entry 14) of any entity (sleeping.cob).
+                 IF PB-ERROR = 0 AND MD-MD-INDEX NOT = PB-MD-END
+                     CALL "SLEEP-DATA-SET" USING CLIENT-STATE WS-ID WS-ROW MD-MX-INDEX MD-MX-SERIALIZER MD-MX-INT MD-MX-PRESENT
+                         MD-MX-POS-X MD-MX-POS-Y MD-MX-POS-Z
+                 END-IF
 *>               The shared flags byte (entry 0) and the pose (entry 6) of a player (53 section 10).
                  IF WS-ROW > 0 AND MD-MD-INDEX = 0 AND MD-MD-SERIALIZER = PB-MDS-BYTE
                      MOVE MD-MD-INT TO EN-FLAGS(WS-ROW)
