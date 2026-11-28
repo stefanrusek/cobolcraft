@@ -344,6 +344,8 @@ Consequences of the order (each follows from "first matching rule wins"): in `ba
 **Depth and range.** With `size` 6 the expansion has at most 6 levels below the start; with `max_distance_from_center` 80 no piece
 may extend beyond 80 blocks horizontally from the start (the exact box test is in 36-3, applied to the bastion in 36-8 section 13).
 
+**Verified (the draw-index order of the four `bastion/starts` elements and the rule order of each processor list).** `worldgen/template_pool/bastion/starts.json` has four elements in the order `units/air_base`, `hoglin_stable/air_base`, `treasure/big_air_full`, `bridge/starting_pieces/entrance_base`, each weight 1, each with processors `bastion_generic_degradation`, projection `rigid`, fallback `minecraft:empty`; and the 13 processor-list files of the table in 5.2 agree with it, rule by rule (input predicate, probability, output block, position predicate). Nothing in 5.1 or 5.2 is open.
+
 ## 6. The Nether ruined portal
 
 `RuinedPortalStructure.findGenerationPoint` (read). Inputs: the structure's single setup (section 3.3), the generation context's
@@ -392,6 +394,8 @@ A drip column extends netherrack downward with a 0.5 chance per step. The distan
 these helpers, the drip-column geometry and the replace test are specified in full in **36-4 sections 8.4 to 8.7** (the spread loop over a 29 x 29
 column window with the distance table above, the nine-cell drip column and the `in_nether` exception to the lava test); this document does not
 repeat them.
+
+**Verified.** `RuinedPortalPiece.spreadNetherrack` builds a 14-element float array: indexes 0 to 6 are 1.0, 7 and 8 are 0.9, 9 is 0.8, 10 is 0.7, 11 is 0.6, 12 is 0.4, 13 is 0.2, exactly the table above; the drip columns and the spread loop are 36-4 sections 8.5 and 8.6. The test of a unit implementation can therefore be written row by row from this table: distance d (0 to 13) against `nextDouble() < table[d]`.
 
 ### 6.1 The blackstone replacement table
 
@@ -574,6 +578,8 @@ down **while the cell is not air** (it moves once before the first test, so it e
 cell is air** down to the level's minimum y, and the cell it stops on is the solid floor cell. That cell goes through the placement type's
 `adjustSpawnPosition`; the strider's `IN_LAVA` placement type adjusts the position (18 section 6.9). The game rule `spawn_mobs` gates it. This agrees with
 the corrected reading of 37-1 section 6.5 (that section's sentence has the two loops in the opposite order and is to be corrected there).
+
+**Verified (sections 9.1 and 9.6).** `data/minecraft/dimension_type/the_nether.json` has `monster_spawn_light_level` 7, `monster_spawn_block_light_limit` 15, `min_y` 0, `height` 256, `logical_height` 128, `has_ceiling` true and the attribute `minecraft:gameplay/piglins_zombify` false; `noise_settings/nether.json` has `disable_mob_generation` false; the attribute `gameplay/creature_world_gen_spawn_probability` is registered with the default value 0.1 and exactly five biome files define it (`badlands`, `eroded_badlands`, `ice_spikes`, `snowy_plains`, `wooded_badlands`), none of them Nether biomes; `NaturalSpawner.getTopNonCollidingPos` with a ceiling moves down once and then while the cell is not air (so it ends on the first air cell), then moves down while the cell is air and `y` is above the level minimum, and passes the cell it stops on to the placement type's `adjustSpawnPosition`: the description above is exact.
 
 ## 10. Interface to portals (RS23): numbers only
 

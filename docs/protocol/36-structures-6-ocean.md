@@ -434,7 +434,7 @@ Room index: `index(x, y, z) = y * 25 + z * 5 + x` (so `x = index % 5`, `z = (ind
 That is **46 grid rooms**. Three further "special" definitions are created outside the grid: the **penthouse** with index 1003, the **left wing** 1001 and the **right wing** 1002
 (`PENTHOUSE_INDEX`, `LEFTWING_INDEX`, `RIGHTWING_INDEX`); a room with `index >= 75` is "special" (`isSpecial`). Named cells: `GRIDROOM_SOURCE_INDEX = index(2,0,0)` = 2
 (the entry room), `GRIDROOM_TOP_CONNECT_INDEX = index(2,2,0)` = 52 (connects up to the penthouse), `GRIDROOM_LEFTWING_CONNECT_INDEX = index(0,1,0)` = **25** and
-`GRIDROOM_RIGHTWING_CONNECT_INDEX = index(4,1,0)` = **29** (each connects "south" to its wing). *(Corrected in round R1: the earlier text printed 5 and 9, which contradicts the index formula `y * 25 + z * 5 + x` above; `getRoomIndex` and the static initialiser of `OceanMonumentPiece` were read: the four constants are computed by that formula from the cells (2,0,0), (2,2,0), (0,1,0), (4,1,0), giving 2, 52, 25 and 29. Cell 25 is the room at `x` 0, `y` 1, `z` 0 and cell 29 the room at `x` 4, `y` 1, `z` 0, the two end rooms of the front row of the middle layer.)*
+`GRIDROOM_RIGHTWING_CONNECT_INDEX = index(4,1,0)` = **29** (each connects "south" to its wing). *(The index formula `y * 25 + z * 5 + x` is `getRoomIndex(x, y, z)`, and the static initialiser of `OceanMonumentPieces$OceanMonumentPiece` computes the four constants with it from the cells (2,0,0), (2,2,0), (0,1,0) and (4,1,0), giving 2, 52, 25 and 29 (read). Cell 25 is the room at `x` 0, `y` 1, `z` 0 and cell 29 the room at `x` 4, `y` 1, `z` 0, the two end rooms of the front row of the middle layer.)*
 
 ### 5.3 The room graph (`RoomDefinition`, `generateRoomGraph`)
 
