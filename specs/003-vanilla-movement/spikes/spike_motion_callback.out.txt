@@ -1,0 +1,10 @@
+# spike_motion_callback.cob + spike_motion_world.cob, run 2026-11-26 on arm64, cobc (GnuCOBOL) 3.2.0, -debug
+== static
+sum +00000000000001000000 (expected 1000000)
+1000000 callbacks HHMMSScc 14552959 -> 14552964
+== dylib
+sum +00000000000001000000 (expected 1000000)
+1000000 callbacks HHMMSScc 14552994 -> 14552998
+== lib
+sum +00000000000001000000 (expected 1000000)
+1000000 callbacks HHMMSScc 14553029 -> 14553033

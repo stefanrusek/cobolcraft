@@ -32,6 +32,24 @@ mechanics in CobolCraft and in Minecraft mode?", asked about a proposal to chang
   match Minecraft? → A: Match Minecraft (operator decision).
 - Q: In Minecraft a Player stepping from ice onto ordinary ground speeds up for an instant before slowing. Match it,
   or slow down smoothly? → A: Match Minecraft (operator decision).
+- Q: In Minecraft almost any damage, not only a hurting landing, removes momentum. Which damage does so here (plan
+  Q-6)? → A: All that Minecraft does (operator decision).
+- Q: Do pistons, shulker boxes, other entities and fishing hooks push the Player in this feature (plan Q-7)? → A:
+  Pistons and shulker boxes do; crowding entities and fishing hooks stay out (operator decision).
+- Q: Are the effects that protect from falls in Minecraft part of this feature (plan Q-8)? → A: Yes (operator
+  decision).
+- Q: Cacti do not hurt a Player in CobolCraft. Should they, or does the damage rule cover only damage CobolCraft
+  already deals (plan Q-9)? → A: Only damage CobolCraft already deals (operator decision).
+- Q: Does a block that grows taller under a Player lift them in this feature, with one more clean-room round (plan
+  Q-10)? → A: Yes, and the round is authorised (operator decision).
+- Q: Are moving piston blocks drawn in this feature (plan Q-11)? → A: No, later work (operator decision).
+- Q: May this feature edit the server's piston pushing without fixing its limits for entities other than Players,
+  an exception to constitution Principle 5.7 (plan Q-12)? → A: Yes; the limits stay recorded in tickets (operator
+  decision).
+- Q: Minecraft lifts any Player whose body is where a block grows, not only one standing on it. Which does the spec
+  require? → A: As Minecraft (operator decision).
+- Q: CobolCraft turns farmland to dirt only by trampling. Is farmland drying part of this feature? → A: No, later
+  work (operator decision).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -87,6 +105,13 @@ of the movement rules; repeat the walk on ice beside a Player using a Minecraft 
     move while it applies, **Then** their movement changes as it does in Minecraft.
 17. **Given** a falling Player, **When** they pass into, slide down or land on a block that breaks a fall in
     Minecraft, **Then** the fall damage they take is what Minecraft would deal.
+18. **Given** a moving piston, including one carrying slime or honey, or an opening shulker box that meets or carries
+    a Player, **When** it moves, **Then** the Player is pushed, carried or launched as in Minecraft.
+19. **Given** a Player under Jump Boost, Slow Falling or Levitation, **When** they jump, fall or land, **Then** the
+    fall damage they take is what Minecraft would deal.
+20. **Given** a Player whose body is where a block grows taller, whether or not they stand on that block (for
+    example farmland turning back into dirt under them), **When** it changes, **Then** the Player is lifted as in
+    Minecraft.
 
 ---
 
@@ -94,7 +119,9 @@ of the movement rules; repeat the walk on ice beside a Player using a Minecraft 
 
 - (US1-4, US1-6) A Player who lands from a jump or a fall without being hurt keeps their horizontal momentum, and
   the ground they land on then decides how it fades.
-- (US1-17) A landing that hurts the Player takes away almost all of that momentum a moment later, as in Minecraft.
+- (US1-14, US1-17) Damage that hurts the Player in CobolCraft, such as a hurting landing or a hit, takes away almost
+  all of their momentum a moment later, as in Minecraft. Drowning and fully blocked damage do not, and neither does
+  a second hit soon after another that only adds damage, apart from any extra knockback of the attack.
 - (US1-14) A Player who runs into a wall loses the speed into the wall and keeps the speed along it.
 - (US1-14) A push from a hit or an explosion changes the Player's momentum as it does in Minecraft, and then fades
   like the rest of it.
@@ -108,8 +135,11 @@ of the movement rules; repeat the walk on ice beside a Player using a Minecraft 
 ### Functional Requirements
 
 - **FR-001** (US1): The Player's movement follows `docs/protocol/13-client-gameplay-and-controls.md` section 1,
-  `docs/protocol/53-player-poses.md` sections 6 and 9, and the block friction rule of
-  `docs/protocol/18-mob-framework.md` section 3.2. Every movement value comes from these documents.
+  `docs/protocol/53-player-poses.md` sections 6 and 9, the block friction rule of
+  `docs/protocol/18-mob-framework.md` section 3.2 and `docs/protocol/59-player-movement-simulation.md`; for pistons,
+  shulker boxes and growing blocks also `docs/protocol/30-redstone-3-pistons.md`, document 31 part 1 section 13,
+  `docs/protocol/51-block-shapes.md` section 3.8 and document 29b section 9.5. Every movement value comes from these
+  documents.
 - **FR-002** (US1): Where those documents are silent or incomplete about a movement rule in this feature's scope
   (for example the open question on fluid movement in document 13), the document is completed through a clean-room
   round before the behaviour is built (constitution, Principle II).
@@ -118,8 +148,8 @@ of the movement rules; repeat the walk on ice beside a Player using a Minecraft 
 
 ### Measurable Outcomes
 
-- **SC-001**: For each worked movement example in the movement rules, the Player's position agrees with the example
-  to within 0.001 blocks at every step.
+- **SC-001**: For each worked example of a movement rule that this feature covers, the Player's position agrees with
+  the example to within 0.001 blocks at every step.
 - **SC-002**: The same sequence of key presses on the same ground ends at the same position in a standard world and
   in a `cobolcraft` world.
 - **SC-003**: The operator, playing the same stretch of ground and ice in CobolCraft and in a Minecraft client,
@@ -138,6 +168,11 @@ of the movement rules; repeat the walk on ice beside a Player using a Minecraft 
 - Of a block's effects, only its effect on movement and on fall damage is in scope. Others, such as the damage of a
   berry bush or the freezing of powder snow (including the slow-down freezing causes), are unchanged.
 - Riding vehicles and animals, elytra gliding, and how mobs move are unchanged.
+- Pushes from other entities (including boats and minecarts) and pulls from fishing hooks are not part of this
+  feature.
+- Drawing moving piston blocks is not part of this feature.
+- Which blocks CobolCraft makes grow taller is unchanged by this feature. Farmland drying out and similar block
+  changes it does not perform today are later work (CC-0064).
 - Key bindings, mouse look and the Minecraft client's own movement are unchanged.
 - Frame rate and stutter are outside this feature. The play-test slowdown on the M1 MacBook Air is being
   investigated separately.

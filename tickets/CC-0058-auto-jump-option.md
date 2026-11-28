@@ -1,6 +1,6 @@
 ---
 spile: ticket
-id: CC-0055
+id: CC-0058
 type: feature
 status: draft
 owner: stefanrusek
@@ -14,7 +14,7 @@ relations:
 implementation: []
 ---
 
-# CC-0055: The Auto-Jump option makes the Player jump up obstacles
+# CC-0058: The Auto-Jump option makes the Player jump up obstacles
 
 ## Summary
 
@@ -30,13 +30,13 @@ the jump key.
 
 ## Functional Requirements
 
-- FR-001: The rule is added to docs/protocol by a clean-room round first: 13 section 1 names auto-jump (sections 1.4
-  and 1.5) without saying when it triggers.
+- FR-001: The rule that arms auto-jump is added to docs/protocol by a clean-room round first: 59 states only how an
+  armed auto-jump is consumed (section 2.2 step 13) and that its trigger was not read (Open question 1).
 
 ## Notes
 
 - Found while planning feature `specs/003-vanilla-movement`, whose scope is the movement document 13 section 1
-  describes. Auto-jump is not described there, and the option is off by default (13 section 7.2).
+  describes. The option is off by default (13 section 7.2).
 
 > [!NOTE]
 > Today the option `autoJump` is stored and listed by the client's options but no movement code reads it.

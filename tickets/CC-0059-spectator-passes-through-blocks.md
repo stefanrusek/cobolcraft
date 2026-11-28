@@ -1,6 +1,6 @@
 ---
 spile: ticket
-id: CC-0056
+id: CC-0059
 type: bug
 status: draft
 owner: stefanrusek
@@ -14,7 +14,7 @@ relations:
 implementation: []
 ---
 
-# CC-0056: A spectator flies through blocks
+# CC-0059: A spectator flies through blocks
 
 ## Summary
 
@@ -29,8 +29,9 @@ A Player in spectator mode passes through blocks and is not affected by them.
 
 ## Functional Requirements
 
-- FR-001: A spectator's movement has no collision and no block effects (docs/protocol 30 part 8 section 14.1.1 step 1
-  and section 14.1.11), and the server accepts its positions inside blocks.
+- FR-001: A spectator's movement has no collision and no block effects (docs/protocol 59 section 2.2 step 2, section
+  8.1 step 1 and section 9.1; 30 part 8 sections 14.1.1 and 14.1.11), and the server accepts its positions inside
+  blocks.
 
 ## Notes
 
