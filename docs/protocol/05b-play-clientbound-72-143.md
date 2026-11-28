@@ -729,8 +729,8 @@ in this file is a Boolean present flag followed by this structure.
 
 | Field | Type | Notes |
 |---|---|---|
-| Type | RegistryId<number_format_type> | Built-in registry. The ids follow registration order in `NumberFormatTypes.bootstrap` (inferred): 0 = blank, 1 = styled, 2 = fixed. |
-| Body | depends on Type | blank: no fields. styled: one Style, encoded as network NBT via the style codec (`Style$Serializer.TRUSTED_STREAM_CODEC`). fixed: one TextComponent. |
+| Type | RegistryId<number_format_type> | Built-in registry. The ids follow registration order in `NumberFormatTypes.bootstrap` (read: 57-client-closures-5 section 5.1.1): 0 = blank, 1 = styled, 2 = fixed. |
+| Body | depends on Type | blank: no fields. styled: one Style, encoded as network NBT via the style codec (`Style$Serializer.TRUSTED_STREAM_CODEC`); its compound members are in 57-client-closures-5 section 5.1.1 (Style compound table). fixed: one TextComponent. |
 
 ### TeamParameters
 
@@ -903,6 +903,8 @@ WaypointIcon (`Waypoint$Icon.STREAM_CODEC`):
    the bytecode.
 7. **Teleport flag semantics.** The bit positions are exact. That "set means relative" and the exact
    effect of ROTATE_DELTA are inferred from names.
-8. **Dialog inline NBT schema** (0x8F) and **Style NBT schema** (NumberFormat "styled") are not described
-   here. They depend on codec-driven NBT structures owned by other documents.
+8. **Dialog inline NBT schema** (0x8F) is not described here; it depends on a codec-driven NBT structure
+   owned by another document. The **Style NBT schema** (NumberFormat "styled") is described in
+   57-client-closures-5 section 5.1.1 (members `color`, `shadow_color`, the five boolean flags, `click_event`,
+   `hover_event`, `insertion`, `font`; the click and hover event members and the `font` compound forms are open there).
 9. **Entity metadata, ItemStack and DataComponentPatch** layouts are deferred to 00-data-types.md.

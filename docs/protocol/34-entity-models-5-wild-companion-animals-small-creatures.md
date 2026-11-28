@@ -407,16 +407,25 @@ crouching; both stored as old and current values each tick.
 
 ### 4.4 `FoxHeldItemLayer`
 
-Nothing is drawn when the held item is empty. Otherwise, on the pose stack: translate by the **head part's current** (x, y, z) / 16
-(so it follows the head pose); baby: scale 0.75 on all axes; rotate about Z by `headRollAngle` (radians), about Y by the layer's yaw
-argument (state.yRot, degrees) and about X by the layer's pitch argument (state.xRot, degrees); then translate by:
+**What is drawn.** The fox renderer has exactly one layer, `FoxHeldItemLayer` (one `addLayer` in `FoxRenderer`; no other layer). The state's `heldItem` is filled each frame by the shared `HoldingEntityRenderState.extractHoldingEntityRenderState`: the entity's **main-hand** item (`getMainHandItem`) resolved with `ItemModelResolver.updateForLiving` for the display context **`GROUND`** (so the item model's `ground` display transform of 12 8.2 applies, for example `item/generated`: translation (0, 2, 0) sixteenths, scale 0.5; a block item with `block/block`: scale 0.25, translation (0, 3, 0)), the foil type, tints and special renderers as in 12 8.5. The panda uses the same extraction (5.4). Nothing is drawn when the render state's item is empty (no item model result).
+
+**Transform chain** (the layer runs with the pose stack of the body pass, 34-3 0.3 items 2 and 4: model space, y down, `scale(-1, -1, 1)` already applied, and the layer arguments `yRot`, `xRot` are the entity's head yaw and pitch in degrees, `state.yRot`, `state.xRot`). With `H` = the fox model's `head` part **after `setupAnim` of this frame** (4.2):
+
+1. push; translate by `(H.x, H.y, H.z) / 16`: the head part's current offset only. Its rotations (`xRot`, `yRot`, `zRot`) are NOT used, so the head-look of 4.2 step 4, the sleeping head angles of 4.2 step 5 and the head roll written into `head.zRot` do not reach the item through the part; the layer rebuilds its own rotations below. The offset includes every offset change of 4.2: crouching (`head y += C a`), sleeping, sitting, pouncing (`head y -= C / 2` adult);
+2. baby only: scale by 0.75 on all three axes (so every later translation of the layer and the item's own size are 0.75 times as large);
+3. rotate about Z by `state.headRollAngle` (radians: `Fox.getHeadRollAngle`, 4.3), then about Y by the layer's `yRot` (degrees), then about X by the layer's `xRot` (degrees); these are applied as written (each acts on the frame left by the previous one), with the entity's look angles in every pose, including sleeping, crouching and faceplanting (where the head part itself ignores them);
+4. translate by the table below;
+5. rotate about X by 90 degrees, and, when sleeping, afterwards about Z by 90 degrees;
+6. submit the item state with the layer's light coordinate, `NO_OVERLAY` and the entity's outline colour; pop.
 
 | | Not sleeping | Sleeping |
 |---|---|---|
 | Adult | (0.06, 0.27, -0.5) | (0.46, 0.26, 0.22) |
 | Baby | (0.06, 0.26, -0.5) | (0.4, 0.26, 0.15) |
 
-then rotate about X by 90 degrees, and, when sleeping, about Z by 90 degrees; then submit the item's model (no overlay).
+(Read: the four triples, the 16, the 0.75 and the angles; "sleeping" is `isSleeping`, flag 32. Sitting, crouching, pouncing and faceplanting have no table of their own: only the head offset of step 1 changes.)
+
+Worked values (display transform of `item/generated`, so the item's centre sits at `(0, 0.125, 0)` in the frame left by step 5 (12 8.2: the centre, translated by the ground translation); the rotation of step 5 maps that vector to `(0, 0, 0.125)` for a right-handed +90 degrees about X (inferred), and for sleeping the extra +90 degrees about Z gives `(-0.125, 0, 0)` instead (inferred)). Adult standing, no look angles, no roll: the head pivot `(-1, 16.5, -3)` texels (4.1) is `(-0.0625, 1.03125, -0.1875)`; after step 4 the item frame origin is at `(-0.0025, 1.30125, -0.6875)` blocks in model space, which is the z of the nose tip (nose cube front face at texel z -3 - 8 = -11 = -0.6875) and just below the nose (nose bottom at y 16.5 + 2.01 + 2 = 20.51 texels = 1.2819): the item hangs at the mouth. Its centre is at `(-0.0025, 1.30125, -0.5625)`; for a flat generated item the model plane is then horizontal (step 5) and the item is 0.5 blocks wide (ground scale 0.5). Baby standing: head pivot `(0, 18.125, 0.125)` texels = `(0, 1.1328125, 0.0078125)`; after step 4 (translation scaled by 0.75): origin `(0.045, 1.3278125, -0.3671875)` (y = 1.1328125 + 0.75 x 0.26), item width 0.375 blocks. Adult sleeping, no look angles and no roll, with the head pose of 4.2 (head x += 2, y += 2.99, z unchanged): pivot `(1, 19.49, -3)` texels = `(0.0625, 1.218125, -0.1875)`; origin after step 4 `(0.5225, 1.478125, 0.0325)`, centre `(0.3975, 1.478125, 0.0325)`.
 
 ---
 
@@ -494,7 +503,19 @@ Let h = 0.3 for a baby and 0.8 for an adult.
 |---|---|
 | Models, shadow | `PANDA` / `PANDA_BABY`, 0.9 |
 | Texture | `state.variant` (a gene) selects from the adult or baby map; an unknown gene uses NORMAL's entry. Adult files in `textures/entity/panda/`: `panda.png` (normal), `panda_lazy.png`, `panda_worried.png`, `panda_playful.png`, `panda_brown.png`, `panda_weak.png`, `panda_aggressive.png`. Baby files: `panda_baby.png` (normal), `lazy_panda_baby.png`, `worried_panda_baby.png`, `playful_panda_baby.png`, `brown_panda_baby.png`, `weak_panda_baby.png`, `aggressive_panda_baby.png` |
-| Held item layer | drawn when the held item is non-empty, the panda is sitting and **not** scared: translate (0.1, y, z) blocks with z = -0.6 and y = 1.4, except while eating, z = -0.6 - (0.2 sin(0.6 A) + 0.2) and y = 1.4 - 0.09 sin(0.6 A); then submit the item (no overlay) |
+| Held item layer | `PandaHoldsItemLayer`, the renderer's only layer (one `addLayer`); see 5.4.1 |
+
+#### 5.4.1 `PandaHoldsItemLayer` (the panda held item)
+
+The state's `heldItem` is the main-hand item resolved for the display context `GROUND`, exactly as the fox (4.4: `HoldingEntityRenderState.extractHoldingEntityRenderState`). The layer draws only when the held item is non-empty AND `isSitting` AND NOT `isScared`; otherwise nothing is drawn (a standing, lying or rolling panda, and a scared sitting one, show no item). Transform, in the body-pass pose stack of 34-3 0.3 (model space, y down, `scale(-1, -1, 1)` applied; the panda's `setupRotations` of 5.3 is already in the stack, so the item moves with the body, but it does not follow the head, the arms or the sit pose of the model parts):
+
+| Step | Value |
+|---|---|
+| push; translate by `(0.1, y, z)` blocks, model space | not eating: `z = -0.6`, `y = 1.4`. Eating (`isEating`, the eat counter above 0): `z = -0.6 - (0.2 sin(0.6 A) + 0.2)` and `y = 1.4 - 0.09 sin(0.6 A)`, where `A` = `ageInTicks` of the render state (entity tick count plus partial tick, 34-3 0.3 item 1), the product `0.6 A` formed in single precision, `sin` = `Mth.sin` (the table sine, argument in radians; 0.1 item 9) |
+| rotation, scale | none: no rotation, no baby scale, no offset for babies or for any pose; the baby panda uses the same numbers |
+| submit | the item state with the layer's light coordinate, `NO_OVERLAY`, the outline colour; pop |
+
+Ranges while eating: `z` from -1.0 (sin = +1) to -0.6 (sin = -1), `y` from 1.31 (sin = +1) to 1.49 (sin = -1); one bob period is `2 pi / 0.6` = 10.47 ticks. Worked values: not eating, display transform of `item/generated` (ground translation (0, 2, 0) sixteenths = 0.125, scale 0.5, no rotation): the item's centre is at `(0.1, 1.525, -0.6)` and the item is 0.5 blocks wide; eating at `A = 0`: `sin 0 = 0`, `z = -0.8`, `y = 1.4`, centre `(0.1, 1.525, -0.8)`; eating at `A = 2.618` (`0.6 A = 1.5708`, sin = 1): `z = -1.0`, `y = 1.31`. Orientation (inferred from the pose stack, since the layer adds no rotation): the pipeline's `scale(-1, -1, 1)` turns every item drawn through this layer by 180 degrees about the model's z axis (the item's own up axis points down in the world), unlike the fox which rotates about X by 90 degrees (4.4 step 5) and the hand layers of 34-1 and 34-3 which rotate about X by -90 and Y by 180; the panda's model-space `y = 1.4` (22.4 texels below the model origin) is 0.101 blocks above the entity origin after the pipeline's `scale(-1, -1, 1)` and translate `(0, -1.501, 0)` (`1.501 - 1.4`), so the item hangs at ground level in front of a sitting panda.
 
 State extraction: held item; `variant` = `Panda.getVariant()` (the gene from the main and hidden genes); `isUnhappy` = unhappy counter > 0;
 `isSneezing`; `sneezeTime` = the sneeze counter; `isEating` = eat counter > 0; `isScared` = worried and thundering; `isSitting`;
@@ -1419,3 +1440,4 @@ authored y, `scale` as the final factor), then keyframes `time:(x,y,z)I` with I 
 5. The equipment renderer (`EquipmentLayerRenderer.renderLayers`) and the `StuckInBodyLayer` placement used by the bee stinger layer are framework or player-layer pieces and are not specified here (34-entity-models-1 section 8.2 for the equipment renderer; the player-layer placement of the bee stinger is not specified in any part of 34 read for this round).
 6. The `Mth.rotLerp` degrees quirk of §1.1 means that a pose lerp spanning more than pi radians would behave differently from a plain lerp; no call here spans that much, but this was checked only by reading the constants.
 7. Closed as read: the renderer classes of all 14 mobs declare only these methods beyond the constructor, texture lookup and `extractRenderState`: wolf `getModelTint`; cat, fox and panda `setupRotations` (panda also `getAngle`); turtle `getShadowRadius`; sniffer `getBoundingBoxForCulling` (box inflated by 0.6). None overrides scale, name tag, leash, fire or `shouldShowName`, so the generic rules of 34-entity-models-1 sections 7.2 to 7.4 apply. Still open: per-mob leash offsets live in the entity classes and are not enumerated (18 section 1 for bounding box, eye height and name tag offsets).
+8. Fox and panda held items (4.4, 5.4.1): the offsets, angles, conditions and the eating bob were read from `FoxHeldItemLayer` and `PandaHoldsItemLayer`. Not read: the effect of a positive `rotateDegrees` about X or Z on a vertex (the quaternion class `Quaternionf` is not in the artifact, 34-3 Open question 1), so the worked item centres after the 90 degree rotations and the statement that the panda's item appears turned 180 degrees about the depth axis are (inferred) from the standard right-handed rotation; the entity-side logic that puts an item into the fox's or panda's main hand (pick-up, eating) is in 19.

@@ -37,7 +37,7 @@ Used by the copper golem and the creaking (Appendix A has every keyframe, printe
 | `AnimationState` timing | `getTimeInMillis(age)` = `(long)((age - startTick) * 50)`, a truncation to a long. A state with `startTick = Integer.MIN_VALUE` is stopped; `apply` does nothing for it. This answers 34-1 §5.5 (its Open question 8) |
 | Speed | `apply(state, age, speed)` converts that long to a float, multiplies by `speed` and truncates again to a long, then applies with scale 1 (34-1 §5.3). Two truncations: they equal one truncation only for `speed = 1`. Every use in this document has `speed = 1` |
 | `fastForward(ticks, speed)` | when the state is started, `startTick = startTick - (int)(ticks * speed)` (the product truncated toward zero): the start moves earlier, so the elapsed time grows by that many ticks |
-| `start`, `stop`, `startIfStopped`, `animateWhen` | driven by the client entity (copper golem 44-3 §8; creaking 20 §17); the renderer copies the 32-bit `startTick` into the render state each frame |
+| `start`, `stop`, `startIfStopped`, `animateWhen` | driven by the client entity (copper golem: 9.6 here; creaking 20 §17); the renderer copies the 32-bit `startTick` into the render state each frame |
 | Walk-driven calls here | copper golem `applyWalk(walkPos, walkSpeed, 2, 2.5)` (9.2); creaking `applyWalk(walkPos, walkSpeed, 1, 1)` (10) |
 
 Worked example (walk driven). Copper golem, no item, `walkPos = 1.0`, `walkSpeed = 0.2`: `ms = (long)(1.0 * 50 * 2) = 100`, `k = min(0.2 * 2.5, 1) = 0.5`, `t = 0.1`. Right arm rotation channel (keys 0:(70,0,0) 0.4167:(-80,0,0) 0.8333:(70,0,0), all CATMULLROM): `F = 1`, `i = 0`, `j = 1`, `p = 0.1 / 0.4167 = 0.24`; x component with `p0 = p1 = 70`, `p2 = -80`, `p3 = 70` gives `0.5 * (140 - 36 - 34.56 + 6.2208) = 0.5 * 75.6608 = 37.8304` degrees; times `k` = 18.9152 degrees = 0.3301 rad added to the arm's xRot.
@@ -566,13 +566,13 @@ Animations (`CopperGolemAnimation`, Appendix A) baked on the entity layer: walk 
 
 1. Reset; `head.xRot = xRot * D`, `head.yRot = yRot * D`.
 2. If both hand item states are empty: walk animation `applyWalk(walkPos, walkSpeed, 2, 2.5)` (`ms = walkPos * 100`, scale `min(walkSpeed * 2.5, 1)`). Else: walk-with-item `applyWalk(..., 2, 2.5)`, then `poseHeldItemArmsIfStill`: `right_arm.xRot = min(right_arm.xRot, -0.87266463)`, `left_arm.xRot = min(left_arm.xRot, -0.87266463)`, `right_arm.yRot = min(right_arm.yRot, -0.1134464)`, `left_arm.yRot = max(left_arm.yRot, 0.1134464)`, `right_arm.zRot = min(right_arm.zRot, -0.064577185)`, `left_arm.zRot = max(left_arm.zRot, 0.064577185)` (raises the arms so a carried item shows even when still).
-3. Then the five state-driven animations in the order idle, get-item, get-no-item, drop-item, drop-no-item, each `apply(state, ageInTicks)`; the states are copies of the entity's animation states (which of them runs is driven by the entity, 44-3 §8).
+3. Then the five state-driven animations in the order idle, get-item, get-no-item, drop-item, drop-no-item, each `apply(state, ageInTicks)`; the states are copies of the entity's animation states (which of them runs is driven by the entity: 9.6 here and 44-3 section 8).
 
 ### 9.3 Hand, head and antenna transforms
 
 - `translateToHand(state, arm, pose)`: root, body, then the chosen arm part translate-and-rotate; then if the golem state is `IDLE`: rotate Y by -90 deg (right) or +90 deg (left), translate `(0, 0, 0.125)`; otherwise scale 0.55 and translate `(-0.125, 0.3125, -0.1875)`.
 - `translateToHead(pose)` (used by the custom-head layer): body, head translate-and-rotate; translate `(0, 0.125, 0)`; scale 1.0625.
-- `applyBlockOnAntennaTransform(pose)`: root, body, head translate-and-rotate; translate `(0, -1.75, 0)` (blocks; model y is down, so 1.75 blocks up from the head pivot).
+- `applyBlockOnAntennaTransform(pose)`: root, body, head translate-and-rotate (each `ModelPart.translateAndRotate`: translate by the pose offset / 16, rotate Z-Y-X, and scale only if a scale differs from 1; the golem's animations have no scale channel for these parts); translate `(0, -1.75, 0)` (double constants read from the method; blocks, i.e. 28 px; model y is down, so 1.75 blocks up from the head pivot). **This value is correct**: with the fixed matrix of 9.4 the block's lowest face lands 12 px above the head pivot, 1 px below the top of the knob (worked out in 9.4.1; a 3 px gap does not follow from this translate: 9.4.1).
 
 ### 9.4 `CopperGolemRenderer`
 
@@ -583,11 +583,66 @@ Animations (`CopperGolemAnimation`, Appendix A) baked on the entity layer: walk 
 | State | armed state + `weathering`, `copperGolemState` (default `IDLE`), five animation states, `blockOnAntenna` |
 | `blockOnAntenna` | the block item in the antenna equipment slot; when it is a block item: its block's default state with the item's `BLOCK_STATE` component properties applied; else cleared |
 | Layers, in order | (1) emissive eyes: `LivingEntityEmissiveLayer` with a **second instance of the body model (`COPPER_GOLEM` layer, not the eyes layer)**, the eye texture of the weathering level, alpha 1 constant, render type `eyes(texture)`, drawn at order 1 with overlay `getOverlayCoords(state, 0)`, skipped when the state is invisible; (2) `ItemInHandLayer`; (3) `BlockDecorationLayer` (the antenna block); (4) `CustomHeadLayer` (default transforms) |
-| `BlockDecorationLayer` | when the block state is not empty: push; apply `applyBlockOnAntennaTransform`; multiply by the fixed matrix `M` = translation `(-0.5, 0, -0.5)` composed with a 180 deg rotation about Z around the centre `(0.5, 0.5, 0.5)` (so a unit-cube point `(x, y, z)` goes to `(0.5 - x, 1 - y, z - 0.5)`); draw the block model with `NO_OVERLAY`; pop. Net effect: the block stands on the antenna knob, about 1 pixel overlapping it |
+| `BlockDecorationLayer` | when the block state is not empty: push; apply `applyBlockOnAntennaTransform`; multiply by the fixed matrix `M` = translation `(-0.5, 0, -0.5)` composed with a 180 deg rotation about Z around the centre `(0.5, 0.5, 0.5)` (so a unit-cube point `(x, y, z)` goes to `(0.5 - x, 1 - y, z - 0.5)`); draw the block model with `NO_OVERLAY`; pop. Net effect: the block stands on the antenna knob, overlapping its top pixel row by 0.985 px (9.4.1) |
+
+#### 9.4.1 Antenna block placement: exact cubes and the overlap
+
+Read: the `head` part of the entity layer (`createBodyLayer`, 9.1) and `BlockDecorationLayer` with its static matrix `UNIT_CUBE_BOTTOM_CENTER_TO_ANTENNA_CENTER` (the matrix of 9.4, built as a translation `(-0.5, 0, -0.5)` followed by a 180 deg rotation about Z around `(0.5, 0.5, 0.5)`), and the renderer's transform consumer, which is `CopperGolemModel.applyBlockOnAntennaTransform` (9.3). All coordinates below are model pixels, y down, relative to the head pivot unless marked "above feet".
+
+| Piece | Cube as defined (origin, size, grow) | Extent in y after the grow (relative to the head pivot) | Extent in x and z |
+|---|---|---|---|
+| head box (a) | origin (-4, -5, -5), size (8, 5, 10), grow +0.015 | -5.015 to +0.015 | x -4.015 to 4.015, z -5.015 to 5.015 |
+| antenna stem (c) | origin (-1, -9, -1), size (2, 4, 2), grow -0.015 | -8.985 to -5.015 | x, z -0.985 to 0.985 |
+| antenna knob (d) | origin (-2, -13, -2), size (4, 4, 4), grow -0.015 | -12.985 to -9.015 | x, z -1.985 to 1.985 |
+| antenna block (full cube), 9.4 matrix plus translate `(0, -1.75, 0)` | the unit cube | -28 to -12 (that is `-1.75 + (1 - y)` blocks for a block-space height `y` in 0..1) | x -8 to 8, z -8 to 8 (the matrix centres the cell on the pivot: `x' = 0.5 - x`, `z' = z - 0.5`) |
+
+The letters follow 9.1's head row: the cube (b) is the nose (origin (-1, -2, -6), size (2, 3, 2), no grow), which sits at the front of the head (z -6 to -4, y -2 to +1), away from the antenna column (x and z within 2 of the pivot axis, y -13 to -5), and takes no part in the antenna column, so it is not in the table.
+
+Absolute heights: the body pivot is at model y 19 (root 24 plus body -5) and the head pivot at model y 13 (body plus head -6), i.e. 11 px above the model's feet plane y = 24 (that plane lies 0.001 blocks above the entity origin: the pipeline of 0.3 item 2 mirrors y and translates by -1.501 blocks, against 24 px = 1.5 blocks). Above the feet plane: the head box spans 10.985 to 16.015 px, the stem 16.015 to 19.985, the knob 20.015 to 23.985, and a full-cube antenna block 23 to 39 px.
+
+**Result.** The block's lowest face (block-space height 0) is 12 px above the head pivot, the knob's top face is at 12.985 px: the block overlaps the knob's top by **0.985 px (nominally 1 px)**, never a gap. The block is centred on the knob (both are centred on the pivot in x and z) and stands upright in the entity's local frame: because the pipeline of 0.3 item 2 already mirrors x and y (`scale(-1, -1, 1)`), the matrix's 180 deg turn about Z cancels that mirroring, so the block's own axes agree with the entity's local axes (the block is not rotated or mirrored relative to the golem). The transform follows the posed head, body and root, including the `position` and `rotation` channels of the idle, walk and chest-interaction animations (Appendix A; none of them has a head scale channel), so the block moves with the head when the golem looks around or animates.
+
+Worked values of the translate `ty` (blocks) for a full cube, lowest face above the head pivot = `(ty + 1)` * -16 px, expressed as "block bottom above feet":
+
+| `ty` | block spans (relative to head pivot) | block bottom above feet | against the knob (top 23.985) |
+|---|---|---|---|
+| -1.75 (the artifact) | -28 to -12 | 23.000 | overlaps 0.985 px |
+| -1.5 | -24 to -8 | 19.000 | the whole knob (3.97 px tall) and the top 0.985 px of the stem are inside the block |
+| -2.0 | -32 to -16 | 27.000 | gap of 3.015 px |
+
+A 3 px gap at -1.75 (and a 1 px overlap at -1.5) is exactly what results when the knob top is taken at -9 (the origin of the stem cube (c)) instead of -13 (the knob (d)): then -1.75 gives 20 versus 23, a 3 px gap, and -1.5 gives 20 versus 19, a 1 px overlap (inferred explanation; the cure is the cube origins of 9.1, y -9 for the stem (c) and y -13 for the knob (d), not a change of the translate). A block whose own model starts `b` px above the bottom of its cell (a flower, a button, a layered block) hovers `b - 0.985` px above the knob top by the same arithmetic (the lowest model point is at `-12 - b` px relative to the pivot).
 
 ### 9.5 Statue (`CopperGolemStatueBlockRenderer`, `CopperGolemStatueModel`, `CopperGolemStatueSpecialRenderer`)
 
 The block entity renderer holds four models, keyed by the block's `POSE` property: STANDING (`COPPER_GOLEM` layer), RUNNING, SITTING, STAR (the pose layers above). Each is a plain `Model` whose `setupAnim` sets `root.y = 0` and `root.zRot = 3.1415927` (the statue is flipped upside down about Z in model space, which, with the flipped y axis of the entity convention, appears upright). Drawing: push; multiply by the facing transform (translation `(0.5, 0, 0.5)` then a rotation about Y by the negative (a float negation) of `toYRot()` of the opposite of the block's FACING, in degrees). `Direction.toYRot()` is `(data2d & 3) * 90` with `data2d` SOUTH 0, WEST 1, NORTH 2, EAST 3 (read), i.e. south 0, west 90, north 180, east 270 degrees. Examples: FACING north, opposite south, rotation 0 degrees; FACING east, opposite west, -90; FACING south, opposite north, -180; FACING west, opposite east, -270; draw the model with the texture of the oxidation level (the same `texture()` as the entity, from the block's weathering state, UNAFFECTED when the block is not a weathering statue), the block's light, `NO_OVERLAY`; if a break-progress overlay exists, draw the crumbling overlay at order 1; pop. The item form uses the special renderer with the standing model and a texture chosen by the item model (data), drawn with the supplied light/overlay.
+
+### 9.6 Client-side driving of the five animation states (the idle start rule and the 9.2 step 3 drivers)
+
+Read: `CopperGolem.tick`, `CopperGolem.setupAnimationStates`, `playHeadSpinSound`, `AnimationState`, `ClientLevel.tickNonPassenger`, `Entity.commonTick`, `Mob.isNoAi`, `RandomSource.nextInt(origin, bound)`, and the constructor and `defineSynchedData` of `CopperGolem`. Nothing here is sent by the server except the golem state (metadata index 17, `COPPER_GOLEM_STATE`, a VarInt: IDLE 0, GETTING_ITEM 1, GETTING_NO_ITEM 2, DROPPING_ITEM 3, DROPPING_NO_ITEM 4 in enum order; 00 §13.2 serializer id 37). The client entity holds its own five `AnimationState` objects (each is one 32-bit `startTick`, stopped = `Integer.MIN_VALUE`, 0.2) and one counter `idleAnimationStartTick`, initially 0 (0 means "no start scheduled"). The renderer copies the five `startTick` values and the golem state into the render state each frame (9.4); the model applies them in the order of 9.2 step 3.
+
+**When it runs.** Every client tick of the entity, after the generic entity tick, and only when the golem is not `NoAI` (bit 0x01 of the mob flags byte). A `NoAI` golem is skipped completely: its states and counter keep whatever they had (no stop). The client entity's `tickCount` is a plain per-entity counter that starts at 0 when the entity object is created and is incremented by 1 in `Entity.commonTick`, which `ClientLevel.tickNonPassenger` calls immediately before the entity's `tick()` (so the first run sees `tickCount = 1`; the sentinel 0 therefore never equals a tick count). The server's weathering code runs only on the server and has no client counterpart here.
+
+**Rule by golem state (`getState()`, re-read each tick).**
+
+| Golem state | Idle state and counter | The four interaction states | The one interaction state started |
+|---|---|---|---|
+| IDLE | the idle rule below | all four `stop()` | none |
+| GETTING_ITEM | `idle.stop()`, counter = 0 | the other three `stop()` | `interactionGetItem.startIfStopped(tickCount)` |
+| GETTING_NO_ITEM | same | the other three `stop()` | `interactionGetNoItem.startIfStopped(tickCount)` |
+| DROPPING_ITEM | same | the other three `stop()` | `interactionDropItem.startIfStopped(tickCount)` |
+| DROPPING_NO_ITEM | same | the other three `stop()` | `interactionDropNoItem.startIfStopped(tickCount)` |
+
+`startIfStopped` starts only a stopped state: while the golem keeps the same interaction state the animation continues from its first tick (these four animations are looping, Appendix A, so they repeat for as long as the state lasts); leaving the interaction state (to IDLE or another interaction state) stops it on the next client tick.
+
+**The idle rule (state IDLE), in this order each tick, with `T = tickCount`, `S = idleAnimationStartTick`:**
+1. If `S == T`: `idle.start(T)` (the idle animation's time zero is this tick). Else if `S == 0`: schedule `S = T + 200 + nextInt(40)`, i.e. `nextInt(200, 240)` = 200 plus a draw of 0..39 from the entity's own `RandomSource` (unseeded `RandomSource.create()` at entity construction, client-local, never synchronised; any uniform draw serves, there is no sequence to reproduce). A pending `S` that is neither `T` nor 0 changes nothing.
+2. Then, in the same tick and also after step 1's start: if `T == S + 10` (compared as floats, i.e. exactly 10 ticks after the scheduled start tick): play the head-spin sound (below) and set `S = 0`.
+
+Consequences. (a) A golem that has just become known to the client does not spin its head until tick count 201 to 240 (`T = 1` schedules `S = 1 + 200..239`). (b) The idle animation starts at `S`; the sound plays at `S + 10` (0.5 s into the 3.5 s animation: the body is still at -35 deg yaw and starts its swing to +35 deg at 0.625 s, the head is still at 0, Appendix A); at `S + 11` the counter is 0, so the next start is scheduled at `S + 11 + 200..239`: the start-to-start interval is 211 to 250 ticks (10.55 to 12.5 s), and the animation (70 ticks long) is always finished before the next one starts. (c) The idle animation is not looping; after its last keyframe (3.5 s) the state stays "started" and the model keeps applying the clamped last pose (body rotation (0, 0, 0), head rotation (0, 360, 0) deg, which is the rest orientation) until the next `start`; nothing stops it while the golem stays IDLE. (d) The idle animation is independent of walking: the walk animation is driven by `walkPos`/`walkSpeed` (9.2 step 2), and the idle one runs on top of it when it starts. (e) Any non-IDLE tick drops a scheduled or running idle spin: `idle.stop()` and `S = 0`; on return to IDLE the first IDLE tick schedules a fresh `T + 200..239`, so an idle spin that was about to happen is lost, not resumed.
+
+**Head-spin sound.** `playHeadSpinSound`: unless the entity is silent, `Level.playLocalSound` at the entity's position (x, y, z of the entity, not the eye), the sound event of the weathering level (9.4 table, "spin head"), the entity's sound source, volume 1, pitch 1, no distance delay. The sound belongs to the client and is not played by the server for this animation.
+
+**Worked example.** A golem enters the client at tick count 0. Tick 1: IDLE, `S = 0`, draw 5, `S = 206`. Ticks 2 to 205: `S` unchanged. Tick 206: `S == T`, `idle.start(206)`. Render frame at `ageInTicks = 206.5`: `getTimeInMillis = (long)((206.5 - 206) * 50) = 25`, so the body `rotation` y is `-35 * 0.025 / 0.125 = -7` deg (LINEAR from (0,0,0) at 0 s to (0,-35,0) at 0.125 s) and the head rotation is 0. Tick 216: `T == S + 10`: head-spin sound, `S = 0`. Tick 217: draw 0, `S = 417`. Tick 276 (`S0 + 70`): the idle animation reaches its end; poses then stay clamped. Tick 417: `idle.start(417)` again. Interruption: a state change to GETTING_ITEM at tick 300 (before the animation start at 417) stops the idle state, sets `S = 0`, starts the get-item animation at tick 300; back to IDLE at tick 400: tick 400 draws a new `S = 400 + 200..239`.
 
 ---
 
@@ -921,7 +976,7 @@ Time in seconds; a keyframe is `time:(x, y, z)`. Rotation channels are degrees, 
 7. **Copper golem eyes layer.** `COPPER_GOLEM_EYES` is registered (the body layer after `retainPartsAndChildren({eyes})`, which empties everything because no part is named `eyes`), but the renderer's emissive layer bakes `COPPER_GOLEM` instead. Whether the unused layer is intentional is unknown; the document follows the renderer.
 8. **Block and item model submission.** The flower, pumpkin and antenna-block layers submit `BlockModelRenderState` objects whose geometry comes from the block model resolver (12 §8, 14); only the pose transforms around them are specified here.
 9. **Emissive layer alpha.** `LivingEntityEmissiveLayer` converts the alpha function's value to an opaque-white colour with that alpha (`ARGB.white(alpha)`) and passes it as the model tint; the exact blend of `RenderTypes.eyes` is a render-type matter of the framework sibling.
-10. **Animation state driving.** Which entity events start the copper golem and creaking animation states, and with which start ticks, is entity logic; copper golem in 44-3 §8, creaking in 20 §17; not re-read here.
+10. **Animation state driving.** Copper golem: closed in 9.6 (client rule read: the idle start schedule, the state to animation mapping, the head-spin sound timing). Creaking: which entity events start the creaking animation states, and with which start ticks, is entity logic in 20 §17, not re-read here.
 11. **`Math.cos` versus table `Mth.cos`.** Reproducing 1-ulp differences is not required. Double-precision `Math` functions are used in two places only: the allay root bob (`Math.cos`) and the ravager stun sway (`Math.sin`); the illusioner offsets, the spellcaster particle angle and the fangs base height use the table functions (0.1 item 9).
 12. **Spot-check coverage.** The review of this document did not independently re-verify the renderer classes (shadow radii, texture paths, layer order, head and held-item layers, profession layer file-name rules), the copper golem and creaking mesh tables, the Appendix A keyframe tables, the section 12.1 and 14 tables, the snow golem, zombie villager and baby models, or the spellcaster colours against the jar. A later pass should spot-check these, Appendix A first, as it holds the most transcribed data.
 

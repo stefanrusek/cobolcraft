@@ -391,6 +391,55 @@ Hover highlight: two 24 x 24 sprites `container/slot_highlight_back` and `contai
 - The slot art is part of the background sheet; the code never draws a slot frame.
 - Colour and text rules: 12 §5.6 to §5.10.
 
+### 5.8 Which screens freeze the single-player game (the pause rule)
+
+Read (jar, static): `Minecraft.runTick` (its tail), `Minecraft.tick`, `Minecraft.isLevelRunningNormally`, `Gui.isPausing` and `Gui.setScreen`, `Screen.isPauseScreen` and every override of it in the client (13 overrides, listed below; a scan of all 11,383 classes of the jar found no other definition of `isPauseScreen` or `isPausing`), `Overlay.isPausing`, `IntegratedServer.tickServer` and `tickPaused`, `MinecraftServer.forceGameTimeSynchronization`, `DialogAction.willUnpause`, `CommonDialogData`, `DeltaTracker$Timer`, `SoundManager` and `SoundEngine` (`tick`, `resume`, `pauseAllExcept`), `TickRateManager.runsNormally`.
+
+**The rule.** At the end of every client main-loop iteration (`Minecraft.runTick`, after rendering) the client computes `pause` = (a single-player integrated server exists) AND (`Gui.isPausing()`) AND (the integrated server is NOT published, i.e. not opened to LAN). `Gui.isPausing()` = (a screen is open AND its `isPauseScreen()` is true) OR (an overlay is present AND its `isPausing()` is true). `Overlay.isPausing` is true and the only overlay class (`LoadingOverlay`, the start-up and resource-reload cover) does not override it, so the game is also paused while that overlay is up. The value is stored as the client's `pause` flag and read by the next iteration. When `pause` goes from false to true, every playing sound except the `MUSIC` and `UI` sound sources is paused once (`SoundManager.pauseAllExcept`); the flag is also passed to the render delta tracker each frame (`updatePauseState`, effect in the client paragraph below). A client connected to a remote server never pauses (no integrated server).
+
+**What the flag does on the integrated server** (`IntegratedServer.tickServer`, every server tick): `paused` = the client's `pause` OR the player list is empty. On the tick when `paused` turns true the server logs "Saving and pausing game..." and calls `saveEverything(false, false, false)` (an auto-save, under the profiler section `autoSave`). While `paused`, the tick is `tickPaused` instead of the normal tick: the network connections are serviced (`tickConnection`) and each player is awarded the `total_world_time` statistic once per server tick; no level, entity, block or time advance happens. On the tick when `paused` turns false the server first broadcasts a time-update packet carrying the overworld game time with an empty clock map (`forceGameTimeSynchronization`, 05b section 0x73 Set Time) and then runs the normal tick. After the normal tick, the view distance `max(2, option)` is set on the player list when it differs from the player list's current value, and the simulation distance `max(2, option)` is set when it differs from the value applied last (`previousSimulationDistance`). Other client consumers of the flag (read as callers of `Minecraft.isPaused`): `Gui.tick` (the HUD ticks only when not paused, 57-5 section 1.3) and `ChatListener.tick` and `setMessageDelay` (the queue of delayed chat messages runs only while not paused, 57-5 section 2.9).
+
+**What the flag does on the client** (`Minecraft.tick`, which reads the flag eight times). The main loop runs `tick()` min(10, n) times per frame, n being the whole ticks that `DeltaTracker.advanceGameTime` returns; the flag does not change that count, it gates parts inside each `tick()`. In `tick()` order:
+
+| # | Read | When `pause` is true |
+|---|---|---|
+| 1 | the client tick-rate manager (`ClientLevel.tickRateManager().tick()`), only with a level | not ticked |
+| 2 | `MultiPlayerGameMode.tick`, only with a level | not ticked |
+| 3 | with a level: `GameRenderer.tick`, `ClientLevel.tickEntities`, `ClientLevel.tickBlockEntities`, then `LocalPlayer.sendChanges` (only when the local player exists and is not removed) | none of the four runs (without a level the spectated-entity post effect is cleared if one is set, whatever the flag) |
+| 4 | `SoundManager.tick(pause)`, always called (`MusicManager.tick` runs just before it, also always) | the sound engine runs its paused tick instead of its in-game tick: it only drops the MUSIC-source channels that have stopped (so music keeps being serviced), and the tickable and queued sounds are not advanced (the in-game tick, `tickInGameSound`, was not read further) |
+| 5 | the level tick block, only with a level: the one-time social-interactions toast (when the option `joinedFirstServer` is false and the client is on a remote or a LAN-published server: the toast is added, the option set to true and the options saved), `Tutorial.tick`, then `ClientLevel.tick` | none of them runs |
+| 6 | `ClientLevel.animateTick` at the local player's block position, when also `isLevelRunningNormally` (the tick-rate manager's run-game-elements flag, true when there is no level) | not run |
+| 7 | `ParticleEngine.tick`, same two conditions as 6 | not run |
+| 8 | `ServerboundClientTickEndPacket` (05c, Client Tick End) sent through the connection, only with a level and a connection | not sent: a paused integrated-server client sends no tick-end packet |
+
+Two related points. The texture-manager tick of the main loop is gated by `isLevelRunningNormally` only, not by the flag. The sound resume is not triggered by the flag changing: `Gui.setScreen(null)` (closing to the game) calls `SoundManager.resume()`, which unpauses every sound channel (`Channel.unpause`) once the sound engine is loaded; the flag going from false to true calls `SoundManager.pauseAllExcept(MUSIC, UI)`, which pauses every channel whose sound source is not MUSIC or UI. So a pause that ends without the screen being set to null (for example the world being opened to LAN while the pause menu is up) leaves the paused sounds paused until the next `setScreen(null)`; switching from one screen to another also does not resume them.
+
+**Render delta tracker** (`DeltaTracker$Timer.updatePauseState`, called every frame with the new flag, after the flag is recomputed): on the first frame with the flag true it stores the current fractional tick residual (`deltaTickResidual`) in `pausedDeltaTickResidual` and marks the timer paused; while paused, `getGameTimeDeltaPartialTick` returns the stored residual, so the partial tick it returns stays constant; the timer's own residual keeps accumulating whole ticks (the `tick()` loop above keeps running); on the first frame with the flag false the residual is restored to the stored value, so the time that passed while paused does not carry into the next ticks. The timer's frozen state (`updateFrozenState`: while set, `getGameTimeDeltaPartialTick(false)` returns 1.0, and the argument true bypasses that) is a separate input and not part of the pause rule.
+
+**`Screen.isPauseScreen` values** (all 13 definitions):
+
+| Class | Value |
+|---|---|
+| `Screen` (the default, inherited by every screen not listed) | **true** |
+| `ChatScreen` | false |
+| `DeathScreen` | false |
+| `LevelLoadingScreen` (50) | false |
+| `TitleScreen` | false |
+| `GameModeSwitcherScreen` (the F3+F4 picker) | false |
+| `WaitingForResponseScreen` (dialog waiting) | false |
+| `AbstractContainerScreen` (the base of every menu screen: inventory, creative, crafting, furnace, chest, anvil, merchant, beacon, and so on; 40-1 section 5) | false |
+| `AbstractSignEditScreen` (the sign and the hanging sign editors, 40-8) | false |
+| `LecternScreen` | false |
+| `SocialInteractionsScreen` | false |
+| `WinScreen` | `!poem`, the screen's `poem` constructor flag: with `poem` true the screen does not pause, with `poem` false (credits only) it does |
+| `DialogScreen` | the dialog's own `pause` field (the `CommonDialogData` codec field `pause`, default **true**); a dialog with `pause` true must have an `after_action` that unpauses, which are `close` and `wait_for_response` (`DialogAction.willUnpause`), `none` does not: the codec rejects the other combination with "Dialogs that pause the game must use after_action values that unpause it after user action!" |
+
+No subclass of any listed class overrides the value again, so all subclasses inherit it. Hence the screens that **pause** a single-player game are every other screen: the pause menu `PauseScreen`, the options screens, `AdvancementsScreen`, `StatsScreen`, the confirm, progress, connect, disconnect and generic-message screens, the report screens, the book edit and book view screens (40-8), the command block, structure block, jigsaw, test block and test instance screens (40-9), and so on. The screens that **do not pause**: everything in the table with value false, including every container-menu screen, the chat screen and both sign editors.
+
+The sign editor screens do not pause the game (`AbstractSignEditScreen` overrides the value to false). The book edit screen and the block-editor screens do pause (default true, as 40-8 and 40-9 state).
+
+Worked examples: a single-player player opens the inventory: `pause` stays false, the world keeps ticking. Opens the pause menu: `pause` true at the end of that frame; the next server tick logs "Saving and pausing game...", saves, then runs `tickPaused`; closing the menu: the next server tick broadcasts Set Time (game time) and ticks normally. Opens the pause menu, chooses "open to LAN" (`isPublished` true): `pause` is false from then on whatever screen is open. Opens a sign editor: no pause, the world keeps running.
+
 ---
 
 ## 6. The table schema for the other parts (parts 2 to 9 of document 40)
@@ -691,3 +740,4 @@ An implementation of this part is checked by these tests (inputs and outputs fol
 12. **Chest minecart and chest boat.** They use `threeRows` over their own container (so they have the same slot table); their titles, `stillValid` and open or close behaviour belong to 44 and 34 and were not read here.
 13. **Which container-block interactions open which menu with which title.** Covered by 31-1 (chest, barrel, ender chest, shulker box) and 30-4 (dispenser, dropper, hopper); this part gives only the menu side.
 14. **Creative inventory screen interaction.** `handleContainerSetSlot` and `handleSetCursorItem` contain tests for `CreativeModeInventoryScreen` (ignoring a Set Cursor Item while it is open; skipping the open-menu write for a slot packet while its picker tab is shown). The exact conditions belong to the creative screen part and were read only as far as 4.3 states. In `handleContainerSetSlot` the creative-screen flag is read once and tested again only on a path that needs container id 0 inside the open-menu branch, which the earlier id-0 branch has already taken, so for the open-menu write (non-zero id) the flag has no effect (bytecode read); the remaining use is the post-write refresh of the inventory menu's remote slot.
+15. **Pause rule (5.8): what was not read.** The in-game sound tick that the paused sound engine skips (`SoundEngine.tickInGameSound`: which tickable and queued sounds it advances) was not read in detail; the other client-side effects (the eight reads of `Minecraft.tick`, the sound resume at `setScreen(null)`, the delta tracker) are specified in 5.8. The meaning of the `poem` flag of `WinScreen` is taken from the field's use in `isPauseScreen` only (inferred); who constructs the screen with which value was not read.
