@@ -2115,21 +2115,31 @@
      MOVE 2 TO WS-OCX
      MOVE 5 TO WS-OCY
      MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of short_grass: the shape stays (the model moves)" TO WS-CASE
+     PERFORM CHECK-OFS
      MOVE -183333 TO WS-EXP-X
      MOVE -133333 TO WS-EXP-Y
      MOVE 50000 TO WS-EXP-Z
-     MOVE "T4506 offset of short_grass at (2, 0)" TO WS-CASE
-     PERFORM CHECK-OFS
+     MOVE "T4506 model offset of short_grass at (2, 0)" TO WS-CASE
+     PERFORM CHECK-MOFS
      MOVE "fern" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2 WS-P3
      MOVE 2 TO WS-OCX
      MOVE 5 TO WS-OCY
      MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of fern: the shape stays (the model moves)" TO WS-CASE
+     PERFORM CHECK-OFS
      MOVE -183333 TO WS-EXP-X
      MOVE -133333 TO WS-EXP-Y
      MOVE 50000 TO WS-EXP-Z
-     MOVE "T4506 offset of fern at (2, 0)" TO WS-CASE
-     PERFORM CHECK-OFS
+     MOVE "T4506 model offset of fern at (2, 0)" TO WS-CASE
+     PERFORM CHECK-MOFS
      MOVE "bamboo_sapling" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2 WS-P3
      MOVE 3 TO WS-OCX
@@ -2157,21 +2167,211 @@
      MOVE 4 TO WS-OCX
      MOVE 5 TO WS-OCY
      MOVE 2 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of small_dripleaf: the shape stays (the model moves)" TO WS-CASE
+     PERFORM CHECK-OFS
      MOVE 16667 TO WS-EXP-X
      MOVE -20000 TO WS-EXP-Y
      MOVE -183333 TO WS-EXP-Z
-     MOVE "T4506 offset of small_dripleaf at (4, 2)" TO WS-CASE
-     PERFORM CHECK-OFS
+     MOVE "T4506 model offset of small_dripleaf at (4, 2)" TO WS-CASE
+     PERFORM CHECK-MOFS
      MOVE "tall_seagrass" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2 WS-P3
      MOVE "half=lower" TO WS-P1
      MOVE -3 TO WS-OCX
      MOVE 5 TO WS-OCY
      MOVE -2 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of tall_seagrass: the shape stays (the model moves)" TO WS-CASE
+     PERFORM CHECK-OFS
      MOVE -116667 TO WS-EXP-X
      MOVE 0 TO WS-EXP-Y
      MOVE 150000 TO WS-EXP-Z
-     MOVE "T4506 offset of tall_seagrass at (-3, -2)" TO WS-CASE
+     MOVE "T4506 model offset of tall_seagrass at (-3, -2)" TO WS-CASE
+     PERFORM CHECK-MOFS
+     MOVE "bamboo" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 116667 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE -16667 TO WS-EXP-Z
+     MOVE "R4 shape offset of bamboo at (1, 0): the shape moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "mangrove_propagule" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 116667 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE -16667 TO WS-EXP-Z
+     MOVE "R4 shape offset of mangrove_propagule at (1, 0): the shape moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "open_eyeblossom" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 116667 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE -16667 TO WS-EXP-Z
+     MOVE "R4 shape offset of open_eyeblossom at (1, 0): the shape moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "closed_eyeblossom" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 116667 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE -16667 TO WS-EXP-Z
+     MOVE "R4 shape offset of closed_eyeblossom at (1, 0): the shape moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "wither_rose" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 116667 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE -16667 TO WS-EXP-Z
+     MOVE "R4 shape offset of wither_rose at (1, 0): the shape moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "sulfur_spike" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 116667 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE -16667 TO WS-EXP-Z
+     MOVE "R4 shape offset of sulfur_spike at (1, 0): the shape moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "tall_grass" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of tall_grass: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "large_fern" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of large_fern: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "rose_bush" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of rose_bush: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "sunflower" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of sunflower: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "lilac" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of lilac: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "peony" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of peony: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "pitcher_plant" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of pitcher_plant: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "warped_roots" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of warped_roots: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "crimson_roots" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of crimson_roots: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "nether_sprouts" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of nether_sprouts: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "hanging_roots" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of hanging_roots: only the model moves" TO WS-CASE
+     PERFORM CHECK-OFS
+     MOVE "tall_seagrass" TO WS-KEY
+     MOVE SPACES TO WS-P1 WS-P2 WS-P3
+     MOVE 1 TO WS-OCX
+     MOVE 5 TO WS-OCY
+     MOVE 0 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of tall_seagrass: only the model moves" TO WS-CASE
      PERFORM CHECK-OFS
      MOVE "stone" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2 WS-P3
@@ -2198,11 +2398,16 @@
      MOVE 5 TO WS-OCX
      MOVE 64 TO WS-OCY
      MOVE 1 TO WS-OCZ
+     MOVE 0 TO WS-EXP-X
+     MOVE 0 TO WS-EXP-Y
+     MOVE 0 TO WS-EXP-Z
+     MOVE "R4 shape offset of tall_dry_grass: the shape stays (the model moves)" TO WS-CASE
+     PERFORM CHECK-OFS
      MOVE -116667 TO WS-EXP-X
      MOVE -133333 TO WS-EXP-Y
      MOVE 16667 TO WS-EXP-Z
-     MOVE "T4506 offset of tall_dry_grass at (5, 1)" TO WS-CASE
-     PERFORM CHECK-OFS
+     MOVE "T4506 model offset of tall_dry_grass at (5, 1)" TO WS-CASE
+     PERFORM CHECK-MOFS
      MOVE "poppy" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2 WS-P3
      MOVE -3 TO WS-OCX
@@ -2221,93 +2426,7 @@
      MOVE "T4506 offset of a state past the table is none" TO WS-CASE
      PERFORM CHECK-OFS-STATE
 *>   Play2 defect 3: the workstation and container shapes of 51 section 3.5 (hopper, cauldron, composter, grindstone, bell, scaffolding, piston head,
-*>   wall skulls, joined chests, beds, lectern). The cauldron's four corner legs are four 4 x 4 pillars (the L-shaped 2-pixel notch is not kept).
-     MOVE "hopper" TO WS-KEY
-     MOVE SPACES TO WS-P1 WS-P2 WS-P3
-     MOVE "facing=north" TO WS-P1
-     MOVE "play2 shape: hopper facing=north coll (collision)" TO WS-CASE
-     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;6000,4000,0,10000,8000,8000" TO WS-EXPECT
-     PERFORM CHECK-COLL
-     MOVE "hopper" TO WS-KEY
-     MOVE SPACES TO WS-P1 WS-P2 WS-P3
-     MOVE "facing=north" TO WS-P1
-     MOVE "play2 shape: hopper facing=north out (outline)" TO WS-CASE
-     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;6000,4000,0,10000,8000,8000" TO WS-EXPECT
-     PERFORM CHECK-OUT
-     MOVE "hopper" TO WS-KEY
-     MOVE SPACES TO WS-P1 WS-P2 WS-P3
-     MOVE "facing=east" TO WS-P1
-     MOVE "play2 shape: hopper facing=east coll (collision)" TO WS-CASE
-     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;8000,4000,6000,16000,8000,10000" TO WS-EXPECT
-     PERFORM CHECK-COLL
-     MOVE "hopper" TO WS-KEY
-     MOVE SPACES TO WS-P1 WS-P2 WS-P3
-     MOVE "facing=east" TO WS-P1
-     MOVE "play2 shape: hopper facing=east out (outline)" TO WS-CASE
-     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;8000,4000,6000,16000,8000,10000" TO WS-EXPECT
-     PERFORM CHECK-OUT
-     MOVE "hopper" TO WS-KEY
-     MOVE SPACES TO WS-P1 WS-P2 WS-P3
-     MOVE "facing=south" TO WS-P1
-     MOVE "play2 shape: hopper facing=south coll (collision)" TO WS-CASE
-     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;6000,4000,8000,10000,8000,16000" TO WS-EXPECT
-     PERFORM CHECK-COLL
-     MOVE "hopper" TO WS-KEY
-     MOVE SPACES TO WS-P1 WS-P2 WS-P3
-     MOVE "facing=south" TO WS-P1
-     MOVE "play2 shape: hopper facing=south out (outline)" TO WS-CASE
-     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;6000,4000,8000,10000,8000,16000" TO WS-EXPECT
-     PERFORM CHECK-OUT
-     MOVE "hopper" TO WS-KEY
-     MOVE SPACES TO WS-P1 WS-P2 WS-P3
-     MOVE "facing=west" TO WS-P1
-     MOVE "play2 shape: hopper facing=west coll (collision)" TO WS-CASE
-     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;0,4000,6000,8000,8000,10000" TO WS-EXPECT
-     PERFORM CHECK-COLL
-     MOVE "hopper" TO WS-KEY
-     MOVE SPACES TO WS-P1 WS-P2 WS-P3
-     MOVE "facing=west" TO WS-P1
-     MOVE "play2 shape: hopper facing=west out (outline)" TO WS-CASE
-     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;0,4000,6000,8000,8000,10000" TO WS-EXPECT
-     PERFORM CHECK-OUT
-     MOVE "hopper" TO WS-KEY
-     MOVE SPACES TO WS-P1 WS-P2 WS-P3
-     MOVE "facing=down" TO WS-P1
-     MOVE "play2 shape: hopper facing=down coll (collision)" TO WS-CASE
-     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;6000,0,6000,10000,6000,10000" TO WS-EXPECT
-     PERFORM CHECK-COLL
-     MOVE "hopper" TO WS-KEY
-     MOVE SPACES TO WS-P1 WS-P2 WS-P3
-     MOVE "facing=down" TO WS-P1
-     MOVE "play2 shape: hopper facing=down out (outline)" TO WS-CASE
-     MOVE "0,10000,0,16000,16000,2000;0,10000,14000,16000,16000,16000;0" & ",10000,2000,2000,16000,14000;14000,10000,2000,16000,16000,14" & "000;2000,10000,2000,14000,11000,14000;4000,4000,4000,12000,1" & "0000,12000;6000,0,6000,10000,6000,10000" TO WS-EXPECT
-     PERFORM CHECK-OUT
-     MOVE "cauldron" TO WS-KEY
-     MOVE SPACES TO WS-P1 WS-P2 WS-P3
-     MOVE "play2 shape: cauldron collision" TO WS-CASE
-     MOVE "0,0,0,4000,3000,4000;12000,0,0,16000,3000,4000;0,0,12000,400" & "0,3000,16000;12000,0,12000,16000,3000,16000;0,3000,0,16000,4" & "000,16000;0,4000,0,16000,16000,2000;0,4000,14000,16000,16000" & ",16000;0,4000,2000,2000,16000,14000;14000,4000,2000,16000,16" & "000,14000" TO WS-EXPECT
-     PERFORM CHECK-COLL
-     MOVE "cauldron" TO WS-KEY
-     MOVE SPACES TO WS-P1 WS-P2 WS-P3
-     MOVE "play2 shape: cauldron outline" TO WS-CASE
-     MOVE "0,0,0,4000,3000,4000;12000,0,0,16000,3000,4000;0,0,12000,400" & "0,3000,16000;12000,0,12000,16000,3000,16000;0,3000,0,16000,4" & "000,16000;0,4000,0,16000,16000,2000;0,4000,14000,16000,16000" & ",16000;0,4000,2000,2000,16000,14000;14000,4000,2000,16000,16" & "000,14000" TO WS-EXPECT
-     PERFORM CHECK-OUT
-     MOVE "lava_cauldron" TO WS-KEY
-     MOVE SPACES TO WS-P1 WS-P2 WS-P3
-     MOVE "play2 shape: lava_cauldron collision" TO WS-CASE
-     MOVE "0,0,0,4000,3000,4000;12000,0,0,16000,3000,4000;0,0,12000,400" & "0,3000,16000;12000,0,12000,16000,3000,16000;0,3000,0,16000,4" & "000,16000;0,4000,0,16000,16000,2000;0,4000,14000,16000,16000" & ",16000;0,4000,2000,2000,16000,14000;14000,4000,2000,16000,16" & "000,14000" TO WS-EXPECT
-     PERFORM CHECK-COLL
-     MOVE "lava_cauldron" TO WS-KEY
-     MOVE SPACES TO WS-P1 WS-P2 WS-P3
-     MOVE "play2 shape: lava_cauldron outline" TO WS-CASE
-     MOVE "0,0,0,4000,3000,4000;12000,0,0,16000,3000,4000;0,0,12000,400" & "0,3000,16000;12000,0,12000,16000,3000,16000;0,3000,0,16000,4" & "000,16000;0,4000,0,16000,16000,2000;0,4000,14000,16000,16000" & ",16000;0,4000,2000,2000,16000,14000;14000,4000,2000,16000,16" & "000,14000" TO WS-EXPECT
-     PERFORM CHECK-OUT
-     MOVE "water_cauldron" TO WS-KEY
-     MOVE SPACES TO WS-P1 WS-P2 WS-P3
-     MOVE "level=2" TO WS-P1
-     MOVE "play2 shape: water_cauldron level=2 collision" TO WS-CASE
-     MOVE "0,0,0,4000,3000,4000;12000,0,0,16000,3000,4000;0,0,12000,400" & "0,3000,16000;12000,0,12000,16000,3000,16000;0,3000,0,16000,4" & "000,16000;0,4000,0,16000,16000,2000;0,4000,14000,16000,16000" & ",16000;0,4000,2000,2000,16000,14000;14000,4000,2000,16000,16" & "000,14000" TO WS-EXPECT
-     PERFORM CHECK-COLL
+*>   wall skulls, joined chests, beds, lectern). The hopper and the cauldrons (L-shaped legs, 51 section 3.8.1 and 3.8.2) are checked against the model of the doc in test_block_shapes_r4.
      MOVE "composter" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2 WS-P3
      MOVE "level=0" TO WS-P1
@@ -2417,8 +2536,8 @@
      MOVE "scaffolding" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2 WS-P3
      MOVE "bottom=false" TO WS-P1
-     MOVE "play2 shape: scaffolding has no collision" TO WS-CASE
-     MOVE "-" TO WS-EXPECT
+     MOVE "play2 shape: scaffolding table collision is the stable shape" TO WS-CASE
+     MOVE "0,14000,0,16000,16000,16000;0,0,0,2000,16000,2000;14000,0,0,16000,16000,2000;14000,0,14000,16000,16000,16000;0,0,14000,2000,16000,16000" TO WS-EXPECT
      PERFORM CHECK-COLL
      MOVE "scaffolding" TO WS-KEY
      MOVE SPACES TO WS-P1 WS-P2 WS-P3
@@ -2627,6 +2746,20 @@
  CHECK-OFS.
      PERFORM FIND-STATE
      PERFORM CHECK-OFS-STATE.
+
+ CHECK-MOFS.
+     PERFORM FIND-STATE
+     CALL "BSH-MODEL-OFFSET" USING WS-STATE WS-OCX WS-OCY WS-OCZ WS-OX WS-OY WS-OZ
+     MOVE WS-EXP-X TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OX * 1000000
+     MOVE WS-CASE TO TL-CASE
+     PERFORM ASSERT-N
+     MOVE WS-EXP-Y TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OY * 1000000
+     PERFORM ASSERT-N
+     MOVE WS-EXP-Z TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-OZ * 1000000
+     PERFORM ASSERT-N.
 
  CHECK-OFS-STATE.
      CALL "BSH-OFFSET" USING WS-STATE WS-OCX WS-OCY WS-OCZ WS-OX WS-OY WS-OZ

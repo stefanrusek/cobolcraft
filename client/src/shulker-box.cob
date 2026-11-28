@@ -482,3 +482,31 @@
      END-PERFORM
      GOBACK.
  END PROGRAM SHULKER-MESH.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. SHULKER-SHAPE.
+*> USING CLIENT-STATE, x, y, z, state id, shape id (in and out): when the cell holds a shulker box that the client keeps (SB-BOX), the shape is the box of its lid for the
+*> collision and the outline (51 section 3.8.8: BSH-SHULKER of the box's facing and tenths SB-T, the current tick's progress); any other cell keeps the shape it had (a
+*> shulker box without a block entity is a full cube).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-I                   BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-SHAPE                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z L-STATE L-SHAPE.
+     IF SB-READY = 1 AND SB-COUNT > 0 AND L-STATE > 0 AND L-STATE < ST-COUNT
+         IF SB-IS(ST-BLOCK(L-STATE + 1) + 1) = 1
+             PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 64
+                 IF SB-USED(WS-I) = 1 AND SB-X(WS-I) = L-X AND SB-Y(WS-I) = L-Y AND SB-Z(WS-I) = L-Z
+                     CALL "BSH-SHULKER" USING SB-FACE(WS-I) SB-T(WS-I) L-SHAPE
+                 END-IF
+             END-PERFORM
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM SHULKER-SHAPE.

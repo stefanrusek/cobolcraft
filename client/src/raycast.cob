@@ -53,6 +53,7 @@
  01 WS-FAR                 FLOAT-LONG.
  01 WS-BEST                FLOAT-LONG.
  01 WS-SHAPE               BINARY-LONG.
+ 01 WS-ISHAPE              BINARY-LONG.
  01 WS-ATTACK              BINARY-LONG.
  01 WS-BOX-HALF            FLOAT-LONG.
  01 WS-BOX-HEIGHT          FLOAT-LONG.
@@ -144,17 +145,9 @@
              END-IF
          END-IF
          IF WS-SEEN NOT = 0
-             CALL "BSH-OUT-ID" USING WS-STATE WS-SHAPE
-*>           The light block is targeted as a full cube while the main hand holds a light item (51 section 1.5, rule R-A5); else it has no outline.
-             IF WS-STATE < BSH-MAX-STATES AND (WS-SHAPE = 0 OR BSH-N(WS-SHAPE + 1) = 0)
-                 IF BSH-CTX(WS-STATE + 1) = 1 AND PL-SLOT-COUNT(PL-HELD + 1) > 0
-                     MOVE PL-SLOT-ITEM(PL-HELD + 1) TO WS-HELD-ITEM
-                     CALL "CL-ITEM-INFO" USING CLIENT-STATE WS-HELD-ITEM WS-HNS WS-HPATH WS-HMAX WS-HBLK WS-HTOOL WS-HFOOD WS-HKNOWN
-                     IF WS-HKNOWN = 1 AND WS-HPATH = "light"
-                         MOVE 1 TO WS-SHAPE
-                     END-IF
-                 END-IF
-             END-IF
+*>           The outline of the cell for the camera entity's context (51 section 1.8.3 item 5): the light block with a light item and scaffolding with a scaffolding item
+*>           in the hand are full cubes.
+             CALL "TARGET-OUTLINE" USING CLIENT-STATE WS-CX WS-CY WS-CZ WS-STATE WS-SHAPE
              EVALUATE TRUE
                  WHEN WS-SHAPE = 0
                      MOVE 0 TO WS-SEEN
@@ -172,6 +165,17 @@
                          MOVE WS-RAX TO WS-HAX
                      END-IF
              END-EVALUATE
+         END-IF
+*>       The interaction shape of the block (51 section 1.8.3 item 3): when its entry is nearer than the outline hit, the hit keeps its point and takes the face of the
+*>       interaction shape's entry (the cauldrons, composter, hopper and scaffolding).
+         IF WS-SEEN NOT = 0 AND WS-STATE > 0 AND WS-STATE < BSH-MAX-STATES
+             IF BSH-INT(WS-STATE + 1) > 0
+                 MOVE BSH-INT(WS-STATE + 1) TO WS-ISHAPE
+                 CALL "BSH-RAY" USING WS-ISHAPE WS-CX WS-CY WS-CZ WS-RORG WS-RDIR WS-RT WS-RAX
+                 IF WS-RT >= 0 AND WS-RT < WS-HT - 0.000000001
+                     MOVE WS-RAX TO WS-HAX
+                 END-IF
+             END-IF
          END-IF
          IF WS-SEEN NOT = 0
              MOVE 1 TO TG-HIT
@@ -238,3 +242,44 @@
      END-PERFORM
      GOBACK.
  END PROGRAM RAYCAST.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TARGET-OUTLINE.
+*> USING CLIENT-STATE, cell x, y, z, state id, shape id out: the outline shape of the state for the local player's collision context (51 section 1.8.3 item 5, rules R-A5 and R-C20): the table's
+*> outline, except that the light block (BSH-CTX 1) is a full cube while the main hand holds a light item and scaffolding (BSH-CTX 2 to 4) while it holds a scaffolding item;
+*> a shulker box is the box of its lid (SHULKER-SHAPE).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ 01 WS-HELD-ITEM           BINARY-LONG.
+ 01 WS-HNS                 PIC X(16).
+ 01 WS-HPATH               PIC X(40).
+ 01 WS-HMAX                BINARY-LONG.
+ 01 WS-HBLK                BINARY-LONG.
+ 01 WS-HTOOL               PIC X.
+ 01 WS-HFOOD               BINARY-LONG.
+ 01 WS-HKNOWN              BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-SHAPE                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-X L-Y L-Z L-STATE L-SHAPE.
+     CALL "BSH-OUT-ID" USING L-STATE L-SHAPE
+     CALL "SHULKER-SHAPE" USING CLIENT-STATE L-X L-Y L-Z L-STATE L-SHAPE
+     IF L-STATE > 0 AND L-STATE < BSH-MAX-STATES
+         IF BSH-CTX(L-STATE + 1) > 0 AND PL-SLOT-COUNT(PL-HELD + 1) > 0
+             MOVE PL-SLOT-ITEM(PL-HELD + 1) TO WS-HELD-ITEM
+             CALL "CL-ITEM-INFO" USING CLIENT-STATE WS-HELD-ITEM WS-HNS WS-HPATH WS-HMAX WS-HBLK WS-HTOOL WS-HFOOD WS-HKNOWN
+             IF WS-HKNOWN = 1 AND WS-HPATH = "light" AND BSH-CTX(L-STATE + 1) = 1
+                 MOVE 1 TO L-SHAPE
+             END-IF
+             IF WS-HKNOWN = 1 AND WS-HPATH = "scaffolding" AND BSH-CTX(L-STATE + 1) >= 2
+                 MOVE 1 TO L-SHAPE
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM TARGET-OUTLINE.

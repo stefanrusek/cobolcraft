@@ -1680,7 +1680,7 @@ The final colour of a texel is texture × tint × this brightness × the light-m
 7. **Third-person arm animation.** The `stab` swing and the last statements of the `whack` branch of `setupAttackAnimation`; swimming, elytra and crawling poses; the cape, elytra and armour layers; the skin-parts bits other than the listed layers (7.5, 7.6).
 8. **Biome colour tinting** (grass, foliage, water, the `tintindex` sources for blocks, and the `biomeBlendRadius` averaging) is not covered here; 08 has the item tint sources.
 9. **Camera and field of view.** The default of the `camera_distance` attribute for the player (4.0 inferred) and the player's field-of-view modifier (`AbstractClientPlayer.getFieldOfViewModifier`, 6.9) were not read. Given in 6.9: the near plane (0.05), the far plane, the death and fluid modification, and the fixed 70° hand field of view.
-10. **Option defaults read indirectly.** `cloudRange` default 128, `textureFiltering` default RGSS and `maxAnisotropyBit` default 2 (value 2^bit) were taken from the order of constructor arguments, not from named constants (2.1, 3.6).
+10. **Option defaults read indirectly.** `textureFiltering` default RGSS and `maxAnisotropyBit` default 2 (value 2^bit) were taken from the order of constructor arguments, not from named constants (2.1). The `cloudRange` part is answered: `IntRange(2, 128)`, default 128 (3.7f).
 11. **Default values of** `chunkSectionFadeInTime`, the glint strength and glint speed options, and the `UiLightmap` values used for GUI items.
 12. **Text colour with alpha 0.** How `Font` treats a text colour whose alpha is 0 (5.10).
 13. Closed. Italic shear: top edge 1 − 0.25 × up, bottom edge 1 − 0.25 × down (5.10; 52-block-entity-models-2-signs §6.5).

@@ -223,6 +223,7 @@
  WORKING-STORAGE SECTION.
  COPY CITEMS.
  COPY CONTENT.
+ COPY CTBSHAPE.
  COPY VILDOOR.
  01 WS-OPEN                BINARY-LONG.
  01 WS-HALF                FLOAT-LONG.
@@ -241,6 +242,7 @@
  01 WS-STATE               BINARY-LONG.
  01 WS-SHAPE               BINARY-LONG.
  01 WS-CELL-TOP            FLOAT-LONG.
+ 01 WS-NO-DESC             BINARY-LONG VALUE 0.
  01 WS-BOX.
     05 WS-B                FLOAT-LONG OCCURS 6 TIMES.
  01 WS-SBOX.
@@ -280,6 +282,12 @@
          PERFORM VARYING WS-BZ FROM WS-Z0 BY 1 UNTIL WS-BZ > WS-Z1
              PERFORM VARYING WS-BX FROM WS-X0 BY 1 UNTIL WS-BX > WS-X1
                  CALL "GI-SOLID-CELL" USING L-DIM WS-BX WS-BY WS-BZ WS-SOLID
+*>               Scaffolding (BSH-CTX 2 to 4) is not a solid block but collides by the entity (51 section 3.8.5): its cell is looked at like a solid one.
+                 IF WS-SOLID = 0 AND CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT AND VD-LAST-STATE > 0 AND VD-LAST-STATE < BSH-MAX-STATES
+                     IF BSH-CTX(VD-LAST-STATE + 1) >= 2
+                         MOVE 1 TO WS-SOLID
+                     END-IF
+                 END-IF
                  IF WS-SOLID = 1
                      CALL "VL-DOOR-STATE-OPEN" USING VD-LAST-STATE WS-OPEN
                      IF WS-OPEN = 1
@@ -292,7 +300,14 @@
                      IF CT-SET-TYPE NOT = CT-TYPE-COBOLCRAFT
                          CALL "WORLD-GET-BLOCK" USING L-DIM WS-BX WS-BY WS-BZ WS-STATE
                          IF WS-STATE NOT = 0
-                             CALL "BSH-COLL-ID" USING WS-STATE WS-SHAPE
+*>                           Scaffolding answers by the entity: its feet are the box bottom, it does not sneak (51 section 3.8.5).
+                             CALL "BSH-SCAFFOLD-COLL" USING WS-STATE WS-BY L-Y WS-NO-DESC WS-SHAPE
+*>                           Scaffolding that has no shape for this entity (below its top, the cell unstable and the box over the plate) is no collider.
+                             IF WS-SHAPE = 0 AND WS-STATE < BSH-MAX-STATES
+                                 IF BSH-CTX(WS-STATE + 1) >= 2
+                                     MOVE -1000000 TO WS-CELL-TOP
+                                 END-IF
+                             END-IF
                              IF WS-SHAPE > 1
 *>                               The shape of an offset block is moved by its model offset (51 section 1.4): the box moves the other way (lane p70).
                                  CALL "BSH-OFFSET" USING WS-STATE WS-BX WS-BY WS-BZ WS-OX WS-OY WS-OZ

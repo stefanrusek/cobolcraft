@@ -38,8 +38,8 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-ADD-BOXES.
-*> USING box list text (PIC X(160): "x1 y1 z1 x2 y2 z2" items separated by ","; pixels, decimals allowed), key (BINARY-LONG 0 to 3: the
-*> yaw, 51 section 2.1; 4 up and 5 down, 51 section 2.2), mirror (BINARY-LONG 1: y becomes 16 - y first): appends the boxes, turned, to BSC-SHAPE (at most 12).
+*> USING box list text (PIC X(240): "x1 y1 z1 x2 y2 z2" items separated by ","; pixels, decimals allowed), key (BINARY-LONG 0 to 3: the
+*> yaw, 51 section 2.1; 4 up and 5 down, 51 section 2.2), mirror (BINARY-LONG 1: y becomes 16 - y first): appends the boxes, turned, to BSC-SHAPE (at most BSH-MAX-BOXES, 16).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  COPY CTBSHAPE.
@@ -52,12 +52,12 @@
  01 WS-V                   BINARY-LONG OCCURS 6 TIMES.
  01 WS-N                   BINARY-LONG OCCURS 6 TIMES.
  LINKAGE SECTION.
- 01 L-TEXT                 PIC X(160).
+ 01 L-TEXT                 PIC X(240).
  01 L-KEY                  BINARY-LONG.
  01 L-MIRROR               BINARY-LONG.
  PROCEDURE DIVISION USING L-TEXT L-KEY L-MIRROR.
      MOVE 1 TO WS-POINTER
-     PERFORM UNTIL WS-POINTER > 160
+     PERFORM UNTIL WS-POINTER > 240
          MOVE SPACES TO WS-ITEM
          UNSTRING L-TEXT DELIMITED BY "," INTO WS-ITEM WITH POINTER WS-POINTER
          IF WS-ITEM NOT = SPACES
@@ -310,8 +310,8 @@
  01 WS-MIRROR              BINARY-LONG.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-NO-MIRROR           BINARY-LONG VALUE 0.
- 01 WS-POST                PIC X(160).
- 01 WS-ARM                 PIC X(160).
+ 01 WS-POST                PIC X(240).
+ 01 WS-ARM                 PIC X(240).
  01 WS-SIDES.
     05 FILLER              PIC X(24) VALUE "north".
     05 FILLER              PIC X(24) VALUE "east".
@@ -329,25 +329,25 @@
  01 WS-FACE-TABLE REDEFINES WS-FACES.
     05 WS-FACE-NAME        PIC X(24) OCCURS 6 TIMES.
  01 WS-FACE-BOXES.
-    05 FILLER              PIC X(160) VALUE "0 0 0 16 16 1".
-    05 FILLER              PIC X(160) VALUE "15 0 0 16 16 16".
-    05 FILLER              PIC X(160) VALUE "0 0 15 16 16 16".
-    05 FILLER              PIC X(160) VALUE "0 0 0 1 16 16".
-    05 FILLER              PIC X(160) VALUE "0 15 0 16 16 16".
-    05 FILLER              PIC X(160) VALUE "0 0 0 16 1 16".
+    05 FILLER              PIC X(240) VALUE "0 0 0 16 16 1".
+    05 FILLER              PIC X(240) VALUE "15 0 0 16 16 16".
+    05 FILLER              PIC X(240) VALUE "0 0 15 16 16 16".
+    05 FILLER              PIC X(240) VALUE "0 0 0 1 16 16".
+    05 FILLER              PIC X(240) VALUE "0 15 0 16 16 16".
+    05 FILLER              PIC X(240) VALUE "0 0 0 16 1 16".
  01 WS-FACE-BOX-TABLE REDEFINES WS-FACE-BOXES.
-    05 WS-FACE-BOX         PIC X(160) OCCURS 6 TIMES.
+    05 WS-FACE-BOX         PIC X(240) OCCURS 6 TIMES.
  01 WS-CHORUS-ARMS.
-    05 FILLER              PIC X(160) VALUE "3 3 0 13 13 8".
-    05 FILLER              PIC X(160) VALUE "8 3 3 16 13 13".
-    05 FILLER              PIC X(160) VALUE "3 3 8 13 13 16".
-    05 FILLER              PIC X(160) VALUE "0 3 3 8 13 13".
-    05 FILLER              PIC X(160) VALUE "3 8 3 13 16 13".
-    05 FILLER              PIC X(160) VALUE "3 0 3 13 8 13".
+    05 FILLER              PIC X(240) VALUE "3 3 0 13 13 8".
+    05 FILLER              PIC X(240) VALUE "8 3 3 16 13 13".
+    05 FILLER              PIC X(240) VALUE "3 3 8 13 13 16".
+    05 FILLER              PIC X(240) VALUE "0 3 3 8 13 13".
+    05 FILLER              PIC X(240) VALUE "3 8 3 13 16 13".
+    05 FILLER              PIC X(240) VALUE "3 0 3 13 8 13".
  01 WS-CHORUS-TABLE REDEFINES WS-CHORUS-ARMS.
-    05 WS-CHORUS-ARM       PIC X(160) OCCURS 6 TIMES.
+    05 WS-CHORUS-ARM       PIC X(240) OCCURS 6 TIMES.
  01 WS-NAME                PIC X(24).
- 01 WS-TEXT                PIC X(160).
+ 01 WS-TEXT                PIC X(240).
  LINKAGE SECTION.
  01 L-WHICH                BINARY-LONG.
  01 L-CODE                 PIC X(24).
@@ -573,14 +573,14 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-ADD-TEXT.
-*> USING rule text (PIC X(160): N none, F the full cube, else a box list), key (BINARY-LONG 0 to 3): appends the boxes, turned by the key.
+*> USING rule text (PIC X(240): N none, F the full cube, else a box list), key (BINARY-LONG 0 to 3): appends the boxes, turned by the key.
  DATA DIVISION.
  WORKING-STORAGE SECTION.
  01 WS-ZERO                BINARY-LONG VALUE 0.
  01 WS-NO-MIRROR           BINARY-LONG VALUE 0.
- 01 WS-FULL                PIC X(160) VALUE "0 0 0 16 16 16".
+ 01 WS-FULL                PIC X(240) VALUE "0 0 0 16 16 16".
  LINKAGE SECTION.
- 01 L-TEXT                 PIC X(160).
+ 01 L-TEXT                 PIC X(240).
  01 L-KEY                  BINARY-LONG.
  PROCEDURE DIVISION USING L-TEXT L-KEY.
      EVALUATE L-TEXT
@@ -602,16 +602,16 @@
  WORKING-STORAGE SECTION.
  COPY CTBSHAPE.
  COPY CTBSRULE.
- 01 WS-TEXT                PIC X(160).
+ 01 WS-TEXT                PIC X(240).
  01 WS-KEY                 BINARY-LONG.
  01 WS-NAME                PIC X(24).
  01 WS-VALUE               PIC X(16).
  01 WS-A-TEXT              PIC X(12).
  01 WS-B-TEXT              PIC X(12).
  01 WS-HEIGHT              BINARY-LONG.
- 01 WS-WALL                PIC X(160).
- 01 WS-FLOOR               PIC X(160).
- 01 WS-CEILING             PIC X(160).
+ 01 WS-WALL                PIC X(240).
+ 01 WS-FLOOR               PIC X(240).
+ 01 WS-CEILING             PIC X(240).
  01 WS-FACE                PIC X(16).
  LINKAGE SECTION.
  01 L-WHICH                BINARY-LONG.
@@ -688,6 +688,254 @@
  END PROGRAM BSH-COMPOSE.
 
  IDENTIFICATION DIVISION.
+ PROGRAM-ID. BSH-INTERACTION.
+*> USING block class (PIC X(32)), shape id out: the interaction shape of the current state (51 section 1.8.1; the properties of the block are split and the state's values picked):
+*> the cauldrons the inside (2,4,2,14,16,14), the composter and scaffolding the full cube, the hopper its cavity (2,11,2,14,16,14) and, for a horizontal facing, the stub
+*> (6,8,0,10,10,4) authored for north and turned by the facing (3.8.1); any other class the empty shape (0). It only refines the face of a targeting hit (1.8.3 item 3).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ 01 WS-TEXT                PIC X(240).
+ 01 WS-NAME                PIC X(24).
+ 01 WS-VALUE               PIC X(16).
+ 01 WS-KEY                 BINARY-LONG.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ LINKAGE SECTION.
+ 01 L-CLASS                PIC X(32).
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-CLASS L-ID.
+     MOVE 0 TO L-ID
+     INITIALIZE BSC-SHAPE
+     EVALUATE L-CLASS
+         WHEN "CauldronBlock" WHEN "LavaCauldronBlock" WHEN "LayeredCauldronBlock"
+             MOVE "2 4 2 14 16 14" TO WS-TEXT
+             CALL "BSH-ADD-TEXT" USING WS-TEXT WS-ZERO
+             CALL "BSH-INTERN" USING L-ID
+         WHEN "ComposterBlock" WHEN "ScaffoldingBlock"
+             MOVE "F" TO WS-TEXT
+             CALL "BSH-ADD-TEXT" USING WS-TEXT WS-ZERO
+             CALL "BSH-INTERN" USING L-ID
+         WHEN "HopperBlock"
+             MOVE "2 11 2 14 16 14" TO WS-TEXT
+             CALL "BSH-ADD-TEXT" USING WS-TEXT WS-ZERO
+             MOVE "facing" TO WS-NAME
+             CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+             IF WS-VALUE NOT = "down"
+                 CALL "BSH-KEY-OF" USING WS-VALUE WS-KEY
+                 MOVE "6 8 0 10 10 4" TO WS-TEXT
+                 CALL "BSH-ADD-TEXT" USING WS-TEXT WS-KEY
+             END-IF
+             CALL "BSH-INTERN" USING L-ID
+     END-EVALUATE
+     GOBACK.
+ END PROGRAM BSH-INTERACTION.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BSH-SHULKER.
+*> USING direction (BINARY-LONG, the Direction order of 05c: 0 down, 1 up, 2 north, 3 south, 4 west, 5 east), lid progress in tenths (BINARY-LONG 0 to 10), shape id out: the
+*> collision and outline shape of a shulker box with a block entity (51 section 3.8.8): the unit cube extended along the facing by q = 8 x progress pixels (the full cube
+*> when the lid is closed). The shape is stored when no equal one is, so a box takes 66 shapes at most.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ 01 WS-Q                   BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-DIRECTION            BINARY-LONG.
+ 01 L-TENTHS               BINARY-LONG.
+ 01 L-ID                   BINARY-LONG.
+ PROCEDURE DIVISION USING L-DIRECTION L-TENTHS L-ID.
+     INITIALIZE BSC-SHAPE
+     MOVE 1 TO BSC-N
+     MOVE 16000 TO BSC-V(1, 4) BSC-V(1, 5) BSC-V(1, 6)
+     COMPUTE WS-Q = FUNCTION MIN(10, FUNCTION MAX(0, L-TENTHS)) * 800
+     EVALUATE L-DIRECTION
+         WHEN 0
+             COMPUTE BSC-V(1, 2) = 0 - WS-Q
+         WHEN 1
+             COMPUTE BSC-V(1, 5) = 16000 + WS-Q
+         WHEN 2
+             COMPUTE BSC-V(1, 3) = 0 - WS-Q
+         WHEN 3
+             COMPUTE BSC-V(1, 6) = 16000 + WS-Q
+         WHEN 4
+             COMPUTE BSC-V(1, 1) = 0 - WS-Q
+         WHEN OTHER
+             COMPUTE BSC-V(1, 4) = 16000 + WS-Q
+     END-EVALUATE
+     CALL "BSH-INTERN" USING L-ID
+     GOBACK.
+ END PROGRAM BSH-SHULKER.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BSH-LIGHT-DATA.
+*> USING block class (PIC X(32)), flags text (PIC X(160): " flag flag ... " the registry flags), outline shape id, collision shape id (BINARY-LONG), occlusion shape id out,
+*> dampening out, light flags out (BINARY-LONG: 1 canOcclude, 2 useShapeForLightOcclusion, 4 propagatesSkylightDown): the light data of the current state (the properties of
+*> the block are split and the state's values picked), 51 section 1.8.1 items 1 to 6 and 32 section 7. canOcclude is false for a block flagged noOcclusion or noCollision; the
+*> occlusion shape is then empty, else the outline evaluated with the empty context (the lectern's and the sculk shrieker's own is the collision shape); propagatesSkylightDown
+*> is the default (the outline is not the full cube and the fluid is empty) with the class overrides of 32 section 7 that the registry classes name; the dampening is 15 for a
+*> full-cube occlusion shape, else 0 when skylight propagates, else 1 (leaves 1, tinted glass 15); useShapeForLightOcclusion by the class list of 32 section 7.
+*> Not covered: the fence and fence gate occlusion shapes (their arms are 2 wide), the classes of 32 section 7 that the registry names by another class.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-NAME                PIC X(24).
+ 01 WS-VALUE               PIC X(16).
+ 01 WS-HITS                BINARY-LONG.
+ 01 WS-CAN                 BINARY-LONG.
+ 01 WS-USE                 BINARY-LONG.
+ 01 WS-PROP                BINARY-LONG.
+ 01 WS-FLUID               BINARY-LONG.
+ 01 WS-DAMP                BINARY-LONG.
+ 01 WS-OCC                 BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-CLASS                PIC X(32).
+ 01 L-FLAGS                PIC X(160).
+ 01 L-OUT                  BINARY-LONG.
+ 01 L-COLL                 BINARY-LONG.
+ 01 L-OCC                  BINARY-LONG.
+ 01 L-DAMP                 BINARY-LONG.
+ 01 L-LFLG                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-CLASS L-FLAGS L-OUT L-COLL L-OCC L-DAMP L-LFLG.
+     MOVE 1 TO WS-CAN
+     MOVE 0 TO WS-HITS
+     INSPECT L-FLAGS TALLYING WS-HITS FOR ALL "noOcclusion" ALL "noCollision"
+     IF WS-HITS > 0
+         MOVE 0 TO WS-CAN
+     END-IF
+     MOVE L-OUT TO WS-OCC
+     EVALUATE L-CLASS
+         WHEN "LecternBlock" WHEN "SculkShriekerBlock"
+             MOVE L-COLL TO WS-OCC
+     END-EVALUATE
+     IF WS-CAN = 0
+         MOVE 0 TO WS-OCC
+     END-IF
+*>   The fluid: a liquid block or a waterlogged state.
+     MOVE 0 TO WS-FLUID
+     MOVE 0 TO WS-HITS
+     INSPECT L-FLAGS TALLYING WS-HITS FOR ALL "liquid"
+     MOVE "waterlogged" TO WS-NAME
+     CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+     IF WS-HITS > 0 OR WS-VALUE = "true"
+         MOVE 1 TO WS-FLUID
+     END-IF
+*>   propagatesSkylightDown.
+     MOVE 0 TO WS-PROP
+     IF L-OUT NOT = 1 AND WS-FLUID = 0
+         MOVE 1 TO WS-PROP
+     END-IF
+     EVALUATE L-CLASS
+         WHEN "ShulkerBoxBlock" WHEN "LiquidBlock" WHEN "TintedGlassBlock" WHEN "PipeBlock"
+             MOVE 0 TO WS-PROP
+         WHEN "VineBlock" WHEN "MossyCarpetBlock" WHEN "HangingMossBlock" WHEN "BambooStalkBlock" WHEN "TransparentBlock"
+             MOVE 1 TO WS-PROP
+         WHEN "BarrierBlock" WHEN "GlowLichenBlock" WHEN "LightBlock"
+             COMPUTE WS-PROP = 1 - WS-FLUID
+         WHEN "WallBlock" WHEN "FenceBlock" WHEN "IronBarsBlock" WHEN "StainedGlassPaneBlock" WHEN "WeatheringCopperBarsBlock"
+             COMPUTE WS-PROP = 1 - WS-FLUID
+     END-EVALUATE
+*>   The dampening.
+     EVALUATE TRUE
+         WHEN L-CLASS = "TintedGlassBlock"
+             MOVE 15 TO WS-DAMP
+         WHEN L-CLASS = "LeavesBlock"
+             MOVE 1 TO WS-DAMP
+         WHEN WS-OCC = 1
+             MOVE 15 TO WS-DAMP
+         WHEN WS-PROP = 1
+             MOVE 0 TO WS-DAMP
+         WHEN OTHER
+             MOVE 1 TO WS-DAMP
+     END-EVALUATE
+*>   useShapeForLightOcclusion.
+     MOVE 0 TO WS-USE
+     EVALUATE L-CLASS
+         WHEN "StairBlock" WHEN "WeatheringCopperStairBlock" WHEN "SnowLayerBlock" WHEN "DaylightDetectorBlock" WHEN "EnchantingTableBlock"
+         WHEN "EndPortalFrameBlock" WHEN "FarmlandBlock" WHEN "LecternBlock" WHEN "PathBlock" WHEN "SculkSensorBlock"
+         WHEN "CalibratedSculkSensorBlock" WHEN "SculkShriekerBlock" WHEN "ShelfBlock" WHEN "StonecutterBlock" WHEN "PistonHeadBlock"
+             MOVE 1 TO WS-USE
+         WHEN "SlabBlock" WHEN "WeatheringCopperSlabBlock"
+             MOVE "type" TO WS-NAME
+             CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+             IF WS-VALUE NOT = "double"
+                 MOVE 1 TO WS-USE
+             END-IF
+         WHEN "PistonBaseBlock"
+             MOVE "extended" TO WS-NAME
+             CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+             IF WS-VALUE = "true"
+                 MOVE 1 TO WS-USE
+             END-IF
+     END-EVALUATE
+     MOVE WS-OCC TO L-OCC
+     MOVE WS-DAMP TO L-DAMP
+     COMPUTE L-LFLG = WS-CAN + 2 * WS-USE + 4 * WS-PROP
+     GOBACK.
+ END PROGRAM BSH-LIGHT-DATA.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BSH-FACE.
+*> USING shape id, direction (BINARY-LONG: 0 down, 1 up, 2 north, 3 south, 4 west, 5 east), face shape id out: the face shape of a shape on the side of the direction (51 section 1.8.1,
+*> getFaceShape): the cross-section of the shape at the plane 1e-7 block inside the cell on that side, projected on the face and stored flat on the face plane (the coordinate of
+*> the direction's axis is the plane at both ends). A box takes part when it reaches the plane (it starts at 0 or lower and ends above 0 for the low sides, it ends at 16 pixels or
+*> more and starts under 16 for the high sides); the empty shape has the empty face, the full cube the full square.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ 01 WS-AXIS                BINARY-LONG.
+ 01 WS-HIGH                BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-LO                  BINARY-LONG.
+ 01 WS-HI                  BINARY-LONG.
+ 01 WS-OK                  BINARY-LONG.
+ LINKAGE SECTION.
+ 01 L-SHAPE                BINARY-LONG.
+ 01 L-DIRECTION            BINARY-LONG.
+ 01 L-FACE                 BINARY-LONG.
+ PROCEDURE DIVISION USING L-SHAPE L-DIRECTION L-FACE.
+     EVALUATE L-DIRECTION
+         WHEN 0 WHEN 1
+             MOVE 2 TO WS-AXIS
+         WHEN 2 WHEN 3
+             MOVE 3 TO WS-AXIS
+         WHEN OTHER
+             MOVE 1 TO WS-AXIS
+     END-EVALUATE
+     MOVE 0 TO WS-HIGH
+     IF L-DIRECTION = 1 OR L-DIRECTION = 3 OR L-DIRECTION = 5
+         MOVE 1 TO WS-HIGH
+     END-IF
+     INITIALIZE BSC-SHAPE
+     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > BSH-N(L-SHAPE + 1)
+         MOVE BSH-V(L-SHAPE + 1, WS-I, WS-AXIS) TO WS-LO
+         MOVE BSH-V(L-SHAPE + 1, WS-I, WS-AXIS + 3) TO WS-HI
+         MOVE 0 TO WS-OK
+         IF WS-HIGH = 1
+             IF WS-HI >= 16000 AND WS-LO < 16000
+                 MOVE 1 TO WS-OK
+             END-IF
+         ELSE
+             IF WS-LO <= 0 AND WS-HI > 0
+                 MOVE 1 TO WS-OK
+             END-IF
+         END-IF
+         IF WS-OK = 1 AND BSC-N < BSH-MAX-BOXES
+             ADD 1 TO BSC-N
+             PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 6
+                 MOVE BSH-V(L-SHAPE + 1, WS-I, WS-K) TO BSC-V(BSC-N, WS-K)
+             END-PERFORM
+             IF WS-HIGH = 1
+                 MOVE 16000 TO BSC-V(BSC-N, WS-AXIS) BSC-V(BSC-N, WS-AXIS + 3)
+             ELSE
+                 MOVE 0 TO BSC-V(BSC-N, WS-AXIS) BSC-V(BSC-N, WS-AXIS + 3)
+             END-IF
+         END-IF
+     END-PERFORM
+     CALL "BSH-INTERN" USING L-FACE
+     GOBACK.
+ END PROGRAM BSH-FACE.
+
+ IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-RULES-LOAD.
 *> No parameters: splits the rows of CTBSDATA.cpy into the rule table BSR-R (classes, mode, property, value, collision, outline).
  DATA DIVISION.
@@ -724,6 +972,12 @@
  01 WS-LENGTH              BINARY-LONG.
  01 WS-KEY2                PIC X(40).
  01 WS-OFS                 BINARY-LONG.
+ 01 WS-SOFS                BINARY-LONG.
+ 01 WS-INT                 BINARY-LONG.
+ 01 WS-LHITS               BINARY-LONG.
+ 01 WS-OCCV                BINARY-LONG.
+ 01 WS-DAMPV               BINARY-LONG.
+ 01 WS-LFLG                BINARY-LONG.
  01 WS-OHITS               BINARY-LONG.
  01 WS-LENGTH2             BINARY-LONG.
  01 WS-COND1               PIC X(40).
@@ -767,6 +1021,7 @@
      END-PERFORM
      PERFORM VARYING WS-S FROM 1 BY 1 UNTIL WS-S > BSH-MAX-STATES
          MOVE 0 TO BSH-COLL(WS-S) BSH-OUT(WS-S) BSH-CLIMB(WS-S) BSH-SLIP(WS-S) BSH-OFS(WS-S) BSH-CTX(WS-S)
+         MOVE 0 TO BSH-SOFS(WS-S) BSH-INT(WS-S) BSH-OCC(WS-S) BSH-DAMP(WS-S) BSH-LFLG(WS-S)
      END-PERFORM
      INITIALIZE BSH-SHAPE(1) BSC-SHAPE
      MOVE 1 TO BSC-N
@@ -864,6 +1119,22 @@
              WHEN "small_dripleaf" WHEN "minecraft:small_dripleaf"
                  MOVE 4 TO WS-OFS
          END-EVALUATE
+*>       Only the shapes of the flower family, bamboo, the speleothems and the mangrove propagule move by the offset (51 section 1.4, R4); the
+*>       model of every other offset block moves alone.
+         MOVE 0 TO WS-SOFS
+         IF WS-OFS > 0
+             EVALUATE FUNCTION TRIM(CT-BR-CLASS)
+                 WHEN "FlowerBlock" WHEN "WitherRoseBlock" WHEN "EyeblossomBlock" WHEN "BambooStalkBlock" WHEN "BambooSaplingBlock"
+                 WHEN "MangrovePropaguleBlock" WHEN "PointedDripstoneBlock" WHEN "SulfurSpikeBlock"
+                     MOVE 1 TO WS-SOFS
+             END-EVALUATE
+         END-IF
+*>       The light data reads a few properties (waterlogged, type, extended) of every block that has them.
+         MOVE 0 TO WS-LHITS
+         INSPECT CT-BR-PROPS TALLYING WS-LHITS FOR ALL "waterlogged" ALL "type[" ALL "extended"
+         IF WS-LHITS > 0
+             MOVE 1 TO WS-NEEDS
+         END-IF
          IF WS-NEEDS = 1
              CALL "BSH-PROPS-SPLIT" USING CT-BR-PROPS
          END-IF
@@ -905,13 +1176,38 @@
              COMPUTE WS-S = WS-FIRST + WS-IDX + 1
              MOVE WS-COLL TO BSH-COLL(WS-S)
              MOVE WS-OUTV TO BSH-OUT(WS-S)
+             CALL "BSH-LIGHT-DATA" USING CT-BR-CLASS WS-FLAGS WS-OUTV WS-COLL WS-OCCV WS-DAMPV WS-LFLG
+             MOVE WS-OCCV TO BSH-OCC(WS-S)
+             MOVE WS-DAMPV TO BSH-DAMP(WS-S)
+             MOVE WS-LFLG TO BSH-LFLG(WS-S)
              IF WS-HITS > 0
                  MOVE 1 TO BSH-CLIMB(WS-S)
              END-IF
              MOVE WS-SLIPPERY TO BSH-SLIP(WS-S)
              MOVE WS-OFS TO BSH-OFS(WS-S)
+             MOVE WS-SOFS TO BSH-SOFS(WS-S)
              IF CT-BR-CLASS = "LightBlock"
                  MOVE 1 TO BSH-CTX(WS-S)
+             END-IF
+*>           Scaffolding (51 section 3.8.5): the context kind 2 is distance 0, 3 a distance other than 0 without bottom, 4 a distance other than 0 with bottom
+*>           (the plate rule): BSH-SCAFFOLD-COLL decides the collision by the entity, the table holds the stable shape of the empty context.
+             EVALUATE CT-BR-CLASS
+                 WHEN "CauldronBlock" WHEN "LavaCauldronBlock" WHEN "LayeredCauldronBlock" WHEN "ComposterBlock" WHEN "ScaffoldingBlock" WHEN "HopperBlock"
+                     CALL "BSH-INTERACTION" USING CT-BR-CLASS WS-INT
+                     MOVE WS-INT TO BSH-INT(WS-S)
+             END-EVALUATE
+             IF CT-BR-CLASS = "ScaffoldingBlock"
+                 MOVE "distance" TO WS-NAME
+                 CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+                 MOVE 2 TO BSH-CTX(WS-S)
+                 IF WS-VALUE NOT = "0"
+                     MOVE "bottom" TO WS-NAME
+                     CALL "BSH-PROP-VALUE" USING WS-NAME WS-VALUE
+                     MOVE 3 TO BSH-CTX(WS-S)
+                     IF WS-VALUE = "true"
+                         MOVE 4 TO BSH-CTX(WS-S)
+                     END-IF
+                 END-IF
              END-IF
          END-PERFORM
      END-PERFORM
@@ -982,6 +1278,46 @@
      END-EVALUATE
      GOBACK.
  END PROGRAM BSH-OUT-ID.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BSH-SCAFFOLD-COLL.
+*> USING state id, cell y (BINARY-LONG), entity bottom (FLOAT-LONG: the entity's y when its collision context was built), descending (BINARY-LONG 1 when the
+*> entity sneaks), shape id out: the collision shape of the state for that entity (51 section 3.8.5, rule R-C20). A scaffolding state: first match of (1) the entity is
+*> above the full cube of the cell (bottom > cell y + 1 - 9.999999747378752E-6) and not descending: the stable shape (the table's collision); (2) the state has a distance other
+*> than 0 and bottom set (BSH-CTX 4) and the entity is above the cell one lower (bottom > cell y - 9.999999747378752E-6): the plate (0,0,0,16,2,16); (3) nothing. Any other block
+*> answers its table collision. The two floats are compared as integers in nanoblocks (two FLOAT-LONG items compare with a relative tolerance).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ 01 WS-BOTTOM              BINARY-DOUBLE.
+ 01 WS-TOP                 BINARY-DOUBLE.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-CELL-Y               BINARY-LONG.
+ 01 L-BOTTOM               FLOAT-LONG.
+ 01 L-DESC                 BINARY-LONG.
+ 01 L-SHAPE                BINARY-LONG.
+ PROCEDURE DIVISION USING L-STATE L-CELL-Y L-BOTTOM L-DESC L-SHAPE.
+     CALL "BSH-COLL-ID" USING L-STATE L-SHAPE
+     IF L-STATE > 0 AND L-STATE < BSH-MAX-STATES
+         IF BSH-CTX(L-STATE + 1) >= 2
+             COMPUTE WS-BOTTOM ROUNDED = L-BOTTOM * 1000000000
+             COMPUTE WS-TOP ROUNDED = (L-CELL-Y + 1) * 1000000000 - 9999.999747378752
+             IF NOT (WS-BOTTOM > WS-TOP AND L-DESC = 0)
+                 MOVE 0 TO L-SHAPE
+                 COMPUTE WS-TOP ROUNDED = L-CELL-Y * 1000000000 - 9999.999747378752
+                 IF BSH-CTX(L-STATE + 1) = 4 AND WS-BOTTOM > WS-TOP
+                     INITIALIZE BSC-SHAPE
+                     MOVE 1 TO BSC-N
+                     MOVE 16000 TO BSC-V(1, 4) BSC-V(1, 6)
+                     MOVE 2000 TO BSC-V(1, 5)
+                     CALL "BSH-INTERN" USING L-SHAPE
+                 END-IF
+             END-IF
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BSH-SCAFFOLD-COLL.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. BSH-OVERLAPS.
@@ -1224,7 +1560,7 @@
  END PROGRAM BSH-RAY.
 
  IDENTIFICATION DIVISION.
- PROGRAM-ID. BSH-OFFSET.
+ PROGRAM-ID. BSH-MODEL-OFFSET.
 *> USING state id, cell x, y, z (BINARY-LONG), dx, dy, dz out (FLOAT-LONG, blocks): the model offset of a block of an offset kind (51 section 1.4) at that cell; 0 for any
 *> other state. h = (int)(x 3129871) sign extended, XOR z 116129781 (64 bits), XOR y with y = 0 (both kinds take the seed at y 0, so the cell's own y is unused); seed =
 *> (h h 42317861 + h 11) >> 16 (64 bit wrap, arithmetic shift); dx = clamp(((seed AND 15) / 15 - 0.5) 0.5, -m, m), dz the same from (seed >> 8) AND 15, and for the XYZ
@@ -1299,6 +1635,31 @@
              COMPUTE L-DY = (WS-F - 1.0) * 0.1
          ELSE
              COMPUTE L-DY = (WS-F - 1.0) * 0.2
+         END-IF
+     END-IF
+     GOBACK.
+ END PROGRAM BSH-MODEL-OFFSET.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. BSH-OFFSET.
+*> USING state id, cell x, y, z (BINARY-LONG), dx, dy, dz out (FLOAT-LONG, blocks): the offset that moves the SHAPES of the block (51 section 1.4, R4): the model offset of the flower family,
+*> bamboo stalk and sapling, speleothems and mangrove propagule (BSH-SOFS 1), 0 for every other state (the other offset blocks move only their drawn model, BSH-MODEL-OFFSET).
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CTBSHAPE.
+ LINKAGE SECTION.
+ 01 L-STATE                BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-Z                    BINARY-LONG.
+ 01 L-DX                   FLOAT-LONG.
+ 01 L-DY                   FLOAT-LONG.
+ 01 L-DZ                   FLOAT-LONG.
+ PROCEDURE DIVISION USING L-STATE L-X L-Y L-Z L-DX L-DY L-DZ.
+     MOVE 0 TO L-DX L-DY L-DZ
+     IF L-STATE > 0 AND L-STATE < BSH-MAX-STATES
+         IF BSH-SOFS(L-STATE + 1) = 1
+             CALL "BSH-MODEL-OFFSET" USING L-STATE L-X L-Y L-Z L-DX L-DY L-DZ
          END-IF
      END-IF
      GOBACK.

@@ -11,8 +11,8 @@
        10 BSR-MODE        PIC X.
        10 BSR-PROP        PIC X(24).
        10 BSR-VAL         PIC X(40).
-       10 BSR-COLL        PIC X(160).
-       10 BSR-OUT         PIC X(160).
+       10 BSR-COLL        PIC X(240).
+       10 BSR-OUT         PIC X(240).
  01 BSH-PROPS EXTERNAL.
     05 BSP-N              BINARY-LONG.
     05 BSP-ENTRY OCCURS 16 TIMES.

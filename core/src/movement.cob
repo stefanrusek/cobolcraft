@@ -68,6 +68,7 @@
  01 WS-OX                  FLOAT-LONG.
  01 WS-OY                  FLOAT-LONG.
  01 WS-OZ                  FLOAT-LONG.
+ 01 WS-NO-DESC             BINARY-LONG VALUE 0.
  LINKAGE SECTION.
  01 L-DIM                  BINARY-LONG.
  01 L-X                    FLOAT-LONG.
@@ -107,7 +108,8 @@
                          CALL "BSH-ENSURE-CUBE"
                      END-IF
                  ELSE
-                     CALL "BSH-COLL-ID" USING WS-STATE WS-SHAPE
+*>               Scaffolding answers by the entity: its feet are the box bottom, it does not sneak (51 section 3.8.5).
+                     CALL "BSH-SCAFFOLD-COLL" USING WS-STATE WS-BY L-Y WS-NO-DESC WS-SHAPE
                  END-IF
                  IF WS-SHAPE NOT = 0
 *>                   The shape of an offset block is moved by its model offset (51 section 1.4): the box moves the other way.

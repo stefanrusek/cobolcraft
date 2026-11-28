@@ -215,6 +215,26 @@
      PERFORM ASSERT-N
      MOVE 0 TO WS-STATE
      CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+*>   R4 (51 section 1.4): short grass is an offset block, but only its drawn model moves; its outline stays in the cell. At (3, 11, 3) the model offset is
+*>   (-0.25, -0.173, 0.0167), so the unmoved outline spans x 3.125 to 3.875: the ray at x 3.8 hits it and the ray at x 3.0 (inside the moved box) misses.
+     MOVE "short_grass" TO WS-BLOCK
+     MOVE SPACES TO WS-P1
+     PERFORM FIND-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
+     MOVE 3.8 TO PL-X
+     CALL "RAYCAST" USING CLIENT-STATE
+     MOVE "R4 raycast a ray at x 3.8 hits the unmoved outline of short grass" TO TL-CASE
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE TG-HIT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE 3.0 TO PL-X
+     CALL "RAYCAST" USING CLIENT-STATE
+     MOVE "R4 raycast a ray at x 3.0 misses the outline of short grass (only the model is moved)" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE TG-HIT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE 0 TO WS-STATE
+     CALL "TEST-SET-BLOCK" USING CLIENT-STATE WS-X WS-Y WS-Z WS-STATE
      MOVE 0 TO WS-X
      MOVE 0.5 TO PL-X
 *>   Collision: bamboo at (6, 11, 8) is moved by (+0.25, 0, -0.1167): a box 0.04 wide at x 7.0 (6.98 to 7.02) sits in the moved stalk's x 6.656 to 6.844? no: at x 6.75 it

@@ -1,3 +1,5 @@
+*> Taken again at the recovery of lane p70f (006-lane-recovery): the block shapes round R4 (hopper, cauldrons, piston heads, sculk shrieker outline, cake, shulker lid ids, 16 boxes) change the
+*> outline shape ids and face classes that ST-STATE holds.
 *> Lane bugleaves moved leaves from ST-LIKE to the new ST-LEAF column of ST-STATE, so the digest below was taken again after that change (batch16b merge).
 *> Taken again at the merge of the p70 chain (batch16c2): the block shapes of content/src/block-shapes.cob grew (BSH-OFS, six-direction facing rules "R", the BSR-MAX 320 rule table: shulker boxes, offset blocks, continuous top surfaces), and ST-SHAPED, ST-OWN, ST-NB and ST-COVER are built from those shapes.
 *> Equivalence test (lane perfsteady): STATE-TABLES-BUILD over the standard block table (every state of the set, about 30 000 through CONTENT-BLOCK-OF-STATE, whose answer was a binary search over text rows
@@ -19,7 +21,7 @@
  01 WS-T1                  BINARY-DOUBLE.
  01 WS-US                  BINARY-DOUBLE.
  01 WS-E                   PIC Z(19)9.
- 01 WS-EXPECT              PIC X(24) VALUE "1349833988".
+ 01 WS-EXPECT              PIC X(24) VALUE "1431409781".
  PROCEDURE DIVISION.
      CALL "CL-INIT" USING CLIENT-STATE
      MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
