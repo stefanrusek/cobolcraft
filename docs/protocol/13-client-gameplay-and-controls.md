@@ -671,10 +671,10 @@ Combinations (F3 + key), name (default key):
 | Key | Action |
 |---|---|
 | A | reload all chunks ("Reloading all chunks") |
-| B | toggle hitboxes (entity hitboxes entry) |
+| B | toggle hitboxes (debug entry `minecraft:entity_hitboxes`, message "Hitboxes: shown" or "Hitboxes: hidden"; key, toggle states, persistence in 5.5; what is drawn in 34-1 §7.5) |
 | C | copy location as a `/execute in <dim> run tp @s x y z yaw pitch` command to the clipboard ("%.2f" values); hold 10 s to crash |
 | D | clear chat |
-| G | toggle chunk borders |
+| G | toggle chunk borders (debug entry `minecraft:chunk_borders`; 5.6) |
 | H | toggle advanced item tooltips (stored in `advancedItemTooltips`) |
 | I | copy the targeted block/entity as a /setblock or /summon command |
 | L | start/stop profiling (10 seconds) |
@@ -774,6 +774,81 @@ minimal client, not specified further): `system_specs`, `detailed_memory`, `chun
 Defaults displayed on a fresh install are therefore: version, fps, tps, memory group, system specs, the position
 group (XYZ, Block, Chunk, Facing), the section position, and the performance impactor lines. Biome, light, looking
 at, and heightmap lines need F3+F6 or a restored non-default profile.
+
+### 5.5 F3+B: key, message and persistence (entity hitboxes)
+
+Source artifact and method as in the header (the jar recorded in [README.md](README.md), static reading, no execution). Classes read for this subsection: `KeyboardHandler` (`handleDebugKeys`, `debugFeedback*`, `decorateDebugComponent`), `Options` (key mappings), `KeyMapping`, `DebugScreenEntries`, `DebugScreenEntryList`, `DebugScreenEntryStatus`, `DebugScreenProfile`, `DebugEntryNoop`, `DebugRenderer` and the language file `assets/minecraft/lang/en_us.json`. What is drawn is specified in 34-1 §7.5; the eye-height and riding data it needs are in 34-1 §7.5.10 and §7.5.4 (type sizes and eye values in 21 §2).
+
+**The key.** The mapping is `key.debug.showHitboxes` (label "Show Hitboxes", `key.debug.showHitboxes` in the language file), category debug, default key code 5 (`KEY_B` in the code space of 5.1), rebindable like the other debug mappings (stored in `options.txt` as `key_key.debug.showHitboxes:<key name>` by the generic key-mapping rule of 7.1, inferred from the shared `KeyMapping.saveString`). The modifier is `key.debug.modifier` (default F3, code 60). The combination handler runs from `KeyboardHandler.keyPress` when the modifier is down and another key is pressed (5.1: it swallows the key and marks the modifier as used so that releasing F3 does not toggle the overlay). It runs on the press event; a repeat event reaching the same call was not excluded (Open question 8).
+
+**What pressing F3+B does.** `handleDebugKeys` tests the mapping and then, only when a local player exists and `LocalPlayer.isReducedDebugInfo()` is false (the server's reduced-debug-info flag, 05a Login and Respawn; the client option of the same name is not tested at this point), calls `DebugScreenEntryList.toggleStatus(minecraft:entity_hitboxes)`. The call returns the new enabled state (`true` or `false`) and the handler posts one chat message and marks the key as handled. If there is no player or the flag is set, nothing is posted, nothing changes and the key is not treated as handled by this branch.
+
+**The toggle** (`toggleStatus`; the current status is looked up in the status map; a missing entry is treated like "no status"), with `overlay` = `DebugScreenEntryList.isOverlayVisible()` (the F3 overlay is open) at the moment of the press:
+
+| Status before | Overlay visible? | Status after | Returns (message) |
+|---|---|---|---|
+| `ALWAYS_ON` | any | `NEVER` | false ("hidden") |
+| `IN_OVERLAY` | yes | `NEVER` | false ("hidden") |
+| `IN_OVERLAY` | no | `ALWAYS_ON` | true ("shown") |
+| `NEVER` | yes | `IN_OVERLAY` | true ("shown") |
+| `NEVER` | no | `ALWAYS_ON` | true ("shown") |
+| none (no entry) | any | `ALWAYS_ON` | true ("shown") |
+
+(The three `switch` labels are the ordinals of `DebugScreenEntryStatus`, whose constants are declared in the order `ALWAYS_ON` (0), `IN_OVERLAY` (1), `NEVER` (2); the case bodies of `toggleStatus` match the table, including the default case for a missing entry (read in the artifact). Read: `KeyboardHandler.handleDebugKeys`, `DebugScreenEntryList.toggleStatus`, `Options` (default key code 5), `assets/minecraft/lang/en_us.json`.) F3+B is therefore not a plain boolean flip: it moves the entry's status between "off" (`NEVER`) and "on" (`ALWAYS_ON`, or `IN_OVERLAY` when the overlay is open at that moment). The default status of `entity_hitboxes` is `NEVER` in both profiles (5.2). After pressing twice in a row the status is back to `NEVER` in the usual cases: from `NEVER` with the overlay closed: `ALWAYS_ON`, then `NEVER`; with the overlay open: `IN_OVERLAY`, then `NEVER`. A status of `IN_OVERLAY` with the overlay closed becomes `ALWAYS_ON` on the first press ("shown"; the hitboxes appear) and `NEVER` on the second.
+
+**The setting** is applied immediately: `setStatus` clears the active profile name (`profile` becomes none, so the list is no longer "the default profile" or "the performance profile" but a custom list), stores the new status, rebuilds the currently-enabled list (which bumps the version number that makes `DebugRenderer` recreate its renderers on the next frame, 34-1 §7.5.1) and saves the file.
+
+**Which entries are currently enabled** (`rebuildCurrentList`): an entry id is in the enabled list when its status is `ALWAYS_ON`, or when the status is `IN_OVERLAY` and the overlay is visible, and in either case the entry is registered in `DebugScreenEntries` and allowed (`isAllowed(reduced)`: for `entity_hitboxes` the entry is a no-op entry (`DebugEntryNoop`) created with "allowed in reduced debug info" false, so it is not allowed whenever `Minecraft.showOnlyReducedInfo()` is true: the player's reduced flag or the client option `reducedDebugInfo`). The list is sorted by identifier. `DebugRenderer` creates the hitbox renderer only for an enabled `entity_hitboxes`. So: status `ALWAYS_ON` shows the hitboxes always (outside reduced mode); status `IN_OVERLAY` shows them only while the F3 overlay is visible and removes them when the overlay is closed (the overlay toggles on releasing F3, 5.1; `setOverlayVisible` rebuilds the list when the state changes). `entity_hitboxes` registers no text lines (`display` is empty) and belongs to the category `RENDERER` ("Debug Renderers", `debug.options.category.renderer`); it appears in F3+F6 with the choices of the `debug.entry.*` strings below.
+
+**Messages.** The text is a client-side system chat message (`Minecraft.showDebugChat` calls `ChatComponent.addClientSystemMessage` and queues the same text to the narrator). Its content: the component `debug.prefix` ("[Debug]:") in bold and yellow (`ChatFormatting.YELLOW`, feedback colour; warnings would be red), a space, and the message component unstyled:
+
+| Translation key | en_us text |
+|---|---|
+| `debug.prefix` | `[Debug]:` |
+| `debug.show_hitboxes.on` (toggle returned true) | `Hitboxes: shown` |
+| `debug.show_hitboxes.off` (toggle returned false) | `Hitboxes: hidden` |
+| `debug.show_hitboxes.help` (line of the F3+Q help list) | `F3 + B = Show hitboxes` |
+| `key.debug.showHitboxes` (controls screen label) | `Show Hitboxes` |
+| `debug.entry.always` | `Always` |
+| `debug.entry.overlay` | `In Overlay` |
+| `debug.entry.f3` | `In F3` |
+| `debug.entry.currently.alwaysOn` | `%s: Currently always on` |
+| `debug.entry.currently.inOverlay` | `%s: Currently only in debug overlay` |
+| `debug.entry.currently.inF3` | `%s: Currently only in F3` |
+| `debug.entry.currently.never` | `%s: Currently off` |
+| `debug.options.category.renderer` | `Debug Renderers` |
+
+So the visible chat line reads "[Debug]: Hitboxes: shown" or "[Debug]: Hitboxes: hidden". The message is posted once per toggle, on the press. Nothing is posted on release (releasing F3 after a combination toggles nothing, 5.1) and there is no action-bar text, toast or overlay line; "Hitboxes: shown" is the only notice.
+
+**Persistence.** The file is `debug-profile.json` in the game directory (`DebugScreenEntryList`, read by `load` at start-up and written by `save` after every status change; the options screen F3+F6 uses the same methods). Not `options.txt`, and not any per-world file. Format: a JSON object produced by the codec `SerializedOptions` wrapped by a data-fixer layer (`DataFixTypes.DEBUG_PROFILE`, current format version 4649: a version field written by the wrapper, name not read, inferred "DataVersion"): optional field `profile` (`"default"` or `"performance"`) and optional field `custom` (a map from entry identifier to status string: `"alwaysOn"`, `"inOverlay"` or `"never"`). `save` writes `profile` when a profile is active and then writes no `custom`; otherwise (after any toggle, since `setStatus` clears the profile) it writes only `custom` containing every status of the list, not only the changed one. Example (inferred layout) after F3+B from a fresh default profile with the overlay closed: `custom` holds the nine `IN_OVERLAY` entries of the default profile (5.2) unchanged and `"minecraft:entity_hitboxes":"alwaysOn"`. On load the file's `profile`, if present, selects that profile's statuses and then `custom` replaces the statuses when present; a missing or unreadable file resets to the default profile and a parse error is logged and also resets and saves. The hitbox state therefore survives restarts, as `ALWAYS_ON` (or `IN_OVERLAY`), until toggled again.
+
+**Same toggle for chunk borders or block outlines?** No. `handleDebugKeys` toggles only `entity_hitboxes` for the B key and only `chunk_borders` for the G key (below); each entry has its own renderer in `DebugRenderer.refreshRendererList` (5.6). The outline of the block under the crosshair is not a debug renderer at all: it is submitted by the level renderer's `submitBlockOutline` independently of any debug entry. Block collision boxes have their own entry `visualize_collision_boxes` (renderer `CollisionBoxRenderer`), reachable only through F3+F6.
+
+### 5.6 Same-family renderers (the `DebugRenderer` list)
+
+`DebugRenderer` (created once by the level extractor) holds a list of `SimpleDebugRenderer` objects, one per enabled entry, rebuilt when the enabled-list version changes. Each emits "gizmos" (per-frame lines, boxes, points, text) through `emitGizmos(cameraX, cameraY, cameraZ, debugValues, frustum, partialTick)`; the gizmos are drawn by the level renderer (34-1 §7.5.6 and §7.5.7 describe the primitives, the pipelines, the line width rule and the frame position, which are shared by every renderer below). The renderers (the entry-driven rows are in the relative order in which the list is built; the developer-constant renderers of the last row are built interleaved among them, see the exact order below the table):
+
+| Condition | Renderer | What it shows | Key |
+|---|---|---|---|
+| entry `chunk_borders` | `ChunkBorderRenderer` | the borders of the 16 x 16 columns around the camera entity's chunk section and the section's cell grid (details below) | F3+G (`key.debug.showChunkBorders`, code 10) |
+| entry `chunk_section_octree` | `OctreeDebugRenderer` | the chunk-section culling octree (developer visualisation) | developer key only (5.1) |
+| entry `visualize_water_levels` | `WaterDebugRenderer` | fluid levels | F3+F6 only |
+| entry `visualize_heightmap` | `HeightMapRenderer` | the height-map surface | F3+F6 only |
+| entry `visualize_collision_boxes` | `CollisionBoxRenderer` | collision boxes near the player | F3+F6 only |
+| entry `visualize_entity_supporting_blocks` | `SupportBlockRenderer` | the block an entity is supported by | F3+F6 only |
+| entries `visualize_block_light_levels`, `visualize_sky_light_levels` | `LightDebugRenderer` (one instance with two flags) | light levels | F3+F6 only |
+| entry `visualize_solid_faces` | `SolidFaceRenderer` | solid block faces | F3+F6 only |
+| entry `visualize_chunks_on_server` | `ChunkDebugRenderer` | chunks as loaded on the integrated server | F3+F6 only |
+| entry `visualize_sky_light_sections` | `LightSectionDebugRenderer` (sky layer) | sky-light sections | F3+F6 only |
+| entry `entity_hitboxes` | `EntityHitboxDebugRenderer` | entity boxes, positions, eye boxes, view arrows, riding boxes, dragon parts | F3+B (5.5, 34-1 §7.5) |
+| always (no entry) | `ChunkCullingDebugRenderer` | shows nothing unless the developer visualisation state is active (inferred from its position as an unconditional member; body not read) | none |
+| developer constants (`SharedConstants.DEBUG_*`, all false in the shipped build) | `PathfindingRenderer`, `NeighborsUpdateRenderer`, `RedstoneWireOrientationsRenderer`, `StructureRenderer`, `VillageSectionsDebugRenderer`, `BrainDebugRenderer`, `PoiDebugRenderer`, `BeeDebugRenderer`, `RaidDebugRenderer`, `GoalSelectorDebugRenderer`, `GameEventListenerRenderer`, `BreezeDebugRenderer`, `EntityBlockIntersectionDebugRenderer` | not reachable by a player | none |
+
+Not in this family: the `3d_crosshair` entry sets `LevelRenderState.render3dCrosshair`, which makes `GameRenderer` call `DebugCrosshairRenderer` after the level has been rendered, only in first person and only when the HUD is not hidden; and the vanilla block selection outline. F3+G flips `chunk_borders` by the same `toggleStatus` rule as 5.5, with the same two preconditions (a player, not reduced debug info), and posts "[Debug]: Chunk borders: shown" or "[Debug]: Chunk borders: hidden" (`debug.chunk_boundaries.on`, `debug.chunk_boundaries.off`; help line `debug.chunk_boundaries.help`, "F3 + G = Show chunk boundaries"). No other F3 combination belongs to this family.
+
+**Exact build order** of `DebugRenderer` (each added when its entry is enabled or its developer constant is true): `ChunkBorderRenderer`, `OctreeDebugRenderer`, [`PathfindingRenderer`], `WaterDebugRenderer`, `HeightMapRenderer`, `CollisionBoxRenderer`, `SupportBlockRenderer`, [`NeighborsUpdateRenderer`, `RedstoneWireOrientationsRenderer`, `StructureRenderer`], `LightDebugRenderer`, `SolidFaceRenderer`, [`VillageSectionsDebugRenderer`, `BrainDebugRenderer`, `PoiDebugRenderer`, `BeeDebugRenderer`, `RaidDebugRenderer`, `GoalSelectorDebugRenderer`], `ChunkDebugRenderer`, [`GameEventListenerRenderer`], `LightSectionDebugRenderer`, [`BreezeDebugRenderer`, `EntityBlockIntersectionDebugRenderer`], `EntityHitboxDebugRenderer`, `ChunkCullingDebugRenderer` (always). The bracketed ones are the developer-constant renderers.
+
+`ChunkBorderRenderer` (read in part): it works from the camera entity's block position, the level's minimum and maximum build height and the section containing the entity; the constants read are `CELL_BORDER` = 0xFF009B9B (ARGB; RGB 0, 155, 155), `YELLOW` = 0xFFFFFF00 and `MAJOR_LINES` = `colorFromFloat(1, 0.25, 0.25, 1)` = 0xFF3F3FFF. It emits `Gizmos.line` primitives of width 1.0 (the 2-block cell grid in `CELL_BORDER` and `YELLOW`), lines of width 4.0 in `colorFromFloat(0.5, 1, 0, 0)` = 0x7FFF0000 (alpha 127: goes to the translucent group, 34-1 §7.5.6, drawn with `RenderTypes.linesTranslucentNoDepthWrite`, 34-1 §7.5.7) and further 4.0-wide lines in `MAJOR_LINES` and one cuboid for the section and chunk edges, drawn with `GizmoStyle.stroke(MAJOR_LINES, 1.0f)` (stroke colour `MAJOR_LINES`, width 1.0). That cuboid is also marked always-on-top (`setAlwaysOnTop` on its `GizmoProperties`), and it is the only gizmo of `ChunkBorderRenderer` with the mark (no line has it): it goes into the always-on-top group of 34-1 section 7.5.7, which `LevelRenderer.executeAlwaysOnTop` draws in a render pass of its own whose depth attachment is cleared to 0.0 (the far value of the reversed depth buffer), so blocks do not hide it and it is drawn through them. The exact positions were not traced (Open question 10).
 
 ---
 
@@ -1625,3 +1700,8 @@ slot). In the crafting table, shift-clicking planks in hotbar slot 37: they go f
 7. Derived slider mappings marked "inferred" in 7.2 (entity distance scaling, chunk fade, chat delay, mouse wheel,
    FOV-effect squaring, unfocused chat height) come from reading the slider and codec constants, not from running the
    client.
+8. **Key repeat for F3+B (5.5)**: the combination handler is reached for press events; whether an auto-repeat event (holding B while F3 is down) also reaches it and toggles again was not excluded (the action test in `keyPress` was read only as "not a release").
+9. **`debug-profile.json` bytes (5.5)**: the structure (`profile`, `custom`, status strings `alwaysOn`, `inOverlay`, `never`, wrapper format version 4649) was read; the name of the version field the data-fixer wrapper writes and the exact JSON key spelling of the identifiers in `custom` (`minecraft:entity_hitboxes` is inferred from the identifier codec) were not read; the output is compact (`JsonElement.toString`, inferred).
+10. **Chunk-border geometry and the other debug renderers (5.6)**: only the colours, widths and primitive kinds of `ChunkBorderRenderer` were read, not the full line positions; the renderers of the other entries were identified by class and entry but their drawings were not read; `ChunkCullingDebugRenderer` is always created and its behaviour was not read.
+11. **Spectators and the hitbox display**: see 34-1 Open question 27 (whether a spectating player carries the invisible flag that hides its hitbox).
+12. **Reduced debug info**: for the hitbox key only the player's server flag blocks the toggle, while an enabled entry also needs the option-or-flag test (`showOnlyReducedInfo`); the packet fields that set the player flag are in 05a and were not re-read here.

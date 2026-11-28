@@ -796,7 +796,7 @@ swing <targets:entities> mainhand|offhand
 swing <targets> <animation:swing_animation> <duration:time(min 1)>     (animation: none, whack, stab)
 ```
 
-Makes living entities swing; `failed.notliving` shows non-living targets are skipped. Result: not read for `swing`.
+Makes living entities swing; `failed.notliving` shows non-living targets are skipped. `/swing` with no argument swings the executing entity's main hand; the omitted animation is `whack` and the omitted duration 6 ticks (`SwingAnimation.DEFAULT`); the result is the number of living targets swung; full semantics in 57 part 4 section 7.35.
 
 | Key | Arguments | English | When |
 |---|---|---|---|
@@ -1395,7 +1395,7 @@ All **B** (broadcast flag true). Read: `clear` sends `ClientboundClearTitlesPack
 
 ### 8.10 `dialog`
 
-Level 2. `dialog show <targets:players> <dialog:resource_or_id dialog>` and `dialog clear <targets>`. Dialog definitions: 3 files in `data/minecraft/dialog/`. Messages (**B**): `commands.dialog.show.single` "Displayed dialog to %s", `commands.dialog.show.multiple` "Displayed dialog to %s players", `commands.dialog.clear.single` "Cleared dialog for %s", `commands.dialog.clear.multiple` "Cleared dialog for %s players". Needs the dialog screens (client) and Show Dialog / Clear Dialog packets (05a).
+Level 2. `dialog show <targets:players> <dialog:resource_or_id dialog>` and `dialog clear <targets>`. Dialog definitions: 3 files in `data/minecraft/dialog/`. Messages (**B**): `commands.dialog.show.single` "Displayed dialog to %s", `commands.dialog.show.multiple` "Displayed dialog to %s players", `commands.dialog.clear.single` "Cleared dialog for %s", `commands.dialog.clear.multiple` "Cleared dialog for %s players". Needs the dialog screens (client) and Show Dialog / Clear Dialog packets (05a). Semantics (what is sent, the result, the single and multiple message choice, argument forms): 57-4 section 7.14.
 
 ### 8.11 `posteffect`
 
@@ -1710,7 +1710,7 @@ random reset <sequence> [<seed> [<includeWorldSeed> [<includeSequenceId>]]]
 | `commands.random.error.range_too_small` | | The range of the random value must be at least 1 | error |
 | `commands.random.error.range_too_large` | | The range of the random value must be at most 2147483647 | error |
 
-The sequence generator algorithm and the meaning of the seed flags are inside `MinecraftServer`/the random-sequence store and were not read.
+*(The sequence generator and the meaning of the seed flags are specified: the creation formula and the effect of every `reset` form, with the `<seed>` argument being the salt, are in 57-4 section 7.40 and 26 section 4 item 5; the stored file is `data/minecraft/random_sequences.dat`. The range test is `max - min = 0` for `range_too_small`, with a swapped range already rejected by the range parser; the optional `<sequence>` node of `value` and `roll` needs level 2, 57-4 section 3.3.)*
 
 ### 10.9 `compute`
 
@@ -2294,7 +2294,7 @@ Group A lists statements that remain "(recalled, not verified)" in the text (non
 
 **C. Not traced (left open):**
 
-4. `tick`: the sprint algorithm. `random`: the sequence generator and the meaning of the seed flags. `save-all`: the effect of `flush`. `stop`: the shutdown sequence. `kickUnlistedPlayers` (called after `deop`, `whitelist remove|on|reload`). `help`: usage line format. `clone`: the order of the three block groups. `execute`: result details and the store/on/modifier subtrees (15 framework owns the grammar). `function`: the exact result accumulation.
+4. `tick`: the sprint algorithm. `random`: closed in 57-4 section 7.40. `save-all`: the effect of `flush`. `stop`: the shutdown sequence. `kickUnlistedPlayers` (called after `deop`, `whitelist remove|on|reload`). `help`: usage line format. `clone`: the order of the three block groups. `execute`: result details and the store/on/modifier subtrees (15 framework owns the grammar). `function`: the exact result accumulation.
 5. Dev and debug classes: `debugconfig`, `debugmobspawning`, `debugpath`, `test`, `raid` and `chase` messages, `debug function`.
 6. `setidletimeout`: what a value of 0 does inside the idle check.
 7. `PlayerList.op` list file format; `scoreboard` message argument orders (taken from English placeholders); `scoreboard players set|add|remove|operation` per-holder tracked values; `data get` for tag kinds other than numeric, collection, compound and string.

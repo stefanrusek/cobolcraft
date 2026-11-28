@@ -705,7 +705,7 @@ not override `getShape`; `DoublePlantBlock` and `VegetationBlock` were checked f
   `isSuffocating(NOT_CLOSED_SHULKER)`, `pushReaction(POPPED)`. Map colour: the plain box `COLOR_PURPLE`; a dyed box
   `DyeColor.getMapColor()` of its colour, except that the **purple** dyed box uses `TERRACOTTA_PURPLE` (so that it differs
   from the plain box). No `requiresCorrectToolForDrops`.
-- **States.** 6: `facing` (north, east, south, west, up, down). Default `up` (index 4). Placement: `facing` = the clicked face.
+- **States.** 6: `facing` (north, east, south, west, up, down). Default `up` (index 4). Placement: `facing` = the clicked face (read in `ShulkerBoxBlock.getStateForPlacement`, which copies `getClickedFace`; for a dispensed box the clicked face is the dispenser's facing when the cell under the front cell is air, else UP, as 30-4 section 4.15 states).
 - **Shape.** From the block entity: the box `Shulker.getProgressAabb(1.0, facing, 0.5 * progress, origin (0.5, 0, 0.5))` where `progress`
   is the lid animation value in 0 to 1; read from `Shulker.getProgressDeltaAabb`: the unit cube extended along `facing` by
   `0.5 * progress` (the second argument minimum is -1, so no contraction). With no block entity the shape is `Shapes.block()`.
