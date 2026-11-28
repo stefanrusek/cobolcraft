@@ -1022,7 +1022,7 @@ A sound is `Holder<sound_event>` (05b Sound 0x77, Sound Entity 0x76, Explode in 
 followed by an inline sound event (an Identifier and an optional fixed range, see 05b composite types), or the id plus 1. **A server never needs the
 table of this section**: an inline sound names the sound by Identifier and is always allowed by the codec shape (04 §4: the holder-or-inline rule). The
 table is for a server that wants the compact form, and for tools that resolve a reference written by a vanilla server. Stop Sound (05b 0x79)
-uses an Identifier, not an id. (Whether the client accepts an inline sound whose Identifier it does not know is not read here: Open question 6.)
+uses an Identifier, not an id. (Whether the client accepts an inline sound whose Identifier it does not know: answered in 59 §2.3 and §2.4: the codec accepts it and the client silently does not play it. 59 §2.1 also records that this section's table was re-extracted independently and agrees in all 1,991 rows. Open question 6 stays open only for the fixed range, which no client class reads.)
 
 ### 14.2 How the ids are built
 
