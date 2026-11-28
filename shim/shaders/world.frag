@@ -1,5 +1,7 @@
 #version 450
-// World fragment shader (shim-abi §9): the atlas sampled NEAREST (sampler state set by the shim);
+// World fragment shader (shim-abi §9): the atlas sampled with the nearest-with-edge-blend of 12 §2.4
+// (sampleNearest) through the bound sampler: crisp texels when a texel covers several screen pixels,
+// the box-filtered mip sample when it is smaller than a pixel;
 // colour = texel colour x tint x brightness, alpha = texel alpha x alpha multiplier; then the fog (12 section 3.3 include/fog.glsl):
 // value(d, s, e) = 0 up to s, 1 from e, (d - s) / (e - s) between; colour = lerp(colour, fog rgb, value x fog strength).
 layout(push_constant) uniform Push { mat4 matrix; float daylight; float fog_r; float fog_g; float fog_b; float fog_a; float fog_start; float fog_end; float p00; float p11; float up_x; float up_y; float up_z; float rd_start; float rd_end; } push;
@@ -12,7 +14,15 @@ layout(location = 4) in vec3 in_view;
 layout(location = 0) out vec4 out_colour;
 
 void main() {
-    vec4 texel = texture(atlas, in_uv);
+    vec2 pixel_size = 1.0 / vec2(textureSize(atlas, 0));
+    vec2 dx = dFdx(in_uv);
+    vec2 dy = dFdy(in_uv);
+    vec2 texel_screen = max(sqrt(dx * dx + dy * dy), vec2(1e-9));
+    vec2 t = in_uv / pixel_size;
+    vec2 c = round(t) - 0.5;
+    vec2 o = t - c;
+    vec2 o2 = clamp((o - 0.5) * pixel_size / texel_screen + 0.5, 0.0, 1.0);
+    vec4 texel = textureGrad(atlas, (c + o2) * pixel_size, dx, dy);
     // Cut-out: a texel with alpha under 0.1 is dropped on every pipeline, as the crumbling shader does (the transparent texels of an
     // entity skin or of its overlay layer, the empty corners of a block sprite).
     if (texel.a * in_alpha < 0.1) discard;
