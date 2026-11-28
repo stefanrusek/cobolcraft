@@ -231,7 +231,7 @@
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. GUI-SPRITE-PATH-X.
-*> USING sprite row (26 to GSP-COUNT; the 20 hint icons, the shield and the furnace progress sprites, then the 20 container sheets, then the 67 widget sprites of the container screens, are the last rows), path (out, PIC X(256)): the rows of the status HUD and the heart variants (docs/protocol/49) and the experience bar (12 section 5): the 40 mob_effect
+*> USING sprite row (26 to GSP-COUNT; the 20 hint icons, the shield and the furnace progress sprites, then the 20 container sheets, then the 67 widget sprites of the container screens, then the 21 boss bar sprites of 57-5 section 4.3, are the last rows), path (out, PIC X(256)): the rows of the status HUD and the heart variants (docs/protocol/49) and the experience bar (12 section 5): the 40 mob_effect
 *> icons, the effect backgrounds, armour, air, the vehicle hearts, the heart containers and the 40 heart variants (type x hardcore x size x blinking),
 *> the hunger food sprites.
  DATA DIVISION.
@@ -362,6 +362,23 @@
     05 FILLER PIC X(56) VALUE "widget/button_disabled".
  01 WS-WIDGET-TABLE REDEFINES WS-WIDGET-NAMES.
     05 WS-WIDGET-NAME      PIC X(56) OCCURS 67 TIMES.
+ 01 WS-BOSS-COLOURS.
+    05 FILLER PIC X(8) VALUE "pink".
+    05 FILLER PIC X(8) VALUE "blue".
+    05 FILLER PIC X(8) VALUE "red".
+    05 FILLER PIC X(8) VALUE "green".
+    05 FILLER PIC X(8) VALUE "yellow".
+    05 FILLER PIC X(8) VALUE "purple".
+    05 FILLER PIC X(8) VALUE "white".
+ 01 WS-BOSS-COLOUR-TABLE REDEFINES WS-BOSS-COLOURS.
+    05 WS-BOSS-COLOUR      PIC X(8) OCCURS 7 TIMES.
+ 01 WS-BOSS-NOTCHES.
+    05 FILLER PIC X(4) VALUE "6".
+    05 FILLER PIC X(4) VALUE "10".
+    05 FILLER PIC X(4) VALUE "12".
+    05 FILLER PIC X(4) VALUE "20".
+ 01 WS-BOSS-NOTCH-TABLE REDEFINES WS-BOSS-NOTCHES.
+    05 WS-BOSS-NOTCH       PIC X(4) OCCURS 4 TIMES.
  01 WS-TYPE-NAMES.
     05 FILLER              PIC X(10) VALUE "          ".
     05 FILLER              PIC X(10) VALUE "poisoned_ ".
@@ -395,6 +412,18 @@
              MOVE "hud/armor_full" TO WS-NAME
          WHEN L-ROW = GSP-AIR
              MOVE "hud/air" TO WS-NAME
+         WHEN L-ROW >= GSP-BOSS-BG-0 AND L-ROW < GSP-BOSS-PROGRESS-0
+             COMPUTE WS-N = L-ROW - GSP-BOSS-BG-0 + 1
+             STRING "boss_bar/" FUNCTION TRIM(WS-BOSS-COLOUR(WS-N)) "_background" DELIMITED BY SIZE INTO WS-NAME
+         WHEN L-ROW >= GSP-BOSS-PROGRESS-0 AND L-ROW < GSP-BOSS-NOTCH-BG-0
+             COMPUTE WS-N = L-ROW - GSP-BOSS-PROGRESS-0 + 1
+             STRING "boss_bar/" FUNCTION TRIM(WS-BOSS-COLOUR(WS-N)) "_progress" DELIMITED BY SIZE INTO WS-NAME
+         WHEN L-ROW >= GSP-BOSS-NOTCH-BG-0 AND L-ROW < GSP-BOSS-NOTCH-PROGRESS-0
+             COMPUTE WS-N = L-ROW - GSP-BOSS-NOTCH-BG-0 + 1
+             STRING "boss_bar/notched_" FUNCTION TRIM(WS-BOSS-NOTCH(WS-N)) "_background" DELIMITED BY SIZE INTO WS-NAME
+         WHEN L-ROW >= GSP-BOSS-NOTCH-PROGRESS-0 AND L-ROW <= GSP-COUNT
+             COMPUTE WS-N = L-ROW - GSP-BOSS-NOTCH-PROGRESS-0 + 1
+             STRING "boss_bar/notched_" FUNCTION TRIM(WS-BOSS-NOTCH(WS-N)) "_progress" DELIMITED BY SIZE INTO WS-NAME
          WHEN L-ROW = GSP-AIR-EMPTY
              MOVE "hud/air_empty" TO WS-NAME
          WHEN L-ROW = GSP-AIR-BURSTING

@@ -91,7 +91,7 @@
          FREE AN-PIXELS(WS-A)
          FREE AN-OUT(WS-A)
      END-PERFORM
-     MOVE 0 TO AN-COUNT AN-START-MS
+     MOVE 0 TO AN-COUNT AN-START-MS AN-TICKS AN-NEXT-MS
      MOVE 1 TO AT-SPRITE-COUNT
      INITIALIZE AT-SPRITE(1)
      MOVE "missing" TO AT-NAME(1)
@@ -640,6 +640,7 @@
  WORKING-STORAGE SECTION.
  01 WS-A                   BINARY-LONG.
  01 WS-TICKS               BINARY-DOUBLE.
+ 01 WS-DUE                 BINARY-DOUBLE.
  01 WS-POS                 BINARY-LONG.
  01 WS-E                   BINARY-LONG.
  01 WS-START               BINARY-LONG.
@@ -685,10 +686,20 @@
      IF AN-COUNT = 0
          GOBACK
      END-IF
+*>   57-1 section 1.4: the clock of the atlas is one step per rendered frame in which a game tick is due (not one per tick, not one per
+*>   millisecond share): at 50 ms a tick the first call is step 0 and each later call adds one step when the time of the next due tick
+*>   has come (the due time moves on by every tick that has passed), however many ticks passed since the last frame.
      IF AN-START-MS = 0
          MOVE L-NOW TO AN-START-MS
+         COMPUTE AN-NEXT-MS = L-NOW + 50
+     ELSE
+         IF L-NOW >= AN-NEXT-MS
+             ADD 1 TO AN-TICKS
+             COMPUTE WS-DUE = (L-NOW - AN-NEXT-MS) / 50 + 1
+             COMPUTE AN-NEXT-MS = AN-NEXT-MS + WS-DUE * 50
+         END-IF
      END-IF
-     COMPUTE WS-TICKS = (L-NOW - AN-START-MS) / 50
+     MOVE AN-TICKS TO WS-TICKS
      SET ADDRESS OF B-ATLAS TO AT-ADDR
      PERFORM VARYING WS-A FROM 1 BY 1 UNTIL WS-A > AN-COUNT
          COMPUTE WS-POS = FUNCTION MOD(WS-TICKS, AN-TOTAL(WS-A))

@@ -44,9 +44,9 @@
      MOVE "T" TO TL-MODE
      CALL "TEST-SCREEN-TEXTS" USING CLIENT-STATE WS-TEXT
      MOVE WS-TEXT TO TL-OBSERVED
-     MOVE "|||||||||Health 20/20|Food 20/20|message 3|message 4|message 5|message 6|message 7|"
-         & "message 8|message 9|"
-         & "message 10|message 11|message 12" TO TL-EXPECTED
+*>   Each shown line is its background and its tag bar (overlays without a text) and the text (57-5 section 2.7).
+     MOVE "|||||||||Health 20/20|Food 20/20|||message 3|||message 4|||message 5|||message 6"
+         & "|||message 7|||message 8|||message 9|||message 10|||message 11|||message 12" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   Ten seconds later (200 client ticks of 50 ms) every message has expired.

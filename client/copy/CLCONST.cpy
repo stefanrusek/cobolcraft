@@ -520,7 +520,13 @@
  78 GSP-HORSE-CHEST         VALUE 238.  *> container/horse/chest_slots (40-6 6.2)
  78 GSP-BUTTON-HI           VALUE 239.  *> widget/button_highlighted and widget/button_disabled (12 5.9)
  78 GSP-BUTTON-OFF          VALUE 240.
- 78 GSP-COUNT               VALUE 240.
+*> The boss bar sprites boss_bar/<colour>_background and _progress (182 x 5; 57-5 section 4.3): GSP-BOSS-BG-0 + colour (0 pink, 1 blue, 2 red, 3 green, 4 yellow, 5 purple,
+*> 6 white), GSP-BOSS-PROGRESS-0 + colour, GSP-BOSS-NOTCH-BG-0 + n and GSP-BOSS-NOTCH-PROGRESS-0 + n for the overlays notched_6, notched_10, notched_12, notched_20 (n 0 to 3).
+ 78 GSP-BOSS-BG-0            VALUE 241.
+ 78 GSP-BOSS-PROGRESS-0      VALUE 248.
+ 78 GSP-BOSS-NOTCH-BG-0      VALUE 255.
+ 78 GSP-BOSS-NOTCH-PROGRESS-0 VALUE 259.
+ 78 GSP-COUNT               VALUE 262.
  78 CL-FREEZE-TICKS         VALUE 140.  *> ticks frozen of a fully frozen player (49 open question 7: the threshold was not read; 140 assumed)
  78 CL-RK-MAX               VALUE 2048. *> recipes the book keeps (the rest are dropped)
 

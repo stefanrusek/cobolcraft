@@ -138,6 +138,10 @@
              IF EN-KEY(WS-R) = "axolotl"
                  CALL "ENTITY-AXOLOTL-TICK" USING CLIENT-STATE WS-R
              END-IF
+*>           The ticks a piglin has been using an item (57-1 section 3.4: ticksUsingItem counts from the start of the use).
+             IF EN-KEY(WS-R) = "piglin" OR "piglin_brute" OR "zombified_piglin"
+                 CALL "ENTITY-PIGLIN-TICK" USING CLIENT-STATE WS-R
+             END-IF
 *>           The iron golem's attack and offer-flower ticks fall by 1 a tick (34-3 7).
              IF EN-KEY(WS-R) = "iron_golem"
                  IF EN-ATK(WS-R) > 0

@@ -273,10 +273,12 @@
                  MOVE -2147483648 TO EN-ARMA-OUT(WS-ROW) EN-ARMA-UP(WS-ROW) EN-ARMA-PEEK(WS-ROW)
                  MOVE -1 TO EN-VAR(WS-ROW) EN-VAR2(WS-ROW) EN-VAR3(WS-ROW)
                  MOVE 0 TO EN-X1(WS-ROW) EN-OVL(WS-ROW) EN-OVN(WS-ROW)
+                 MOVE 0 TO EN-PG-CHARGING(WS-ROW) EN-PG-DANCING(WS-ROW) EN-PG-USE(WS-ROW)
                  PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 8
                      MOVE 0 TO EN-EQ(WS-ROW, WS-I)
                      MOVE -1 TO EN-EQ-DYE(WS-ROW, WS-I)
                      MOVE 0 TO EN-EQ-TRIM-MAT(WS-ROW, WS-I) EN-EQ-TRIM-PAT(WS-ROW, WS-I) EN-EQ-FOIL(WS-ROW, WS-I) EN-EQ-NOINST(WS-ROW, WS-I)
+                     MOVE 0 TO EN-EQ-CHARGED(WS-ROW, WS-I)
                  END-PERFORM
                  MOVE -1 TO EN-HB-BASE(WS-ROW, 1) EN-HB-BASE(WS-ROW, 2)
                  MOVE 0 TO EN-HB-COUNT(WS-ROW, 1) EN-HB-COUNT(WS-ROW, 2)
@@ -372,6 +374,15 @@
 *>               The skin parts byte of a player (entry 16, BYTE, 47 section 5.3): the overlay layers the model shows.
                  IF WS-ROW > 0 AND MD-MD-INDEX = 16 AND MD-MD-SERIALIZER = PB-MDS-BYTE AND EN-KEY(WS-ROW) = "player"
                      MOVE MD-MD-INT TO EN-PARTS(WS-ROW)
+                 END-IF
+*>               The piglin's charging-crossbow flag (entry 18) and dancing flag (entry 19), BOOLEAN (57-1 section 3.4, 21 App A).
+                 IF WS-ROW > 0 AND MD-MD-SERIALIZER = PB-MDS-BOOLEAN AND EN-KEY(WS-ROW) = "piglin"
+                     IF MD-MD-INDEX = 18
+                         MOVE MD-MD-INT TO EN-PG-CHARGING(WS-ROW)
+                     END-IF
+                     IF MD-MD-INDEX = 19
+                         MOVE MD-MD-INT TO EN-PG-DANCING(WS-ROW)
+                     END-IF
                  END-IF
 *>               A mob's flags byte (entry 15: bit 4 aggressive, 54 section 2.3) and an ageable mob's baby flag (entry 16, BOOLEAN).
                  IF WS-ROW > 0 AND MD-MD-INDEX = 15 AND MD-MD-SERIALIZER = PB-MDS-BYTE
@@ -642,6 +653,7 @@
  PROCEDURE DIVISION USING CLIENT-STATE L-ROW L-SLOT PB-ITEMSTACK-X.
      MOVE -1 TO EN-EQ-DYE(L-ROW, L-SLOT + 1)
      MOVE 0 TO EN-EQ-TRIM-MAT(L-ROW, L-SLOT + 1) EN-EQ-TRIM-PAT(L-ROW, L-SLOT + 1) EN-EQ-FOIL(L-ROW, L-SLOT + 1) EN-EQ-NOINST(L-ROW, L-SLOT + 1)
+     MOVE 0 TO EN-EQ-CHARGED(L-ROW, L-SLOT + 1)
      IF L-SLOT < 2
          MOVE -1 TO EN-HB-BASE(L-ROW, L-SLOT + 1)
          MOVE 0 TO EN-HB-COUNT(L-ROW, L-SLOT + 1)
@@ -761,6 +773,11 @@
                              END-IF
                          END-PERFORM
                      END-IF
+                 END-IF
+*>           charged_projectiles (type 51, 25 section 9.7): a list of item templates, so a first byte (its length) above 0 is a loaded crossbow (57-1 section 3.4).
+             WHEN 51
+                 IF WS-LEN > 0 AND WS-B1 > 0
+                     MOVE 1 TO EN-EQ-CHARGED(L-ROW, L-SLOT + 1)
                  END-IF
              WHEN OTHER
                  CONTINUE

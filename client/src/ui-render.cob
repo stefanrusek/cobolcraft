@@ -71,6 +71,10 @@
                  IF SM-W-STATE(WS-W) > 0
                      COMPUTE RL-UI-FADE = 1 - (SM-W-STATE(WS-W) - 1) / 1000
                  END-IF
+*>               An overlay's alpha byte (WIDGET-ALPHA) wins over its state.
+                 IF SM-W-ALPHA(WS-W) > 0
+                     COMPUTE RL-UI-FADE = 1 - SM-W-ALPHA(WS-W) / 255
+                 END-IF
              WHEN SM-W-KIND(WS-W) = WK-ICON
                  CALL "UI-ICON-QUAD" USING CLIENT-STATE WS-W
              WHEN SM-W-KIND(WS-W) = WK-SPRITE
@@ -153,7 +157,14 @@
          IF WS-RGB = 0
              MOVE 16777215 TO WS-RGB
          END-IF
-         CALL "UI-TEXT-C" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-X WS-Y WS-RGB
+*>       A label with an alpha byte (WIDGET-ALPHA: the HUD text of 57-1 and 57-5) is drawn by UI-TEXT-HUD: its colour as a tint, faded, grown by its scale, with the
+*>       shadow of 12 section 5.10 unless its state is 9.
+         IF SM-W-KIND(WS-W) = WK-LABEL AND SM-W-ALPHA(WS-W) > 0
+             CALL "UI-TEXT-HUD" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-X WS-Y WS-RGB SM-W-ALPHA(WS-W)
+                 SM-W-SCALE(WS-W) SM-W-STATE(WS-W)
+         ELSE
+             CALL "UI-TEXT-C" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-X WS-Y WS-RGB
+         END-IF
          IF WS-CARET = 1
              CALL "UI-TEXT-WIDTH" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-WIDTH
              ADD WS-WIDTH TO WS-X
@@ -483,6 +494,7 @@
  01 WS-GH                  BINARY-LONG.
  01 WS-ADVANCE             BINARY-LONG.
  01 WS-X                   BINARY-LONG.
+ 01 WS-SCALE               BINARY-LONG.
  01 WS-X0                  FLOAT-SHORT.
  01 WS-Y0                  FLOAT-SHORT.
  01 WS-X1                  FLOAT-SHORT.
@@ -499,6 +511,10 @@
  01 L-Y                    BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-TEXT L-LENGTH L-X L-Y.
      MOVE L-X TO WS-X
+     MOVE 1 TO WS-SCALE
+     IF HX-TEXT-SCALE > 1
+         MOVE HX-TEXT-SCALE TO WS-SCALE
+     END-IF
      MOVE 1 TO WS-POS
      PERFORM UNTIL WS-POS > L-LENGTH
          CALL "UTF8-DECODE" USING L-TEXT L-LENGTH WS-POS WS-CP
@@ -506,15 +522,15 @@
          IF WS-CP NOT = 32
              COMPUTE WS-X0 = WS-X * CL-GUI-SCALE
              COMPUTE WS-Y0 = L-Y * CL-GUI-SCALE
-             COMPUTE WS-X1 = (WS-X + FN-HEIGHT * WS-GW / WS-GH) * CL-GUI-SCALE
-             COMPUTE WS-Y1 = (L-Y + FN-HEIGHT) * CL-GUI-SCALE
+             COMPUTE WS-X1 = (WS-X + FN-HEIGHT * WS-GW / WS-GH * WS-SCALE) * CL-GUI-SCALE
+             COMPUTE WS-Y1 = (L-Y + FN-HEIGHT * WS-SCALE) * CL-GUI-SCALE
              COMPUTE WS-U0 = WS-GX / UA-W
              COMPUTE WS-V0 = WS-GY / UA-H
              COMPUTE WS-U1 = (WS-GX + WS-GW) / UA-W
              COMPUTE WS-V1 = (WS-GY + WS-GH) / UA-H
              CALL "UI-QUAD" USING CLIENT-STATE WS-X0 WS-Y0 WS-X1 WS-Y1 WS-U0 WS-V0 WS-U1 WS-V1
          END-IF
-         ADD WS-ADVANCE TO WS-X
+         COMPUTE WS-X = WS-X + WS-ADVANCE * WS-SCALE
      END-PERFORM
      GOBACK.
  END PROGRAM UI-TEXT.
@@ -962,6 +978,49 @@
      MOVE 0 TO RL-UI-TINT
      GOBACK.
  END PROGRAM UI-TEXT-C.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. UI-TEXT-HUD.
+*> USING CLIENT-STATE, text, length, x, y (GUI pixels), colour (RGB integer), alpha (1 to 255), scale (0 or 1 = the size of the font), state (9 = no shadow): the glyphs of HUD
+*> text as vanilla draws it (12 section 5.10): the colour is multiplied into the glyph quads (not reduced to its grey), the alpha is the vertex alpha, the scale
+*> multiplies the glyph size and the advances, and, unless the state is 9, a shadow is drawn first at an offset of one scaled pixel in each direction in the colour with
+*> each channel times 0.25 (rounded down), at the same alpha.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ 01 WS-R                   BINARY-LONG.
+ 01 WS-G                   BINARY-LONG.
+ 01 WS-B                   BINARY-LONG.
+ 01 WS-SCALE               BINARY-LONG.
+ 01 WS-SX                  BINARY-LONG.
+ 01 WS-SY                  BINARY-LONG.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-TEXT                 PIC X(256).
+ 01 L-LENGTH               BINARY-LONG.
+ 01 L-X                    BINARY-LONG.
+ 01 L-Y                    BINARY-LONG.
+ 01 L-RGB                  BINARY-LONG.
+ 01 L-ALPHA                BINARY-LONG.
+ 01 L-SCALE                BINARY-LONG.
+ 01 L-STATE                BINARY-LONG.
+ PROCEDURE DIVISION USING CLIENT-STATE L-TEXT L-LENGTH L-X L-Y L-RGB L-ALPHA L-SCALE L-STATE.
+     MOVE FUNCTION MAX(L-SCALE, 1) TO WS-SCALE
+     MOVE WS-SCALE TO HX-TEXT-SCALE
+     COMPUTE RL-UI-FADE = 1 - L-ALPHA / 255
+     IF L-STATE NOT = 9
+         COMPUTE WS-R = FUNCTION INTEGER(L-RGB / 65536) / 4
+         COMPUTE WS-G = FUNCTION INTEGER(FUNCTION MOD(L-RGB, 65536) / 256) / 4
+         COMPUTE WS-B = FUNCTION MOD(L-RGB, 256) / 4
+         COMPUTE RL-UI-TINT = FUNCTION MAX(1, WS-R * 65536 + WS-G * 256 + WS-B)
+         COMPUTE WS-SX = L-X + WS-SCALE
+         COMPUTE WS-SY = L-Y + WS-SCALE
+         CALL "UI-TEXT" USING CLIENT-STATE L-TEXT L-LENGTH WS-SX WS-SY
+     END-IF
+     MOVE FUNCTION MAX(1, L-RGB) TO RL-UI-TINT
+     CALL "UI-TEXT" USING CLIENT-STATE L-TEXT L-LENGTH L-X L-Y
+     MOVE 0 TO RL-UI-TINT RL-UI-FADE HX-TEXT-SCALE
+     GOBACK.
+ END PROGRAM UI-TEXT-HUD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. TOOLTIP-ADD.

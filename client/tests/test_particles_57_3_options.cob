@@ -1,0 +1,377 @@
+*> Implementation test of docs/protocol/57-client-closures-3 sections 2 to 6 (task T47000): the client decodes the options of the 22
+*> option-carrying particle types of Level Particles from the exact worked byte strings of section 5 (type id first, no bytes left over),
+*> reads the whole 62-byte dust packet of section 5 through PENTRY-PACKET, clamps the dust scale to 0.01 .. 4.0 on the wire form (section
+*> 4.1), keeps the colour word raw (section 4.1, 4.5), rejects an empty item template (air or count 0, 4.4) and an unknown type id.
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PARTICLES-57-3-OPTIONS.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ COPY CLPART.
+ COPY CLPKT.
+ COPY TESTLIB.
+ 01 WS-CAP                 BINARY-LONG VALUE 512.
+ 01 WS-HEX                 PIC X(256).
+ 01 WS-HEX-LEN             BINARY-LONG.
+ 01 WS-BYTE                BINARY-LONG.
+ 01 WS-HI                  BINARY-LONG.
+ 01 WS-LO                  BINARY-LONG.
+ 01 WS-I                   BINARY-LONG.
+ 01 WS-ONE                 PIC X.
+ 01 WS-CH                  PIC X.
+ 01 WS-DIGIT               BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-BYTES-LEFT          BINARY-LONG.
+ 01 WS-NAME                PIC X(120).
+ 01 WS-TOTAL               BINARY-LONG.
+ PROCEDURE DIVISION.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAP
+*>   dust, red, scale 1.0
+     MOVE "15 00 FF 00 00 3F 80 00 00" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "dust red: kind" TO WS-NAME
+     PERFORM ASSERT-KIND-DUST
+     MOVE "dust red: colour word" TO WS-NAME
+     MOVE 16711680 TO TL-EXPECTED-N
+     MOVE PO-COLOR TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "dust red: scale" TO WS-NAME
+     MOVE 1000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PO-SCALE * 1000
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+*>   dust 0x3366CC, scale 0.5
+     MOVE "15 00 33 66 CC 3F 00 00 00" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "dust 3366CC: colour word" TO WS-NAME
+     MOVE 3368652 TO TL-EXPECTED-N
+     MOVE PO-COLOR TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "dust 3366CC: scale 0.5" TO WS-NAME
+     MOVE 500 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PO-SCALE * 1000
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+*>   the high byte of the colour is kept raw (not masked)
+     MOVE "15 7F 33 66 CC 3F 00 00 00" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "dust: high byte of the colour stays" TO WS-NAME
+     MOVE 2134075084 TO TL-EXPECTED-N
+     MOVE PO-COLOR TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+*>   scale below 0.01 (0.001 = 3A 83 12 6F) clamps to 0.01 and above 4.0 (5.0 = 40 A0 00 00) to 4.0 on the wire form
+     MOVE "15 00 FF 00 00 3A 83 12 6F" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "dust: scale 0.001 clamps to 0.01" TO WS-NAME
+     MOVE 10 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PO-SCALE * 1000
+     PERFORM ASSERT-N
+     MOVE "15 00 FF 00 00 40 A0 00 00" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "dust: scale 5.0 clamps to 4.0" TO WS-NAME
+     MOVE 4000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PO-SCALE * 1000
+     PERFORM ASSERT-N
+     MOVE "15 00 FF 00 00 40 80 00 00" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "dust: scale 4.0 stays" TO WS-NAME
+     MOVE 4000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PO-SCALE * 1000
+     PERFORM ASSERT-N
+*>   dust colour transition, sculk to red, scale 1.0
+     MOVE "16 00 39 D6 E0 00 FF 00 00 3F 80 00 00" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "transition: from colour" TO WS-NAME
+     MOVE 3790560 TO TL-EXPECTED-N
+     MOVE PO-COLOR TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "transition: to colour" TO WS-NAME
+     MOVE 16711680 TO TL-EXPECTED-N
+     MOVE PO-TO-COLOR TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+*>   block family: stone 1, oak_planks 15, falling dust 15
+     MOVE "01 01" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "block stone: state" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE PO-BLOCK-STATE TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+     MOVE "24 0F" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "falling dust oak_planks: state" TO WS-NAME
+     MOVE 15 TO TL-EXPECTED-N
+     MOVE PO-BLOCK-STATE TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+*>   item diamond 1012, count 1, empty patch
+     MOVE "39 F4 07 01 00 00" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "item diamond: id" TO WS-NAME
+     MOVE 1012 TO TL-EXPECTED-N
+     MOVE PO-ITEM-ID TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "item diamond: count" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE PO-ITEM-COUNT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+*>   an empty item template (count 0, and the air item) is an error (4.4)
+     MOVE "39 F4 07 00 00 00" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "item count 0 is an error" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE PO-ERROR TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "39 00 01 00 00" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "item air is an error" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE PO-ERROR TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+*>   entity effect, opaque red; the alpha byte is kept
+     MOVE "1C FF FF 00 00" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "entity effect: colour word" TO WS-NAME
+     MOVE 4294901760 TO TL-EXPECTED-N
+     MOVE PO-COLOR TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+*>   effect (spell), colour 0x00FF8000, power 1.0
+     MOVE "17 00 FF 80 00 3F 80 00 00" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "effect: colour word" TO WS-NAME
+     MOVE 16744448 TO TL-EXPECTED-N
+     MOVE PO-COLOR TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "effect: power" TO WS-NAME
+     MOVE 1000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PO-POWER * 1000
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+*>   sculk charge roll 1.0, shriek delay 5, dragon breath power 1.0
+     MOVE "30 3F 80 00 00" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "sculk charge: roll" TO WS-NAME
+     MOVE 1000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PO-ROLL * 1000
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+     MOVE "73 05" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "shriek: delay" TO WS-NAME
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE PO-DELAY TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+     MOVE "0F 3F 80 00 00" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "dragon breath: power" TO WS-NAME
+     MOVE 1000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PO-POWER * 1000
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+*>   tinted leaves and flash carry the whole ARGB word
+     MOVE "2E FF 5A 8C 2D" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "tinted leaves: colour word" TO WS-NAME
+     MOVE 4284124205 TO TL-EXPECTED-N
+     MOVE PO-COLOR TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+     MOVE "34 FF FF FF FF" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "flash: colour word" TO WS-NAME
+     MOVE 4294967295 TO TL-EXPECTED-N
+     MOVE PO-COLOR TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+*>   vibration: block source (10, 64, -3), 20 ticks; entity source 7, y offset 0.5, 20 ticks
+     MOVE "3A 00 00 00 02 BF FF FF D0 40 14" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "vibration block: x" TO WS-NAME
+     MOVE 10 TO TL-EXPECTED-N
+     MOVE PO-SRC-X TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "vibration block: y" TO WS-NAME
+     MOVE 64 TO TL-EXPECTED-N
+     MOVE PO-SRC-Y TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "vibration block: z" TO WS-NAME
+     MOVE -3 TO TL-EXPECTED-N
+     MOVE PO-SRC-Z TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "vibration block: arrival ticks" TO WS-NAME
+     MOVE 20 TO TL-EXPECTED-N
+     MOVE PO-ARRIVAL TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+     MOVE "3A 01 07 3F 00 00 00 14" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "vibration entity: id" TO WS-NAME
+     MOVE 7 TO TL-EXPECTED-N
+     MOVE PO-SRC-ENTITY TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "vibration entity: y offset" TO WS-NAME
+     MOVE 500 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PO-SRC-YOFFSET * 1000
+     PERFORM ASSERT-N
+     MOVE "vibration entity: arrival ticks" TO WS-NAME
+     MOVE 20 TO TL-EXPECTED-N
+     MOVE PO-ARRIVAL TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+*>   trail: target (1.5, 64, -2.5), colour 0x3366CC, duration 40
+     MOVE "3B 3F F8 00 00 00 00 00 00 40 50 00 00 00 00 00 00 C0 04 00 00 00 00 00 00 00 33 66 CC 28" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "trail: target x" TO WS-NAME
+     MOVE 1500 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PO-TARGET-X * 1000
+     PERFORM ASSERT-N
+     MOVE "trail: target y" TO WS-NAME
+     MOVE 64000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PO-TARGET-Y * 1000
+     PERFORM ASSERT-N
+     MOVE "trail: target z" TO WS-NAME
+     MOVE -2500 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PO-TARGET-Z * 1000
+     PERFORM ASSERT-N
+     MOVE "trail: colour word" TO WS-NAME
+     MOVE 3368652 TO TL-EXPECTED-N
+     MOVE PO-COLOR TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "trail: duration ticks" TO WS-NAME
+     MOVE 40 TO TL-EXPECTED-N
+     MOVE PO-DURATION TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+*>   geyser: water blocks 6; geyser base: water blocks 6, impulse 0.5
+     MOVE "07 00 00 00 06" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "geyser: water blocks" TO WS-NAME
+     MOVE 6 TO TL-EXPECTED-N
+     MOVE PO-WATER-BLOCKS TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+     MOVE "08 00 00 00 06 3F 00 00 00" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "geyser base: water blocks" TO WS-NAME
+     MOVE 6 TO TL-EXPECTED-N
+     MOVE PO-WATER-BLOCKS TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "geyser base: burst impulse" TO WS-NAME
+     MOVE 500 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PO-BURST * 1000
+     PERFORM ASSERT-N
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+*>   heart (id 55 = 37 hex) is a simple type: no option bytes
+     MOVE "37" TO WS-HEX
+     PERFORM DECODE-HEX
+     PERFORM ASSERT-NO-ERROR-ALL-READ
+*>   an unknown type id (the registry has 128 types) is a decode error
+     MOVE "80 01" TO WS-HEX
+     PERFORM DECODE-HEX
+     MOVE "unknown particle type id 128 is an error" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE PO-ERROR TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+*>   the whole red dust packet of section 5 (the packet id byte left off), through PENTRY-PACKET
+     MOVE "15 00 FF 00 00 3F 80 00 00 00 00 3F F8 00 00 00 00 00 00 40 50 00 00 00 00 00 00 C0 04 00 "
+         & "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00" TO WS-HEX
+     PERFORM LOAD-HEX
+     CALL "PENTRY-PACKET" USING PB-BUFFER PART-PACKET PART-OPTIONS
+     MOVE "dust packet: no error" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PP-ERROR TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "dust packet: type 21" TO WS-NAME
+     MOVE 21 TO TL-EXPECTED-N
+     MOVE PP-TYPE TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "dust packet: x 1.5" TO WS-NAME
+     MOVE 1500 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PP-X * 1000
+     PERFORM ASSERT-N
+     MOVE "dust packet: y 64" TO WS-NAME
+     MOVE 64000 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PP-Y * 1000
+     PERFORM ASSERT-N
+     MOVE "dust packet: z -2.5" TO WS-NAME
+     MOVE -2500 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = PP-Z * 1000
+     PERFORM ASSERT-N
+     MOVE "dust packet: count" TO WS-NAME
+     MOVE 1 TO TL-EXPECTED-N
+     MOVE PP-COUNT TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "dust packet: randomisation default" TO WS-NAME
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PP-RANDOM TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     MOVE "dust packet: every body byte read (61 after the id)" TO WS-NAME
+     MOVE 61 TO TL-EXPECTED-N
+     MOVE PB-POS TO TL-OBSERVED-N
+     PERFORM ASSERT-N
+     GOBACK.
+
+ DECODE-HEX.
+     PERFORM LOAD-HEX
+     CALL "PB-GET-VARINT" USING PB-BUFFER WS-TYPE
+     CALL "PART-OPT-DECODE" USING PB-BUFFER WS-TYPE PART-OPTIONS.
+
+ ASSERT-NO-ERROR-ALL-READ.
+     MOVE "no decode error and no bytes left: " TO TL-CASE
+     MOVE WS-NAME TO TL-CASE(36:100)
+     MOVE "N" TO TL-MODE
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE PO-ERROR TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "bytes left over: " TO TL-CASE
+     MOVE WS-NAME TO TL-CASE(18:100)
+     COMPUTE WS-BYTES-LEFT = PB-LENGTH - PB-POS
+     MOVE 0 TO TL-EXPECTED-N
+     MOVE WS-BYTES-LEFT TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ASSERT-KIND-DUST.
+     MOVE WS-NAME TO TL-CASE
+     MOVE "T" TO TL-MODE
+     MOVE "dust" TO TL-EXPECTED
+     MOVE PO-KIND TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ ASSERT-N.
+     MOVE WS-NAME TO TL-CASE
+     MOVE "N" TO TL-MODE
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+*> The hex bytes of WS-HEX (pairs separated by spaces) into a fresh PB-BUFFER.
+ LOAD-HEX.
+     CALL "PB-RESET" USING PB-BUFFER
+     MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-HEX TRAILING)) TO WS-HEX-LEN
+     MOVE 1 TO WS-I
+     PERFORM UNTIL WS-I > WS-HEX-LEN
+         MOVE WS-HEX(WS-I:1) TO WS-CH
+         PERFORM HEX-DIGIT
+         MOVE WS-DIGIT TO WS-HI
+         MOVE WS-HEX(WS-I + 1:1) TO WS-CH
+         PERFORM HEX-DIGIT
+         MOVE WS-DIGIT TO WS-LO
+         COMPUTE WS-BYTE = WS-HI * 16 + WS-LO
+         MOVE FUNCTION CHAR(WS-BYTE + 1) TO WS-ONE
+         MOVE 1 TO WS-DIGIT
+         CALL "PB-APPEND-BYTES" USING PB-BUFFER WS-ONE WS-DIGIT
+         ADD 3 TO WS-I
+     END-PERFORM.
+
+ HEX-DIGIT.
+     EVALUATE TRUE
+         WHEN WS-CH >= "0" AND WS-CH <= "9"
+             COMPUTE WS-DIGIT = FUNCTION ORD(WS-CH) - FUNCTION ORD("0")
+         WHEN WS-CH >= "A" AND WS-CH <= "F"
+             COMPUTE WS-DIGIT = FUNCTION ORD(WS-CH) - FUNCTION ORD("A") + 10
+         WHEN OTHER
+             MOVE 0 TO WS-DIGIT
+     END-EVALUATE.
+ END PROGRAM TEST-PARTICLES-57-3-OPTIONS.

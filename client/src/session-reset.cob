@@ -19,6 +19,8 @@
  PROCEDURE DIVISION USING CLIENT-STATE.
 *>   Chat, commands, recipes: one group each (every field starts at 0 or spaces in CL-INIT).
      INITIALIZE CH-STATE CM-STATE RK-STATE
+*>   The HUD closures of the connection (57-5 section 1.3, hud-title.cob): boss bars, chat arrival data and delay queue, titles, action bar, scoreboard.
+     CALL "HUD-RESET" USING CLIENT-STATE
 *>   The inventory and the menus.
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 36
          MOVE 0 TO PL-SLOT-COUNT(WS-I) PL-SLOT-ITEM(WS-I) PL-SLOT-FOIL(WS-I) PL-SLOT-DAMAGE(WS-I)

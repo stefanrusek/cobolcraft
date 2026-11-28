@@ -69,6 +69,24 @@
      CALL "PB-GET-LONG" USING PB-BUFFER WS-LONG
      CALL "PB-GET-VARINT" USING PB-BUFFER PL-MODE
      CALL "SPAWN-INFO-FLAT" USING CLIENT-STATE PB-BUFFER
+*>   The rest of the Login packet (57-3 section 7): the last death location, the portal cooldown, the sea level, onlineMode and enforcesSecureChat (57-5 section 2.2);
+*>   the chat's next global index starts at 0.
+     MOVE 0 TO HX-CHAT-INDEX HX-ENFORCES
+     IF PB-POS < PB-LENGTH
+         CALL "PB-GET-BOOL" USING PB-BUFFER WS-VALUE
+         IF WS-VALUE = 1
+             MOVE SPACES TO WS-NAME
+             CALL "PB-GET-IDENTIFIER" USING PB-BUFFER WS-NAME WS-CAP WS-LENGTH
+             CALL "PB-GET-LONG" USING PB-BUFFER WS-LONG
+         END-IF
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-VALUE
+         CALL "PB-GET-VARINT" USING PB-BUFFER WS-VALUE
+         CALL "PB-GET-BOOL" USING PB-BUFFER WS-VALUE
+         CALL "PB-GET-BOOL" USING PB-BUFFER WS-VALUE
+         IF PB-ERROR = 0
+             MOVE WS-VALUE TO HX-ENFORCES
+         END-IF
+     END-IF
      MOVE 20 TO PL-HEALTH
      CALL "HUD-NEW-PLAYER" USING CLIENT-STATE
      CALL "DIMENSION-ENTER" USING CLIENT-STATE

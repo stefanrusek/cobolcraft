@@ -480,6 +480,9 @@
  01 WS-SWT                 BINARY-LONG.
  01 WS-SWARM               BINARY-LONG.
  01 WS-AGG                 BINARY-LONG.
+ 01 WS-PG-POSE             BINARY-LONG.
+ 01 WS-PG-MAX              FLOAT-LONG.
+ 01 WS-PG-TICKS            FLOAT-LONG.
  01 WS-MAINARM             BINARY-LONG.
  01 WS-HSL                 BINARY-LONG.
  01 WS-BLOCKING            BINARY-LONG.
@@ -724,6 +727,11 @@
          COMPUTE WS-KN(38) = EN-X1(WS-ROW) + EN-X3(WS-ROW) * 8
      END-IF
      MOVE 0 TO WS-KN(37)
+*>   The arm pose of a piglin and the ticks of its charge (57-1 section 3) are part of the key too (hundreds and thousands of the number).
+     IF WS-ANIM = "P"
+         CALL "ENTITY-PIGLIN-POSE" USING CLIENT-STATE WS-ROW WS-PG-POSE WS-PG-MAX WS-PG-TICKS
+         COMPUTE WS-KN(37) = WS-PG-POSE * 100 + FUNCTION MIN(WS-PG-TICKS, 100) * 1000
+     END-IF
      PERFORM VARYING WS-HSL FROM 1 BY 1 UNTIL WS-HSL > 2
          IF EN-EQ(WS-ROW, WS-HSL) > 0
              COMPUTE WS-KN(37) = WS-KN(37) + WS-HSL
@@ -898,7 +906,11 @@
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
          WHEN "P"
              MOVE 3 TO WS-VARIANT
-             MOVE 5 TO WS-ST(25)
+*>           The arm pose of the piglin (57-1 section 3, ENTITY-PIGLIN-POSE): dancing, admiring, the two crossbow poses or the default one.
+             CALL "ENTITY-PIGLIN-POSE" USING CLIENT-STATE WS-ROW WS-PG-POSE WS-PG-MAX WS-PG-TICKS
+             MOVE WS-PG-POSE TO WS-ST(25)
+             MOVE WS-PG-MAX TO WS-ST(26)
+             MOVE WS-PG-TICKS TO WS-ST(27)
              CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT
          WHEN "G"
              MOVE 4 TO WS-VARIANT

@@ -2,7 +2,7 @@
 *> the middle and the hotbar along the bottom edge: hotbar slots 0 to 8 as item slot widgets (20
 *> GUI pixels each, side by side, centred), the held one selected; each shows its stack's icon and
 *> count (ui-render.cob). SLOT-WIDGET-ADD adds one item slot widget (the inventory screen's too).
-*> The chat area (US6-2; client-surface §4): CHAT-MESSAGE-ADD keeps a received message (rendered
+*> The chat area (US6-2; client-surface §4): CHAT-LINE-ADD (hud-chat.cob) keeps a received message (rendered
 *> text, arrival clock) in the history of the last 100, oldest first; CHAT-AREA-ADD adds the shown
 *> messages as labels at the left edge, one per 9 GUI pixels, in the order received, the newest at
 *> the bottom: with chat closed (the HUD, above the hotbar) at most the 10 most recent that arrived
@@ -247,36 +247,15 @@
          END-IF
      END-IF
      CALL "EFFECTS-HUD-ADD" USING CLIENT-STATE L-GW L-GH
+*>   The layers of 57-5 section 1.2 over the effect icons, in the order they are drawn: the boss bars, the scoreboard sidebar, the action bar, the title, the chat.
+     CALL "BOSS-HUD-ADD" USING CLIENT-STATE L-GW L-GH
+     CALL "SCORE-SIDEBAR-ADD" USING CLIENT-STATE L-GW L-GH
+     CALL "HUD-ACTIONBAR-ADD" USING CLIENT-STATE L-GW L-GH
+     CALL "HUD-TITLE-ADD" USING CLIENT-STATE L-GW L-GH
      CALL "CHAT-AREA-ADD" USING CLIENT-STATE L-GW L-GH WS-CLOSED
      CALL "DEBUG-OVERLAY-ADD" USING CLIENT-STATE L-GW L-GH
      GOBACK.
  END PROGRAM HUD-BUILD.
-
- IDENTIFICATION DIVISION.
- PROGRAM-ID. CHAT-MESSAGE-ADD.
-*> USING CLIENT-STATE, text (PIC X(512)), length: the message arrives now (its first 256 bytes are
-*> kept); the oldest is dropped once 100 are kept.
- DATA DIVISION.
- WORKING-STORAGE SECTION.
- COPY CLCONST.
- 01 WS-I                   BINARY-LONG.
- LINKAGE SECTION.
- COPY CLSTATE.
- 01 L-TEXT                 PIC X(512).
- 01 L-LENGTH               BINARY-LONG.
- PROCEDURE DIVISION USING CLIENT-STATE L-TEXT L-LENGTH.
-     IF CH-COUNT = CL-MAX-CHAT
-         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I >= CL-MAX-CHAT
-             MOVE CH-MESSAGE(WS-I + 1) TO CH-MESSAGE(WS-I)
-         END-PERFORM
-         SUBTRACT 1 FROM CH-COUNT
-     END-IF
-     ADD 1 TO CH-COUNT
-     MOVE CL-NOW-MS TO CH-TIME(CH-COUNT)
-     MOVE L-TEXT(1:256) TO CH-TEXT(CH-COUNT)
-     MOVE FUNCTION MIN(L-LENGTH, 256) TO CH-LENGTH(CH-COUNT)
-     GOBACK.
- END PROGRAM CHAT-MESSAGE-ADD.
 
  IDENTIFICATION DIVISION.
  PROGRAM-ID. CHAT-AREA-ADD.
@@ -303,6 +282,11 @@
  01 L-GH                   BINARY-LONG.
  01 L-OPEN                 BINARY-LONG.
  PROCEDURE DIVISION USING CLIENT-STATE L-GW L-GH L-OPEN.
+*>   The closed chat is the HUD window of 57-5 section 2.7 (hud-chat.cob); the open chat keeps the lines above the input line.
+     IF L-OPEN = 0
+         CALL "CHAT-HUD-ADD" USING CLIENT-STATE L-GW L-GH
+         GOBACK
+     END-IF
      COMPUTE WS-W = L-GW - 4
      COMPUTE WS-BASE = L-GH - 59
      MOVE CH-COUNT TO WS-LAST

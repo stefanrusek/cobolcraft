@@ -1,0 +1,840 @@
+*> Implementation test of docs/protocol/57-client-closures-1 section 3 (task T47300, T9508 client side): the piglin crossbow arm poses. CROSSBOW_HOLD and
+*> CROSSBOW_CHARGE are applied after the walk swing, the item pose and the idle bob and ASSIGN the arms' xRot and yRot (the hold pose does not add to the previous
+*> yRot: the correction of 12 section 7.5), the arms' zRot keeps the idle bob; the expected values of the eleven scenarios come from
+*> scratchpad/models/piglin_crossbow.py (an independent model of 3.2 and 3.3 that reproduces the worked examples of 3.6). The pose of a replica piglin
+*> (ENTITY-PIGLIN-POSE) follows the order of 3.4 and 34-2 section 6: dancing (entry 19), a loved item in the off hand, aggressive with a melee weapon (not built:
+*> the documents do not say what a melee weapon is), the charging flag (entry 18), a charged crossbow (component 51 of the main hand), else default; a brute knows
+*> neither crossbow pose; ticksUsingItem counts the client ticks of the using flag (entry 8 bit 0); the maximum charge is 25 (Quick Charge is not kept).
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. TEST-PIGLIN-CROSSBOW.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY CLSTATE.
+ COPY CLCONST.
+ COPY CONTENT.
+ COPY CLEMM.
+ COPY TESTLIB.
+ COPY PROTO.
+ COPY PROTO REPLACING LEADING ==PB-== BY ==MD-==.
+ 01 WS-STATE.
+    05 WS-S                FLOAT-LONG OCCURS 48 TIMES.
+ 01 WS-VARIANT             BINARY-LONG.
+ 01 WS-LAYER               PIC X(32) VALUE "PIGLIN".
+ 01 WS-OK                  BINARY-LONG.
+ 01 WS-NAME                PIC X(120).
+ 01 WS-PART-NAME           PIC X(24).
+ 01 WS-FIELD               BINARY-LONG.
+ 01 WS-FIELD-NAME          PIC X(8).
+ 01 WS-P                   BINARY-LONG.
+ 01 WS-EXP                 BINARY-LONG.
+ 01 WS-OBS                 BINARY-LONG.
+ 01 WS-DIFF                BINARY-LONG.
+ 01 WS-KEY                 PIC X(112).
+ 01 WS-ROW-AREA            PIC X(66).
+ 01 WS-ITEM-ROW            PIC X(270).
+ 01 WS-STATUS              BINARY-LONG.
+ 01 WS-TYPE                BINARY-LONG.
+ 01 WS-BRUTE-TYPE          BINARY-LONG.
+ 01 WS-X                   FLOAT-LONG VALUE 10.5.
+ 01 WS-Y                   FLOAT-LONG VALUE 64.
+ 01 WS-Z                   FLOAT-LONG VALUE 10.5.
+ 01 WS-YAW                 FLOAT-SHORT VALUE 0.
+ 01 WS-ID                  BINARY-LONG VALUE 7.
+ 01 WS-BRUTE-ID            BINARY-LONG VALUE 8.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 4096.
+ 01 WS-DATA-ID             BINARY-LONG VALUE 101.
+ 01 WS-EQUIP-ID            BINARY-LONG VALUE 104.
+ 01 WS-SLOT                BINARY-LONG.
+ 01 WS-ROW                 BINARY-LONG.
+ 01 WS-POSE                BINARY-LONG.
+ 01 WS-MAXC                FLOAT-LONG.
+ 01 WS-TICKS               FLOAT-LONG.
+ 01 WS-CROSSBOW            BINARY-LONG.
+ 01 WS-GOLD                BINARY-LONG.
+ 01 WS-ENTRY-INDEX         BINARY-LONG.
+ 01 WS-ENTRY-SERIALIZER    BINARY-LONG.
+ 01 WS-ENTRY-VALUE         BINARY-LONG.
+ 01 WS-SUM-A               FLOAT-LONG.
+ 01 WS-SUM-B               FLOAT-LONG.
+ 01 WS-K                   BINARY-LONG.
+ 01 WS-N                   BINARY-LONG.
+ 01 WS-EYE-TABLE.
+    05 WS-EYE              FLOAT-LONG OCCURS 3 TIMES.
+ PROCEDURE DIVISION.
+     CALL "CL-INIT" USING CLIENT-STATE
+     MOVE 0 TO PK-COUNT
+     CALL "ENTITY-ATLAS-BUILD" USING CLIENT-STATE
+     MOVE 256 TO PL-HEIGHT
+     MOVE 0 TO SK-U
+     MOVE 10 TO WS-EYE(1) WS-EYE(3)
+     MOVE 64 TO WS-EYE(2)
+     MOVE 1 TO CT-OPEN
+     MOVE CT-TYPE-STANDARD TO CT-SET-TYPE
+     MOVE "N" TO TL-MODE
+     CALL "EMD-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+*>   Scenario: hold right-handed head pitch -10 yaw 20.
+     INITIALIZE WS-STATE
+     MOVE 1.0 TO WS-S(5)
+     MOVE -10 TO WS-S(1)
+     MOVE 20 TO WS-S(2)
+     MOVE 0 TO WS-S(6)
+     MOVE 1 TO WS-S(13)
+     MOVE 1 TO WS-S(25)
+     MOVE 25 TO WS-S(26)
+     MOVE 0 TO WS-S(27)
+     MOVE 3 TO WS-VARIANT
+     MOVE "hold right-handed head pitch -10 yaw 20" TO WS-NAME
+     PERFORM POSE-RUN
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -1645329 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE 49066 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE 100000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -1674533 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE 949066 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE -100000 TO WS-EXP
+     PERFORM POSE-CHECK
+*>   Scenario: hold right-handed head straight.
+     INITIALIZE WS-STATE
+     MOVE 1.0 TO WS-S(5)
+     MOVE 0 TO WS-S(1)
+     MOVE 0 TO WS-S(2)
+     MOVE 0 TO WS-S(6)
+     MOVE 1 TO WS-S(13)
+     MOVE 1 TO WS-S(25)
+     MOVE 25 TO WS-S(26)
+     MOVE 0 TO WS-S(27)
+     MOVE 3 TO WS-VARIANT
+     MOVE "hold right-handed head straight" TO WS-NAME
+     PERFORM POSE-RUN
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -1470796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE -300000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE 100000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -1500000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE 600000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE -100000 TO WS-EXP
+     PERFORM POSE-CHECK
+*>   Scenario: hold left-handed head straight.
+     INITIALIZE WS-STATE
+     MOVE 1.0 TO WS-S(5)
+     MOVE 0 TO WS-S(1)
+     MOVE 0 TO WS-S(2)
+     MOVE 0 TO WS-S(6)
+     MOVE 2 TO WS-S(13)
+     MOVE 1 TO WS-S(25)
+     MOVE 25 TO WS-S(26)
+     MOVE 0 TO WS-S(27)
+     MOVE 3 TO WS-VARIANT
+     MOVE "hold left-handed head straight" TO WS-NAME
+     PERFORM POSE-RUN
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -1500000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE -600000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE 100000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -1470796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE 300000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE -100000 TO WS-EXP
+     PERFORM POSE-CHECK
+*>   Scenario: hold left-handed head pitch 15 yaw -30 age 100.
+     INITIALIZE WS-STATE
+     MOVE 1.0 TO WS-S(5)
+     MOVE 15 TO WS-S(1)
+     MOVE -30 TO WS-S(2)
+     MOVE 100 TO WS-S(6)
+     MOVE 2 TO WS-S(13)
+     MOVE 1 TO WS-S(25)
+     MOVE 25 TO WS-S(26)
+     MOVE 0 TO WS-S(27)
+     MOVE 3 TO WS-VARIANT
+     MOVE "hold left-handed head pitch 15 yaw -30 age 100" TO WS-NAME
+     PERFORM POSE-RUN
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -1238201 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE -1123599 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE 4443 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -1208997 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE -223599 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE -4443 TO WS-EXP
+     PERFORM POSE-CHECK
+*>   Scenario: charge right-handed ticks 0.
+     INITIALIZE WS-STATE
+     MOVE 1.0 TO WS-S(5)
+     MOVE 5 TO WS-S(1)
+     MOVE 5 TO WS-S(2)
+     MOVE 0 TO WS-S(6)
+     MOVE 1 TO WS-S(13)
+     MOVE 2 TO WS-S(25)
+     MOVE 25 TO WS-S(26)
+     MOVE 0 TO WS-S(27)
+     MOVE 3 TO WS-VARIANT
+     MOVE "charge right-handed ticks 0" TO WS-NAME
+     PERFORM POSE-RUN
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -970796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE -800000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE 100000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -970796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE 400000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE -100000 TO WS-EXP
+     PERFORM POSE-CHECK
+*>   Scenario: charge right-handed ticks 6.25.
+     INITIALIZE WS-STATE
+     MOVE 1.0 TO WS-S(5)
+     MOVE 5 TO WS-S(1)
+     MOVE 5 TO WS-S(2)
+     MOVE 0 TO WS-S(6)
+     MOVE 1 TO WS-S(13)
+     MOVE 2 TO WS-S(25)
+     MOVE 25 TO WS-S(26)
+     MOVE 6.25 TO WS-S(27)
+     MOVE 3 TO WS-VARIANT
+     MOVE "charge right-handed ticks 6.25" TO WS-NAME
+     PERFORM POSE-RUN
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -970796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE -800000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE 100000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -1120796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE 512500 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE -100000 TO WS-EXP
+     PERFORM POSE-CHECK
+*>   Scenario: charge right-handed ticks 12.5.
+     INITIALIZE WS-STATE
+     MOVE 1.0 TO WS-S(5)
+     MOVE 0 TO WS-S(1)
+     MOVE 0 TO WS-S(2)
+     MOVE 40 TO WS-S(6)
+     MOVE 1 TO WS-S(13)
+     MOVE 2 TO WS-S(25)
+     MOVE 25 TO WS-S(26)
+     MOVE 12.5 TO WS-S(27)
+     MOVE 3 TO WS-VARIANT
+     MOVE "charge right-handed ticks 12.5" TO WS-NAME
+     PERFORM POSE-RUN
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -970796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE -800000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE 5162 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -1270796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE 625000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE -5162 TO WS-EXP
+     PERFORM POSE-CHECK
+*>   Scenario: charge right-handed ticks 25.
+     INITIALIZE WS-STATE
+     MOVE 1.0 TO WS-S(5)
+     MOVE 0 TO WS-S(1)
+     MOVE 0 TO WS-S(2)
+     MOVE 0 TO WS-S(6)
+     MOVE 1 TO WS-S(13)
+     MOVE 2 TO WS-S(25)
+     MOVE 25 TO WS-S(26)
+     MOVE 25 TO WS-S(27)
+     MOVE 3 TO WS-VARIANT
+     MOVE "charge right-handed ticks 25" TO WS-NAME
+     PERFORM POSE-RUN
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -970796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE -800000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE 100000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -1570796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE 850000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE -100000 TO WS-EXP
+     PERFORM POSE-CHECK
+*>   Scenario: charge right-handed ticks 40 clamps to 25.
+     INITIALIZE WS-STATE
+     MOVE 1.0 TO WS-S(5)
+     MOVE 0 TO WS-S(1)
+     MOVE 0 TO WS-S(2)
+     MOVE 0 TO WS-S(6)
+     MOVE 1 TO WS-S(13)
+     MOVE 2 TO WS-S(25)
+     MOVE 25 TO WS-S(26)
+     MOVE 40 TO WS-S(27)
+     MOVE 3 TO WS-VARIANT
+     MOVE "charge right-handed ticks 40 clamps to 25" TO WS-NAME
+     PERFORM POSE-RUN
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -970796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE -800000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE 100000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -1570796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE 850000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE -100000 TO WS-EXP
+     PERFORM POSE-CHECK
+*>   Scenario: charge left-handed ticks 25.
+     INITIALIZE WS-STATE
+     MOVE 1.0 TO WS-S(5)
+     MOVE 0 TO WS-S(1)
+     MOVE 0 TO WS-S(2)
+     MOVE 0 TO WS-S(6)
+     MOVE 2 TO WS-S(13)
+     MOVE 2 TO WS-S(25)
+     MOVE 25 TO WS-S(26)
+     MOVE 25 TO WS-S(27)
+     MOVE 3 TO WS-VARIANT
+     MOVE "charge left-handed ticks 25" TO WS-NAME
+     PERFORM POSE-RUN
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -1570796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE -850000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE 100000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -970796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE 800000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE -100000 TO WS-EXP
+     PERFORM POSE-CHECK
+*>   Scenario: charge left-handed max 15 ticks 7.5.
+     INITIALIZE WS-STATE
+     MOVE 1.0 TO WS-S(5)
+     MOVE 0 TO WS-S(1)
+     MOVE 0 TO WS-S(2)
+     MOVE 0 TO WS-S(6)
+     MOVE 2 TO WS-S(13)
+     MOVE 2 TO WS-S(25)
+     MOVE 15 TO WS-S(26)
+     MOVE 7.5 TO WS-S(27)
+     MOVE 3 TO WS-VARIANT
+     MOVE "charge left-handed max 15 ticks 7.5" TO WS-NAME
+     PERFORM POSE-RUN
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -1270796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE -625000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "right_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE 100000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 1 TO WS-FIELD
+     MOVE "xRot" TO WS-FIELD-NAME
+     MOVE -970796 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 2 TO WS-FIELD
+     MOVE "yRot" TO WS-FIELD-NAME
+     MOVE 800000 TO WS-EXP
+     PERFORM POSE-CHECK
+     MOVE "left_arm" TO WS-PART-NAME
+     MOVE 3 TO WS-FIELD
+     MOVE "zRot" TO WS-FIELD-NAME
+     MOVE -100000 TO WS-EXP
+     PERFORM POSE-CHECK
+*>   The pose of a replica piglin (3.4).
+     MOVE "piglin" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-TYPE WS-ROW-AREA WS-STATUS
+     MOVE "piglin_brute" TO WS-KEY
+     CALL "CONTENT-ENTITY-BY-KEY" USING WS-KEY WS-BRUTE-TYPE WS-ROW-AREA WS-STATUS
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-ID WS-TYPE WS-X WS-Y WS-Z WS-YAW
+     CALL "MM-SPAWN" USING CLIENT-STATE WS-BRUTE-ID WS-BRUTE-TYPE WS-X WS-Y WS-Z WS-YAW
+     MOVE "crossbow" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-CROSSBOW WS-ITEM-ROW WS-STATUS
+     MOVE "gold_ingot" TO WS-KEY
+     CALL "CONTENT-ITEM-BY-KEY" USING WS-KEY WS-GOLD WS-ITEM-ROW WS-STATUS
+     MOVE 5 TO TL-EXPECTED-N
+     MOVE "a piglin with nothing in its hands is in the default pose" TO WS-NAME
+     MOVE 5 TO WS-EXP
+     PERFORM PIGLIN-POSE-CASE
+*>   A crossbow in the main hand, no projectile loaded (component 51, an empty list).
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 51 TO PB-ISX-TYPE(1)
+     MOVE 1 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"00" TO PB-ISX-VALUE(1)
+     MOVE 0 TO WS-SLOT
+     MOVE WS-CROSSBOW TO PB-ISX-ITEM
+     PERFORM PUT-EQUIP
+     MOVE "an unloaded crossbow is the default pose" TO WS-NAME
+     MOVE 5 TO WS-EXP
+     PERFORM PIGLIN-POSE-CASE
+*>   Loaded: a non-empty charged_projectiles list.
+     MOVE 5 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"0105010000" TO PB-ISX-VALUE(1)
+     PERFORM PUT-EQUIP
+     MOVE "a loaded crossbow is CROSSBOW_HOLD (1)" TO WS-NAME
+     MOVE 1 TO WS-EXP
+     PERFORM PIGLIN-POSE-CASE
+*>   The charging flag (entry 18) beats the loaded crossbow.
+     MOVE 18 TO WS-ENTRY-INDEX
+     MOVE 8 TO WS-ENTRY-SERIALIZER
+     MOVE 1 TO WS-ENTRY-VALUE
+     PERFORM PUT-ENTRY
+     MOVE "the charging flag is CROSSBOW_CHARGE (2)" TO WS-NAME
+     MOVE 2 TO WS-EXP
+     PERFORM PIGLIN-POSE-CASE
+*>   The dancing flag (entry 19) comes first of all.
+     MOVE 19 TO WS-ENTRY-INDEX
+     PERFORM PUT-ENTRY
+     MOVE "dancing beats charging: DANCING (4)" TO WS-NAME
+     MOVE 4 TO WS-EXP
+     PERFORM PIGLIN-POSE-CASE
+*>   A loved item in the off hand (gold ingot) beats the crossbow poses but not dancing.
+     MOVE 0 TO WS-ENTRY-VALUE
+     PERFORM PUT-ENTRY
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 5 TO PB-ISX-TYPE(1)
+     MOVE 0 TO PB-ISX-ADDED-COUNT
+     MOVE 1 TO WS-SLOT
+     MOVE WS-GOLD TO PB-ISX-ITEM
+     PERFORM PUT-EQUIP
+     MOVE "a gold ingot in the off hand is ADMIRING_ITEM (3), before the crossbow poses" TO WS-NAME
+     MOVE 3 TO WS-EXP
+     PERFORM PIGLIN-POSE-CASE
+*>   The off hand emptied: the charging flag is still on: CROSSBOW_CHARGE.
+     MOVE 0 TO PB-ISX-COUNT
+     PERFORM PUT-EQUIP-EMPTY
+     MOVE "the off hand empty again: CROSSBOW_CHARGE (2)" TO WS-NAME
+     MOVE 2 TO WS-EXP
+     PERFORM PIGLIN-POSE-CASE
+     MOVE 18 TO WS-ENTRY-INDEX
+     PERFORM PUT-ENTRY
+     MOVE "the charging flag off, the crossbow still loaded: CROSSBOW_HOLD (1)" TO WS-NAME
+     MOVE 1 TO WS-EXP
+     PERFORM PIGLIN-POSE-CASE
+*>   ticksUsingItem counts the ticks of the using flag (entry 8 bit 0), 0 when it is off.
+     MOVE 8 TO WS-ENTRY-INDEX
+     MOVE 0 TO WS-ENTRY-SERIALIZER
+     MOVE 1 TO WS-ENTRY-VALUE
+     PERFORM PUT-ENTRY
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     MOVE "three ticks of using the item: ticksUsingItem 3" TO WS-NAME
+     CALL "ENTITY-FIND" USING CLIENT-STATE WS-ID WS-ROW
+     CALL "ENTITY-PIGLIN-POSE" USING CLIENT-STATE WS-ROW WS-POSE WS-MAXC WS-TICKS
+     MOVE WS-NAME TO TL-CASE
+     MOVE 3 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-TICKS
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE "the maximum crossbow charge is 25" TO TL-CASE
+     MOVE 25 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-MAXC
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 0 TO WS-ENTRY-VALUE
+     PERFORM PUT-ENTRY
+     CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     CALL "ENTITY-PIGLIN-POSE" USING CLIENT-STATE WS-ROW WS-POSE WS-MAXC WS-TICKS
+     MOVE "the using flag cleared: ticksUsingItem 0" TO TL-CASE
+     MOVE 0 TO TL-EXPECTED-N
+     COMPUTE TL-OBSERVED-N ROUNDED = WS-TICKS
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+*>   an aggressive piglin with no known melee weapon keeps the default pose (the melee pose is not built)
+     CALL "ENTITY-FIND" USING CLIENT-STATE WS-ID WS-ROW
+     MOVE 4 TO EN-MOB-FLAGS(WS-ROW)
+     MOVE "an aggressive piglin is not in the melee pose (the loaded crossbow still holds): 1" TO WS-NAME
+     MOVE 1 TO WS-EXP
+     PERFORM PIGLIN-POSE-CASE
+     MOVE 0 TO EN-MOB-FLAGS(WS-ROW)
+*>   A brute knows neither crossbow pose.
+     CALL "ENTITY-FIND" USING CLIENT-STATE WS-BRUTE-ID WS-ROW
+     MOVE WS-BRUTE-ID TO WS-ID
+     MOVE 18 TO WS-ENTRY-INDEX
+     MOVE 8 TO WS-ENTRY-SERIALIZER
+     MOVE 1 TO WS-ENTRY-VALUE
+     PERFORM PUT-ENTRY
+     MOVE "a piglin brute with the charging flag is in the default pose" TO WS-NAME
+     MOVE 5 TO WS-EXP
+     PERFORM PIGLIN-POSE-CASE
+     MOVE 7 TO WS-ID
+*>   Drawing: the arms of the mesh follow the pose and, while charging, the ticks.
+     MOVE 0 TO WS-ENTRY-VALUE
+     MOVE 18 TO WS-ENTRY-INDEX
+     MOVE 8 TO WS-ENTRY-SERIALIZER
+     MOVE 7 TO WS-ID
+     PERFORM PUT-ENTRY
+     PERFORM MESH-SUM
+     MOVE WS-SUM-A TO WS-SUM-B
+     MOVE 1 TO WS-SLOT
+     MOVE 0 TO WS-SLOT
+     MOVE "the mesh of a piglin holding a loaded crossbow differs from the mesh of a piglin with an unloaded one" TO WS-NAME
+     MOVE 1 TO PB-ISX-ADDED-COUNT
+     MOVE 51 TO PB-ISX-TYPE(1)
+     MOVE 1 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"00" TO PB-ISX-VALUE(1)
+     MOVE WS-CROSSBOW TO PB-ISX-ITEM
+     PERFORM PUT-EQUIP
+     PERFORM MESH-SUM
+     MOVE WS-SUM-A TO WS-SUM-B
+     MOVE 5 TO PB-ISX-VALUE-LENGTH(1)
+     MOVE X"0105010000" TO PB-ISX-VALUE(1)
+     PERFORM PUT-EQUIP
+     PERFORM MESH-SUM
+     MOVE 1 TO WS-EXP
+     MOVE 0 TO WS-OBS
+     IF FUNCTION ABS(WS-SUM-A - WS-SUM-B) > 0.001
+         MOVE 1 TO WS-OBS
+     END-IF
+     PERFORM CHK
+     MOVE 1 TO WS-ENTRY-VALUE
+     PERFORM PUT-ENTRY
+     MOVE WS-SUM-A TO WS-SUM-B
+     MOVE 8 TO WS-ENTRY-INDEX
+     MOVE 0 TO WS-ENTRY-SERIALIZER
+     PERFORM PUT-ENTRY
+     MOVE 18 TO WS-ENTRY-INDEX
+     MOVE 8 TO WS-ENTRY-SERIALIZER
+     PERFORM PUT-ENTRY
+     PERFORM MESH-SUM
+     MOVE WS-SUM-A TO WS-SUM-B
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > 12
+         CALL "ENTITIES-ANIM-TICK" USING CLIENT-STATE
+     END-PERFORM
+     PERFORM MESH-SUM
+     MOVE "the mesh of a charging piglin changes with the ticks of the charge" TO WS-NAME
+     MOVE 1 TO WS-EXP
+     MOVE 0 TO WS-OBS
+     IF FUNCTION ABS(WS-SUM-A - WS-SUM-B) > 0.001
+         MOVE 1 TO WS-OBS
+     END-IF
+     PERFORM CHK
+     STOP RUN.
+
+ MESH-SUM.
+     CALL "ENTITIES-MESH" USING CLIENT-STATE WS-EYE-TABLE
+     MOVE 0 TO WS-SUM-A
+     PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > RL-EN-COUNT
+         COMPUTE WS-SUM-A = WS-SUM-A + RL-EN-X(WS-K) * 1.3 + RL-EN-Y(WS-K) * 2.1 + RL-EN-Z(WS-K) * 3.7
+     END-PERFORM.
+
+ PIGLIN-POSE-CASE.
+     CALL "ENTITY-FIND" USING CLIENT-STATE WS-ID WS-ROW
+     CALL "ENTITY-PIGLIN-POSE" USING CLIENT-STATE WS-ROW WS-POSE WS-MAXC WS-TICKS
+     MOVE WS-POSE TO WS-OBS
+     PERFORM CHK.
+
+ CHK.
+     MOVE WS-NAME TO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE WS-EXP TO TL-EXPECTED-N
+     MOVE WS-OBS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+ POSE-RUN.
+     CALL "EMD-LAYER" USING EMM-MODEL WS-LAYER WS-OK
+     CALL "EMD-ANIM" USING EMM-MODEL WS-STATE WS-VARIANT.
+
+ POSE-CHECK.
+     CALL "EMM-FIND" USING EMM-MODEL WS-PART-NAME WS-P
+     EVALUATE WS-FIELD
+         WHEN 1 COMPUTE WS-OBS ROUNDED = MM-CXROT(WS-P) * 1000000
+         WHEN 2 COMPUTE WS-OBS ROUNDED = MM-CYROT(WS-P) * 1000000
+         WHEN OTHER COMPUTE WS-OBS ROUNDED = MM-CZROT(WS-P) * 1000000
+     END-EVALUATE
+     COMPUTE WS-DIFF = FUNCTION ABS(WS-EXP - WS-OBS)
+     IF WS-DIFF <= 4
+         MOVE WS-EXP TO WS-OBS
+     END-IF
+     MOVE SPACES TO TL-CASE
+     STRING "57-1 3: " FUNCTION TRIM(WS-NAME) ": " FUNCTION TRIM(WS-PART-NAME) " " FUNCTION TRIM(WS-FIELD-NAME) " (millionths)"
+         DELIMITED BY SIZE INTO TL-CASE
+     MOVE "N" TO TL-MODE
+     MOVE WS-EXP TO TL-EXPECTED-N
+     MOVE WS-OBS TO TL-OBSERVED-N
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT.
+
+*> Set Equipment (id 104) of the entity WS-ID: slot WS-SLOT, one stack of PB-ISX-ITEM with the components set in PB-ISX-*.
+ PUT-EQUIP.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE 1 TO PB-ISX-COUNT
+     MOVE 0 TO PB-ISX-REMOVED-COUNT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-SLOT
+     CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-PACKET" USING CLIENT-STATE PB-BUFFER WS-EQUIP-ID.
+
+ PUT-EQUIP-EMPTY.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     MOVE 0 TO PB-ISX-COUNT
+     MOVE 0 TO PB-ISX-ADDED-COUNT PB-ISX-REMOVED-COUNT
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     CALL "PB-PUT-UBYTE" USING PB-BUFFER WS-SLOT
+     CALL "PB-PUT-ITEM-STACK" USING PB-BUFFER PB-ITEMSTACK-X
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-PACKET" USING CLIENT-STATE PB-BUFFER WS-EQUIP-ID.
+
+*> Set Entity Data (id 101) of the entity WS-ID with the one entry WS-ENTRY-INDEX of serializer WS-ENTRY-SERIALIZER and value WS-ENTRY-VALUE.
+ PUT-ENTRY.
+     CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ID
+     INITIALIZE MD-METADATA-ENTRY-X
+     MOVE WS-ENTRY-INDEX TO MD-MX-INDEX
+     MOVE WS-ENTRY-SERIALIZER TO MD-MX-SERIALIZER
+     MOVE WS-ENTRY-VALUE TO MD-MX-INT
+     CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER MD-METADATA-ENTRY-X
+     INITIALIZE MD-METADATA-ENTRY-X
+     MOVE MD-MD-END TO MD-MX-INDEX
+     CALL "PB-PUT-METADATA-ENTRY-X" USING PB-BUFFER MD-METADATA-ENTRY-X
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-PACKET" USING CLIENT-STATE PB-BUFFER WS-DATA-ID.
+ END PROGRAM TEST-PIGLIN-CROSSBOW.
+
+ IDENTIFICATION DIVISION.
+ PROGRAM-ID. MM-SPAWN.
+*> USING CLIENT-STATE, entity id, type (registry id), x y z (FLOAT-LONG), yaw (FLOAT-SHORT, also the head yaw): Add Entity.
+ DATA DIVISION.
+ WORKING-STORAGE SECTION.
+ COPY PROTO.
+ 01 WS-READY               BINARY-LONG VALUE 0.
+ 01 WS-CAPACITY            BINARY-LONG VALUE 1024.
+ 01 WS-ADD                 BINARY-LONG VALUE 1.
+ 01 WS-ZERO                BINARY-LONG VALUE 0.
+ 01 WS-UUID                PIC X(16) VALUE LOW-VALUES.
+ 01 WS-V0                  FLOAT-LONG VALUE 0.
+ 01 WS-V1                  FLOAT-LONG VALUE 0.
+ 01 WS-V2                  FLOAT-LONG VALUE 0.
+ 01 WS-A0                  FLOAT-SHORT VALUE 0.
+ LINKAGE SECTION.
+ COPY CLSTATE.
+ 01 L-ID                   BINARY-LONG.
+ 01 L-TYPE                 BINARY-LONG.
+ 01 L-X                    FLOAT-LONG.
+ 01 L-Y                    FLOAT-LONG.
+ 01 L-Z                    FLOAT-LONG.
+ 01 L-YAW                  FLOAT-SHORT.
+ PROCEDURE DIVISION USING CLIENT-STATE L-ID L-TYPE L-X L-Y L-Z L-YAW.
+     IF WS-READY = 0
+         CALL "PB-INIT" USING PB-BUFFER WS-CAPACITY
+         MOVE 1 TO WS-READY
+     END-IF
+     CALL "PB-RESET" USING PB-BUFFER
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-ID
+     CALL "PB-PUT-UUID" USING PB-BUFFER WS-UUID
+     CALL "PB-PUT-VARINT" USING PB-BUFFER L-TYPE
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-X
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Y
+     CALL "PB-PUT-DOUBLE" USING PB-BUFFER L-Z
+     CALL "PB-PUT-LPVEC3" USING PB-BUFFER WS-V0 WS-V1 WS-V2
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER WS-A0
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-ANGLE" USING PB-BUFFER L-YAW
+     CALL "PB-PUT-VARINT" USING PB-BUFFER WS-ZERO
+     MOVE 0 TO PB-POS
+     CALL "ENTITY-PACKET" USING CLIENT-STATE PB-BUFFER WS-ADD
+     GOBACK.
+ END PROGRAM MM-SPAWN.
+

@@ -293,10 +293,18 @@
      IF WS-REGISTRY = "minecraft:painting_variant"
          MOVE 0 TO RG-PAINT-COUNT
      END-IF
+     IF WS-REGISTRY = "minecraft:chat_type"
+         MOVE 0 TO HX-CT-COUNT
+     END-IF
      PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > WS-COUNT OR PB-ERROR = 1
          MOVE SPACES TO WS-NAME
          CALL "PB-GET-IDENTIFIER" USING PB-BUFFER WS-NAME WS-CAP WS-NAME-LENGTH
          CALL "PB-GET-BOOL" USING PB-BUFFER WS-PRESENT
+*>       A chat type (57-5 section 2.3): the decoration is kept by its position in the registry; its data, when sent, is consumed there.
+         IF WS-REGISTRY = "minecraft:chat_type"
+             CALL "CHAT-TYPE-ENTRY" USING CLIENT-STATE WS-I WS-NAME WS-PRESENT PB-BUFFER
+             MOVE 0 TO WS-PRESENT
+         END-IF
          MOVE 0 TO WS-D WS-B
          IF WS-REGISTRY = "minecraft:dimension_type" AND RG-DIM-COUNT < CL-MAX-DIM-TYPES
              ADD 1 TO RG-DIM-COUNT

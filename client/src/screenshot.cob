@@ -99,6 +99,8 @@
 *> USING CLIENT-STATE, the result of cc_vk_screenshot_result (CC-AGAIN while the frame has not been presented).
  DATA DIVISION.
  WORKING-STORAGE SECTION.
+ 01 WS-CHAT-TAG            BINARY-LONG VALUE 5.
+ 01 WS-CHAT-SOURCE         BINARY-LONG VALUE 1.
  COPY CCSHIM.
  COPY CLARGS.
  01 WS-KEY                 PIC X(80).
@@ -134,7 +136,8 @@
                  COMPUTE WS-LENGTH = 26 + CL-SHOT-NAME-LENGTH
              END-IF
          END-IF
-         CALL "CHAT-MESSAGE-ADD" USING CLIENT-STATE WS-TEXT WS-LENGTH
+*>       The client's own line: a system client message with the server message tag (57-5 section 2.4).
+         CALL "CHAT-LINE-ADD" USING CLIENT-STATE WS-TEXT WS-LENGTH WS-CHAT-TAG WS-CHAT-SOURCE
          DISPLAY "screenshot: " WS-TEXT(1:WS-LENGTH)
          IF CL-SHOT-AUTO = 1 AND CL-SHOT-EXIT = 1
              MOVE 1 TO CL-QUIT

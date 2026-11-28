@@ -1,5 +1,5 @@
 *> Implementation test of the chat screen and the chat history (client/src/screens/chat.cob,
-*> hud.cob CHAT-MESSAGE-ADD; client-surface §4; 05c Chat Message String(max 256)): the line stops
+*> hud-chat.cob CHAT-LINE-ADD; client-surface §4; 05c Chat Message String(max 256)): the line stops
 *> at 256 UTF-16 code units (a 4-byte character counts two), the input field shows the end of a
 *> line longer than a widget text from a character boundary, Backspace deletes a whole character,
 *> Enter on an empty line and Escape close chat without sending, and the history keeps the last

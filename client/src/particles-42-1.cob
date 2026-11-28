@@ -430,7 +430,9 @@
      CALL "PB-GET-VARINT" USING PB-BUFFER PO-ITEM-ID
      CALL "PB-GET-VARINT" USING PB-BUFFER PO-ITEM-COUNT
      COMPUTE WS-REMAIN = PB-LENGTH - PB-POS
-     IF PB-ERROR = 1 OR PO-ITEM-COUNT < 1 OR PO-ITEM-ID < 0 OR WS-REMAIN > 20000
+*>   57-3 section 4.4: the template is empty (an error) when the count is 0 or the item is air (registry id 0); a negative count is not
+*>   range checked by the vanilla constructor but is no usable stack either.
+     IF PB-ERROR = 1 OR PO-ITEM-COUNT < 1 OR PO-ITEM-ID <= 0 OR WS-REMAIN > 20000
          MOVE 1 TO PO-ERROR
      ELSE
          MOVE 20100 TO WS-INT

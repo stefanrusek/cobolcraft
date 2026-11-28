@@ -137,6 +137,8 @@
           15 SM-W-LENGTH     BINARY-LONG.
           15 SM-W-TEXT       PIC X(256).
           15 SM-W-COLOUR     BINARY-LONG.    *> text colour as an RGB integer; 0 = white (black is 1); drawn as its grey luminance (the vertex has one brightness)
+          15 SM-W-ALPHA      BINARY-LONG.    *> 0 = as before; 1 to 255 = the alpha of an overlay or of a label's glyphs (WIDGET-ALPHA)
+          15 SM-W-SCALE      BINARY-LONG.    *> a label's text scale (WIDGET-SCALE; 0 = 1)
 *>     The tooltip layer (12 section 5.8): the lines of the tooltip to draw this frame, the mouse in GUI pixels, the item-tooltip title gap.
        10 TT-COUNT           BINARY-LONG.
        10 TT-X               BINARY-LONG.
@@ -868,6 +870,11 @@
           15 EN-AX-YR        FLOAT-LONG.
 *>        A baby axolotl's animation state (4.5): 0 none (an adult), 1 swim, 2 walk, 3 walk underwater, 4 idle underwater, 5 idle underwater on the ground, 6 idle on the ground, 7 play dead,
 *>        and the tick count at which it started (AnimationState.startIfStopped).
+*>        The piglin (57-1 section 3, entities-piglin.cob): EN-PG-CHARGING the charging-crossbow flag (entry 18), EN-PG-DANCING the dancing flag (entry 19), EN-PG-USE the ticks the
+*>        mob has been using an item (counted per client tick while EN-LIVING bit 0 is set), the pose of the arms is derived from them and from the held stacks.
+          15 EN-PG-CHARGING   BINARY-LONG.
+          15 EN-PG-DANCING    BINARY-LONG.
+          15 EN-PG-USE        BINARY-LONG.
           15 EN-AX-BS        BINARY-LONG.
           15 EN-AX-BT        BINARY-LONG.
 *>        The ender dragon and the end crystal (34-7 sections 7.3 and 8): EN-HP the health of entry 9 (FLOAT; 1 until told), EN-DD the death time dragonDeathTime (ticks while the health is 0 or less,
@@ -950,6 +957,7 @@
              20 EN-EQ-TRIM-PAT BINARY-LONG.
              20 EN-EQ-FOIL     BINARY-LONG.
              20 EN-EQ-NOINST   BINARY-LONG.   *> 1 when the stack's patch removes the instrument component (type 63; a goat horn then has a use duration of 0, 58 section 5.2)
+             20 EN-EQ-CHARGED  BINARY-LONG.   *> 1 when the stack has a non-empty charged_projectiles (a loaded crossbow, 25 section 9.7)
           15 EN-HB OCCURS 2 TIMES.
              20 EN-HB-BASE     BINARY-LONG.
              20 EN-HB-COUNT    BINARY-LONG.
@@ -1249,7 +1257,7 @@
 *>     left, top, right, bottom.
        10 GS-TOTAL-H         BINARY-LONG.
        10 GS-MAX-W           BINARY-LONG.
-       10 GS-ROW OCCURS 240 TIMES.
+       10 GS-ROW OCCURS 262 TIMES.
           15 GS-X            BINARY-LONG.
           15 GS-Y            BINARY-LONG.
           15 GS-W            BINARY-LONG.
@@ -1855,4 +1863,104 @@
           15 RL-UI-R         FLOAT-SHORT.   *> tint multiplier (1 = untinted)
           15 RL-UI-G         FLOAT-SHORT.
           15 RL-UI-BLUE      FLOAT-SHORT.
-
+*>  ---- state of the HUD closures of docs/protocol/57-client-closures-1 and 57-client-closures-5 (lane p70g) ----
+    05 HX-STATE.
+       10 HX-GUI-TICKS       BINARY-DOUBLE.  *> the GUI tick counter (57-5 section 1.3: counted by unpaused client ticks; it stamps chat lines)
+       10 HX-TEXT-SCALE      FLOAT-LONG.     *> UI-TEXT's scale of the glyph quads (0 = 1)
+*>     The atlas clock (57-1 section 1.4: one step per rendered frame with a game tick due): the steps counted and the clock when the next tick is due.
+       10 AN-TICKS           BINARY-DOUBLE.
+       10 AN-NEXT-MS         BINARY-DOUBLE.
+*>     Chat (57-5 section 2): the arrival tick, tag and source of each CH-MESSAGE, the next global index, the delay queue and the clock of the last shown line.
+       10 HX-CM OCCURS 100 TIMES.
+          15 HX-CM-TICK      BINARY-DOUBLE.  *> the GUI tick at which the line was added
+          15 HX-CM-TAG       BINARY-LONG.    *> 0 none, 1 not secure, 2 modified, 3 error, 4 system (disguised, deleted), 5 server message
+          15 HX-CM-SRC       BINARY-LONG.    *> 1 system client, 2 player, 3 system server
+       10 HX-CHAT-INDEX      BINARY-LONG.    *> nextChatIndex
+       10 HX-ENFORCES        BINARY-LONG.    *> the Login packet's enforcesSecureChat (57-5 section 2.2: true makes every player chat line an error line)
+       10 HX-CT-COUNT         BINARY-LONG.    *> the chat types of the chat_type registry by index (HX-CT row = index + 1): the decoration of the `chat` member
+       10 HX-CT OCCURS 16 TIMES.
+          15 HX-CT-NAME      PIC X(40).
+          15 HX-CT-KEY       PIC X(64).
+          15 HX-CT-KEY-LEN   BINARY-LONG.
+          15 HX-CT-PCOUNT    BINARY-LONG.
+          15 HX-CT-PARAM     BINARY-LONG OCCURS 3 TIMES.   *> 0 sender, 1 target, 2 content
+       10 HX-CHAT-PREV-MS    BINARY-DOUBLE.  *> previousMessageTime
+       10 HX-DQ-COUNT        BINARY-LONG.
+       10 HX-DQ OCCURS 32 TIMES.
+          15 HX-DQ-TAG       BINARY-LONG.
+          15 HX-DQ-SRC       BINARY-LONG.
+          15 HX-DQ-LENGTH    BINARY-LONG.
+          15 HX-DQ-TEXT      PIC X(256).
+*>     Title, subtitle, action bar (57-5 section 3).
+       10 HX-TITLE-LENGTH    BINARY-LONG.    *> 0 = none
+       10 HX-TITLE           PIC X(256).
+       10 HX-SUB-LENGTH      BINARY-LONG.
+       10 HX-SUB             PIC X(256).
+       10 HX-TITLE-TIME      BINARY-LONG.
+       10 HX-T-IN            BINARY-LONG.
+       10 HX-T-STAY          BINARY-LONG.
+       10 HX-T-OUT           BINARY-LONG.
+       10 HX-AB-LENGTH       BINARY-LONG.    *> 0 = none
+       10 HX-AB              PIC X(256).
+       10 HX-AB-TIME         BINARY-LONG.
+       10 HX-AB-ANIM         BINARY-LONG.
+*>     Boss bars (57-5 section 4), in insertion order.
+       10 HX-BB-COUNT        BINARY-LONG.
+       10 HX-BB OCCURS 32 TIMES.
+          15 HX-BB-UUID      PIC X(16).
+          15 HX-BB-LENGTH    BINARY-LONG.
+          15 HX-BB-TITLE     PIC X(256).
+          15 HX-BB-START     FLOAT-LONG.
+          15 HX-BB-TARGET    FLOAT-LONG.
+          15 HX-BB-SET-MS    BINARY-DOUBLE.
+          15 HX-BB-COLOUR    BINARY-LONG.
+          15 HX-BB-OVERLAY   BINARY-LONG.
+          15 HX-BB-FLAGS     BINARY-LONG.
+       10 HX-BB-DARK         FLOAT-LONG.
+       10 HX-BB-DARK-O       FLOAT-LONG.
+*>     Scoreboard (57-5 section 5): objectives, scores, display slots 0 to 18 (objective row, 0 none), teams and their members.
+       10 HX-SO-COUNT        BINARY-LONG.
+       10 HX-SO OCCURS 16 TIMES.
+          15 HX-SO-USED      BINARY-LONG.
+          15 HX-SO-NAME      PIC X(64).
+          15 HX-SO-NAME-LEN  BINARY-LONG.
+          15 HX-SO-DISPLAY   PIC X(128).
+          15 HX-SO-DISPLAY-LEN BINARY-LONG.
+          15 HX-SO-RENDER    BINARY-LONG.
+          15 HX-SO-FMT       BINARY-LONG.    *> -1 none, 0 blank, 1 styled, 2 fixed
+          15 HX-SO-FMT-RGB   BINARY-LONG.
+          15 HX-SO-FMT-TEXT  PIC X(64).
+          15 HX-SO-FMT-LEN   BINARY-LONG.
+       10 HX-SS-COUNT        BINARY-LONG.
+       10 HX-SS OCCURS 256 TIMES.
+          15 HX-SS-USED      BINARY-LONG.
+          15 HX-SS-OBJ       BINARY-LONG.
+          15 HX-SS-OWNER     PIC X(40).
+          15 HX-SS-OWNER-LEN BINARY-LONG.
+          15 HX-SS-VALUE     BINARY-LONG.
+          15 HX-SS-DISPLAY   PIC X(64).
+          15 HX-SS-DISPLAY-LEN BINARY-LONG.
+          15 HX-SS-FMT       BINARY-LONG.
+          15 HX-SS-FMT-RGB   BINARY-LONG.
+          15 HX-SS-FMT-TEXT  PIC X(64).
+          15 HX-SS-FMT-LEN   BINARY-LONG.
+       10 HX-SLOT OCCURS 19 TIMES BINARY-LONG.
+       10 HX-TM-COUNT        BINARY-LONG.
+       10 HX-TM OCCURS 32 TIMES.
+          15 HX-TM-USED      BINARY-LONG.
+          15 HX-TM-NAME      PIC X(40).
+          15 HX-TM-NAME-LEN  BINARY-LONG.
+          15 HX-TM-DISPLAY   PIC X(64).
+          15 HX-TM-DISPLAY-LEN BINARY-LONG.
+          15 HX-TM-PREFIX    PIC X(64).
+          15 HX-TM-PREFIX-LEN BINARY-LONG.
+          15 HX-TM-SUFFIX    PIC X(64).
+          15 HX-TM-SUFFIX-LEN BINARY-LONG.
+          15 HX-TM-COLOUR    BINARY-LONG.    *> TeamColor ordinal 0 to 15, -1 none
+          15 HX-TM-OPTIONS   BINARY-LONG.
+          15 HX-TM-VIS       BINARY-LONG.
+          15 HX-TM-COLL      BINARY-LONG.
+       10 HX-TP OCCURS 128 TIMES.
+          15 HX-TP-TEAM      BINARY-LONG.    *> team row, 0 = unused
+          15 HX-TP-NAME      PIC X(40).
+          15 HX-TP-NAME-LEN  BINARY-LONG.

@@ -579,15 +579,17 @@
                  END-IF
              END-IF
          WHEN 1
+*>           CROSSBOW_HOLD (57-1 section 3.2): AnimationUtils.animateCrossbowHold ASSIGNS the arms' yRot and xRot from the head and constants (12 section 7.5
+*>           wrote yRot +=); the walk swing, the item pose and the attack swing of step 1 are overwritten, zRot keeps the idle bob.
              COMPUTE WS-HOLD = L-P(2 + L-S(13))
              COMPUTE WS-OTHER = L-P(5 - L-S(13))
              MOVE -0.3 TO WS-SIGN
              IF L-S(13) = 2
                  MOVE 0.3 TO WS-SIGN
              END-IF
-             COMPUTE MM-CYROT(WS-HOLD) = MM-CYROT(WS-HOLD) + MM-CYROT(L-P(1)) + WS-SIGN
-             COMPUTE MM-CYROT(WS-OTHER) = MM-CYROT(WS-OTHER) + MM-CYROT(L-P(1)) - WS-SIGN * 2
-             COMPUTE MM-CXROT(WS-HOLD) = -1.5707963267948966 + MM-CXROT(L-P(1)) + 0.1
+             COMPUTE MM-CYROT(WS-HOLD) = MM-CYROT(L-P(1)) + WS-SIGN
+             COMPUTE MM-CYROT(WS-OTHER) = MM-CYROT(L-P(1)) - WS-SIGN * 2
+             COMPUTE MM-CXROT(WS-HOLD) = -1.5707964 + MM-CXROT(L-P(1)) + 0.1
              COMPUTE MM-CXROT(WS-OTHER) = -1.5 + MM-CXROT(L-P(1))
          WHEN 2
              COMPUTE WS-HOLD = L-P(2 + L-S(13))

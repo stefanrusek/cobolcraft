@@ -1,0 +1,293 @@
+commit 0c8edaafa75acf0d49ef2c6990f45775e49ec5d6
+Author: Stefan Rusek <stefan@rusek.org>
+Date:   Thu Nov 19 14:19:16 2026 -0500
+
+    fix(core): kelp columns: a head under kelp becomes kelp_plant, a body that lost its top becomes a head, placement under kelp gives a body (29b part 4 section 3.2)
+    
+    Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+    Claude-Session: https://claude.ai/code/session_01XrVsM2eDRRo1xQapRd9Uam
+
+diff --git a/core/src/blockupd-29.cob b/core/src/blockupd-29.cob
+index c3689395..712413d7 100644
+--- a/core/src/blockupd-29.cob
++++ b/core/src/blockupd-29.cob
+@@ -461,6 +461,10 @@
+      IF L-KIND = 4 AND L-OUT = L-STATE
+          CALL "SUP-SHAPE" USING L-DIM L-X L-Y L-Z L-STATE L-OUT
+      END-IF
++*>   A kelp head with kelp above it becomes a body, a body that lost what was above it becomes a head (29b part 4 section 3.2 steps 7 and 10; kelp-29b.cob).
++     IF L-KIND = 4 AND L-OUT = L-STATE
++         CALL "KELP-SHAPE" USING L-DIM L-X L-Y L-Z L-STATE L-A L-B L-OUT
++     END-IF
+      GOBACK.
+  END PROGRAM BU-HOOK.
+ 
+diff --git a/core/src/kelp-29b.cob b/core/src/kelp-29b.cob
+new file mode 100644
+index 00000000..2a942a1b
+--- /dev/null
++++ b/core/src/kelp-29b.cob
+@@ -0,0 +1,175 @@
++*> Kelp heads and bodies in the world (lane bugkelpplace; docs/protocol/29b-falling-growth-fire-4-growing-plants.md section 3.2 steps 3, 7 and 10 with growth direction UP, section 3.3):
++*> a column of kelp is one head ("kelp", property age 0 to 25) on top of bodies ("kelp_plant", no property). The decision programs of the engine (GC4-*) are rules without a world;
++*> this file is their world side for kelp:
++*>   KELP-IDS     USING kelp block, kelp_plant block (0-based block ids), kelp default state, kelp_plant default state    the ids, found once
++*>   PS-KELP      USING PLACE-CONTEXT   getStateForPlacement (step 3): the body when the cell above the clicked position holds a head or a body, else the head with age nextInt(25)
++*>   KELP-SHAPE   USING dimension row, x, y, z, state, direction (BU-DIRECTION), neighbour state, state out   updateShape (steps 7 and 10), called by BU-HOOK kind 4
++
++ IDENTIFICATION DIVISION.
++ PROGRAM-ID. KELP-IDS.
++ DATA DIVISION.
++ WORKING-STORAGE SECTION.
++ COPY CBLOCKS.
++ 01 WS-READY               BINARY-LONG VALUE 0.
++ 01 WS-KELP-BLOCK          BINARY-LONG VALUE -1.
++ 01 WS-PLANT-BLOCK         BINARY-LONG VALUE -1.
++ 01 WS-KELP-STATE          BINARY-LONG VALUE 0.
++ 01 WS-PLANT-STATE         BINARY-LONG VALUE 0.
++ 01 WS-I                   BINARY-LONG.
++ 01 WS-NAME                PIC X(48).
++ LINKAGE SECTION.
++ 01 L-KELP-BLOCK           BINARY-LONG.
++ 01 L-PLANT-BLOCK          BINARY-LONG.
++ 01 L-KELP-STATE           BINARY-LONG.
++ 01 L-PLANT-STATE          BINARY-LONG.
++ PROCEDURE DIVISION USING L-KELP-BLOCK L-PLANT-BLOCK L-KELP-STATE L-PLANT-STATE.
++     IF WS-READY = 0
++         PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > CB-BLOCK-COUNT
++             CALL "KEY-BARE" USING CB-KEY(WS-I) WS-NAME
++             IF WS-NAME = "kelp"
++                 COMPUTE WS-KELP-BLOCK = WS-I - 1
++                 MOVE CB-DEFAULT-STATE(WS-I) TO WS-KELP-STATE
++             END-IF
++             IF WS-NAME = "kelp_plant"
++                 COMPUTE WS-PLANT-BLOCK = WS-I - 1
++                 MOVE CB-DEFAULT-STATE(WS-I) TO WS-PLANT-STATE
++             END-IF
++         END-PERFORM
++         MOVE 1 TO WS-READY
++     END-IF
++     MOVE WS-KELP-BLOCK TO L-KELP-BLOCK
++     MOVE WS-PLANT-BLOCK TO L-PLANT-BLOCK
++     MOVE WS-KELP-STATE TO L-KELP-STATE
++     MOVE WS-PLANT-STATE TO L-PLANT-STATE
++     GOBACK.
++ END PROGRAM KELP-IDS.
++
++ IDENTIFICATION DIVISION.
++ PROGRAM-ID. KELP-OF-STATE.
++*> USING state (BINARY-LONG), the state is a kelp head or a kelp body (BINARY-LONG out 0 or 1): the "head block or body block" test of 3.2.
++ DATA DIVISION.
++ WORKING-STORAGE SECTION.
++ COPY CBLOCKS.
++ 01 WS-KELP-BLOCK          BINARY-LONG.
++ 01 WS-PLANT-BLOCK         BINARY-LONG.
++ 01 WS-KELP-STATE          BINARY-LONG.
++ 01 WS-PLANT-STATE         BINARY-LONG.
++ 01 WS-BLOCK               BINARY-LONG.
++ LINKAGE SECTION.
++ 01 L-STATE                BINARY-LONG.
++ 01 L-FAMILY               BINARY-LONG.
++ PROCEDURE DIVISION USING L-STATE L-FAMILY.
++     MOVE 0 TO L-FAMILY
++     CALL "KELP-IDS" USING WS-KELP-BLOCK WS-PLANT-BLOCK WS-KELP-STATE WS-PLANT-STATE
++     IF L-STATE >= 0 AND L-STATE < CB-STATE-COUNT
++         MOVE CB-S-BLOCK(L-STATE + 1) TO WS-BLOCK
++         IF WS-BLOCK = WS-KELP-BLOCK OR WS-BLOCK = WS-PLANT-BLOCK
++             MOVE 1 TO L-FAMILY
++         END-IF
++     END-IF
++     GOBACK.
++ END PROGRAM KELP-OF-STATE.
++
++ IDENTIFICATION DIVISION.
++ PROGRAM-ID. KELP-HEAD-STATE.
++*> USING the head's state out (BINARY-LONG): the kelp head with age nextInt(25), one draw of the level random (GrowingPlantHeadBlock.getStateForPlacement(random), 3.2 step 3).
++ DATA DIVISION.
++ WORKING-STORAGE SECTION.
++ 01 WS-KELP-BLOCK          BINARY-LONG.
++ 01 WS-PLANT-BLOCK         BINARY-LONG.
++ 01 WS-PLANT-STATE         BINARY-LONG.
++ 01 WS-BOUND               BINARY-LONG VALUE 25.
++ 01 WS-DRAW                BINARY-LONG.
++ 01 WS-AGE-NAME            PIC X(24) VALUE "age".
++ 01 WS-AGE-EDIT            PIC Z9.
++ 01 WS-AGE-TEXT            PIC X(32).
++ LINKAGE SECTION.
++ 01 L-STATE                BINARY-LONG.
++ PROCEDURE DIVISION USING L-STATE.
++     CALL "KELP-IDS" USING WS-KELP-BLOCK WS-PLANT-BLOCK L-STATE WS-PLANT-STATE
++     CALL "LEVEL-RANDOM-INT" USING WS-BOUND WS-DRAW
++     MOVE WS-DRAW TO WS-AGE-EDIT
++     MOVE SPACES TO WS-AGE-TEXT
++     MOVE FUNCTION TRIM(WS-AGE-EDIT LEADING) TO WS-AGE-TEXT
++     CALL "PS-PUT" USING L-STATE WS-AGE-NAME WS-AGE-TEXT
++     GOBACK.
++ END PROGRAM KELP-HEAD-STATE.
++
++ IDENTIFICATION DIVISION.
++ PROGRAM-ID. PS-KELP.
++ DATA DIVISION.
++ WORKING-STORAGE SECTION.
++ 01 WS-KELP-BLOCK          BINARY-LONG.
++ 01 WS-PLANT-BLOCK         BINARY-LONG.
++ 01 WS-KELP-STATE          BINARY-LONG.
++ 01 WS-PLANT-STATE         BINARY-LONG.
++ 01 WS-Y                   BINARY-LONG.
++ 01 WS-ABOVE               BINARY-LONG.
++ 01 WS-FAMILY              BINARY-LONG.
++ LINKAGE SECTION.
++ COPY PLACECTX.
++ PROCEDURE DIVISION USING PLACE-CONTEXT.
++     MOVE 1 TO PC-FITS
++     COMPUTE WS-Y = PC-Y + 1
++     CALL "WORLD-GET-BLOCK" USING PC-DIM PC-X WS-Y PC-Z WS-ABOVE
++     CALL "KELP-OF-STATE" USING WS-ABOVE WS-FAMILY
++     IF WS-FAMILY = 1
++         CALL "KELP-IDS" USING WS-KELP-BLOCK WS-PLANT-BLOCK WS-KELP-STATE WS-PLANT-STATE
++         MOVE WS-PLANT-STATE TO PC-STATE
++     ELSE
++         CALL "KELP-HEAD-STATE" USING PC-STATE
++     END-IF
++     GOBACK.
++ END PROGRAM PS-KELP.
++
++ IDENTIFICATION DIVISION.
++ PROGRAM-ID. KELP-SHAPE.
++ DATA DIVISION.
++ WORKING-STORAGE SECTION.
++ COPY CBLOCKS.
++ 01 WS-KELP-BLOCK          BINARY-LONG.
++ 01 WS-PLANT-BLOCK         BINARY-LONG.
++ 01 WS-KELP-STATE          BINARY-LONG.
++ 01 WS-PLANT-STATE         BINARY-LONG.
++ 01 WS-BLOCK               BINARY-LONG.
++ 01 WS-Y                   BINARY-LONG.
++ 01 WS-SEEN                BINARY-LONG.
++ 01 WS-ABOVE               BINARY-LONG.
++ LINKAGE SECTION.
++ 01 L-DIM                  BINARY-LONG.
++ 01 L-X                    BINARY-LONG.
++ 01 L-Y                    BINARY-LONG.
++ 01 L-Z                    BINARY-LONG.
++ 01 L-STATE                BINARY-LONG.
++ 01 L-DIR                  BINARY-LONG.
++ 01 L-NSTATE               BINARY-LONG.
++ 01 L-OUT                  BINARY-LONG.
++ PROCEDURE DIVISION USING L-DIM L-X L-Y L-Z L-STATE L-DIR L-NSTATE L-OUT.
++     MOVE L-STATE TO L-OUT
++     CALL "KELP-IDS" USING WS-KELP-BLOCK WS-PLANT-BLOCK WS-KELP-STATE WS-PLANT-STATE
++     MOVE -1 TO WS-BLOCK
++     IF L-STATE > 0 AND L-STATE < CB-STATE-COUNT
++         MOVE CB-S-BLOCK(L-STATE + 1) TO WS-BLOCK
++     END-IF
++     IF WS-BLOCK = WS-KELP-BLOCK OR WS-BLOCK = WS-PLANT-BLOCK
++*>       The state in the growth direction: the changed neighbour when the change came from there, else (a change under the head) the cell above.
++         MOVE 0 TO WS-SEEN
++         IF L-DIR = 1
++             CALL "KELP-OF-STATE" USING L-NSTATE WS-SEEN
++         END-IF
++         IF L-DIR = 0 AND WS-BLOCK = WS-KELP-BLOCK
++             COMPUTE WS-Y = L-Y + 1
++             CALL "WORLD-GET-BLOCK" USING L-DIM L-X WS-Y L-Z WS-ABOVE
++             CALL "KELP-OF-STATE" USING WS-ABOVE WS-SEEN
++         END-IF
++*>       3.2 step 7: a head with a head or a body in its growth direction becomes a body.
++         IF WS-BLOCK = WS-KELP-BLOCK AND WS-SEEN = 1
++             MOVE WS-PLANT-STATE TO L-OUT
++         END-IF
++*>       3.2 step 10: a body whose growth direction holds neither a body nor a head becomes a head with a random age.
++         IF WS-BLOCK = WS-PLANT-BLOCK AND L-DIR = 1 AND WS-SEEN = 0
++             CALL "KELP-HEAD-STATE" USING L-OUT
++         END-IF
++     END-IF
++     GOBACK.
++ END PROGRAM KELP-SHAPE.
+diff --git a/core/src/place-state.cob b/core/src/place-state.cob
+index 685e0e25..146d468c 100644
+--- a/core/src/place-state.cob
++++ b/core/src/place-state.cob
+@@ -160,8 +160,9 @@
+     05 FILLER PIC X(27) VALUE "Esculk_vein              16".
+     05 FILLER PIC X(27) VALUE "Eresin_clump             16".
+     05 FILLER PIC X(27) VALUE "Ecocoa                   17".
++    05 FILLER PIC X(27) VALUE "Ekelp                    18".
+  01 WS-ROW-TABLE REDEFINES WS-ROWS.
+-    05 WS-ROW OCCURS 44 TIMES.
++    05 WS-ROW OCCURS 45 TIMES.
+        10 WS-ROW-KIND      PIC X.
+        10 WS-ROW-TEXT      PIC X(24).
+        10 WS-ROW-FAMILY    PIC 99.
+@@ -171,7 +172,7 @@
+  PROCEDURE DIVISION USING L-STATE L-FAMILY.
+      MOVE 0 TO L-FAMILY
+      CALL "PS-NAME-OF" USING L-STATE WS-NAME
+-     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 44 OR L-FAMILY > 0
++     PERFORM VARYING WS-I FROM 1 BY 1 UNTIL WS-I > 45 OR L-FAMILY > 0
+          MOVE WS-ROW-TEXT(WS-I) TO WS-SUFFIX
+          MOVE 0 TO WS-FLAG
+          IF WS-ROW-KIND(WS-I) = "E"
+@@ -464,6 +465,9 @@
+              CALL "PS-MULTIFACE" USING PLACE-CONTEXT
+          WHEN 17
+              CALL "PS-COCOA" USING PLACE-CONTEXT
++*>       Kelp (GrowingPlantHeadBlock.getStateForPlacement, 29b part 4 section 3.2 step 3): a body under a head or body, else a head with a random age.
++         WHEN 18
++             CALL "PS-KELP" USING PLACE-CONTEXT
+      END-EVALUATE
+      GOBACK.
+  END PROGRAM PLACE-STATE.
+diff --git a/core/tests/acc_kelp_column_standard.cob b/core/tests/acc_kelp_column_standard.cob
+index 3ca4cd8e..f84a3b2c 100644
+--- a/core/tests/acc_kelp_column_standard.cob
++++ b/core/tests/acc_kelp_column_standard.cob
+@@ -62,6 +62,7 @@
+  01 WS-BUDGET              BINARY-LONG VALUE 512.
+  01 WS-RESULT              BINARY-LONG.
+  01 WS-DROP                BINARY-LONG VALUE 0.
++ 01 WS-FLAGS               BINARY-LONG.
+  01 WS-BLOCKS-TEXT         PIC X(1024).
+  01 WS-PATTERN             PIC X(80).
+  01 WS-E1                  PIC -(9)9.
+@@ -211,6 +212,26 @@
+      MOVE "kelp" TO WS-WANT
+      MOVE "acceptance kelp column: the head above stays a kelp" TO WS-CASE
+      PERFORM CHECK-KEY
++
++*>   A head with a kelp above it that is told of a change under it becomes a body (step 7a): column 3 has a head at floor + 2 and a head at floor + 3 (set without updates),
++*>   then the cell under the lower one gets a kelp_plant written with updates.
++     COMPUTE WS-CX = WS-BX + 8
++     COMPUTE WS-CZ = WS-BZ + 2
++     COMPUTE WS-CY = WS-FLOOR + 2
++     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-CZ WS-KELP
++     COMPUTE WS-CY = WS-FLOOR + 3
++     CALL "WORLD-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-CZ WS-KELP
++     COMPUTE WS-CY = WS-FLOOR + 1
++     MOVE 3 TO WS-FLAGS
++     CALL "LEVEL-SET-BLOCK" USING WS-DIM WS-CX WS-CY WS-CZ WS-PLANT WS-FLAGS WS-BUDGET WS-RESULT
++     COMPUTE WS-CY = WS-FLOOR + 2
++     MOVE "kelp_plant" TO WS-WANT
++     MOVE "acceptance kelp column: a head under another kelp told of a change below becomes a kelp_plant" TO WS-CASE
++     PERFORM CHECK-KEY
++     COMPUTE WS-CY = WS-FLOOR + 3
++     MOVE "kelp" TO WS-WANT
++     MOVE "acceptance kelp column: the top head of that column stays a kelp" TO WS-CASE
++     PERFORM CHECK-KEY
+      STOP RUN.
+ 
+ *> WS-FOUND-STATE: the default state of the block WS-KEY, 0 when the table has none.
+diff --git a/core/tests/acc_kelp_standard.cob b/core/tests/acc_kelp_standard.cob
+index 1a4c684b..e2434313 100644
+--- a/core/tests/acc_kelp_standard.cob
++++ b/core/tests/acc_kelp_standard.cob
+@@ -189,8 +189,8 @@
+      MOVE "acceptance kelp standard: the upper kelp is still there after the fluid updates" TO WS-CASE
+      PERFORM CHECK-KEY
+      COMPUTE WS-CY = WS-FLOOR + 1
+-     MOVE "kelp" TO WS-WANT
+-     MOVE "acceptance kelp standard: the kelp under the new kelp stays (head to plant conversion is not wired into the hooks)" TO WS-CASE
++     MOVE "kelp_plant" TO WS-WANT
++     MOVE "acceptance kelp standard: the kelp under the new kelp became a kelp_plant (29b part 4 section 3.2 step 7)" TO WS-CASE
+      PERFORM CHECK-KEY
+ 
+ *>   Kelp on the side of a kelp: the cell beside it, on the seabed

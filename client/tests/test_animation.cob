@@ -150,27 +150,18 @@
      MOVE WS-PIXEL TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-     MOVE 1000000 TO WS-NOW
+*>   57-1 section 1.4: the clock is one step per rendered frame that has a game tick due, so the frames below are 50 ms apart (one step each).
      MOVE SPACES TO TL-OBSERVED
-     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 4
-         EVALUATE WS-I
-             WHEN 0
-                 MOVE 1000000 TO WS-NOW
-             WHEN 1
-                 MOVE 1000100 TO WS-NOW
-             WHEN 2
-                 MOVE 1000250 TO WS-NOW
-             WHEN 3
-                 MOVE 1000300 TO WS-NOW
-             WHEN 4
-                 MOVE 1000400 TO WS-NOW
-         END-EVALUATE
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 8
+         COMPUTE WS-NOW = 1000000 + WS-I * 50
          CALL "ANIM-TICK" USING CLIENT-STATE WS-NOW
          CALL "TEST-PIXEL" USING CLIENT-STATE WS-NAME WS-NAME-LENGTH WS-PIXEL
-         STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-PIXEL) DELIMITED BY SIZE
-             INTO TL-OBSERVED
+         IF WS-I = 0 OR WS-I = 2 OR WS-I = 5 OR WS-I = 6 OR WS-I = 8
+             STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-PIXEL) DELIMITED BY SIZE
+                 INTO TL-OBSERVED
+         END-IF
      END-PERFORM
-     MOVE "animation flow at ticks 0, 2, 5, 6, 8: red, blue (entry 2, 4 ticks), blue, green, red again"
+     MOVE "animation flow at steps 0, 2, 5, 6, 8: red, blue (entry 2, 4 ticks), blue, green, red again"
          TO TL-CASE
      MOVE "255,0,0,255 0,0,255,255 0,0,255,255 0,255,0,255 255,0,0,255" TO TL-EXPECTED
      MOVE FUNCTION TRIM(TL-OBSERVED) TO TL-OBSERVED
@@ -180,21 +171,28 @@
      MOVE "anim:block/mix" TO WS-NAME
      MOVE 14 TO WS-NAME-LENGTH
      MOVE SPACES TO TL-OBSERVED
-     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 3
-         COMPUTE WS-NOW = 1000000 + (WS-I * 2) * 50
+     MOVE 1000000 TO AN-START-MS
+     MOVE 0 TO AN-TICKS
+     COMPUTE AN-NEXT-MS = 1000050
+     PERFORM VARYING WS-I FROM 0 BY 1 UNTIL WS-I > 6
+         COMPUTE WS-NOW = 1000000 + WS-I * 50
          CALL "ANIM-TICK" USING CLIENT-STATE WS-NOW
          CALL "TEST-PIXEL" USING CLIENT-STATE WS-NAME WS-NAME-LENGTH WS-PIXEL
-         STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-PIXEL) DELIMITED BY SIZE
-             INTO TL-OBSERVED
+         IF WS-I = 0 OR WS-I = 2 OR WS-I = 4 OR WS-I = 6
+             STRING FUNCTION TRIM(TL-OBSERVED) " " FUNCTION TRIM(WS-PIXEL) DELIMITED BY SIZE
+                 INTO TL-OBSERVED
+         END-IF
      END-PERFORM
-     MOVE "animation mix (interpolate, 4 ticks a frame) at ticks 0, 2, 4, 6: 0, half way 100, 200, 100"
+     MOVE "animation mix (interpolate, 4 ticks a frame) at steps 0, 2, 4, 6: 0, half way 100, 200, 100"
          TO TL-CASE
      MOVE "0,0,0,255 100,100,100,255 200,200,200,255 100,100,100,255" TO TL-EXPECTED
      MOVE FUNCTION TRIM(TL-OBSERVED) TO TL-OBSERVED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
-*>   The cell is marked only when it changed.
-     MOVE 1000100 TO WS-NOW
+*>   The cell is marked only when it changed (step 7 is still green, step 8 red again).
+     MOVE 1000350 TO WS-NOW
+     CALL "ANIM-TICK" USING CLIENT-STATE WS-NOW
+     MOVE 1000400 TO WS-NOW
      MOVE 0 TO AN-DIRTY(1) AN-DIRTY(2)
      CALL "ANIM-TICK" USING CLIENT-STATE WS-NOW
      MOVE AN-DIRTY(1) TO WS-E6
@@ -208,6 +206,34 @@
      MOVE "1 0" TO TL-EXPECTED
      CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
+
+*>   57-1 section 1.4: a long frame (here 250 ms, five game ticks due) is still one step of the clock, and the due time moves on by all five.
+     CALL "ATLAS-BUILD" USING CLIENT-STATE
+     MOVE "anim:block/flow" TO WS-NAME
+     MOVE 15 TO WS-NAME-LENGTH
+     MOVE 2000000 TO WS-NOW
+     CALL "ANIM-TICK" USING CLIENT-STATE WS-NOW
+     MOVE 2000250 TO WS-NOW
+     CALL "ANIM-TICK" USING CLIENT-STATE WS-NOW
+     MOVE "animation a frame 250 ms after the first shows step 1 (red), not tick 5 (blue)" TO TL-CASE
+     CALL "TEST-PIXEL" USING CLIENT-STATE WS-NAME WS-NAME-LENGTH WS-PIXEL
+     MOVE "T" TO TL-MODE
+     MOVE "255,0,0,255" TO TL-EXPECTED
+     MOVE WS-PIXEL TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2000290 TO WS-NOW
+     CALL "ANIM-TICK" USING CLIENT-STATE WS-NOW
+     MOVE "animation a frame before the next due time (2000300) adds no step" TO TL-CASE
+     CALL "TEST-PIXEL" USING CLIENT-STATE WS-NAME WS-NAME-LENGTH WS-PIXEL
+     MOVE WS-PIXEL TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
+     MOVE 2000300 TO WS-NOW
+     CALL "ANIM-TICK" USING CLIENT-STATE WS-NOW
+     MOVE "animation the frame at the due time adds step 2 (blue)" TO TL-CASE
+     CALL "TEST-PIXEL" USING CLIENT-STATE WS-NAME WS-NAME-LENGTH WS-PIXEL
+     MOVE "0,0,255,255" TO TL-EXPECTED
+     MOVE WS-PIXEL TO TL-OBSERVED
+     CALL "TEST-ASSERT" USING TESTLIB-ASSERT
 
 *>   A second build of the atlas frees the animation buffers and builds them again.
      CALL "ATLAS-BUILD" USING CLIENT-STATE

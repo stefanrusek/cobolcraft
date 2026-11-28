@@ -63,7 +63,7 @@
 *> component's value to its own codec, so a value is read only for the types whose layout the
 *> documents give (17 §1.2): VarInt for 1, 2, 3, 12, 19, 31 and 75; no payload for 4, 22 and 34;
 *> Boolean for 21; Float for 7 and 54; a text component (00 §9, as PB-GET-TEXT reads it) for 6;
-*> ItemEnchantments for 13 and 45 (a VarInt count of 0 to PB-ISX-VALUE-MAX, then that many pairs of
+*> charged_projectiles 51 (a count of templates with empty patches), ItemEnchantments for 13 and 45 (a VarInt count of 0 to PB-ISX-VALUE-MAX, then that many pairs of
 *> VarInt enchantment id and VarInt level); item_name 9 (text), lore 11, dyed_color 47 (Int), ominous_bottle_amplifier 65 (VarInt), potion_contents 53,
 *> firework_explosion 70 and fireworks 71 (lane itemcomp T9607, codec shapes of 25 section 9.1; the layout of an effect instance, an explosion and a lore line is the vanilla
 *> codec shape, no document gives it); the book components 56 and 57 (a book whose value is over PB-ISX-VALUE-MAX bytes is
@@ -245,6 +245,24 @@
                  COMPUTE WS-PAIRS = WS-SCRATCH * 2
                  PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-PAIRS OR PB-ERROR = 1
                      CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                 END-PERFORM
+             WHEN 51
+*>               charged_projectiles (25 section 9.7): a VarInt count of 0 to 1024 item templates, each the item and count VarInts and a component patch (the added and the
+*>               removed count). A template whose patch is not empty is not read: the stack is rejected whole (the nested components are those of any stack; no loaded
+*>               ammunition of a vanilla server carries one but an enchanted or named arrow).
+                 CALL "PB-GET-VARINT" USING PB-BUFFER WS-SCRATCH
+                 IF WS-SCRATCH < 0 OR WS-SCRATCH > 1024
+                     MOVE 1 TO PB-ERROR
+                     MOVE 0 TO WS-SCRATCH
+                 END-IF
+                 PERFORM VARYING WS-K FROM 1 BY 1 UNTIL WS-K > WS-SCRATCH OR PB-ERROR = 1
+                     CALL "PB-GET-VARINT" USING PB-BUFFER WS-PAIRS
+                     CALL "PB-GET-VARINT" USING PB-BUFFER WS-PAIRS
+                     CALL "PB-GET-VARINT" USING PB-BUFFER WS-J
+                     CALL "PB-GET-VARINT" USING PB-BUFFER WS-PAGES
+                     IF WS-J NOT = 0 OR WS-PAGES NOT = 0
+                         MOVE 1 TO PB-ERROR
+                     END-IF
                  END-PERFORM
              WHEN 56
 *>               WritableBookContent: a VarInt page count (at most 100), each page a Filterable<String(1024)>: the raw string, a Boolean, and when

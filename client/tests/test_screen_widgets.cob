@@ -94,7 +94,7 @@
 
 *>   The 67 widget sprites are all loaded (rows GSP-BLAST-LIT on), at the sizes the docs give.
      MOVE 0 TO WS-BAD
-     PERFORM VARYING WS-I FROM GSP-BLAST-LIT BY 1 UNTIL WS-I > GSP-COUNT
+     PERFORM VARYING WS-I FROM GSP-BLAST-LIT BY 1 UNTIL WS-I > GSP-BUTTON-OFF
          IF GS-W(WS-I) = 0
              ADD 1 TO WS-BAD
          END-IF
