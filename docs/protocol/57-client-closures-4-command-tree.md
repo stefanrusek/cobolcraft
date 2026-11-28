@@ -891,6 +891,14 @@ dialog R2
     <targets:entity#6(players)> x
 ```
 
+**Semantics (read in `DialogCommand`, `CommandResponseTracker`, `ResourceOrIdArgument`, `ServerPlayer.openDialog`).** The root requirement (level 2) covers both branches. `dialog show <targets> <dialog>` is executable at `<dialog>`, `dialog clear <targets>` at `<targets>`. `<targets>` is an entity selector for any number of players (`entity#6(players)`; an empty selection raises the selector's standard no-player error, 15). `<dialog>` is the `ResourceOrIdArgument` of the `dialog` registry (parser id 58): either an Identifier, which becomes a reference to that registry entry, or an inline definition written as SNBT, decoded with `Dialog.DIRECT_CODEC`; its error keys and suggestions (the registry's entries) are 15 §6.7.
+
+*`show`.* For each selected player in the selector's order the server calls `ServerPlayer.openDialog(holder)`, which sends one `ClientboundShowDialogPacket(holder)` on the player's play connection (05b 0x8F: a registry reference as VarInt id + 1, an inline dialog as VarInt 0 followed by the network NBT of the definition) and counts that player with value 1. Nothing is stored on the server: it keeps no per-player dialog state and never learns what the client does with the packet. The result is the sum of the values, i.e. the number of players the packet was sent to. Feedback is sent once with broadcast **true**: when exactly one player was counted, `commands.dialog.show.single` (that player's display name; "Displayed dialog to %s"), otherwise `commands.dialog.show.multiple` (the count; "Displayed dialog to %s players"). The failure handler of the message set is absent, so a zero count would not fail (it cannot happen: the selector throws first).
+
+*`clear`.* The same loop sends `ClientboundClearDialogPacket` (no fields, 05b 0x8E) to each target and counts it with value 1; result and feedback are the same with the keys `commands.dialog.clear.single` ("Cleared dialog for %s") and `commands.dialog.clear.multiple` ("Cleared dialog for %s players"), broadcast true.
+
+Worked example: `/dialog clear @a` with three players online sends three Clear Dialog packets, returns 3 and reports "Cleared dialog for 3 players"; with one player online it returns 1 and reports "Cleared dialog for <name>". What a dialog screen shows (the three shipped definitions, their types and actions) and the client's handling of a Show Dialog for an unknown reference were not read here (Open question 12).
+
 ### 7.15 `difficulty` (level 2, 5 tree nodes)
 
 ```
@@ -1237,6 +1245,8 @@ swing x R2
         <duration:time#43(min=1)> x
 ```
 
+**Semantics (read in `SwingCommand`).** Every `x` node above is executable and the executable forms resolve their omitted parts as follows: `/swing` with **no target** swings the **executing entity** (`CommandSourceStack.getEntityOrException`, so a source without an entity, such as the console or a command block, fails with that exception) with the **main hand**, as a one-element target list; `/swing <targets>` swings the targets with the main hand; `/swing <targets> mainhand|offhand` chooses the hand; the animation `type` defaults to `SwingAnimation.DEFAULT`'s type and `duration` to its duration: `SwingAnimation.DEFAULT` is type `whack` with duration 6 (ticks); the three types are `none`, `whack`, `stab` (`SwingAnimationType` constants read). For each target that is a `LivingEntity` the command calls `LivingEntity.swing(hand, SwingAnimation(type, duration), updateSelf = true)` and counts it (non-living targets are skipped and not counted; the boolean returned by `swing`, false when the entity is already swinging, does not change the count). `LivingEntity.swing` starts the swing state only when it is able to (`SwingState.startIfAble` with `getModifiedSwingDuration(duration)`), and only then, on a server level, sends `ClientboundSwingAnimationPacket` to the players tracking the entity and, because `updateSelf` is true, to the entity itself when it is a player. Result: the **number of living targets counted** (each adds 1), so the result is 1 for `/swing` and for a single living target; feedback: error `commands.swing.failed.notliving` when none was counted, else the success message `commands.swing.success.single` (display name) when exactly one was counted and `commands.swing.success.multiple` (count) otherwise, sent with `sendSuccess(..., broadcast = true)`. (The state machine of the swing and the duration modification by effects are 54 section 2.)
+
 ### 7.36 `particle` (level 2, 10 tree nodes)
 
 ```
@@ -1336,6 +1346,47 @@ random
         <includeWorldSeed:bool#0> x
           <includeSequenceId:bool#0> x
 ```
+
+**Semantics (read in `RandomCommand`, `RandomSequences`, `RandomSequence`, `RandomSupport`, `Mth.randomBetweenInclusive`, `MinecraftServer.getRandomSequence`, `SavedDataStorage`).** This section specifies the sequence generator and the seed flags. Levels: `value` and `roll` and their `<range>` nodes need none (level 0), the optional `<sequence>` node of both needs level 2, and the whole `reset` branch needs level 2 (§3.3). Parser ids: `<range>` is `int_range` (39), `<sequence>` is an Identifier (`resource_location`, 36), `<seed>` is a plain 32-bit `integer`, the two flags are `bool`.
+
+*Draws (`value`, `roll`).* The value is drawn from the level random of the source's level (`ServerLevel.getRandom`) when no `<sequence>` is given, and from the stored sequence generator of that Identifier when one is (`MinecraftServer.getRandomSequence(id)`, below). The range is the `int_range` of 15 (a missing bound is the int minimum or maximum; a range whose lower bound exceeds the upper bound fails already at parsing, `MinMaxBounds.ERROR_SWAPPED`). Then, with `w = max - min` computed as a 64-bit number: `w = 0` raises `commands.random.error.range_too_small`; `w >= 2147483647` raises `commands.random.error.range_too_large`; otherwise the value is `nextInt(w + 1) + min` (32-bit arithmetic, `nextInt(bound)` as 10 §2.3 for a Xoroshiro generator). The tested condition is equality with zero; 16 §10.8's "max must be greater than min" is the same rule once the swapped case is excluded by the parser. The result is the drawn value. `value` sends `commands.random.sample.success` (value) to the source only (not broadcast); `roll` sends `commands.random.roll` (the source's display name, the value, min, max) to every player through `PlayerList.broadcastSystemMessage(message, false)`.
+
+| Range text | Outcome |
+|---|---|
+| `1..6` | value in 1 to 6 |
+| `5`, `5..5` | `range_too_small` (one value) |
+| `..5` | min is -2147483648, `w` = 2147483653: `range_too_large` |
+| `0..2147483647` | `w` = 2147483647: `range_too_large` |
+| `1..2147483647` | `w` = 2147483646, bound 2147483647: allowed |
+
+*The store.* All named sequences live in one world-wide object (`RandomSequences`, saved data type `random_sequences`) that holds three defaults and a map from Identifier to generator: `salt` (int, initial value 0), `includeWorldSeed` (initial true), `includeSequenceId` (initial true), and the generators. `get(id, worldSeed)` returns the stored generator of `id`, or creates it first from the three defaults as they are at that moment; `worldSeed` is `WorldOptions.seed` (the same number for every dimension). The creation formula is the one of 26 §4 item 5, restated here with the field names of the commands: `S = (includeWorldSeed ? worldSeed : 0) xor (long) salt` (the int salt is sign-extended); the 128-bit seed is `lo0 = S xor 0x6A09E667F3BCC909`, `hi0 = lo0 + 0x9E3779B97F4A7C15` (mod 2^64); when `includeSequenceId` is true both words are then xored with the two big-endian 64-bit halves of the MD5 of the UTF-8 text `namespace:path` of the Identifier (the same MD5 halves as 10 §2.4 `fromHashOf`, which xors them with the fixed words of a positional factory, whereas here they are xored with the seed-derived words `lo0` and `hi0`: `a` from bytes 0 to 7 into `lo0`, `b` from bytes 8 to 15 into `hi0`); finally both words are passed through `mixStafford13` (10 §2.2) and become the state `(lo, hi)` of a Xoroshiro128++ generator (the zero-pair replacement of 10 §2.1 applies). A generator keeps its state between calls, so the sequence continues where it stopped; the object returned by `get` is a wrapper that marks the store modified before each of its draws (`nextInt`, `nextInt(bound)`, `nextLong`, `nextBoolean`, `nextFloat`, `nextDouble`, `nextGaussian`) and before `setSeed`, `fork`, `forkPositional`.
+
+*`reset` forms.* The grammar tail is `[<seed> [<includeWorldSeed> [<includeSequenceId>]]]` (every prefix is executable); an omitted flag counts as true. The `<seed>` argument is an `int` and is used as the **salt**, never as a world seed.
+
+| Command | Effect on the store | Result | Message (all not broadcast) |
+|---|---|---|---|
+| `random reset *` | removes every stored generator; the three defaults stay as they are | the number of generators removed | `commands.random.reset.all.success` (count) |
+| `random reset * <seed> [<iws> [<isi>]]` | first sets the defaults to (`seed`, `iws`, `isi`), then removes every generator (nothing is created now: each id is created again, with the new defaults, at its next `get`) | the number of generators removed | `commands.random.reset.all.success` (count) |
+| `random reset <sequence>` | replaces (or creates) the generator of that id, built at once by the creation formula with the world seed of the source's level and the current defaults; the id is not checked against anything, so any Identifier makes a new sequence | 1 | `commands.random.reset.success` (the id as a text argument) |
+| `random reset <sequence> <seed> [<iws> [<isi>]]` | same, but this one generator is built with salt `seed` and flags `iws`, `isi`; the stored defaults do not change | 1 | `commands.random.reset.success` |
+
+*Persistence (inferred from the code that was read, marked where it is).* `SavedDataStorage` writes only saved data that is marked modified (`collectDirtyTagsToSave` keeps the entries whose dirty flag is set and clears it). `clear`, `reset` and `setSeedDefaults` of the store contain no call that marks it modified (read); only the wrapper draws above do, and the storage marks an object once when it first creates it (`SavedDataStorage.computeIfAbsent` calls `set`, which marks it). So a `random reset` that is followed by no draw from any sequence is not written by the next save (inferred: only the reading of the save selection was done, not the stop path); an implementation that writes the store at every save also satisfies every observable command result. The file is `<world>/data/minecraft/random_sequences.dat` (gzip NBT written with `NbtIo.writeCompressed`; 07 §10): root compound `{data: {...}, DataVersion: int}` with `data` = `salt` (int), `include_world_seed` (bool, optional when reading, default true), `include_sequence_id` (bool, optional, default true; whether the writer omits a value equal to the default is not decoded, Open question 10) and `sequences`, a compound from the id text (`namespace:path`) to a compound `{source: long array of exactly 2: [lo, hi]}`, the generator state as signed 64-bit numbers (read: `RandomSequence.CODEC` has the single field `source`; `Xoroshiro128PlusPlus.CODEC` is a two-element long stream and `NbtOps.createLongList` makes a long array). This answers the `random_sequences.dat` part of 07 Open question 20.
+
+*Suggestions.* The server-side provider behind the three `<sequence>` nodes (`sug=ask`) offers the text `namespace:path` of every id in the store at that moment (no tooltip; `SharedSuggestionProvider.suggest` on a list of strings, so the prefix rule of 15 §14 applies). A world with no stored sequence offers nothing. (Loot-table draws create sequences too, 26 §4 item 4, so ids such as `minecraft:blocks/stone` appear once such a table has rolled.)
+
+*Worked examples (computed from the formulas above with a script over the formulas; not read from the artifact as results, so a test built on them also tests the reading).* Draws are `random value 1..6` repeated, i.e. `nextInt(6) + 1`. The pair is the state right after creation, before the first draw. MD5 of `minecraft:test` is `1a2b64f5d3bdb4612e96d0a422fe68a7`.
+
+| World seed | salt | iws | isi | id | State `(lo, hi)` after creation | First five values |
+|---|---|---|---|---|---|---|
+| 0 | 0 | false | false | any | `3564B439CD1E1F16`, `63CFC62A2B097592` (agrees with the seed-0 pair of 10 §2.7) | 6, 2, 1, 2, 6 |
+| 0 | 0 | true | true | `minecraft:test` | `8E7593F5564F3759`, `1496374F91108179` | 5, 5, 1, 1, 5 |
+| 12345 | 0 | true | true | `minecraft:test` | `AC66966A683673D2`, `F190065EED58B14A` | 5, 6, 4, 3, 2 |
+| 12345 | 5 | true | false | `minecraft:test` | `E0BD326CDA796318`, `2C97D84E2C530A74` | 5, 6, 5, 1, 3 |
+| 12345 | 7 | false | true | `minecraft:test` | `D17224413E9C4A17`, `A9550D65B79B742E` | 5, 3, 4, 1, 3 |
+| 0 | -1 | false | false | any | `FE766AB13AFAB784`, `28B159DEFD9C7FBA` | 4, 3, 2, 6, 2 |
+| 12345 | 0 | true | true | `minecraft:blocks/stone` (MD5 `77c5c643ddbe0f28ee760458118d8b9d`) | `D8564274A204C9C9`, `ED0DF1666B1CD0F5` | 6, 4, 4, 5, 3 |
+
+Command sequence test (computed from the table above, not read as a result; world seed 12345, fresh store): `/random reset * 7 false` sets salt 7, `includeWorldSeed` false, `includeSequenceId` true and returns 0 (nothing stored); the next `/random value 1..6 minecraft:test` creates the generator of the fifth row above and answers 5; the next three answers are 3, 4, 1. `/random reset *` then returns 1 and leaves the defaults at (7, false, true); `/random reset minecraft:test` returns 1 and creates the generator again at its start state, so the next three answers are again 5, 3, 4. `/random reset minecraft:test 0 true true` returns 1 and builds the third row's generator without changing the stored defaults.
 
 ### 7.41 `reload` (level 2, 1 tree node)
 
@@ -1749,6 +1800,21 @@ test R2
           <depth:integer#3> x
 ```
 
+**Semantics (the behaviour of this command is document 55, restated here only where stated).** Level: the root `test` is level 2 and no subcommand adds a check; the command is registered unconditionally (55 §2.1). The tree above has the 17 literals that exist without `SharedConstants.IS_RUNNING_IN_IDE`; `export`, `exportclosest`, `exportthese` and `exportthat` (55 §4.1) exist only when that flag is set and are not in the 48-node tree (counted: 1 root + `run` 6 + `runmultiple` 3 + `runthese` 3 + `runclosest` 3 + `runthat` 3 + `runfailed` 10 + `verify` 2 + `locate` 2 + the three `reset*` 3 + `clearthat` and `clearthese` 2 + `clearall` 2 + `stop` 1 + `pos` 2 + `create` 5 = 48). Every `x` node is a complete command, so any prefix of an argument chain executes with the later values at their defaults (55 §4.1: `numberOfTimes` absent = one try, `untilFailed` false, `rotationSteps` 0, `testsPerRow` 8, `amount` absent = one pass, `create` size 5 x 5 x 5; `create <id> <width>` makes a cube; `create <id> <width> <height>` is not a command, because the `height` node has no `x`).
+
+| Branch | What it does | Result | Feedback and errors (keys in 55 §9.1) |
+|---|---|---|---|
+| `run`, `runmultiple`, `runthese`, `runclosest`, `runthat`, `runfailed` | first step `stopTests` (clears the global ticker, which halts any running tests; read as the first call of `TestCommand.run`), then build the test list (new areas on a grid for selector tests, in place for existing test instance blocks), start a runner (55 §4.3, §5) | 1 when started, 0 when the list is empty | empty list: `commands.test.no_tests` is **plain success feedback** (`sendSuccess` with broadcast false), not a failure and not an error, and the result is 0; otherwise the failed-test memory is cleared and `commands.test.run.running` (count) is sent, not broadcast |
+| `verify` | first step `stopTests`, then stress-runs each selected test (55 §5.8); read: `TestCommand.verify` has no empty-list message | 1 | none |
+| `locate` | lists the test instance blocks of the selected tests with click-to-teleport coordinates; **no `stopTests` step** (read: `TestCommand.locate` begins with the `locate.started` message) | the number of located test instance blocks (the count of `commands.test.locate.done`; read: `locate` returns that counter after the broadcast success; 55 §4.3 states the same) | `commands.test.locate.started` (system message), `.found` per block, `.done` (count, broadcast); none: error `commands.test.error.no_test_instances` |
+| `resetclosest`, `resetthese`, `resetthat` | first step `stopTests`, then re-place the template of the nearest (15 blocks), nearby (250) or looked-at test instance blocks | the count | `commands.test.reset.success` (count, broadcast); none: error `commands.test.clear.error.no_tests` |
+| `clearthat`, `clearthese`, `clearall [<radius>]` | first step `stopTests`, then clear the test area, remove its barriers and destroy the block; `clearall` radius default 250, clamped to 0 to 1024 | the count | `commands.test.clear.success` (count, broadcast); none: error `commands.test.clear.error.no_tests` |
+| `stop` | `stopTests` only: halts the running tests (clears the global ticker) | 1 | none |
+| `pos [<var>]` | needs a player; prints the looked-at position relative to its test area and sends Game Test Highlight Pos (05a 0x29) | 1 | `commands.test.relative_position` with a copy-to-clipboard action; errors `commands.test.error.no_test_containing_pos`, `.test_instance_not_found` |
+| `create <id> [<width> [<height> <depth>]]` | creates an empty test area (a bedrock floor layer) on the grid | 1 | `commands.test.create.success` (broadcast); error `commands.test.error.too_large` (argument 48) when any size exceeds 48 |
+
+Read in `TestCommand`: the constants 15 (nearby radius), 250 (full search radius and default clear radius), 1024 (maximum clear radius), 3 (position offset from the player), the default size 5 x 5 x 5, and in `createNewStructure` the limit test `size > 48` on each of the three sizes (so 48 passes), the result 1 with broadcast success; and in `stopTests` the global ticker clear and the result 1. All of this agrees with 55 §4. The server-side provider behind the four `sug=ask` selector nodes is `TestCommand.suggestTestInstanceIds` (its content was not decoded, Open question 6).
+
 ### 7.66 `tick` (level 3, 12 tree nodes)
 
 ```
@@ -2013,6 +2079,31 @@ tm ->/teammsg
 tp R2 ->/teleport
 ```
 
+### 7.89 `publish` and `unpublish` (level 4, integrated selection only; 3 and 1 tree nodes)
+
+Read in `PublishCommand` and `UnpublishCommand`: both literals require `Commands.LEVEL_OWNERS` (level 4) and are registered only by the integrated selection (§3.4, §6.1). In the notation of §7.1 (parser ids from §5.3: `bool` 0, `integer` 3):
+
+```
+publish x R4
+  <allowCommands:bool#0> x
+    <port:integer#3(min=0,max=65535)> x
+unpublish x R4
+```
+
+All three `publish` nodes and `unpublish` are executable (flag bit 4 set). Counts: 3 nodes (`publish`, `allowCommands`, `port`) and 1 node (`unpublish`), matching §6.1. With these two listings the fixtures for the integrated levels 2 to 4 can be generated from this section.
+
+**Semantics (read).** The three forms of `publish` all end in one helper that takes the port and the `allowCommands` flag:
+
+| Form | Port | `allowCommands` |
+|---|---|---|
+| `publish` | `HttpUtil.getAvailablePort()` (a free port chosen at that moment) | false |
+| `publish <allowCommands>` | `HttpUtil.getAvailablePort()` | the argument |
+| `publish <allowCommands> <port>` | the argument (0 to 65535) | the argument |
+
+The helper, in order: (1) if `MinecraftServer.isPublished()` is true and `MinecraftServer.getPort()` is greater than -1, it fails with `commands.publish.alreadyPublished.lan` (the current port as the argument; English "Local game is already hosted on port %s"); (2) it calls `MinecraftServer.publishServer(LAN, allowCommands, port)`; when that returns false it fails with `commands.publish.failed` ("Unable to host local game"); (3) otherwise it sends `commands.publish.started.lan` ("Local game hosted on port %s"; the argument is the port as text wrapped by `ComponentUtils.copyOnClickText`, so clicking it copies the port number) to the source with broadcast true, and the **result is the port**. The effects inside `publishServer` (opening the listener, the game mode and the command flag it applies) were not read (Open question 11).
+
+`unpublish` has one form: it calls `MinecraftServer.unpublishServer()`; when that returns false it fails with `commands.unpublish.notPublished` ("No multiplayer game published"); otherwise it sends `commands.unpublish.success` ("Multiplayer game is now unpublished") with broadcast true and the result is 1. The same keys and texts are in 16 §11.15.
+
 ---
 
 ## 8. Suggestion tooltips
@@ -2261,6 +2352,10 @@ Counts any implementation can check without the full listing (dedicated, §5.2):
 3. **The 6-node tree.** 09 §3.3 describes a 90-node stand-in tree as retired; nothing in the documents or the jar says what a 6-node tree was. Neither number is a vanilla count (§9.1). The jar could not answer this.
 4. **Composition of a 28-node level-0 tree.** The count alone cannot distinguish the integrated level-0 tree from the dedicated level-0 tree plus the two `<sequence>` nodes (§9.2); the node listing is needed. The jar could not answer this.
 5. **Other enabled feature flags.** The trees are for the default flag set (`vanilla`); the flags `trade_rebalance`, `redstone_experiments` and `minecart_improvements` exist. Read: of all command classes only `GameRuleCommand.register` consults the enabled feature set while the tree is built (the other uses, in `DataPackCommand`, are in executions and suggestion providers), and the only rule gated by a non-default flag is `max_minecart_speed` (`minecart_improvements`, +4 nodes). A world that enables other flags changes suggestions (summonable entities, registry-backed ids), not nodes.
-6. **Behaviour of the `ask` providers.** §8.4 names the provider behind each node; what each one lists was not decoded (only the `score_holder` provider was read far enough to say it carries tooltips).
+6. **Behaviour of the `ask` providers.** §8.4 names the provider behind each node; what each one lists was not decoded (only the `score_holder` provider was read far enough to say it carries tooltips). `RandomCommand.suggestRandomSequence` was decoded (§7.40: the text of every stored sequence id, no tooltip); the other providers are not decoded.
 7. **Tooltip texts of `summonable_entities`.** The tooltip is the entity type's description component (read: `getDescription()` builds a translatable component from the type's description id); the id strings (for example the exact key form `entity.<namespace>.<name>`) were not read here.
 8. **fastutil `Object2IntOpenHashMap` key comparison (recalled, not verified).** The packet constructor creates the map with the no-argument constructor (read) and then looks nodes up by their own `equals` and `hashCode` (read: the calls are `containsKey`, `put`, `getInt` on the node objects). That the default strategy of this fastutil class is `equals` and `hashCode` is recalled, not verified: the library is not in the artifact. The node counts of §5 (68 merged entries) depend on it; a decoder is unaffected either way.
+9. **Bare `/publish`** (closed): the zero-argument form uses a free port and `allowCommands` false, and the message keys of `publish` and `unpublish` were read (§7.89). Only the effects inside `MinecraftServer.publishServer` remain, as Open question 11.
+10. **Writer of the optional flags of `random_sequences.dat`** (§7.40): whether the writer omits `include_world_seed` and `include_sequence_id` when they equal the default true (the codec declares them optional with a default; the library that decides this is not in the artifact), so an implementation must accept both forms.
+11. **Inside `MinecraftServer.publishServer(scope, allowCommands, port)`** (§7.89): opening the LAN listener, the game mode and the command flag it applies, and what `unpublishServer` tears down were not read; only the two commands were.
+12. **Dialog content** (§7.14): the three shipped dialog definitions and the client's handling of a Show Dialog for an unknown registry reference or a malformed inline definition were not read; only the command, the argument and the two packets were.

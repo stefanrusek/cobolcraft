@@ -1595,7 +1595,7 @@ Each item states what is unresolved and what was searched. No statement in the b
 10. Rabbit: exact jump-control integration (`JumpControl` subclass) beyond the constants of §4 was not traced.
 11. Fox: goal internals (`StalkPrey`, `FoxPounce`, `Sleep`, `SeekShelter`, `FoxEatBerries`, `PerchAndSearch`, `FoxStrollThroughVillage`, `FoxSearchForItems`) and the trust rules were not read (only the parameter lists, flags and constants `MIN_TICKS_BEFORE_EAT` 600, baby scale 0.6 are given).
 12. Wolf: `WolfAvoidEntity`, `Beg` and the angry-at predicate internals; the tamable owner-teleport rule is read in part (`shouldTryTeleportToOwner` is true when the owner is at least 12 blocks away: squared distance 144; the destination search `teleportToAroundBlockPos` was not displayed).
-13. Cat: `CatLieOnBlock`, `CatSitOnBlock`, the cat tempt goal's scare rule; contents of tags `cats_can_lie_on` and `cat_does_not_teleport_to` were not read.
+13. Cat: `CatLieOnBlock`, `CatSitOnBlock`, the cat tempt goal's scare rule; the contents of tag `cats_can_lie_on` were not read; the content of `cat_does_not_teleport_to` was read (the single entry `#minecraft:dangerous_for_teleportation`, with the call `Cat.randomTeleport(x, y, z, false, tag)`: 25-6 section 5.1).
 14. Panda: the goals that implement the lazy, playful and aggressive traits; `canPickUpAndEat`, tag `panda_eats_from_ground`.
 15. Polar bear: the `Panic` condition and the target predicates.
 16. (Closed by 54 §7.) Goat: which blocks make a ram break a horn (the ram behaviour's block test; the block tag `snaps_goat_horn` exists = overworld natural logs, stone, packed ice, iron ore, coal ore, copper ore, emerald ore, but the code that tests it was not displayed).

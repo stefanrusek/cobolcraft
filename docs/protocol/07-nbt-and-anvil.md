@@ -676,7 +676,8 @@ So the vanilla file list is, with `<d>` standing for `dimensions/<ns>/<path>`:
 | `data/minecraft/wandering_trader.dat` | §10.4.6 |
 | `data/minecraft/scheduled_events.dat` | §10.4.7 |
 | `data/minecraft/custom_boss_events.dat` | §10.4.8 |
-| `data/minecraft/random_sequences.dat`, `scoreboard.dat`, `stopwatches.dat` | present; contents not traced (Open question 20) |
+| `data/minecraft/random_sequences.dat` | traced in 57-4 §7.40 (root `{data, DataVersion}`; `data` = `salt`, `include_world_seed`, `include_sequence_id`, `sequences`: id text to `{source: [lo, hi]}`) |
+| `data/minecraft/scoreboard.dat`, `stopwatches.dat` | present; contents not traced (Open question 20) |
 | `data/minecraft/maps/last_id.dat`, `data/minecraft/maps/<n>.dat` | map counter and map items; contents not traced beyond the key names `dimension`, `xCenter`, `zCenter`, `scale`, `colors`, `trackingPosition`, `unlimitedTracking`, `locked`, `banners`, `frames` |
 | `data/<ns>/command_storage.dat` | `/data storage` containers, one file per namespace; contents not traced |
 | `<d>/data/minecraft/world_border.dat` | §10.4.4, one per dimension |
@@ -910,7 +911,7 @@ None beyond those defined inline above. This file describes byte formats, not pa
 17. §10.2 `Version` read defaults, and the exact failure when `Version.Series` differs from the game's series: only the call chain was read, not the user-facing flow. The dedicated server stops on "incompatible version" (`LevelSummary.isCompatible`); the downgrade backup flag (`backupStatus`) was not read in full.
 18. §10.2: `Data` keys the game does not model are dropped by `saveDataTag`; whether any 26.3 path (a plugin point, `modifyLevelDataWithoutDatafix`) preserves them was only seen for rename and drop-player. A lossless CobolCraft round trip therefore keeps them by its own rule, which is a CobolCraft choice, not game behaviour.
 19. §10.2: the constant 19133 is what `LevelStorageSource.getStorageVersion` returns and 19132 is the other accepted value (what each stands for is (recalled, not verified) and not needed here); the refusal text for 19132 comes from the dedicated server `Main`. The write order of `Data` keys is the order in `PrimaryLevelData.setTagData`; compound key order in the file is the order of the in-memory map and was not checked in a real file.
-20. §10.3: the payloads of `random_sequences.dat`, `scoreboard.dat`, `stopwatches.dat`, `maps/last_id.dat`, `maps/<n>.dat` (beyond the member names listed) and `<ns>/command_storage.dat` were not traced.
+20. §10.3: the payloads of `scoreboard.dat`, `stopwatches.dat` (the payload of `random_sequences.dat` is traced in 57-4 §7.40), `maps/last_id.dat`, `maps/<n>.dat` (beyond the member names listed) and `<ns>/command_storage.dat` were not traced.
 21. §10.4.2: which clock entries are written when a dimension's clock was never touched, and what a missing entry means for the overworld day time (0 or the dimension type's default), were not traced.
 22. §10.4.3: the decoder's behaviour for an unknown rule id or a rule gated by a disabled feature flag (`max_minecart_speed`) was not traced; neither was whether the writer lists every rule or only changed ones.
 23. §10.7: behaviour for a `level.dat` or saved-data file with a data version newer than 5023 (the game's downgrade warning) was not traced.

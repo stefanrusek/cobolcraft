@@ -305,6 +305,8 @@ shared per-structure `random` of that chunk (36-1 section 8: seeded once per str
 | The `nextInt(100)` chest checks of step 5 items 3 and 4, the `nextInt(5)` of the side branches, the constructor draws | **Yes**, unconditional (the chest write itself is guarded by the box test of section 2.10) |
 | The spider position `sz = (z - 1) + nextInt(3)` | Drawn whenever `spiderCorridor` and not `hasPlacedSpider`, regardless of the box; only the spawner write is guarded by the box and interior tests |
 
+*(Read: `MineShaftCorridor.maybePlaceCobWeb` tests `isInterior` first, then draws `nextFloat`, then tests `hasSturdyNeighbours(.., 2)`; `StructurePiece.maybeGenerateBlock` draws `nextFloat` first and only then calls `placeBlock`. Sections 2.8 and 2.13 therefore agree with the artifact and with each other. The `EntryDoor` encoding of 3.9 and the cobweb and torch draws are settled.)*
+
 ---
 
 ## 3. Stronghold
